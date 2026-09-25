@@ -1,0 +1,12 @@
+spring:
+  application.name: municipal-rbac0
+  datasource:
+    url: jdbc:sqlite:${RBAC_DB:./data/rbac.db}
+    driver-class-name: org.sqlite.JDBC
+  sql.init.mode: always
+server:
+  port: ${PORT:8081}
+  error.include-message: always
+rbac:
+  source-dir: ${RBAC_SOURCE_DIR:.}
+  session-hours: 12

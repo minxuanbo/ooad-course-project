@@ -1,0 +1,6 @@
+target/
+data/*.db
+data/*.db-*
+.idea/
+.DS_Store
+*.iml
