@@ -5,6 +5,11 @@ import javax.xml.stream.*;
 
 final class ExcelXmlReader {
   private ExcelXmlReader() {}
+  static Path permissionFile(Path directory) {
+    Path file=directory.resolve("市政公司应用软件功能权限清单.xlsx");
+    if(Files.exists(file))return file;
+    return directory.resolve("市政公司应用软件功能权限清单(1).xlsx");
+  }
   static List<List<String>> read(Path file) throws Exception {
     try (ZipFile zip=new ZipFile(file.toFile())) {
       List<String> strings=shared(zip); ZipEntry sheet=zip.getEntry("xl/worksheets/sheet2.xml");

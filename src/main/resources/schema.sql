@@ -10,3 +10,17 @@ CREATE TABLE IF NOT EXISTS sessions(token_hash TEXT PRIMARY KEY, user_id INTEGER
 CREATE TABLE IF NOT EXISTS authorization_logs(id INTEGER PRIMARY KEY AUTOINCREMENT, occurred_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, user_id INTEGER, username TEXT, app_code TEXT NOT NULL, permission_code TEXT NOT NULL, allowed INTEGER NOT NULL, request_id TEXT, reason TEXT);
 CREATE TABLE IF NOT EXISTS authorization_changes(id INTEGER PRIMARY KEY AUTOINCREMENT, occurred_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, operator_id INTEGER, target_type TEXT NOT NULL, target_id INTEGER NOT NULL, action TEXT NOT NULL, detail TEXT);
 CREATE INDEX IF NOT EXISTS idx_users_name ON users(name); CREATE INDEX IF NOT EXISTS idx_users_dept ON users(department_id); CREATE INDEX IF NOT EXISTS idx_permissions_app ON permissions(app_id); CREATE INDEX IF NOT EXISTS idx_auth_logs_time ON authorization_logs(occurred_at); CREATE INDEX IF NOT EXISTS idx_auth_logs_user ON authorization_logs(user_id);
+CREATE TABLE IF NOT EXISTS handovers(
+  user_id INTEGER PRIMARY KEY REFERENCES users(id),
+  receiver_id INTEGER NOT NULL REFERENCES users(id),
+  owner_id INTEGER NOT NULL REFERENCES users(id),
+  expected_date TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  oa_reference TEXT NOT NULL DEFAULT '',
+  state TEXT NOT NULL CHECK(state IN ('HANDOVER','DEPARTED')),
+  started_by INTEGER NOT NULL REFERENCES users(id),
+  started_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  completed_by INTEGER REFERENCES users(id),
+  completed_at TEXT,
+  completion_note TEXT
+);
