@@ -1,0 +1,15 @@
+# 将 dist 独立部署到此目录，后端独立运行于 8081。
+server {
+    listen 80;
+    server_name localhost;
+    root /srv/municipal-rbac/frontend/dist;
+    index index.html;
+    location /api/ {
+        proxy_pass http://127.0.0.1:8081;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

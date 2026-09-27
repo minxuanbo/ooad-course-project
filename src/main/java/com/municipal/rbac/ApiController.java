@@ -13,7 +13,47 @@ class ApiController {
   @GetMapping("/me/permissions") List<Map<String,Object>> myPermissions(@RequestHeader("Authorization")String h,@RequestParam(required=false)String app){long id=(long)auth.require(h).get("id");String sql="SELECT DISTINCT a.code appCode,a.name appName,p.code,p.module_name module,p.feature_name feature,p.action FROM permissions p JOIN applications a ON a.id=p.app_id JOIN role_permissions rp ON rp.permission_id=p.id JOIN user_roles ur ON ur.role_id=rp.role_id JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=? AND p.enabled=1 AND r.enabled=1";return app==null?rows(sql+" ORDER BY a.id,p.id",id):rows(sql+" AND a.code=? ORDER BY p.id",id,app);}
   @PostMapping("/authorize") Map<String,Object> check(@RequestHeader("Authorization")String h,@RequestBody Check x){var u=auth.require(h);long id=(long)u.get("id");boolean ok=x.permissionCode()!=null&&x.appCode()!=null&&auth.has(id,x.permissionCode())&&db.queryForObject("SELECT count(*) FROM permissions p JOIN applications a ON a.id=p.app_id WHERE p.code=? AND a.code=?",Integer.class,x.permissionCode(),x.appCode())==1;db.update("INSERT INTO authorization_logs(user_id,username,app_code,permission_code,allowed,request_id,reason) VALUES(?,?,?,?,?,?,?)",id,u.get("username"),Objects.toString(x.appCode(),""),Objects.toString(x.permissionCode(),""),ok?1:0,x.requestId(),ok?"角色权限命中":"未获任何角色授权");return Map.of("allowed",ok,"permissionCode",Objects.toString(x.permissionCode(),""),"requestId",Objects.toString(x.requestId(),""));}
   @GetMapping("/dashboard") Map<String,Object> dashboard(@RequestHeader("Authorization")String h){auth.requireAdmin((long)auth.require(h).get("id"));return Map.of("users",scalar("users"),"departments",scalar("departments"),"applications",scalar("applications"),"permissions",scalar("permissions"),"roles",scalar("roles"),"authLogs",scalar("authorization_logs"));}
-  @GetMapping("/users") List<Map<String,Object>> users(@RequestHeader("Authorization")String h,@RequestParam(defaultValue="")String q,@RequestParam(defaultValue="0")int page,@RequestParam(defaultValue="30")int size){auth.requireAdmin((long)auth.require(h).get("id"));size=Math.min(Math.max(size,1),100);String like="%"+q.trim()+"%";return rows("SELECT u.id,u.employee_no employeeNo,u.username,u.name,u.phone,u.company,d.name department,u.position,u.status,COALESCE((SELECT state FROM handovers WHERE user_id=u.id),'EMPLOYED') employmentStatus,group_concat(r.name, '、') roles FROM users u LEFT JOIN departments d ON d.id=u.department_id LEFT JOIN user_roles ur ON ur.user_id=u.id LEFT JOIN roles r ON r.id=ur.role_id WHERE u.name LIKE ? OR u.username LIKE ? OR u.phone LIKE ? GROUP BY u.id ORDER BY u.id LIMIT ? OFFSET ?",like,like,like,size,page*size);}
+  @GetMapping("/users")
+  List<Map<String,Object>> users(@RequestHeader("Authorization")String h,@RequestParam(defaultValue="")String q,
+      @RequestParam(defaultValue="")String company,@RequestParam(required=false)Long departmentId,
+      @RequestParam(defaultValue="0")int page,@RequestParam(defaultValue="30")int size){
+    auth.requireAdmin((long)auth.require(h).get("id"));
+    return userRows(q,company,departmentId,Math.max(page,0),Math.min(Math.max(size,1),100));
+  }
+  @GetMapping("/users/page")
+  Map<String,Object> userPage(@RequestHeader("Authorization")String h,@RequestParam(defaultValue="")String q,
+      @RequestParam(defaultValue="")String company,@RequestParam(required=false)Long departmentId,
+      @RequestParam(defaultValue="0")int page,@RequestParam(defaultValue="20")int size){
+    auth.requireAdmin((long)auth.require(h).get("id"));
+    page=Math.max(page,0);size=Math.min(Math.max(size,1),100);
+    var args=new ArrayList<Object>();
+    String where=userWhere(q,company,departmentId,args);
+    long total=db.queryForObject("SELECT count(*) FROM users u WHERE "+where,Long.class,args.toArray());
+    return Map.of("items",userRows(q,company,departmentId,page,size),"total",total,"page",page,"size",size);
+  }
+  @GetMapping("/users/filters")
+  Map<String,Object> userFilters(@RequestHeader("Authorization")String h,@RequestParam(defaultValue="")String company){
+    auth.requireAdmin((long)auth.require(h).get("id"));
+    return Map.of("companies",rows("SELECT DISTINCT company FROM users WHERE company IS NOT NULL AND company<>'' ORDER BY company"),
+      "departments",rows("SELECT DISTINCT d.id,d.name FROM departments d JOIN users u ON u.department_id=d.id WHERE (?='' OR u.company=?) ORDER BY d.name,d.id",company,company));
+  }
+  private String userWhere(String q,String company,Long departmentId,List<Object> args){
+    String like="%"+q.trim()+"%";
+    args.add(like);args.add(like);args.add(like);args.add(like);
+    String where="(u.name LIKE ? OR u.username LIKE ? OR u.phone LIKE ? OR u.employee_no LIKE ?)";
+    if(!company.isEmpty()){where+=" AND u.company=?";args.add(company);}
+    if(departmentId!=null){where+=" AND u.department_id=?";args.add(departmentId);}
+    return where;
+  }
+  private List<Map<String,Object>> userRows(String q,String company,Long departmentId,int page,int size){
+    var args=new ArrayList<Object>();
+    String where=userWhere(q,company,departmentId,args);
+    args.add(size);args.add((long)page*size);
+    return rows("SELECT u.id,u.employee_no employeeNo,u.username,u.name,u.phone,u.company,u.department_id departmentId,d.name department,u.position,u.status,"+
+      "COALESCE((SELECT state FROM handovers WHERE user_id=u.id),'EMPLOYED') employmentStatus,group_concat(r.name, '、') roles "+
+      "FROM users u LEFT JOIN departments d ON d.id=u.department_id LEFT JOIN user_roles ur ON ur.user_id=u.id LEFT JOIN roles r ON r.id=ur.role_id "+
+      "WHERE "+where+" GROUP BY u.id ORDER BY u.id LIMIT ? OFFSET ?",args.toArray());
+  }
   @GetMapping("/users/{id}/roles") List<Map<String,Object>> userRoles(@RequestHeader("Authorization")String h,@PathVariable long id){auth.requireAdmin((long)auth.require(h).get("id"));return rows("SELECT r.id,r.code,r.name,CASE WHEN ur.user_id IS NULL THEN 0 ELSE 1 END assigned FROM roles r LEFT JOIN user_roles ur ON ur.role_id=r.id AND ur.user_id=? ORDER BY r.id",id);}
   @PutMapping("/users/{id}/roles") @Transactional void setUserRoles(@RequestHeader("Authorization")String h,@PathVariable long id,@RequestBody Ids body){var op=auth.require(h);auth.requireAdmin((long)op.get("id"));if(body.ids()==null)throw ApiException.bad("角色列表不能为空");if(db.queryForObject("SELECT count(*) FROM users WHERE id=?",Integer.class,id)==0)throw new ApiException(HttpStatus.NOT_FOUND,"用户不存在");if(db.queryForObject("SELECT count(*) FROM handovers WHERE user_id=? AND state=\'DEPARTED\'",Integer.class,id)>0)throw ApiException.bad("已离职员工不能再分配角色");db.update("DELETE FROM user_roles WHERE user_id=?",id);for(Long rid:new LinkedHashSet<>(body.ids()))db.update("INSERT INTO user_roles(user_id,role_id,granted_by) SELECT ?,id,? FROM roles WHERE id=?",id,op.get("id"),rid);db.update("INSERT INTO authorization_changes(operator_id,target_type,target_id,action,detail) VALUES(?,?,?,?,?)",op.get("id"),"USER",id,"SET_ROLES",body.ids().toString());}
   @GetMapping("/roles") List<Map<String,Object>> roles(@RequestHeader("Authorization")String h){auth.requireAdmin((long)auth.require(h).get("id"));return rows("SELECT r.id,r.code,r.name,r.description,r.enabled,count(DISTINCT ur.user_id) userCount,count(DISTINCT rp.permission_id) permissionCount FROM roles r LEFT JOIN user_roles ur ON ur.role_id=r.id LEFT JOIN role_permissions rp ON rp.role_id=r.id GROUP BY r.id ORDER BY r.id");}

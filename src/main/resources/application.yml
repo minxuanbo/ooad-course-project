@@ -1,4 +1,5 @@
 spring:
+  web.resources.add-mappings: false
   application.name: municipal-rbac0
   datasource:
     url: jdbc:sqlite:${RBAC_DB:./data/rbac.db}

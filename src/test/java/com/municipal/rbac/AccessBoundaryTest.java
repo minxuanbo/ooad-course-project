@@ -28,7 +28,7 @@ class AccessBoundaryTest {
   }
   @Test void employeeCannotReadOrWriteManagementEndpoints()throws Exception{
     String token=login("SG010000","123456");
-    for(String path:new String[]{"/dashboard","/users","/users/1/roles","/roles","/roles/1/permissions","/applications","/authorization-logs"})
+    for(String path:new String[]{"/dashboard","/users","/users/page","/users/filters","/users/1/roles","/roles","/roles/1/permissions","/applications","/authorization-logs"})
       mvc.perform(get("/api"+path).header("Authorization",token)).andExpect(status().isForbidden());
     for(String path:new String[]{"/users/1/roles","/roles/1/permissions"})
       mvc.perform(put("/api"+path).header("Authorization",token).contentType("application/json").content("{\"ids\":[]}")).andExpect(status().isForbidden());
@@ -98,5 +98,34 @@ class AccessBoundaryTest {
     db.update("DELETE FROM user_roles WHERE user_id=(SELECT id FROM users WHERE username='admin')");
     mvc.perform(get("/api/me").header("Authorization",manager)).andExpect(jsonPath("$.canManage").value(false));
     mvc.perform(get("/api/users").header("Authorization",manager)).andExpect(status().isForbidden());
+  }
+  @Test void userFiltersCombineCompanyDepartmentAndPhoneWithAccuratePagination()throws Exception{
+    String manager=login("admin","admin123");
+    var user=db.queryForMap("SELECT company,department_id,phone FROM users WHERE username='SG010000'");
+    String company=user.get("company").toString(),dept=user.get("department_id").toString(),phone=user.get("phone").toString();
+    int expected=db.queryForObject("SELECT count(*) FROM users WHERE company=? AND department_id=?",Integer.class,company,user.get("department_id"));
+    mvc.perform(get("/api/users/page").header("Authorization",manager).param("company",company).param("departmentId",dept).param("size","1"))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.total").value(expected))
+      .andExpect(jsonPath("$.items.length()").value(1)).andExpect(jsonPath("$.items[0].company").value(company))
+      .andExpect(jsonPath("$.items[0].departmentId").value(Integer.parseInt(dept)));
+    mvc.perform(get("/api/users/page").header("Authorization",manager).param("company",company).param("departmentId",dept).param("q",phone))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.total").value(1)).andExpect(jsonPath("$.items[0].phone").value(phone));
+    mvc.perform(get("/api/users/page").header("Authorization",manager).param("company","不存在的公司").param("q",phone))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.total").value(0)).andExpect(jsonPath("$.items.length()").value(0));
+    mvc.perform(get("/api/users/page").header("Authorization",manager).param("page","-1").param("size","0"))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.page").value(0)).andExpect(jsonPath("$.size").value(1));
+    mvc.perform(get("/api/users/page").header("Authorization",manager).param("page","999999"))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.items.length()").value(0));
+    String response=mvc.perform(get("/api/users/filters").header("Authorization",manager).param("company",company))
+      .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+    JsonNode filters=json.readTree(response);
+    assertTrue(filters.get("companies").size()>0);
+    assertTrue(filters.get("departments").size()>0);
+    for(JsonNode d:filters.get("departments"))
+      assertTrue(db.queryForObject("SELECT count(*) FROM users WHERE company=? AND department_id=?",Integer.class,company,d.get("id").asLong())>0);
+    mvc.perform(get("/api/users/filters").header("Authorization",manager).param("company","不存在的公司"))
+      .andExpect(jsonPath("$.departments.length()").value(0));
+    mvc.perform(get("/api/users").header("Authorization",manager).param("q",phone).param("company",company))
+      .andExpect(status().isOk()).andExpect(jsonPath("$[0].phone").value(phone));
   }
 }

@@ -14,18 +14,40 @@
 
 ## 启动
 
-需要 JDK 21+ 与 Maven 3.9+。在项目根目录运行：
+采用前后端分离架构：后端 Spring Boot 3 + JDBC + SQLite，前端 Vue 3 + Vue Router + Vite。前端源码位于 `frontend/`，后端位于根目录 Maven 工程，独立启动、构建和部署。需要 JDK 21+、Maven 3.9+、Node.js 22.12+（建议 Node 24）。
+
+终端一，在项目根目录启动后端：
 
 ```bash
 mvn spring-boot:run
 ```
 
-访问 <http://localhost:8081>。首次启动会建立 `data/rbac.db`，初始化可能需要数秒。默认端口已避开本机 Nginx 占用的 8080；不要直接打开 HTML 文件。可通过 `PORT` 环境变量改端口。
+后端 API 地址为 <http://localhost:8081/api/me>（需登录令牌），不再提供前端页面。首次启动会建立 `data/rbac.db`，已有数据库保留。可通过 `PORT` 环境变量改端口。
 
-前端已采用普通过程、分支和循环组织（无自定义类、箭头函数和函数式集合操作）。包含响应式登录页、工作台、用户分页搜索、角色权限筛选与授权编辑、系统目录及鉴权日志。原 Java/Spring 后端仍待过程式重构。
+终端二，在项目根目录运行：
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+浏览器访问 <http://localhost:5173>；不要直接打开 HTML 文件。Vite 将 `/api` 代理到后端 8081；后端端口变化时以 `API_TARGET=http://127.0.0.1:新端口 npm run dev` 启动前端。前端使用 Vue 单文件组件、命名过程函数和循环组织业务逻辑，不使用类式组件；Spring Boot 仍按框架要求保留 Java 类，并非纯结构化编程项目。
+
+用户与授权页面支持“公司 → 部门”联动筛选，切换公司清空部门选择，筛选即时查询；可叠加姓名、工号、手机号搜索，支持重置和准确分页总数。电话独立成列，缺失显示“—”。管理页面和这些查询接口仍仅对管理员开放。
+
+独立构建：
+
+```bash
+mvn clean package
+cd frontend
+npm run build
+```
+
+后端 JAR 位于 `target/`，前端静态产物位于 `frontend/dist/`，不复制进后端 JAR。生产部署可参考 `frontend/nginx.conf.example`，由 Nginx 托管前端并转发 `/api/`，同时为 Vue 路由提供 history fallback。使用同源反向代理，无需开放任意来源 CORS。生产环境另需配置 HTTPS。
 
 - 管理员：`admin` / `admin123`
-- 普通员工：员工表中的工号（如 `SG000001`）/ `123456`
+- 普通员工：`SG010000` / `123456`（以数据库当前账号状态为准）
 
 这些是课程演示初始密码，正式部署前必须修改并补充强制改密流程。
 
@@ -44,6 +66,9 @@ mvn spring-boot:run
 | 方法 | 路径 | 用途 |
 |---|---|---|
 | POST | `/api/auth/login` | 登录 |
+| GET | `/api/users/page?q=&company=&departmentId=&page=0&size=20` | 组合筛选用户，返回 items/total/page/size |
+| GET | `/api/users/filters?company=...` | 所有公司及选定公司下的部门选项 |
+| GET | `/api/users` | 保留旧数组接口，亦支持公司和部门筛选 |
 | GET | `/api/me/permissions?app=...` | 获取当前用户权限集合 |
 | POST | `/api/authorize` | 检查当前用户的一项权限并写鉴权日志 |
 | GET/PUT | `/api/users/{id}/roles` | 查询/替换用户角色 |
@@ -80,4 +105,4 @@ mvn spring-boot:run
 
 员工列表分别显示账号和人员状态。交接页提供当前角色、有效系统和最近 50 条变更记录。当前操作者不能办理自己的离职。该功能仍使用当前管理角色权限边界；操作级权限拆分方案见 [用户操作权限演示方案](docs/用户操作权限演示方案.md)，尚未实施完整用户 CRUD。
 
-生产化前至少需要：强制改密/密码重置、敏感字段加密或脱敏、CSRF/限流、会话清理、数据库迁移、分页总数、日志归档、组织管理范围校验，以及压力与故障测试。
+生产化前至少需要：强制改密/密码重置、敏感字段加密或脱敏、CSRF/限流、会话清理、数据库迁移、日志归档、组织管理范围校验，以及压力与故障测试。

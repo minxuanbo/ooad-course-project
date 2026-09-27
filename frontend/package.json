@@ -1,0 +1,10 @@
+{
+  "name": "municipal-rbac-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "vite --host 127.0.0.1", "build": "vite build", "preview": "vite preview --host 127.0.0.1" },
+  "dependencies": { "vue": "^3.5.22", "vue-router": "^4.5.1" },
+  "devDependencies": { "@vitejs/plugin-vue": "^6.0.1", "vite": "^7.1.7" },
+  "engines": { "node": ">=22.12.0" }
+}
