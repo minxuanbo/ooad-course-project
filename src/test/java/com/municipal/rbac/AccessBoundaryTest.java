@@ -9,17 +9,40 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.context.ActiveProfiles;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest(properties={"spring.datasource.url=jdbc:sqlite::memory:","spring.datasource.hikari.maximum-pool-size=1"})
+@SpringBootTest
+@ActiveProfiles("test")
 @AutoConfigureMockMvc
 @Transactional
 class AccessBoundaryTest {
   @Autowired MockMvc mvc;
   @Autowired ObjectMapper json;
   @Autowired JdbcTemplate db;
+  @Test void runsOnRealMysqlWithUtcSessionsAndForeignKeys()throws Exception{
+    try(var connection=db.getDataSource().getConnection()){
+      assertEquals("MySQL",connection.getMetaData().getDatabaseProductName());
+    }
+    login("SG010000","123456");
+    Long remaining=db.queryForObject("SELECT MAX(TIMESTAMPDIFF(SECOND,UTC_TIMESTAMP(3),expires_at)) FROM sessions",Long.class);
+    assertTrue(remaining>=43190 && remaining<=43200);
+    assertThrows(org.springframework.dao.DataIntegrityViolationException.class,
+      () -> db.update("INSERT INTO user_roles(user_id,role_id) VALUES(-1,1)"));
+  }
+  @Test void disabledApplicationIsExcludedFromEffectivePermissions()throws Exception{
+    String employee=login("SG010000","123456");
+    db.update("UPDATE applications SET enabled=0");
+    mvc.perform(get("/api/me/permissions").header("Authorization",employee))
+      .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+  }
+  @Test void mysqlSupportsEveryManagementReadAndPermissionCatalog()throws Exception{
+    String manager=login("admin","admin123");
+    for(String path:new String[]{"/dashboard","/roles","/roles/1/permissions","/applications","/authorization-logs","/me/permissions","/me/permissions?app=oa协同办公系统"})
+      mvc.perform(get("/api"+path).header("Authorization",manager)).andExpect(status().isOk());
+  }
   String login(String account,String password)throws Exception{
     String response=mvc.perform(post("/api/auth/login").contentType("application/json")
       .content(json.writeValueAsString(java.util.Map.of("account",account,"password",password))))

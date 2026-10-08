@@ -6,3 +6,5 @@ data/*.db-*
 *.iml
 frontend/node_modules/
 frontend/dist/
+.local/
+__pycache__/

@@ -1,13 +1,20 @@
 spring:
+  config.import: optional:file:./.local/mysql/application-local.properties
   web.resources.add-mappings: false
   application.name: municipal-rbac0
   datasource:
-    url: jdbc:sqlite:${RBAC_DB:./data/rbac.db}
-    driver-class-name: org.sqlite.JDBC
+    url: ${RBAC_DB_URL:jdbc:mysql://127.0.0.1:3307/rbac?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true}
+    username: ${RBAC_DB_USER:rbac}
+    password: ${RBAC_DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      transaction-isolation: TRANSACTION_READ_COMMITTED
   sql.init.mode: always
 server:
   port: ${PORT:8081}
   error.include-message: always
 rbac:
+  initialize: ${RBAC_INITIALIZE:true}
   source-dir: ${RBAC_SOURCE_DIR:.}
   session-hours: 12

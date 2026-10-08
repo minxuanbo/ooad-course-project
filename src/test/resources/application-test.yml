@@ -1,0 +1,6 @@
+spring:
+  datasource:
+    url: ${RBAC_TEST_DB_URL:jdbc:mysql://127.0.0.1:3307/rbac_test?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true}
+    username: ${RBAC_TEST_DB_USER:rbac_test}
+    password: ${RBAC_TEST_DB_PASSWORD:}
+rbac.initialize: true
