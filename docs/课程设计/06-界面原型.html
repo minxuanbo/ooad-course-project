@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="RBAC0 课程设计界面交互原型，使用虚构数据，不连接真实后台。">
+<title>RBAC0 · 界面交互原型</title>
+<style>
+:root{font-family:Inter,-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:#24334a;background:#f5f7fb;font-size:14px;line-height:1.6}*{box-sizing:border-box}body{margin:0}button,input{font:inherit}button{cursor:pointer;border:0;border-radius:7px;padding:10px 16px}button:disabled{opacity:.5;cursor:not-allowed}button:focus-visible,input:focus-visible{outline:3px solid #93b8ff;outline-offset:2px}input{border:1px solid #dce2eb;background:#fff;border-radius:7px;padding:12px 14px;min-width:0;color:#24334a}h1,h2,p{margin-top:0}h1{font-size:29px;letter-spacing:-.7px;margin-bottom:8px}h2{font-size:17px;margin-bottom:16px}small{display:block;color:#8a95a7;font-size:12px}code,.mono{font-family:ui-monospace,monospace}.muted{color:#728096}.primary{background:#3865e8;color:white}.primary:hover{background:#2853cf}.secondary{background:white;color:#53617a;border:1px solid #dfe5ef}.secondary:hover{background:#f1f5fc}.text-button{color:#3865e8;background:none;padding:5px 8px}.error{color:#c14343}.empty{padding:60px 20px;text-align:center;color:#8490a5}.eyebrow{font-size:10px;letter-spacing:2px;font-weight:600;color:#8998b3}.brand{display:flex;gap:12px;align-items:center;font-weight:600;font-size:17px}.mark{display:inline-grid;place-items:center;background:#3c68ec;color:white;width:39px;height:39px;border-radius:11px;font-size:22px;flex-shrink:0}.login-layout{display:grid;grid-template-columns:1fr 1fr;min-height:100vh}.login-story{background:radial-gradient(ellipse at 95% 80%,#254c89 0,transparent 60%),#142b50;color:white;padding:40px 48px;display:flex;flex-direction:column}.login-story .brand small{color:#b2bfda;font-weight:400;border-left:1px solid #66779c;padding-left:16px}.story{margin:auto 0;padding:65px 4vw}.story h1{font-size:54px;line-height:1.35;letter-spacing:1px;margin:24px 0}.story p{color:#b3c1d9;font-size:17px;line-height:1.9}.diagram{display:flex;align-items:center;margin:44px 0 22px;gap:16px}.diagram span{padding:18px 23px;border:1px solid #536c98;background:#ffffff08;border-radius:10px}.diagram i{color:#6687bd}.story>small{font-size:12px;letter-spacing:2px;color:#8aa2c7}.login-story footer{font-size:12px;color:#8aa2c7}.login-panel{display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;padding:60px 30px}.login-card{width:min(380px,100%)}.pill{display:inline-block;background:#edf2ff;color:#4267c9;font-size:11px;border-radius:5px;padding:4px 9px}.login-card h2{font-size:30px;margin:20px 0 8px}.login-card label{display:block;font-weight:500;margin:22px 0 7px}.login-card input{width:100%;height:48px}.password-field{position:relative}.password-field input{padding-right:65px}.password-field button{position:absolute;right:8px;top:10px;font-size:12px}.login-submit{width:100%;padding:13px 17px}.login-card .error{font-size:12px;min-height:18px;margin:12px 0}.demo{background:#f7f9fd;border:1px solid #e9edf5;padding:16px 20px;border-radius:9px;margin-top:30px;color:#78869d;font-size:12px}.demo strong{color:#536480;font-weight:500}.demo p{margin:7px 0 0}.demo code{color:#617694}.login-panel footer{font-size:11px;color:#8590a3;margin-top:55px}.shell{display:grid;grid-template-columns:230px minmax(0,1fr);min-height:100vh}.sidebar{background:#fff;border-right:1px solid #e8edf5;display:flex;flex-direction:column;padding:28px 18px;position:sticky;top:0;height:100vh}.sidebar .brand{font-size:16px;padding:0 4px}.sidebar .brand small{font-size:10px;letter-spacing:2px;font-weight:400}.nav-label{font-size:11px;color:#8a94a6;margin:42px 16px 12px}.sidebar nav button{width:100%;text-align:left;color:#778298;background:none;margin:4px 0;padding:12px 17px;display:flex;gap:15px;align-items:center}.sidebar nav button span{font-size:19px;width:20px;text-align:center}.sidebar nav button.active{background:#edf2ff;color:#3865e8;font-weight:600}.sidebar-bottom{margin-top:auto;border-top:1px solid #edf0f6;padding:22px 13px 0;font-size:11px;color:#7f8b9e}.dot{display:inline-block;width:6px;height:6px;background:#47b991;border-radius:50%;margin-right:6px}.sidebar-bottom small{margin-top:8px;font-size:10px}.topbar{height:76px;background:#fff;border-bottom:1px solid #e8edf5;display:flex;justify-content:space-between;align-items:center;padding:0 34px;font-size:12px;color:#8190a6}.topbar i{margin:0 15px;color:#c4ccda}.profile{display:flex;gap:10px;align-items:center;color:#50607c}.avatar{background:#edf1fb;color:#5a71a4;border-radius:50%;width:30px;height:30px;display:grid;place-items:center}.profile button{font-size:12px;color:#8490a5;margin-left:12px}.content{padding:30px 34px 20px;max-width:1600px;margin:auto}.page-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;gap:12px}.page-heading .eyebrow{margin-bottom:7px}.page-heading p{font-size:12px;margin:0}.page-heading button{font-size:12px}.welcome{border:1px solid #dfe8fc;background:linear-gradient(115deg,#eef3ff,#f4f7fd);border-radius:12px;padding:26px 32px;display:flex;justify-content:space-between;align-items:center;margin-bottom:23px;overflow:hidden}.welcome h2{font-size:23px;margin:10px 0 8px}.welcome p{font-size:12px;color:#7e8eaa}.welcome button{font-size:12px;margin-top:4px}.welcome-symbol{font-size:140px;line-height:1;color:#a7bfea;transform:rotate(-10deg);padding-right:50px}.card{background:#fff;border:1px solid #e5eaf2;border-radius:10px;overflow:hidden}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:17px;margin-bottom:24px}.metric{padding:20px 23px}.metric>div{font-size:12px;color:#8290a6;display:flex;justify-content:space-between;align-items:center}.metric>div span{border-radius:8px;background:#eff4ff;color:#577ce0;font-size:19px;padding:3px 10px}.metric strong{display:block;font-size:30px;letter-spacing:-1px;font-weight:600;margin:6px 0}.metric small{font-size:10px}.dashboard-columns{display:grid;grid-template-columns:1.15fr 1fr;gap:24px}.panel{padding:23px}.section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.section-title h2{margin:0}.section-title button{font-size:11px}.app-row{display:flex;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid #f0f3f8}.app-row:last-child{border:0}.app-icon{width:37px;height:37px;display:inline-grid;place-items:center;background:#edf2ff;color:#6a82bf;border-radius:9px;font-size:16px}.app-row>div{flex:1}.app-row strong{font-size:12px;font-weight:500}.app-row small{font-size:10px}.badge{display:inline-block;white-space:nowrap;background:#f0f3f8;color:#8b96a8;font-size:10px;border-radius:5px;padding:3px 8px}.green{background:#edf8f3;color:#28815f}.red{background:#fff0f0;color:#b34444}.step{display:flex;gap:15px;margin:25px 0}.step b{background:#f2f5fc;color:#7090d4;border-radius:50%;width:29px;height:29px;display:grid;place-items:center;font-size:11px;flex-shrink:0}.step strong{font-weight:500;font-size:13px}.step p{color:#7a879c;font-size:11px;margin:6px 0}.summary-strip{border-top:1px solid #edf0f7;padding-top:18px;color:#7b89a0;font-size:11px}.summary-strip span{margin:0 18px}.content-footer{display:flex;justify-content:space-between;color:#8c98ab;font-size:10px;margin-top:28px}.toolbar{display:flex;align-items:center;gap:12px;padding:20px 23px;border-bottom:1px solid #edf0f6}.toolbar input{width:330px;font-size:12px;padding:10px 13px}.toolbar span{margin-left:auto;font-size:11px}.table-scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;text-align:left;font-size:12px}th{font-weight:500;color:#7b889d;background:#fafbfe;padding:13px 20px;white-space:nowrap}td{padding:16px 20px;border-bottom:1px solid #f0f2f7;color:#5f6e85}td strong{color:#34445d;font-weight:500}td small{font-size:10px;margin-top:4px}td button{font-size:12px;white-space:nowrap}tbody tr:hover{background:#fafcff}.pagination{padding:15px 23px;display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#8a97ab}.pagination button{font-size:11px;padding:7px 14px}.role-grid,.app-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}.role-card,.app-card{padding:24px}.role-card>.badge,.app-card>.badge{float:right}.role-icon{font-size:29px;color:#6584cd}.role-card h2,.app-card h2{margin:15px 0 7px}.role-card p,.app-card p{font-size:12px}.role-counts{display:flex;gap:50px;border-top:1px solid #edf1f7;padding:20px 0;margin-top:25px}.role-counts strong{font-size:24px;font-weight:500}.role-counts small{font-size:11px}.role-card button{width:100%;font-size:12px}.app-card code{font-size:11px;overflow-wrap:anywhere}.app-card small{margin-top:20px}.code-cell{max-width:340px;overflow-wrap:anywhere;font-size:11px}.nowrap{white-space:nowrap}dialog{width:min(760px,94vw);border:1px solid #e1e7f2;border-radius:14px;padding:26px;color:#34445d;max-height:90vh;box-shadow:0 24px 100px #15294430}dialog::backdrop{background:#16223b70;backdrop-filter:blur(3px)}dialog header{display:flex;justify-content:space-between;align-items:center}dialog header h2{margin:4px 0 0;font-size:23px}dialog p{font-size:12px;margin:16px 0}dialog input:not([type=checkbox]){width:100%}.choices{max-height:43vh;overflow:auto;margin-top:16px;border:1px solid #e9edf6;border-radius:8px}.choice{display:flex;align-items:center;gap:13px;border-bottom:1px solid #f0f3f8;padding:13px;font-size:12px}.choice[hidden]{display:none}.choice input{accent-color:#3865e8;width:16px;height:16px;flex-shrink:0}dialog footer{display:flex;gap:9px;align-items:center}dialog footer span{margin-right:auto;color:#7b89a0;font-size:12px}#notice{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:#263955;color:white;padding:13px 23px;border-radius:9px;z-index:10;opacity:0;pointer-events:none;max-width:90vw;font-size:13px}#notice.visible{opacity:1}@media(max-width:1050px){.shell{grid-template-columns:190px 1fr}.sidebar{padding:24px 12px}.content{padding:24px}.topbar{padding:0 24px}.metrics{grid-template-columns:repeat(2,1fr)}.role-grid,.app-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.welcome-symbol{padding:0}.story{padding:50px 0}.story h1{font-size:43px}.login-story{padding:30px}.login-story .brand small{display:none}.diagram{gap:9px}.diagram span{padding:14px}}@media(max-width:720px){.login-layout{grid-template-columns:1fr}.login-story{display:none}.login-panel{min-height:100vh;padding:35px 24px}.shell{grid-template-columns:1fr}.sidebar{position:static;height:auto;padding:13px 16px;border-bottom:1px solid #e5eaf2}.sidebar .brand{font-size:14px}.sidebar .mark{width:30px;height:30px;font-size:18px}.sidebar nav{display:flex;overflow:auto;margin-top:12px}.sidebar nav button{white-space:nowrap;width:auto;font-size:12px;padding:8px 11px;gap:6px}.sidebar nav button span{display:none}.nav-label,.sidebar-bottom{display:none}.topbar{height:58px;padding:0 18px}.topbar>span{font-size:10px}.profile{gap:6px;font-size:11px}.content{padding:22px 16px}.page-heading h1{font-size:24px}.page-heading button{padding:8px}.page-heading p{max-width:250px}.welcome{padding:22px}.welcome h2{font-size:20px}.welcome-symbol{display:none}.metrics{gap:10px}.metric{padding:15px}.metric strong{font-size:25px}.dashboard-columns{grid-template-columns:1fr;gap:16px}.role-grid,.app-grid{grid-template-columns:1fr}.toolbar{padding:15px;flex-wrap:wrap}.toolbar input{flex:1;width:180px}.toolbar span{display:none}.content-footer span{display:none}.content-footer{justify-content:center}dialog{padding:18px}}
+
+.access-result{padding:18px 22px;margin:16px 0;border-left:4px solid #3865e8}.access-result.error{border-left-color:#c14343}.unavailable{background:#fafbfe}.app-card .enter-app{margin-top:12px;width:100%}
+
+#handover-dialog label:not(.choice){display:block;margin:14px 0}#handover-dialog input:not([type=checkbox]),#handover-dialog textarea{display:block;width:100%;margin-top:6px}#handover-dialog textarea{min-height:80px;border:1px solid #dce2eb;border-radius:7px;padding:12px;font:inherit;resize:vertical}#handover-dialog pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f7fb;padding:12px}#handover-dialog details{margin:14px 0}.handover-summary{background:#f5f7fb;padding:12px 18px;border-radius:8px}#handover-dialog .badge{margin:3px}
+
+
+.sidebar nav a{display:flex;align-items:center;gap:14px;padding:13px 16px;margin:5px 0;border-radius:9px;text-decoration:none;color:#718096;font-size:14px}
+.sidebar nav a.active{background:#edf3ff;color:#2859d9;font-weight:600}
+.sidebar nav a:hover{background:#f3f6fc}
+.user-filters{flex-wrap:wrap;align-items:flex-end;gap:12px}
+.user-filters label{display:flex;flex-direction:column;gap:8px;font-size:12px;color:#66758a}
+.user-filters select{max-width:270px;min-width:180px;border:1px solid #dce3ed;background:white;border-radius:8px;padding:11px;color:#24344d;font:inherit;font-size:14px;height:43px}
+.user-filters .keyword input{width:240px}
+.action-link{display:inline-flex;align-items:center;justify-content:center;gap:18px;min-height:44px;margin-top:8px;padding:11px 18px;border:1px solid #315cdb;border-radius:10px;font-size:13px;font-weight:600;line-height:20px;text-decoration:none;box-shadow:0 3px 8px #3865e81a;transition:background .18s ease,box-shadow .18s ease}
+.action-link svg{width:18px;height:18px;flex-shrink:0;transition:transform .18s ease}
+.action-link:hover{box-shadow:0 5px 12px #3865e829}
+.action-link:hover svg{transform:translateX(3px)}
+.action-link:active{background:#2149bf;box-shadow:none}
+@media(prefers-reduced-motion:reduce){.action-link,.action-link svg{transition:none}.action-link:hover svg{transform:none}}
+.workspace,.sidebar{min-width:0}
+.sidebar nav a{white-space:nowrap;flex-shrink:0}
+select:focus-visible,a:focus-visible{outline:3px solid #93b8ff;outline-offset:2px}
+dialog{max-height:88vh;overflow:auto}
+@media(max-width:760px){.user-filters label,.user-filters .keyword input,.user-filters select{width:100%;max-width:none}.sidebar nav a{padding:9px}.pagination{flex-wrap:wrap;gap:12px}}
+.prototype-bar{display:flex;align-items:center;gap:18px;background:#172d50;color:#e4ebfb;padding:10px 22px;font-size:12px;flex-wrap:wrap}
+.prototype-bar span{color:#b8c7e3}.prototype-bar button{margin-left:auto;background:#ffffff14;color:white;border:1px solid #ffffff30;padding:6px 12px}
+.prototype-note{font-size:12px;margin:18px 0}.prototype-hint{margin-bottom:20px;border:1px dashed #b9c9e8;border-radius:10px;padding:14px 18px;background:#edf3ff;color:#526787}
+.prototype-hint button{margin-left:12px}.prototype-hint small{margin-top:8px}
+select,textarea{font:inherit;border:1px solid #dce2eb;border-radius:8px;padding:11px 12px;background:white;color:#34445d}
+.login-card select{width:100%}.login-layout{min-height:calc(100vh - 57px)}
+#modal label:not(.choice){display:block;margin:14px 0}#modal select,#modal textarea,#modal input:not([type=checkbox]){width:100%;display:block;margin-top:7px}#modal textarea{min-height:88px;resize:vertical}
+#modal .choices input{width:16px}#modal footer{justify-content:flex-end}
+#modal label[hidden]{display:none}#notice{z-index:100}
+.shell{min-height:calc(100vh - 57px)}a{color:#3865e8}
+@media print{.prototype-bar,.sidebar,.topbar button,.page-heading button,#notice{display:none}.shell{display:block}.content{padding:0}.card{break-inside:avoid}.login-layout{display:block}.login-story{display:none}}
+@media(max-width:720px){.prototype-bar{gap:6px;padding:10px 16px}.prototype-bar span{width:100%;order:3}.prototype-bar button{margin-left:auto}.pagination{flex-wrap:wrap;gap:12px}}
+</style>
+</head>
+<body>
+<div class="prototype-bar"><strong>RBAC0 · 界面原型</strong><span>虚构数据 · 不连接后台 · 刷新即重置</span><button id="reset-demo">重置演示</button></div>
+<main id="app"></main>
+<div id="notice" role="status" aria-live="polite"></div>
+<dialog id="modal" aria-labelledby="modal-title"></dialog>
+<noscript>请启用 JavaScript 以使用本地交互原型。本文件不需要联网。</noscript>
+<script>
+'use strict';
+// 仅在内存中模拟交互，不发起网络请求，不写入数据库或浏览器持久化存储。
+const roleNames = ['系统管理员','公司领导','部门经理','项目经理','普通员工'];
+const applications = [
+  {id:0,name:'OA协同办公系统',code:'oa',description:'公文、协同与日常办公'},
+  {id:1,name:'工程项目管理系统',code:'pmis',description:'项目资料与工程管理'},
+  {id:2,name:'财务管理系统',code:'finance',description:'费用查询与财务管理'},
+  {id:3,name:'系统管理后台',code:'system',description:'业务应用目录中的管理系统'}
+];
+const permissions = [
+  {id:0,app:0,feature:'公文管理',action:'查看'},
+  {id:1,app:0,feature:'公文管理',action:'新增'},
+  {id:2,app:1,feature:'项目资料',action:'查看'},
+  {id:3,app:1,feature:'项目资料',action:'编辑'},
+  {id:4,app:2,feature:'费用记录',action:'查看'},
+  {id:5,app:2,feature:'费用记录',action:'审批'},
+  {id:6,app:3,feature:'系统配置',action:'查看'},
+  {id:7,app:3,feature:'系统配置',action:'配置'}
+];
+let users, rolePermissions, logs, actor=null, page='portal', query='', company='', department='', pageNumber=0;
+let selectedApp=null, revokedDemo=false, selectedIds=[], editorKind='', editorTarget=0, modalReturn=null, noticeTimer;
+const root=document.getElementById('app'), modal=document.getElementById('modal');
+const nav=[['portal','我的应用'],['dashboard','工作台'],['users','用户与授权'],['roles','角色与权限'],['apps','业务系统'],['logs','鉴权日志']];
+
+function initialData(){
+  users=[
+    {id:1,name:'示例员工甲',no:'DEMO001',phone:'13800000001',company:'总公司',department:'综合办公室',position:'职员',roles:[4],state:'EMPLOYED'},
+    {id:2,name:'示例员工乙',no:'DEMO002',phone:'13800000002',company:'总公司',department:'综合办公室',position:'主任',roles:[2,4],state:'EMPLOYED'},
+    {id:3,name:'示例员工丙',no:'DEMO003',phone:'13800000003',company:'道路工程分公司',department:'工程技术部',position:'项目经理',roles:[3,4],state:'EMPLOYED'},
+    {id:4,name:'示例员工丁',no:'DEMO004',phone:'13800000004',company:'道路工程分公司',department:'综合办公室',position:'职员',roles:[4],state:'EMPLOYED'},
+    {id:5,name:'示例员工戊',no:'DEMO005',phone:'',company:'桥梁工程分公司',department:'工程技术部',position:'工程师',roles:[4],state:'EMPLOYED'},
+    {id:6,name:'示例员工己',no:'DEMO006',phone:'13800000006',company:'桥梁工程分公司',department:'综合办公室',position:'负责人',roles:[1,4],state:'EMPLOYED'}
+  ];
+  rolePermissions=[[0,1,2,3,4,5,6,7],[0,2,4],[0,1,2],[0,2,3],[0,2]];
+  logs=[];
+}
+function esc(value){return String(value??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');}
+function label(state){return state==='HANDOVER'?'离职交接中':state==='DEPARTED'?'已离职':'在职';}
+function button(text,action,id='',classes='secondary'){return '<button type="button" class="'+classes+'" data-action="'+action+'" data-id="'+id+'">'+text+'</button>';}
+function badge(text,ok=true){return '<span class="badge '+(ok?'green':'red')+'">'+esc(text)+'</span>';}
+function notify(text){const n=document.getElementById('notice');n.textContent=text;n.className='visible';clearTimeout(noticeTimer);noticeTimer=setTimeout(function(){n.className='';},4500);}
+function person(id){for(const u of users)if(u.id===Number(id))return u;return null;}
+function admin(){return actor==='admin';}
+function roleText(ids){let list=[];for(const id of ids)list.push(roleNames[id]);return list.join('、')||'未分配角色';}
+function allowedPermissions(){
+  if(admin())return rolePermissions[0];
+  const u=person(1),out=[];
+  if(!actor||u.state==='DEPARTED'||revokedDemo)return out;
+  for(const r of u.roles)for(const p of rolePermissions[r])if(!out.includes(p))out.push(p);
+  return out;
+}
+function appCount(id){let count=0;for(const p of allowedPermissions())if(permissions[p].app===id)count++;return count;}
+function logEvent(app,allowed){logs.unshift({time:new Date().toISOString().slice(0,19).replace('T',' '),user:admin()?'demo-admin':'DEMO001',app:app.name,allowed});}
+function loginView(){
+  actor=null;closeModal();
+  root.innerHTML='<div class="login-layout"><section class="login-story"><div class="brand"><span class="mark">市</span> 市政集团 <small>课程设计 · 界面原型</small></div><div class="story"><div class="eyebrow">IDENTITY & ACCESS MANAGEMENT</div><h1>统一身份，<br>有序授权。</h1><p>连接人员、角色与业务系统，<br>让每一次访问都有据可依。</p><div class="diagram"><span>用户</span><i>—</i><span>角色</span><i>—</i><span>权限</span></div><small>统一认证 / 按角色授权 / 访问留痕</small></div><footer>UI-01 · 登录页</footer></section><section class="login-panel"><div class="login-card"><span class="pill">统一登录 · 演示</span><h2>欢迎回来</h2><p class="muted">请选择演示身份，无需输入真实账号密码。</p><form id="login-form"><label for="identity">演示身份</label><select id="identity"><option value="admin">系统管理员</option><option value="employee">普通员工 · 示例员工甲</option></select><p class="muted prototype-note">此处模拟认证结果；正式系统使用工号、手机号或用户名加密码登录。</p><button class="primary login-submit" type="submit">进入原型 →</button></form><div class="demo"><strong>建议演示路径</strong><p>管理员登录 → 工作台 → 用户筛选 → 分配角色 → 离职交接</p><p>普通员工登录 → 我的应用 → 模拟撤权 → 检查访问权限</p><p>顶部“重置演示”恢复所有虚构数据。</p></div></div><footer>无需服务、无需联网，双击 HTML 即可打开</footer></section></div>';
+}
+function shell(){
+  if(!actor)return loginView();
+  if(!admin()&&page!=='portal')page='portal';
+  let links='',title='';
+  for(const item of nav){if(item[0]===page)title=item[1];if(item[0]==='portal'||admin())links+='<button data-action="navigate" data-id="'+item[0]+'" class="'+(page===item[0]?'active':'')+'"><span>◇</span>'+item[1]+'</button>';}
+  root.innerHTML='<div class="shell"><aside class="sidebar"><div class="brand"><span class="mark">市</span><div>统一权限管理<small>市政集团 · 演示版</small></div></div><div class="nav-label">'+(admin()?'管理空间':'应用空间')+'</div><nav>'+links+'</nav><div class="sidebar-bottom"><span class="dot"></span> 静态交互原型<small>不执行真实认证与授权</small></div></aside><div class="workspace"><header class="topbar"><span>市政集团 <i>/</i> 权限管理平台</span><div class="profile"><span class="avatar">'+(admin()?'管':'甲')+'</span>'+(admin()?'系统管理员':'示例员工甲')+button('切换身份','logout','','text-button')+'</div></header><section class="content"><div class="page-heading"><div><div class="eyebrow">ACCESS CONSOLE / PROTOTYPE</div><h1>'+title+'</h1><p class="muted">依据课程设计文档制作 · 所有内容均为演示数据</p></div>'+button('↻ 刷新视图','refresh')+'</div><div id="view"></div><footer class="content-footer">RBAC0 · 课程界面原型<span>真实权限以 Spring Boot 后端校验为准</span></footer></section></div></div>';
+  const view=document.getElementById('view');
+  if(page==='dashboard')dashboard(view);
+  else if(page==='users')userView(view);
+  else if(page==='portal')portal(view);
+  else if(page==='roles')rolesView(view);
+  else if(page==='apps')appsView(view);
+  else logsView(view);
+}
+function dashboard(view){
+  view.innerHTML='<div class="welcome"><div><span class="pill">组织访问管理</span><h2>让权限清晰，让管理有序</h2><p>按组织查找人员，按角色配置权限，按流程完成交接。</p>'+button('进入用户授权 <span aria-hidden="true">→</span>','navigate','users','primary action-link')+'</div><div class="welcome-symbol" aria-hidden="true">◇</div></div><div class="metrics">'+metric('示例员工',users.length)+metric('授权角色',5)+metric('示例系统',4)+metric('示例权限',8)+'</div><div class="dashboard-columns"><section class="card panel"><h2>授权管理流程</h2><div class="step"><b>01</b><div><strong>按公司与部门定位员工</strong><p>支持组合筛选、电话展示和分页。</p></div></div><div class="step"><b>02</b><div><strong>维护角色与功能权限</strong><p>一个用户可持有多个角色，权限取并集。</p></div></div><div class="step"><b>03</b><div><strong>交接后集中撤权</strong><p>保留历史人员，停用账号并撤销登录会话。</p></div></div></section><section class="card panel"><h2>原型演示说明</h2><p class="muted">此处用 6 名虚构员工、4 个系统与 8 项权限展示主要交互，不是生产数据库统计。</p><p class="muted">授权编辑只影响当前 HTML 的内存状态；切换身份保留演示变更，刷新浏览器恢复初始状态。</p><p class="muted">本原型不展示尚未实现的用户新增、删除、修改或真实业务系统页面。</p><a href="02-界面设计文档.md">查看界面设计文档 →</a></section></div>';
+}
+function metric(name,value){return '<article class="card metric"><div>'+name+'</div><strong>'+value+'</strong><small>仅示例数据</small></article>';}
+function portal(view){
+  let available=0,cards='';
+  for(const a of applications){const n=appCount(a.id);if(n)available++;cards+='<article class="card app-card '+(n?'':'unavailable')+'"><span class="app-icon">'+a.name[0]+'</span>'+badge(n?'有权限':'无权限',!!n)+'<h2>'+a.name+'</h2><p>'+ (n?'已获授权 '+n+' 项示例功能':'未获授权、授权已回收或系统已停用')+'</p><p class="muted">暂未接入</p>'+button(n?'进入系统 →':'检查访问权限','enter',a.id)+'</article>';}
+  view.innerHTML='<div class="welcome"><div><span class="pill">我的应用</span><h2>'+available+' 个示例系统有权限访问</h2><p>授权与接入状态分别显示。每次点击按当前演示状态检查。</p></div></div><div class="prototype-hint">原型控制：'+(admin()?'切换为普通员工可演示授权被回收。':button(revokedDemo?'模拟恢复权限':'模拟后台撤权','revoke'))+'<small>此按钮仅用于原型讲解，正式系统没有该员工自助操作。</small></div><div id="access-result" role="status" aria-live="polite"></div><div class="app-grid">'+cards+'</div>';
+  if(selectedApp!==null)accessResult();
+}
+function accessResult(){const box=document.getElementById('access-result');if(!box)return;const ok=appCount(selectedApp)>0;box.className='card access-result '+(ok?'':'error');box.textContent=ok?'您有权限访问所选系统，但系统暂未接入。':'您当前无权限访问所选系统；授权可能已被回收。';}
+function userView(view){
+  let companies=[],departments=[],matches=[];
+  for(const u of users){if(!companies.includes(u.company))companies.push(u.company);if((!company||u.company===company)&&!departments.includes(u.department))departments.push(u.department);if((!company||u.company===company)&&(!department||u.department===department)&&(!query||(u.name+u.no+u.phone).includes(query)))matches.push(u);}
+  const pages=Math.max(1,Math.ceil(matches.length/3));pageNumber=Math.min(pageNumber,pages-1);
+  let co='<option value="">全部公司</option>',de='<option value="">全部部门</option>';
+  for(const c of companies)co+='<option '+(c===company?'selected':'')+'>'+esc(c)+'</option>';
+  for(const d of departments)de+='<option '+(d===department?'selected':'')+'>'+esc(d)+'</option>';
+  let rows='';
+  for(let i=pageNumber*3;i<Math.min(matches.length,pageNumber*3+3);i++){const u=matches[i];rows+='<tr><td><strong>'+u.name+'</strong></td><td class="mono">'+u.no+'</td><td class="mono nowrap">'+(u.phone||'—')+'</td><td>'+u.company+'<small>'+u.department+'</small></td><td>'+u.position+'</td><td>'+roleText(u.roles)+'</td><td>'+badge(u.state==='DEPARTED'?'已停用':'已启用',u.state!=='DEPARTED')+'<small>'+label(u.state)+'</small></td><td class="nowrap"><button class="text-button" data-action="user-role" data-id="'+u.id+'" '+(u.state==='DEPARTED'?'disabled':'')+'>分配角色</button>'+button('离职交接','handover',u.id,'text-button')+'</td></tr>';}
+  view.innerHTML='<section class="card"><form id="search-form" class="toolbar user-filters"><label>所属公司<select id="company">'+co+'</select></label><label>所属部门<select id="department">'+de+'</select></label><label class="keyword">员工搜索<input id="query" placeholder="姓名、工号或手机号" value="'+esc(query)+'"></label><button class="primary" type="submit">查询</button>'+button('重置','clear-filters')+'</form><div class="table-scroll"><table><thead><tr><th>员工</th><th>工号</th><th>电话</th><th>所属组织</th><th>岗位</th><th>当前角色</th><th>账号/人员状态</th><th>操作</th></tr></thead><tbody>'+(rows||'<tr><td colspan="8" class="empty">未找到匹配的用户</td></tr>')+'</tbody></table></div><div class="pagination"><span>共 '+matches.length+' 人 · 第 '+(pageNumber+1)+' / '+pages+' 页 · 原型每页 3 人</span><div><button class="secondary" data-action="previous" '+(pageNumber===0?'disabled':'')+'>上一页</button> <button class="secondary" data-action="next" '+(pageNumber+1>=pages?'disabled':'')+'>下一页</button></div></div></section><p class="prototype-note muted">正式页面每页 20 人。此原型缩短页长便于演示翻页；电话均为虚构占位数据。</p>';
+}
+function rolesView(view){
+  let html='<div class="role-grid">';
+  for(let i=0;i<roleNames.length;i++){let count=i===0?1:0;for(const u of users)if(u.roles.includes(i))count++;html+='<article class="card role-card"><span class="role-icon">◇</span>'+badge('已启用')+'<h2>'+roleNames[i]+'</h2><p class="muted">跨系统的功能权限集合</p><div class="role-counts"><div><strong>'+count+'</strong><small>示例关联用户</small></div><div><strong>'+rolePermissions[i].length+'</strong><small>示例操作权限</small></div></div>'+button('配置角色权限 →','role-permission',i)+'</article>';}
+  view.innerHTML=html+'</div>';
+}
+function appsView(view){let html='<div class="app-grid">';for(const a of applications)html+='<article class="card app-card"><span class="app-icon">'+a.name[0]+'</span>'+badge('已启用')+'<h2>'+a.name+'</h2><p>'+a.description+'</p><p class="muted">2 项示例权限 · 暂未接入</p><small>演示系统标识</small><code>'+a.code+'</code></article>';view.innerHTML=html+'</div><p class="muted prototype-note">仅展示 4 个代表性系统，正式目录当前有 18 个系统。</p>';}
+function logsView(view){let html='';for(const l of logs)html+='<tr><td>'+l.time+'</td><td>'+l.user+'</td><td>'+l.app+'</td><td>system:enter</td><td>'+badge(l.allowed?'允许':'拒绝',l.allowed)+'</td><td>'+(l.allowed?'有权限但暂未接入':'未获得有效授权')+'</td></tr>';view.innerHTML='<section class="card"><div class="toolbar"><strong>本次演示鉴权记录</strong><span class="muted">UTC · 刷新浏览器后清空</span></div><div class="table-scroll"><table><thead><tr><th>时间</th><th>账号</th><th>系统</th><th>权限编码</th><th>结果</th><th>原因</th></tr></thead><tbody>'+(html||'<tr><td colspan="6" class="empty">暂无记录。请先在“我的应用”中点击系统入口。</td></tr>')+'</tbody></table></div></section>';}
+function openModal(title,body,footer,formId){
+  modalReturn=document.activeElement;
+  modal.innerHTML='<form id="'+formId+'"><header><div><small>交互原型 · 不提交真实数据</small><h2 id="modal-title">'+esc(title)+'</h2></div>'+button('关闭','close')+'</header>'+body+'<p id="modal-error" class="error" role="alert"></p><footer>'+button('取消','close')+footer+'</footer></form>';
+  modal.showModal();
+}
+function closeModal(){if(modal.open)modal.close();if(modalReturn?.isConnected)modalReturn.focus();}
+function permissionLabel(p){return applications[p.app].name+' / '+p.feature+' / '+p.action;}
+function openEditor(kind,id){
+  editorKind=kind;editorTarget=Number(id);selectedIds=[];
+  const ids=kind==='users'?person(id).roles:rolePermissions[id];
+  for(const value of ids)selectedIds.push(value);
+  let html='';
+  const length=kind==='users'?roleNames.length:permissions.length;
+  for(let i=0;i<length;i++){const text=kind==='users'?roleNames[i]:permissionLabel(permissions[i]);html+='<label class="choice"><input type="checkbox" name="choice" value="'+i+'" '+(selectedIds.includes(i)?'checked':'')+'><span>'+esc(text)+'</span></label>';}
+  openModal(kind==='users'?person(id).name:roleNames[id],'<p class="muted">搜索只筛选显示项，保存保留其他已选项；取消全部选项表示回收全部授权。</p><input id="option-search" aria-label="筛选授权选项" placeholder="筛选选项…"><div class="choices">'+html+'</div><p id="selected-count">已选择 '+selectedIds.length+' 项</p>','<button class="primary" type="submit">保存演示授权</button>','editor-form');
+}
+function handover(id){
+  const u=person(id);editorTarget=u.id;
+  let body='<p>人员状态：<strong>'+label(u.state)+'</strong>　账号：'+(u.state==='DEPARTED'?'停用':'启用')+'</p><p>当前角色：'+roleText(u.roles)+'</p>';
+  let submit='';
+  if(u.state==='EMPLOYED'){
+    let options='<option value="">请选择示例员工</option>';
+    for(const p of users)if(p.id!==u.id&&p.state==='EMPLOYED')options+='<option value="'+p.id+'">'+p.name+'（'+p.no+'）</option>';
+    body+='<p class="muted">开始交接保留原有权限，接收人不会自动获得其角色。</p><label>交接接收人<select name="receiver" required>'+options+'</select></label><label>交接负责人<select name="owner" required>'+options+'</select></label><label>预计完成日期<input name="date" type="date" required></label><label>离职交接说明<textarea name="reason" maxlength="1000" required></textarea></label><label>OA 单号（可选）<input name="oa" maxlength="200"></label><small>原型采用示例人员下拉框；正式页面按工号录入并由后端验证。</small>';
+    submit='<button class="primary" type="submit">开始离职交接</button>';
+  }else{
+    body+='<div class="handover-summary"><p>接收人：'+esc(u.handover.receiver)+'</p><p>负责人：'+esc(u.handover.owner)+'</p><p>预计完成：'+esc(u.handover.date)+'</p><p>交接说明：'+esc(u.handover.reason)+'</p><p>OA 单号：'+esc(u.handover.oa||'未填写')+'</p></div>';
+    if(u.state==='HANDOVER'){body+='<p class="error">完成处置将模拟回收全部角色、停用账号并撤销会话。</p><label>完成交接说明<textarea name="note" maxlength="1000" required></textarea></label><label class="choice"><input name="confirmed" type="checkbox" required><span>确认交接完成，执行集中撤权与停用</span></label>';submit='<button class="primary" type="submit">完成离职处置</button>';}
+    else body+='<p>完成说明：'+esc(u.handover.note)+'</p><p>账号已停用，人员记录保留。重置演示可恢复初始状态。</p>';
+  }
+  openModal(u.name+' · 离职交接',body,submit,'handover-form');
+}
+document.addEventListener('click',function(event){
+  const b=event.target.closest('[data-action]');if(!b)return;
+  const action=b.dataset.action,id=b.dataset.id;
+  if(action==='close')return closeModal();
+  if(action==='logout')return loginView();
+  if(!actor)return;
+  if(action==='navigate'){page=id;pageNumber=0;selectedApp=null;shell();}
+  else if(action==='refresh')shell();
+  else if(action==='enter'){selectedApp=Number(id);logEvent(applications[selectedApp],appCount(selectedApp)>0);accessResult();}
+  else if(action==='revoke'&&!admin()){revokedDemo=!revokedDemo;shell();notify(revokedDemo?'已模拟后台撤权；请再次检查访问权限。':'已恢复演示授权。');}
+  else if(admin()){
+    if(action==='clear-filters'){query='';company='';department='';pageNumber=0;shell();}
+    else if(action==='previous'){pageNumber--;shell();}
+    else if(action==='next'){pageNumber++;shell();}
+    else if(action==='user-role'&&person(id).state!=='DEPARTED')openEditor('users',id);
+    else if(action==='role-permission')openEditor('roles',Number(id));
+    else if(action==='handover')handover(id);
+  }
+});
+document.addEventListener('change',function(event){
+  const e=event.target;
+  if(e.id==='company'){query=document.getElementById('query').value.trim();company=e.value;department='';pageNumber=0;shell();}
+  else if(e.id==='department'){query=document.getElementById('query').value.trim();department=e.value;pageNumber=0;shell();}
+  else if(e.name==='choice'){const value=Number(e.value);if(e.checked&&!selectedIds.includes(value))selectedIds.push(value);else if(!e.checked){const index=selectedIds.indexOf(value);if(index>=0)selectedIds.splice(index,1);}document.getElementById('selected-count').textContent='已选择 '+selectedIds.length+' 项';}
+});
+document.addEventListener('input',function(event){if(event.target.id==='option-search'){const q=event.target.value.toLowerCase();for(const item of modal.querySelectorAll('.choice'))item.hidden=!item.textContent.toLowerCase().includes(q);}});
+document.addEventListener('submit',function(event){
+  event.preventDefault();const form=event.target;
+  if(form.id==='login-form'){
+    const identity=document.getElementById('identity').value;
+    if(identity==='employee'&&person(1).state==='DEPARTED')return notify('示例员工甲已离职，账号停用；请重置演示或选择管理员。');
+    actor=identity;page='portal';selectedApp=null;shell();
+    let count=0,id=0;for(const a of applications)if(appCount(a.id)){count++;id=a.id;}
+    if(count===1){selectedApp=id;logEvent(applications[id],true);accessResult();notify('仅一个可用系统，已自动模拟准入校验。');}
+  }else if(form.id==='search-form'){query=document.getElementById('query').value.trim();pageNumber=0;shell();}
+  else if(admin()&&form.id==='editor-form'){
+    if(editorKind==='users')person(editorTarget).roles=selectedIds.slice();else rolePermissions[editorTarget]=selectedIds.slice();
+    closeModal();shell();notify('演示授权已保存，仅在此页面内生效。');
+  }else if(admin()&&form.id==='handover-form'){
+    const values=new FormData(form),u=person(editorTarget);
+    if(u.state==='EMPLOYED'){
+      const reason=String(values.get('reason')).trim();if(!reason){document.getElementById('modal-error').textContent='请输入交接说明。';return;}
+      u.handover={receiver:person(values.get('receiver')).name,owner:person(values.get('owner')).name,date:values.get('date'),reason,oa:values.get('oa')};u.state='HANDOVER';
+    }else if(u.state==='HANDOVER'){
+      const note=String(values.get('note')).trim();if(!values.get('confirmed')||!note){document.getElementById('modal-error').textContent='请填写完成说明并确认处置。';return;}
+      u.handover.note=note;u.state='DEPARTED';u.roles=[];
+    }
+    closeModal();shell();notify(u.state==='DEPARTED'?'演示处置完成：角色已回收，账号已停用。':'演示交接已开始，原权限保持不变。');
+  }
+});
+document.getElementById('reset-demo').onclick=function(){initialData();query='';company='';department='';pageNumber=0;selectedApp=null;revokedDemo=false;loginView();notify('已恢复全部示例数据。');};
+initialData();loginView();
+</script>
+</body>
+</html>
