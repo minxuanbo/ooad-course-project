@@ -46,14 +46,14 @@ select,textarea{font:inherit;border:1px solid #dce2eb;border-radius:8px;padding:
 </style>
 </head>
 <body>
-<div class="prototype-bar"><strong>RBAC0 · 界面原型</strong><span>虚构数据 · 不连接后台 · 刷新即重置</span><button id="reset-demo">重置演示</button></div>
+<div class="prototype-bar"><strong>RBAC0 · 界面原型</strong><span>纯离线演示 · 不连接后台 · 不执行业务操作</span><button id="reset-demo">重置演示</button></div>
 <main id="app"></main>
 <div id="notice" role="status" aria-live="polite"></div>
 <dialog id="modal" aria-labelledby="modal-title"></dialog>
 <noscript>请启用 JavaScript 以使用本地交互原型。本文件不需要联网。</noscript>
 <script>
 'use strict';
-// 仅在内存中模拟交互，不发起网络请求，不写入数据库或浏览器持久化存储。
+// 所有管理与应用鉴权交互均在页面内存中模拟，不连接真实后台。
 const roleNames = ['系统管理员','公司领导','部门经理','项目经理','普通员工'];
 const applications = [
   {id:0,name:'OA协同办公系统',code:'oa',description:'公文、协同与日常办公'},
@@ -237,5 +237,7 @@ document.addEventListener('submit',function(event){
 document.getElementById('reset-demo').onclick=function(){initialData();query='';company='';department='';pageNumber=0;selectedApp=null;revokedDemo=false;loginView();notify('已恢复全部示例数据。');};
 initialData();loginView();
 </script>
+<script src="原型权限清单.js"></script>
+<script src="原型应用鉴权.js"></script>
 </body>
 </html>

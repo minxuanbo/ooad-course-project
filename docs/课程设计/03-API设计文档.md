@@ -1,6 +1,10 @@
 # 市政公司统一权限管理系统——API设计文档
 
-版本：1.0；日期：2026-10-08；实现基线：ApiController、AuthService；数据库：MySQL 8。
+版本：1.1；日期：2026-10-15；设计依据：最新离线界面原型；数据库：MySQL 8。
+
+## 文档状态
+
+本文定义原型对应的目标接口契约，不表示接口已经全部实现。本次仅修改文档，离线原型不调用任何 API，正式前后端与 schema.sql 均未改动。API-05、API-06、API-18 及新增 API-22/23 以下述目标设计为准；其余接口保留现有实现基线。文中明确标注的“当前”行为用于说明兼容差异，不是建议照搬的目标行为。
 
 ## 1. 接口约定
 
@@ -10,7 +14,7 @@
 - 默认会话有效期 12 小时，expiresIn 单位为秒，无刷新令牌接口。
 - 登录接口无需认证；退出接口容许缺失令牌；其他接口要求认证。标为“管理员”的接口还检查有效系统管理员角色。
 - ID 为整数，业务标识如工号、电话、系统代码为字符串，不得按数字解析电话。
-- enabled、assigned、revoked、日志 allowed 通常为数值 0/1；鉴权响应 allowed、canManage 为 JSON 布尔值。本人系统列表 connected 为数值 0，准入响应 connected 为布尔 false。
+- enabled、assigned、revoked、日志 allowed 通常为数值 0/1；鉴权响应 allowed、canManage 为 JSON 布尔值。目标本人系统与准入接口不再返回 connected 字段；本次只设计功能权限演示，不承诺真实业务接入。
 - 查询返回对象或数组本身，不统一包裹 code/data。void 写接口成功返回 HTTP 200、空响应体，不是 204。
 - 页面/日志时间文本按 UTC 展示；日期字段为 YYYY-MM-DD，日志/交接时间通常 YYYY-MM-DD HH:mm:ss。数据库保存 DATETIME(3)，展示不保留毫秒。
 - 本文示例均为格式示例，目标 ID、数量及权限码应以实际查询返回为准，不使用示例值覆盖真实数据。
@@ -40,7 +44,7 @@
 | API-02 | POST /auth/logout | 可选令牌 | 撤销当前会话 |
 | API-03 | GET /me | 登录 | 身份、角色、管理资格 |
 | API-04 | GET /me/permissions | 登录 | 当前有效权限集合 |
-| API-05 | GET /me/applications | 登录 | 本人系统授权状态 |
+| API-05 | GET /me/applications | 登录 | 仅本人有权系统 |
 | API-06 | POST /me/applications/{id}/enter | 登录 | 实时准入并记录日志 |
 | API-07 | POST /authorize | 登录 | 功能级鉴权并记录日志 |
 | API-08 | GET /dashboard | 管理员 | 统计 |
@@ -57,6 +61,8 @@
 | API-19 | GET /users/{id}/handover | 管理员 | 交接详情与变更记录 |
 | API-20 | POST /users/{id}/handover | 管理员 | 开始交接 |
 | API-21 | POST /users/{id}/handover/complete | 管理员 | 完成离职处置 |
+| API-22 | GET /me/applications/{id}/modules | 登录且有系统权限 | 当前系统模块列表 |
+| API-23 | GET /me/applications/{id}/modules/{moduleId}/features | 登录且有系统权限 | 功能点及操作按钮状态 |
 
 ## 3. 认证与本人信息
 
@@ -114,36 +120,88 @@ GET /api/me/permissions?app=系统代码；app 可省略，提供时精确匹配
 
 ## 4. 系统准入与功能鉴权
 
-### API-05 本人系统列表
+### API-05 本人系统列表（目标变更）
 
-GET /api/me/applications 返回全部系统目录：
+GET /api/me/applications，只返回当前用户至少拥有一项有效操作权限的启用系统：
 
 ```json
 [
-  {"id":1,"code":"oa协同办公系统","name":"OA协同办公系统","enabled":1,"connected":0,"permissionCount":14}
+  {"id":1,"code":"oa协同办公系统","name":"OA协同办公系统","permissionCount":14}
 ]
 ```
 
-permissionCount 是该用户在系统下的当前有效权限数，去重且同时过滤角色、权限、系统状态。数量大于 0 代表当前可准入。列表保留无权和停用系统用于明确提示。connected 当前恒为 0，不是数据库中的持久化接入字段。
+有效权限要求账号、角色、系统、模块、功能点、操作类型和权限条目均有效，并存在用户—角色—权限关系；多角色权限取并集并去重。permissionCount 按不同权限 ID 计数，不保存为冗余字段。无权或停用系统不返回名称、ID 或目录；无授权返回 HTTP 200 和 []。
 
-### API-06 系统入口
+客户端返回 0 个系统时显示“暂无可用应用，请联系管理员分配权限”；1 个时调用 API-06 校验后进入；多个时显示选择页。管理员的“我的应用”也按本人权限过滤，完整系统目录另由管理员 API-17 提供。管理身份不自动绕过业务权限检查。
 
-POST /api/me/applications/{id}/enter；无请求体。id 为 applications.id。
+**现有实现差异：** 当前仍返回全部系统和 enabled/connected 字段，需后续修改查询和调用方，本次未实施。
+
+### API-06 系统入口（目标变更）
+
+POST /api/me/applications/{id}/enter，无请求体；id 为 applications.id。服务端重新检查当前数据库授权，不信任列表或按钮的历史状态。
 
 有权时 HTTP 200：
 
 ```json
 {
   "allowed":true,
-  "connected":false,
-  "message":"您有权限访问该系统，但系统暂未接入。",
-  "error":"您有权限访问该系统，但系统暂未接入。"
+  "application":{"id":1,"code":"oa协同办公系统","name":"OA协同办公系统"},
+  "next":"modules"
 }
 ```
 
-无权或停用时 HTTP 403，allowed=false，message/error 为当前无权提示；系统不存在返回 404 {"error":"系统不存在"}。当前成功响应也含 error 字段，这是现有兼容结构，客户端应按 HTTP/allowed 判断，不能仅凭出现 error 字段认定失败。
+next 是客户端视图指示，不是外部跳转 URL。随后读取 API-22；不再返回“暂未接入”，也不在成功响应中返回 error。该响应仅允许浏览本系统功能权限界面，不表示任何具体操作已经获准或执行业务。
 
-准入重新检查数据库，不信任上一次卡片状态。有效目标的允许与拒绝都写 authorization_logs，permission_code 使用 system:enter；不会实际执行业务跳转。
+无权、已撤权或停用系统返回 HTTP 403：
+
+```json
+{"allowed":false,"error":"无权访问该系统或授权已被回收"}
+```
+
+不附带系统名称、模块或功能内容；系统不存在返回 404，登录失效返回 401。已存在系统的准入允许与拒绝写入 authorization_logs，permission_code 使用 system:enter。客户端遇到 403 清空当前系统目录、退回“我的应用”并重载列表；401 清理身份并回到登录页。请求失败不得展示上一次缓存目录。
+
+**现有实现差异：** 当前成功响应为 allowed/connected/message/error；修改响应契约需同步调用方，本次未实施。
+
+### API-22 系统模块列表（新增设计，未实现）
+
+GET /api/me/applications/{id}/modules，无请求体。读取前再次检查当前用户的系统准入资格；不能只检查登录，也不能因 API-06 曾成功而放行。
+
+```json
+{
+  "applicationId":1,
+  "modules":[
+    {"id":10,"name":"公文管理","featureCount":5,"permissionCount":35,"grantedPermissionCount":3}
+  ]
+}
+```
+
+有系统权限后可浏览该系统所有启用模块，包括本人在该模块操作权限为 0 的模块，与原型一致。featureCount 是启用功能点数，permissionCount 是有效操作条目数，grantedPermissionCount 是本人有效权限去重数，均实时查询派生。模块按 sort_order、id 排序；合法空目录返回 modules:[]。无系统权限返回 403，不返回模块信息；未知系统 404；无效会话 401。
+
+### API-23 模块功能点与操作（新增设计，未实现）
+
+GET /api/me/applications/{id}/modules/{moduleId}/features，无请求体。先检查系统权限，再验证模块属于该系统且启用；无系统权限 403，模块不存在、已停用或不属于该系统 404。
+
+```json
+{
+  "applicationId":1,
+  "moduleId":10,
+  "features":[
+    {
+      "id":100,
+      "name":"收文登记与流转",
+      "description":"支持外部来文登记、公文要素识别与流转路径配置",
+      "operations":[
+        {"permissionId":1000,"permissionCode":"oa协同办公系统:公文管理:收文登记与流转:read","actionCode":"read","label":"查看","allowed":true},
+        {"permissionId":1001,"permissionCode":"oa协同办公系统:公文管理:收文登记与流转:update","actionCode":"update","label":"编辑","allowed":false}
+      ]
+    }
+  ]
+}
+```
+
+ID 仅为格式示例，以真实查询为准。功能点按 sort_order、id 排序，操作按操作字典 sort_order、code 排序。只返回启用功能和已登记的有效操作，不为每个功能强制生成七种操作；Excel 中“全部”的初始化展开规则仍适用。操作集合空时 operations:[]，功能集合空时 features:[]。
+
+allowed 由本人所有有效角色权限并集计算，不是客户端提交项。false 的按钮灰色且 disabled，不能触发操作；true 也只是本次查询的展示状态，点击仍须 API-07 校验。description 来自功能点表，不在每个操作权限中重复保存。API-22/23 的正常目录读取不产生日志，避免刷新带来大量鉴权操作记录；系统准入和显式操作鉴权仍记录。
 
 ### API-07 操作鉴权
 
@@ -166,6 +224,8 @@ POST /api/authorize：
 ```
 
 授权拒绝仍为 HTTP 200，但 allowed=false；不要与 API-06 的 403 混淆。appCode/permissionCode 缺失时当前实现按不允许处理并记录日志，不一定返回 400。无效会话先返回 401。
+
+目标校验须沿 permissions → features → modules → applications 检查归属与全部启用状态，并检查 actions.enabled，不能使用客户端提供的系统名替代归属校验。客户端仅对可用按钮发起本接口；服务端仍独立检查，不因按钮可用而信任请求。allowed=false 时提示拒绝并重新加载应用列表与当前目录，无权限系统须退出。目录响应中的 allowed 与本接口结果不得持久化为用户授权。
 
 当前 requestId 只用于日志关联，不是幂等键，重复调用会重复写鉴权记录。后端业务必须在 allowed=true 后才执行业务操作；此接口不替业务系统读写其业务数据。当前没有独立的调用方客户端凭证、OAuth2/OIDC 或服务间签名认证，真实接入前必须补齐可信服务边界。
 
@@ -233,7 +293,9 @@ GET /api/applications，返回数组项：id、code、name、enabled、permissio
 
 ### API-18 鉴权日志
 
-GET /api/authorization-logs?limit=100。默认 100，最大 500；当前代码未规范化负数，调用方应限定 1–500，后续补充服务端校验。
+GET /api/authorization-logs?limit=100，仅系统管理员可访问。普通员工不显示日志入口或日志页面，即使直接调用接口也返回 403，且不返回日志条目。员工操作仍被服务端记录，管理员查询可包含员工记录，不提供员工个人日志接口。
+
+目标 limit 默认 100，取值 1–500，非法类型或越界返回 400；当前代码仅限制最大值，尚需补齐校验。管理资格每次请求重查，失去管理权限后客户端清空已加载日志并退出日志页。
 
 返回数组项：id、occurredAt、username、appCode、permissionCode、allowed、requestId、reason。按 id 降序，时间 UTC；requestId 可为 null。无高级过滤、游标或全量导出接口。
 
@@ -327,7 +389,16 @@ note 非空、最长 1000；confirmed 当前请求模型是 Map&lt;String,String
 
 事务内依次锁定目标用户和交接记录、保存原角色快照、删除所有用户角色、将账号置 DISABLED、撤销全部会话、更新 DEPARTED 与完成信息、写 COMPLETE_HANDOVER。成功 200 空体。已经 DEPARTED 的重复请求直接成功，不重复处置和日志；保留用户与交接记录。
 
-## 8. 接入和兼容性说明
+## 8. 页面流程与权限变化（目标设计）
+
+1. 登录后读取 /me 和 API-05；只有 canManage=true 才展示管理导航和日志入口。员工仅显示个人应用。
+2. 进入应用调用 API-06，获准后调用 API-22；选择模块调用 API-23。直接访问目录也必须经服务端检查，前端路由不构成安全边界。
+3. 正式实现可在应用页每 3 秒及窗口重新聚焦时刷新授权列表与当前目录；这是未来在线实现建议，纯离线原型不轮询、不发请求。显示可能有短暂延迟，实际按钮操作始终逐次鉴权。
+4. 权限减少时更新按钮；当前系统有效权限归零时清空目录、返回“我的应用”并隐藏该系统。全部应用无权时显示空态。新授权下次查询可见，不能依赖登录时权限快照。
+5. 网络故障时暂停操作并清空不可确认的目录，不使用旧 allowed=true 放行；401 回登录，403 按失去系统或管理权限处理，404 清除失效目录目标。
+6. 查询和鉴权不得写入业务数据。本阶段不设计“执行新增/编辑/审批”的通用业务端点；以后接入实际业务时必须在业务服务执行边界再次校验，解决鉴权成功到业务提交之间的权限变化问题。
+
+## 9. 接入和兼容性说明
 
 1. 数据库迁移未改变公开 URL；SQLite 字符串时间改为 MySQL UTC 时间类型后，响应仍保持页面可读的字符串。
 2. 业务系统应从本权限服务验证令牌代表的用户，不能自行提交 userId 冒充他人。
@@ -336,6 +407,23 @@ note 非空、最长 1000；confirmed 当前请求模型是 Map&lt;String,String
 5. 当前没有创建/修改/删除用户、创建角色、注册系统、HR 同步、OAuth 回调、密码重置等接口；不得虚构对接地址。
 6. 生产化还需 HTTPS、限流、输入长度统一校验、稳定错误码、服务身份认证和凭据生命周期管理。
 
-## 9. 文档与测试对应
+## 10. 文档与测试对应
 
 API-09/10/11 的组合筛选、API-12/13 的越权限制、API-06 撤权/恢复、API-19/20/21 生命周期在 AccessBoundaryTest 中覆盖。MySQL 读接口回归检查统计、角色、权限目录、日志与本人权限；不等于全部并发、性能和故障场景已验证。流程与实现细节见[详细设计](05-详细设计文档.md)。
+
+### 10.1 本次设计的待实现验收
+
+| 场景 | 目标结果 |
+|---|---|
+| 员工无财务系统权限 | API-05 不返回财务系统；直接准入或读其模块/功能返回 403，无目录内容 |
+| 仅有 OA 查看权限 | OA 可进入；对应查看 allowed=true，未授权操作 false |
+| 多角色重复授权 | 权限按 ID 去重，任一有效角色授予即可允许 |
+| 后台撤销系统全部权限 | 下一次目录请求 403、列表移除系统、操作 allowed=false |
+| 后台撤销单项操作 | 系统其他权限保留时可继续进入，该按钮变灰；直接鉴权拒绝 |
+| 普通员工访问日志 | 导航不可见，直接请求 403；管理员仍可查询员工操作记录 |
+| 部门/功能点改名 | ID 与既有 permissionCode 不变，显示名称通过关联更新 |
+| 模块或功能点停用 | 其权限不再贡献准入计数，目录不可读，操作鉴权拒绝 |
+| 跨系统 moduleId | 在有权系统路径中使用其他系统模块 ID 返回 404 |
+| 请求失败/登录失效 | 不复用旧权限放行，清理不可确认内容 |
+
+本表是待实现的验收要求，不代表现有测试已覆盖。API-22/23 依赖数据库目标设计中的模块、功能点与操作字典；实施时需要独立迁移并保留原权限 ID 与 code，见数据库设计第 10 节。
