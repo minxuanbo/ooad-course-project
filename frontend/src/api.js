@@ -33,8 +33,11 @@ export async function api(path, method = 'GET', body) {
       setToken('')
       notify('登录已失效或账号已停用，请重新登录。')
     }
-    throw Error(data?.error || data?.message || '请求失败：' + response.status)
+    const error = Error(data?.error || data?.message || '请求失败：' + response.status)
+    error.status = response.status
+    throw error
   }
+  if (session.token !== requestToken) throw Error('登录身份已改变，请重新加载。')
   return data
 }
 export async function refreshSession() {

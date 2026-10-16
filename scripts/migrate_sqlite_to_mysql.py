@@ -44,7 +44,10 @@ def main():
     config = json.loads((LOCAL / "credentials.json").read_text())
     def run(sql):
         return client(sql, "rbac", config["rbac"], "rbac")
-    run((ROOT / "src/main/resources/schema.sql").read_text())
+    # Import against the historical layout first; never insert old columns into V2.
+    if int(run("SELECT count(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='companies';").strip()):
+        sys.exit("Target already has V2 tables. Use a separate empty legacy target; refusing to overwrite.")
+    run((ROOT / "scripts/migrations/001-legacy-mysql.sql").read_text())
     for table in TABLES:
         if int(run(f"SELECT COUNT(*) FROM {table};").strip()):
             sys.exit("Target is not empty: " + table + ". Refusing to overwrite.")
@@ -104,6 +107,8 @@ def main():
     report.append("Source retained unchanged. Backup: " + str(backup))
     (LOCAL / "migration-report.txt").write_text("\n".join(report) + "\n")
     print("\n".join(report))
+    from normalize_mysql import migrate
+    migrate("rbac", apply=True)
 
 
 if __name__ == "__main__":

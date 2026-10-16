@@ -102,11 +102,11 @@ class AccessBoundaryTest {
     long app=0;
     for(JsonNode a:json.readTree(response))if(a.get("permissionCount").asInt()>0){app=a.get("id").asLong();break;}
     assertTrue(app>0);
-    mvc.perform(post("/api/me/applications/"+app+"/enter").header("Authorization",employee)).andExpect(status().isOk()).andExpect(jsonPath("$.connected").value(false));
+    mvc.perform(post("/api/me/applications/"+app+"/enter").header("Authorization",employee)).andExpect(status().isOk()).andExpect(jsonPath("$.next").value("modules"));
     mvc.perform(put("/api/users/"+uid+"/roles").header("Authorization",manager).contentType("application/json").content("{\"ids\":[]}")).andExpect(status().isOk());
     mvc.perform(post("/api/me/applications/"+app+"/enter").header("Authorization",employee)).andExpect(status().isForbidden());
     response=mvc.perform(get("/api/me/applications").header("Authorization",employee)).andReturn().getResponse().getContentAsString();
-    for(JsonNode a:json.readTree(response))assertEquals(0,a.get("permissionCount").asInt());
+    assertEquals(0,json.readTree(response).size());
     mvc.perform(put("/api/users/"+uid+"/roles").header("Authorization",manager).contentType("application/json").content("{\"ids\":["+role+"]}")).andExpect(status().isOk());
     mvc.perform(post("/api/me/applications/"+app+"/enter").header("Authorization",employee)).andExpect(status().isOk());
     db.update("UPDATE roles SET enabled=0 WHERE id=?",role);
@@ -124,9 +124,9 @@ class AccessBoundaryTest {
   }
   @Test void userFiltersCombineCompanyDepartmentAndPhoneWithAccuratePagination()throws Exception{
     String manager=login("admin","admin123");
-    var user=db.queryForMap("SELECT company,department_id,phone FROM users WHERE username='SG010000'");
+    var user=db.queryForMap("SELECT c.name company,u.department_id,u.phone FROM users u JOIN departments d ON d.id=u.department_id JOIN companies c ON c.id=d.company_id WHERE username='SG010000'");
     String company=user.get("company").toString(),dept=user.get("department_id").toString(),phone=user.get("phone").toString();
-    int expected=db.queryForObject("SELECT count(*) FROM users WHERE company=? AND department_id=?",Integer.class,company,user.get("department_id"));
+    int expected=db.queryForObject("SELECT count(*) FROM users u JOIN departments d ON d.id=u.department_id JOIN companies c ON c.id=d.company_id WHERE c.name=? AND u.department_id=?",Integer.class,company,user.get("department_id"));
     mvc.perform(get("/api/users/page").header("Authorization",manager).param("company",company).param("departmentId",dept).param("size","1"))
       .andExpect(status().isOk()).andExpect(jsonPath("$.total").value(expected))
       .andExpect(jsonPath("$.items.length()").value(1)).andExpect(jsonPath("$.items[0].company").value(company))
@@ -145,7 +145,7 @@ class AccessBoundaryTest {
     assertTrue(filters.get("companies").size()>0);
     assertTrue(filters.get("departments").size()>0);
     for(JsonNode d:filters.get("departments"))
-      assertTrue(db.queryForObject("SELECT count(*) FROM users WHERE company=? AND department_id=?",Integer.class,company,d.get("id").asLong())>0);
+      assertTrue(db.queryForObject("SELECT count(*) FROM users u JOIN departments d ON d.id=u.department_id JOIN companies c ON c.id=d.company_id WHERE c.name=? AND u.department_id=?",Integer.class,company,d.get("id").asLong())>0);
     mvc.perform(get("/api/users/filters").header("Authorization",manager).param("company","不存在的公司"))
       .andExpect(jsonPath("$.departments.length()").value(0));
     mvc.perform(get("/api/users").header("Authorization",manager).param("q",phone).param("company",company))

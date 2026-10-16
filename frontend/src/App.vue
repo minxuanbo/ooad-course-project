@@ -8,7 +8,7 @@ const nav = [['portal','我的应用'],['dashboard','工作台'],['users','用�
 let timer, syncing = false
 async function logout() {
   try { await api('/auth/logout', 'POST'); setToken(''); await router.replace('/login') }
-  catch (error) { notify(error.message) }
+  catch (error) { notify(error.message); setToken(''); await router.replace('/login') }
 }
 async function sync() {
   if (!session.token || route.path === '/login' || syncing) return
@@ -21,7 +21,7 @@ async function sync() {
       notify('后台管理权限已回收，已返回我的应用。')
       await router.replace('/portal')
     }
-  } catch (error) { notify(error.message) }
+  } catch (error) { session.me = null; notify(error.message); await router.replace('/login') }
   finally { syncing = false }
 }
 watch(function() { return session.token }, function(token) { if (!token) router.replace('/login') })

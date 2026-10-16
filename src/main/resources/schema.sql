@@ -1,11 +1,23 @@
 -- MySQL 8.0.16+ / 8.4, InnoDB, UTF-8; all DATETIME values are UTC.
+CREATE TABLE IF NOT EXISTS companies (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  code VARCHAR(100) NOT NULL UNIQUE,
+  name VARCHAR(191) NOT NULL UNIQUE,
+  enabled TINYINT NOT NULL DEFAULT 1,
+  CHECK (enabled IN (0,1))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
 CREATE TABLE IF NOT EXISTS departments (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  name VARCHAR(191) NOT NULL UNIQUE,
-  manager_name VARCHAR(100),
+  company_id BIGINT NOT NULL,
+  code VARCHAR(100) NOT NULL UNIQUE,
+  name VARCHAR(191) NOT NULL,
+  manager_user_id BIGINT,
   parent_id BIGINT,
   enabled TINYINT NOT NULL DEFAULT 1,
-  FOREIGN KEY (parent_id) REFERENCES departments(id),
+  UNIQUE KEY uk_department_name (company_id,name),
+  UNIQUE KEY uk_department_company_id (company_id,id),
+  FOREIGN KEY (company_id) REFERENCES companies(id),
+  FOREIGN KEY (company_id,parent_id) REFERENCES departments(company_id,id),
   CHECK (enabled IN (0,1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
 CREATE TABLE IF NOT EXISTS users (
@@ -14,7 +26,6 @@ CREATE TABLE IF NOT EXISTS users (
   username VARCHAR(100) NOT NULL UNIQUE,
   name VARCHAR(100) NOT NULL,
   phone VARCHAR(32) UNIQUE,
-  company VARCHAR(191),
   department_id BIGINT,
   position VARCHAR(191),
   password_hash VARCHAR(100) NOT NULL,
@@ -23,8 +34,7 @@ CREATE TABLE IF NOT EXISTS users (
   FOREIGN KEY (department_id) REFERENCES departments(id),
   CHECK (status IN ('ACTIVE','DISABLED')),
   INDEX idx_users_name (name),
-  INDEX idx_users_dept (department_id),
-  INDEX idx_users_company_dept (company,department_id)
+  INDEX idx_users_dept (department_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
 CREATE TABLE IF NOT EXISTS applications (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -33,17 +43,49 @@ CREATE TABLE IF NOT EXISTS applications (
   enabled TINYINT NOT NULL DEFAULT 1,
   CHECK (enabled IN (0,1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
-CREATE TABLE IF NOT EXISTS permissions (
+CREATE TABLE IF NOT EXISTS modules (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   app_id BIGINT NOT NULL,
-  module_name VARCHAR(191) NOT NULL,
-  feature_name VARCHAR(191) NOT NULL,
-  action VARCHAR(32) NOT NULL,
-  code VARCHAR(512) NOT NULL UNIQUE,
-  description TEXT,
+  code VARCHAR(100) NOT NULL,
+  name VARCHAR(191) NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
   enabled TINYINT NOT NULL DEFAULT 1,
   FOREIGN KEY (app_id) REFERENCES applications(id),
-  UNIQUE KEY uk_permission_function (app_id,module_name,feature_name,action),
+  UNIQUE KEY uk_module_code (app_id,code),
+  UNIQUE KEY uk_module_name (app_id,name),
+  INDEX idx_module_sort (app_id,sort_order,id),
+  CHECK (sort_order>=0), CHECK (enabled IN (0,1))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
+CREATE TABLE IF NOT EXISTS features (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  module_id BIGINT NOT NULL,
+  code VARCHAR(100) NOT NULL,
+  name VARCHAR(191) NOT NULL,
+  description TEXT,
+  sort_order INT NOT NULL DEFAULT 0,
+  enabled TINYINT NOT NULL DEFAULT 1,
+  FOREIGN KEY (module_id) REFERENCES modules(id),
+  UNIQUE KEY uk_feature_code (module_id,code),
+  UNIQUE KEY uk_feature_name (module_id,name),
+  INDEX idx_feature_sort (module_id,sort_order,id),
+  CHECK (sort_order>=0), CHECK (enabled IN (0,1))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
+CREATE TABLE IF NOT EXISTS actions (
+  code VARCHAR(32) PRIMARY KEY,
+  name VARCHAR(32) NOT NULL UNIQUE,
+  sort_order INT NOT NULL DEFAULT 0,
+  enabled TINYINT NOT NULL DEFAULT 1,
+  CHECK (sort_order>=0), CHECK (enabled IN (0,1))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
+CREATE TABLE IF NOT EXISTS permissions (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  feature_id BIGINT NOT NULL,
+  action_code VARCHAR(32) NOT NULL,
+  code VARCHAR(512) NOT NULL UNIQUE,
+  enabled TINYINT NOT NULL DEFAULT 1,
+  FOREIGN KEY (feature_id) REFERENCES features(id),
+  FOREIGN KEY (action_code) REFERENCES actions(code),
+  UNIQUE KEY uk_permission_function (feature_id,action_code),
   CHECK (enabled IN (0,1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
 CREATE TABLE IF NOT EXISTS roles (
