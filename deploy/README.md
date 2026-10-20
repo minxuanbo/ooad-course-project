@@ -31,7 +31,6 @@ secrets；密码不要出现在 Git、命令参数或聊天输出中。已有 se
 ```bash
 export RBAC_BACKEND_IMAGE=实际后端镜像地址及摘要
 export RBAC_MYSQL_IMAGE=实际MySQL镜像地址及摘要
-docker stack config -c deploy/stack.yml
 docker stack deploy --with-registry-auth -c deploy/stack.yml rbac
 docker stack services rbac
 docker service logs --tail 100 rbac_backend

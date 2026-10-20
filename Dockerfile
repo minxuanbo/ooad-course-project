@@ -1,5 +1,6 @@
 FROM swr.cn-north-4.myhuaweicloud.com/oomall-javaee/openjdk@sha256:cab51c50750848d1f3da11f57d9994be445db7bf06d2916408fac65ad389469b AS build
 WORKDIR /build
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk
 RUN wget -q https://repo.huaweicloud.com/apache/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz \
     && tar -xzf apache-maven-3.9.9-bin.tar.gz -C /opt
 COPY deploy/maven-settings.xml /opt/maven-settings.xml
