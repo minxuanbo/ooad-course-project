@@ -12,7 +12,6 @@ FROM swr.cn-north-4.myhuaweicloud.com/oomall-javaee/openjdk@sha256:cab51c5075084
 WORKDIR /app
 RUN addgroup -g 10001 rbac && adduser -D -u 10001 -G rbac rbac
 COPY --from=build /build/target/rbac0-0.1.0.jar /app/app.jar
-COPY 市政公司员工信息表.xlsx 市政公司部门信息表.xlsx 市政公司应用软件功能权限清单.xlsx /app/source/
 USER 10001:10001
 ENV RBAC_SOURCE_DIR=/app/source PORT=8081
 EXPOSE 8081
