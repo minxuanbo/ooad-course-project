@@ -6,6 +6,8 @@ set -eu
 project_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 test_name="rbac-test-$(date +%s)-$$"
 test_dir=$(mktemp -d)
+report_dir="$project_dir/reports/jacoco/$(date -u +%Y%m%dT%H%M%SZ)-$$"
+mkdir -p "$report_dir"
 cleanup() {
   docker rm -fv "$test_name" >/dev/null 2>&1 || true
   docker network rm "$test_name" >/dev/null 2>&1 || true
@@ -43,5 +45,18 @@ if [ "$ready" != true ]; then
   exit 1
 fi
 docker run --rm --network "$test_name" --memory 800m \
-  --env-file "$test_dir/test.env" -v "$project_dir:/source:ro" "$RBAC_BUILD_IMAGE" \
-  sh -c 'cp /source/*.xlsx /build/ && /opt/apache-maven-3.9.9/bin/mvn -B -ntp -s /opt/maven-settings.xml -DargLine=-Xmx384m test'
+  --env-file "$test_dir/test.env" -v "$project_dir:/source:ro" \
+  -v "$report_dir:/reports" "$RBAC_BUILD_IMAGE" \
+  sh -c '
+    cp /source/*.xlsx /build/ || exit 1
+    /opt/apache-maven-3.9.9/bin/mvn -B -ntp -s /opt/maven-settings.xml clean verify
+    result=$?
+    if [ "$result" -eq 0 ]; then
+      test -s target/site/jacoco/index.html && test -s target/jacoco.exec || exit 1
+      cp -R target/site/jacoco/. /reports/ || exit 1
+      cp target/jacoco.exec /reports/ || exit 1
+    fi
+    exit "$result"
+  '
+# Surefire XML may contain datasource credentials; never export it with public reports.
+printf 'JaCoCo report: %s/index.html\n' "$report_dir"
