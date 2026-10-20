@@ -1,0 +1,9 @@
+**
+!pom.xml
+!src/
+!src/**
+!deploy/
+!deploy/maven-settings.xml
+!市政公司员工信息表.xlsx
+!市政公司部门信息表.xlsx
+!市政公司应用软件功能权限清单.xlsx

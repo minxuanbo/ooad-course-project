@@ -1,0 +1,102 @@
+version: "3.8"
+
+services:
+  mysql:
+    image: ${RBAC_MYSQL_IMAGE}
+    environment:
+      MYSQL_DATABASE: rbac
+      MYSQL_USER: rbac
+      MYSQL_PASSWORD_FILE: /run/secrets/rbac_db_password
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/rbac_mysql_root_password
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_bin
+      - --innodb-buffer-pool-size=128M
+      - --max-connections=40
+      - --performance-schema=OFF
+      - --mysqlx=OFF
+    secrets:
+      - rbac_db_password
+      - rbac_mysql_root_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 --silent"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 120s
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == course-worker-mysql
+      resources:
+        reservations:
+          memory: 256M
+        limits:
+          memory: 512M
+      restart_policy:
+        delay: 15s
+      update_config:
+        order: stop-first
+
+  backend:
+    image: ${RBAC_BACKEND_IMAGE}
+    environment:
+      RBAC_DB_URL: jdbc:mysql://mysql:3306/rbac?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&allowPublicKeyRetrieval=true&useSSL=false
+      RBAC_DB_USER: rbac
+      RBAC_INITIALIZE: "true"
+      SPRING_CONFIG_IMPORT: configtree:/run/secrets/
+      JAVA_TOOL_OPTIONS: -Xms64m -Xmx256m -XX:MaxMetaspaceSize=160m -XX:ReservedCodeCacheSize=64m -XX:+ExitOnOutOfMemoryError
+    secrets:
+      - source: rbac_db_password
+        target: spring.datasource.password
+    networks:
+      - backend
+    ports:
+      - target: 8081
+        published: 8081
+        protocol: tcp
+        mode: host
+    healthcheck:
+      test: ["CMD-SHELL", "wget -S -O /dev/null --header='Authorization: Bearer healthcheck' http://127.0.0.1:8081/api/me 2>&1 | grep -q 'HTTP/1.1 401'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == course-worker-app
+      resources:
+        reservations:
+          memory: 256M
+        limits:
+          memory: 512M
+      restart_policy:
+        delay: 20s
+      update_config:
+        parallelism: 1
+        order: stop-first
+        failure_action: rollback
+      rollback_config:
+        order: stop-first
+
+networks:
+  backend:
+    driver: overlay
+    driver_opts:
+      encrypted: ""
+
+volumes:
+  mysql_data:
+
+secrets:
+  rbac_db_password:
+    external: true
+  rbac_mysql_root_password:
+    external: true
