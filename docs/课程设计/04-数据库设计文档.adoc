@@ -1,0 +1,402 @@
+= 市政公司统一权限管理系统：数据库设计文档
+:lang: zh-CN
+:toc:
+:toclevels: 3
+:sectnums:
+:revnumber: 2.0
+:revdate: 2026-10-21
+
+== 范围与依据
+
+本文规定 RBAC0 系统的数据模型、字段、完整性约束、索引及事务边界。
+数据库划分为组织人员、权限目录、授权关系、会话与审计四个领域，共设计 *15 张表*。
+逐表 SQL 字典给出可实现的物理结构；程序应遵守这些数据约束。
+
+模型为 RBAC0：用户与角色多对多、角色与权限多对多。
+不包含角色继承、互斥角色、直接用户权限、数据行级授权。
+组织树用于人员归属，不自动形成角色继承或管理范围。
+
+== 数据存储与连接约定
+
+[cols="1,3",options="header"]
+|===
+|项目 |设计约定
+|数据库 |MySQL 8.0.16+，建议采用 8.4 长期支持版本
+|存储 |InnoDB，utf8mb4，utf8mb4_0900_bin
+|业务库与测试库 |rbac 与独立临时实例中的 rbac_test；测试不能指向业务库
+|实体主键 |BIGINT 自增；关联表使用复合主键
+|时间 |DATETIME(3) 记录 UTC 事件时间，DATE 保存预计完成日期
+|连接 |JDBC connectionTimeZone=UTC、forceConnectionTimeZoneToSession=true
+|隔离 |HikariCP 最大 10 连接，READ COMMITTED
+|凭据 |通过外部配置提供；不写入源码或设计文档
+|===
+
+手机号和工号按字符串保存，保留前导零。布尔字段使用 TINYINT 和 CHECK 约束。
+无手机号导入 NULL；唯一索引允许多个 NULL。登录别名区分大小写。
+
+== 实体关系与规范化
+
+[cols="2,3,3",options="header"]
+|===
+|关系 |基数 |约束/语义
+|公司—部门 |1:N |departments.company_id 指向 companies
+|部门—子部门 |1:N |复合外键保证父子属于同一公司；parent_id 可空
+|部门—员工 |1:N |users.department_id 可空，管理员可无部门
+|部门—负责人 |N:1 |manager_user_id 指向 users；不自动授予管理员角色
+|应用—模块—功能点 |逐级 1:N |applications → modules → features
+|功能点—动作 |经 permissions 关联 |同一 feature_id/action_code 唯一
+|用户—角色 |M:N |user_roles，复合主键消除重复
+|角色—权限 |M:N |role_permissions，复合主键消除重复
+|用户—会话 |1:N |sessions 存令牌摘要，不存明文令牌
+|用户—离职交接 |1:0..1 |handovers.user_id 为主键
+|===
+
+公司名称只在 companies 保存，用户通过部门取得公司；不在 users 重复保存公司名称。
+功能说明只在 features 保存；permissions 不重复存系统、模块、功能名称。
+动作由 actions 统一编码。重命名功能不要求修改权限主键，已有角色关联保持。
+权限 code 是独立业务标识，不假定所有重命名操作会同步重建 code。
+
+审计日志保存用户名、系统码、权限码等事件快照。authorization_logs.user_id、
+authorization_changes.operator_id/target_id 是逻辑引用，不设物理外键，
+以避免主体变化破坏历史。target_id 是随 target_type 解释的多态目标。
+
+== 业务字段说明
+
+[cols="1,4",options="header"]
+|===
+|表 |字段语义
+|companies |code 为唯一公司编码，name 为唯一名称，enabled 为启用标记。
+|departments |code 全局唯一；name 在公司内唯一；company_id 为归属；parent_id 为同公司父部门；manager_user_id 为负责人。
+|users |employee_no 工号、username 登录名、name 姓名、phone 手机号；position 岗位；password_hash 为 BCrypt；status 为 ACTIVE/DISABLED。
+|applications |业务系统目录，code/name 唯一；没有真实业务入口 URL 或客户端密钥字段。
+|modules |app_id 所属系统；code/name 在系统内唯一；sort_order 控制排序。
+|features |module_id 所属模块；code/name 在模块内唯一；description 功能说明。
+|actions |code 为 read/create/update/delete/approve/export/configure 等动作编码；name 为中文标签。
+|permissions |feature_id 与 action_code 确定一项操作；code 为唯一鉴权标识；enabled 控制有效性。
+|roles |五类预设角色，可修改权限；没有父角色字段。
+|user_roles |user_id/role_id 为授予关系；granted_by/granted_at 为本次授予来源和时间。
+|role_permissions |role_id/permission_id 为授予关系。
+|sessions |token_hash 为 SHA-256 十六进制摘要；expires_at 到期时间；revoked 撤销标记。
+|authorization_logs |occurred_at 发生时间；allowed 鉴权结果；request_id 调用追踪；reason 判定原因。鉴权通过不等于业务已执行。
+|authorization_changes |operator_id 操作者；target_type/target_id 目标；action 变更类型；detail 文本，可包含序列化 JSON。
+|handovers |receiver_id 接收人、owner_id 负责人、expected_date 预计日期、reason 原因、oa_reference 关联单号；started/completed 字段记录办理与完成信息。
+|===
+
+== 完整性、索引与生命周期
+
+* enabled、revoked、allowed 限定 0/1；账号状态限定 ACTIVE/DISABLED；
+  交接状态限定 HANDOVER/DEPARTED。在职 EMPLOYED 是查询派生值。
+* 部门父节点外键防止跨公司父子关联，但不自动防止组织树循环。
+* 用户角色、角色权限的主体外键使用 ON DELETE CASCADE；其他外键默认限制删除。
+  离职流程应采用停用及撤权，不物理删除用户。
+* 工号、用户名、电话各自唯一，但三者没有跨字段统一唯一空间；登录匹配多条时拒绝。
+* 权限 code 长度 512，utf8mb4 下索引最多约 2048 字节；扩展索引须核对 InnoDB 键长度限制。
+* 姓名索引不保证优化 `%关键词%` 搜索。查询性能需通过 EXPLAIN 与容量测试验证。
+* 会话 token_hash 主键服务于鉴权；user_id 索引支持集中撤销，expires_at 索引支持未来清理。
+* 用户变更复合索引支持最近 50 条交接审计查询；日志自动归档与清理不在本阶段范围。
+
+== 初始化、迁移与事务
+
+首次启动先运行 schema.sql，再由 SchemaGuard 检测旧 users.company 字段并拒绝未迁移旧库，
+并补充部门负责人的循环外键。DataInitializer 仅在 users 为空且
+RBAC_INITIALIZE=true 时，在事务内导入数据。
+
+. 从员工表提取公司，再建立部门；第二遍设置同公司父部门，未知父名称报错。
+. 建立五个角色和管理员，导入员工及初始角色。
+. 在部门内按负责人姓名匹配员工；重名报错，未匹配则保持空值。
+. 根据权限清单建立应用、模块、功能点、动作、操作权限及角色关联。
+
+初始化数据来源为员工信息、部门信息和应用软件功能权限三份课程 Excel。
+文件位置由配置指定，程序只读访问。导入需校验组织映射、唯一键、外键和授权关系。
+已有用户时不得再次覆盖授权；部分导入状态须经人工核对，不得据此假定数据完整。
+
+[cols="1,3,2",options="header"]
+|===
+|操作 |同一事务中的写入 |并发控制
+|登录 |校验密码后新增 sessions |无权限快照
+|用户角色替换 |删除旧关系、插入新关系、写变更日志 |锁 users 目标行
+|角色权限替换 |替换关系、写变更日志 |无版本号，未处理编辑覆盖提示
+|发起交接 |新增 handovers、写 BEGIN_HANDOVER |锁 users 目标行
+|完成交接 |撤角色、停账号、撤会话、更新交接、写 COMPLETE_HANDOVER |依次锁 users/handovers；重复完成直接返回
+|===
+
+READ COMMITTED 下，撤权提交后开始的新查询读取已提交授权；已完成鉴权的外部在途操作
+不保证被中断。初始化 DML 可回滚，但 MySQL DDL 不能整体事务回滚。
+旧版迁移使用 scripts/normalize_mysql.py 显式预检、备份与升级；不能将
+CREATE TABLE IF NOT EXISTS 当作自动字段迁移。
+数据备份应覆盖结构、授权关系与审计记录；恢复策略需验证外键和有效授权一致性。
+容量、备份恢复与高可用验证属于后续专项设计。
+
+== 逐表 SQL 字典
+
+下列 SQL 定义各表物理结构。PRIMARY KEY 隐含 NOT NULL；无 NOT NULL 的普通字段
+允许 NULL；未显式指定删除动作的外键采用限制删除行为。
+
+=== companies
+
+[source,sql]
+----
+CREATE TABLE IF NOT EXISTS companies (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  code VARCHAR(100) NOT NULL UNIQUE,
+  name VARCHAR(191) NOT NULL UNIQUE,
+  enabled TINYINT NOT NULL DEFAULT 1,
+  CHECK (enabled IN (0,1))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
+----
+
+=== departments
+
+[source,sql]
+----
+CREATE TABLE IF NOT EXISTS departments (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  company_id BIGINT NOT NULL,
+  code VARCHAR(100) NOT NULL UNIQUE,
+  name VARCHAR(191) NOT NULL,
+  manager_user_id BIGINT,
+  parent_id BIGINT,
+  enabled TINYINT NOT NULL DEFAULT 1,
+  UNIQUE KEY uk_department_name (company_id,name),
+  UNIQUE KEY uk_department_company_id (company_id,id),
+  FOREIGN KEY (company_id) REFERENCES companies(id),
+  FOREIGN KEY (company_id,parent_id) REFERENCES departments(company_id,id),
+  CHECK (enabled IN (0,1))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
+----
+
+=== users
+
+[source,sql]
+----
+CREATE TABLE IF NOT EXISTS users (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  employee_no VARCHAR(100) NOT NULL UNIQUE,
+  username VARCHAR(100) NOT NULL UNIQUE,
+  name VARCHAR(100) NOT NULL,
+  phone VARCHAR(32) UNIQUE,
+  department_id BIGINT,
+  position VARCHAR(191),
+  password_hash VARCHAR(100) NOT NULL,
+  status VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  FOREIGN KEY (department_id) REFERENCES departments(id),
+  CHECK (status IN ('ACTIVE','DISABLED')),
+  INDEX idx_users_name (name),
+  INDEX idx_users_dept (department_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
+----
+
+=== applications
+
+[source,sql]
+----
+CREATE TABLE IF NOT EXISTS applications (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  code VARCHAR(191) NOT NULL UNIQUE,
+  name VARCHAR(191) NOT NULL,
+  enabled TINYINT NOT NULL DEFAULT 1,
+  CHECK (enabled IN (0,1))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
+----
+
+=== modules
+
+[source,sql]
+----
+CREATE TABLE IF NOT EXISTS modules (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  app_id BIGINT NOT NULL,
+  code VARCHAR(100) NOT NULL,
+  name VARCHAR(191) NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  enabled TINYINT NOT NULL DEFAULT 1,
+  FOREIGN KEY (app_id) REFERENCES applications(id),
+  UNIQUE KEY uk_module_code (app_id,code),
+  UNIQUE KEY uk_module_name (app_id,name),
+  INDEX idx_module_sort (app_id,sort_order,id),
+  CHECK (sort_order>=0), CHECK (enabled IN (0,1))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
+----
+
+=== features
+
+[source,sql]
+----
+CREATE TABLE IF NOT EXISTS features (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  module_id BIGINT NOT NULL,
+  code VARCHAR(100) NOT NULL,
+  name VARCHAR(191) NOT NULL,
+  description TEXT,
+  sort_order INT NOT NULL DEFAULT 0,
+  enabled TINYINT NOT NULL DEFAULT 1,
+  FOREIGN KEY (module_id) REFERENCES modules(id),
+  UNIQUE KEY uk_feature_code (module_id,code),
+  UNIQUE KEY uk_feature_name (module_id,name),
+  INDEX idx_feature_sort (module_id,sort_order,id),
+  CHECK (sort_order>=0), CHECK (enabled IN (0,1))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
+----
+
+=== actions
+
+[source,sql]
+----
+CREATE TABLE IF NOT EXISTS actions (
+  code VARCHAR(32) PRIMARY KEY,
+  name VARCHAR(32) NOT NULL UNIQUE,
+  sort_order INT NOT NULL DEFAULT 0,
+  enabled TINYINT NOT NULL DEFAULT 1,
+  CHECK (sort_order>=0), CHECK (enabled IN (0,1))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
+----
+
+=== permissions
+
+[source,sql]
+----
+CREATE TABLE IF NOT EXISTS permissions (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  feature_id BIGINT NOT NULL,
+  action_code VARCHAR(32) NOT NULL,
+  code VARCHAR(512) NOT NULL UNIQUE,
+  enabled TINYINT NOT NULL DEFAULT 1,
+  FOREIGN KEY (feature_id) REFERENCES features(id),
+  FOREIGN KEY (action_code) REFERENCES actions(code),
+  UNIQUE KEY uk_permission_function (feature_id,action_code),
+  CHECK (enabled IN (0,1))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
+----
+
+=== roles
+
+[source,sql]
+----
+CREATE TABLE IF NOT EXISTS roles (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  code VARCHAR(100) NOT NULL UNIQUE,
+  name VARCHAR(100) NOT NULL UNIQUE,
+  description TEXT,
+  enabled TINYINT NOT NULL DEFAULT 1,
+  CHECK (enabled IN (0,1))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
+----
+
+=== user_roles
+
+[source,sql]
+----
+CREATE TABLE IF NOT EXISTS user_roles (
+  user_id BIGINT NOT NULL,
+  role_id BIGINT NOT NULL,
+  granted_by BIGINT,
+  granted_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (user_id,role_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+  FOREIGN KEY (granted_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
+----
+
+=== role_permissions
+
+[source,sql]
+----
+CREATE TABLE IF NOT EXISTS role_permissions (
+  role_id BIGINT NOT NULL,
+  permission_id BIGINT NOT NULL,
+  PRIMARY KEY (role_id,permission_id),
+  FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+  FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
+----
+
+=== sessions
+
+[source,sql]
+----
+CREATE TABLE IF NOT EXISTS sessions (
+  token_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  expires_at DATETIME(3) NOT NULL,
+  revoked TINYINT NOT NULL DEFAULT 0,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  CHECK (revoked IN (0,1)),
+  INDEX idx_sessions_user (user_id),
+  INDEX idx_sessions_expiry (expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
+----
+
+=== authorization_logs
+
+[source,sql]
+----
+CREATE TABLE IF NOT EXISTS authorization_logs (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  occurred_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  user_id BIGINT,
+  username VARCHAR(100),
+  app_code VARCHAR(191) NOT NULL,
+  permission_code VARCHAR(512) NOT NULL,
+  allowed TINYINT NOT NULL,
+  request_id VARCHAR(191),
+  reason TEXT,
+  CHECK (allowed IN (0,1)),
+  INDEX idx_auth_logs_time (occurred_at),
+  INDEX idx_auth_logs_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
+----
+
+=== authorization_changes
+
+[source,sql]
+----
+CREATE TABLE IF NOT EXISTS authorization_changes (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  occurred_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  operator_id BIGINT,
+  target_type VARCHAR(32) NOT NULL,
+  target_id BIGINT NOT NULL,
+  action VARCHAR(64) NOT NULL,
+  detail TEXT,
+  INDEX idx_changes_target (target_type,target_id,id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
+----
+
+=== handovers
+
+[source,sql]
+----
+CREATE TABLE IF NOT EXISTS handovers (
+  user_id BIGINT PRIMARY KEY,
+  receiver_id BIGINT NOT NULL,
+  owner_id BIGINT NOT NULL,
+  expected_date DATE NOT NULL,
+  reason VARCHAR(1000) NOT NULL,
+  oa_reference VARCHAR(200) NOT NULL DEFAULT '',
+  state VARCHAR(16) NOT NULL,
+  started_by BIGINT NOT NULL,
+  started_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  completed_by BIGINT,
+  completed_at DATETIME(3),
+  completion_note VARCHAR(1000),
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (receiver_id) REFERENCES users(id),
+  FOREIGN KEY (owner_id) REFERENCES users(id),
+  FOREIGN KEY (started_by) REFERENCES users(id),
+  FOREIGN KEY (completed_by) REFERENCES users(id),
+  CHECK (state IN ('HANDOVER','DEPARTED'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
+----
+
+=== 启动补充外键
+
+循环依赖由 SchemaGuard 在表创建后检查并补充，已存在时不重复执行：
+
+[source,sql]
+----
+ALTER TABLE departments ADD CONSTRAINT fk_department_manager
+  FOREIGN KEY(manager_user_id) REFERENCES users(id);
+----

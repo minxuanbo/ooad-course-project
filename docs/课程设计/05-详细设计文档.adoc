@@ -1,0 +1,243 @@
+= 市政公司统一权限管理系统：详细设计文档
+:lang: zh-CN
+:toc:
+:toclevels: 3
+:sectnums:
+:revnumber: 2.0
+:revdate: 2026-10-21
+
+== 设计范围
+
+本文规定系统模块、调用关系、接口契约、核心算法、事务边界与异常处理，
+配套 link:04-数据库设计文档.adoc[数据库设计文档]。
+选用 Java 21、Spring Boot 3.5.6、JdbcTemplate 和 MySQL；
+前端选用 Vue 3、Vue Router、Vite。前后端通过 JSON API 交互，职责独立。
+离线 HTML 原型用于评审交互流程，不承担真实身份认证和授权。
+
+本阶段范围为身份认证、RBAC0 授权、目录准入、用户角色与角色权限配置、
+公司部门筛选、审计和离职交接。角色继承、数据行权限、真实业务系统 CRUD、
+HR 增量同步、OA 审批集成、SSO 和管理范围隔离不在本阶段范围。
+
+== 模块与调用关系
+
+[cols="2,4",options="header"]
+|===
+|模块及对应文件 |职责
+|RbacApplication |Spring Boot 入口、组件扫描
+|ApiController |参数接收、显式身份/管理校验、查询、事务写入、响应组装
+|AuthService |BCrypt 校验、会话签发/验证/撤销、有效权限及后台准入判断
+|DataInitializer |空库导入、组织映射、预设角色和权限生成
+|SchemaGuard |识别未迁移旧库，补充部门负责人外键
+|ExcelXmlReader |XLSX ZIP/XML 解析及工作簿兼容处理
+|ApiExceptionHandler / ApiException |业务异常状态映射、通用错误响应
+|schema.sql |15 张表的字段、外键、唯一键、索引、CHECK
+|frontend/src/api.js |fetch 封装、Bearer 令牌、超时、401 处理
+|App.vue / main.js |壳层、导航、路由与管理资格守卫
+|pages 与 components |登录、应用目录、用户授权、角色权限、交接界面
+|===
+
+[source,text]
+----
+浏览器/Vue → ApiController → AuthService → JdbcTemplate → MySQL
+                    └──────────────────→ JdbcTemplate → MySQL
+启动：schema.sql → SchemaGuard → DataInitializer
+----
+
+本阶段采用 JdbcTemplate 直接访问数据，不设置独立 Repository/DAO，
+不引入 JPA/MyBatis、Redis 或 Spring Security 过滤器链。
+spring-security-crypto 用于密码摘要，不代表启用了完整 Spring Security。
+控制器中每个受保护操作显式调用 require，管理操作再调用 requireAdmin。
+
+== 初始化算法
+
+. Spring 执行 CREATE TABLE IF NOT EXISTS；SchemaGuard 先于 DataInitializer 运行。
+. 检测 users.company 旧字段，发现时拒绝启动并要求显式迁移。
+. 确保 departments.manager_user_id → users.id 外键存在。
+. 检查 RBAC_INITIALIZE 与 users 数量；关闭初始化或已有用户时跳过。
+. 从员工表收集公司，插入部门，再补父部门；未知父名称报错，同公司父子才关联。
+. 创建系统管理员、公司领导、部门经理、项目经理、普通员工五类角色。
+. 创建管理员，读取员工工号、名称、公司、部门、岗位、手机号；无电话用 NULL。
+. 在指定公司内依次匹配“公司-部门”、部门名、公司名；无法匹配则终止。
+. 默认授予普通员工，按岗位、部门负责人姓名等追加初始角色。
+. 按部门和姓名回填负责人 ID；重名报错。
+. 清单继承空白行的系统/模块标题，“全部”展开七种动作，再生成目录和授权。
+
+导入业务 DML 在事务内执行，受检异常也回滚；DDL 不在该回滚保证内。
+员工演示初始密码共用一次生成的 BCrypt 摘要，不是正式密码发放方案。
+
+ExcelXmlReader 优先读取 sheet2.xml，否则 sheet1.xml；使用 sharedStrings.xml，
+根据实际单元格引用计算列号，不信任异常 dimension。
+XML 工厂关闭 DTD 与外部实体。读取器针对课程文件，未覆盖所有 Excel 格式和公式。
+
+== 登录与会话
+
+[source,text]
+----
+POST /api/auth/login {account,password}
+  → 按 username OR employee_no OR phone 查询
+  → 必须恰好一条记录、状态 ACTIVE、BCrypt.matches 成功
+  → SecureRandom 生成 32 字节，Base64URL 无填充编码
+  → 数据库存 SHA-256(token)、user_id、UTC 到期时间
+  → 返回 token、user、expiresIn（12 小时）
+----
+
+登录失败统一返回 401。每次受保护请求要求 Authorization: Bearer <token>；
+require 对令牌求摘要，关联 sessions/users，检查 revoked=0、未过期、用户 ACTIVE。
+数据库不保存明文令牌，不在会话中固化角色与权限。
+退出仅撤销当前会话；关闭浏览器不等于服务端即时撤销。
+JDBC 固定 UTC，时间由 Instant 转为 Timestamp 处理。
+
+== 权限与目录算法
+
+AuthService.CATALOG 统一关联 permissions、features、modules、applications、actions；
+ACTIVE 要求上述所有层级 enabled=1；GRANTED 通过 EXISTS 检查用户、启用角色、
+角色权限关系，且用户 ACTIVE。
+
+[source,text]
+----
+有效权限(u) = u 所有有效角色授予的有效权限的并集
+允许操作 = 会话有效 AND 全目录链启用 AND 存在有效授予
+           AND 权限实际所属应用与请求 appCode 一致
+----
+
+多角色的重复授予只计算一次，没有否定权限覆盖规则。
+平台后台准入单独检查有效角色 code='系统管理员'，不由菜单可见性决定。
+/api/me 中的角色与权限数量是关系概览，不能代替上述有效鉴权。
+
+本人系统列表只返回有效授权数量大于零的应用。系统进入 POST 重新鉴权并记录允许/拒绝，
+返回 next=modules。模块 GET 验证系统准入；功能 GET 还验证模块属于该系统，
+并返回每项操作的布尔 allowed。目录读取不写操作日志，进入和操作鉴权写日志。
+鉴权服务仅返回决定，不执行外部业务增删改。
+
+未使用权限缓存。撤权提交后的新查询读新关系；页面每 3 秒轮询只是 UI 刷新机制，
+不是安全边界。外部业务已通过鉴权的在途请求不受本系统强制中断。
+
+== 接口契约
+
+所有路径都以 /api 开头。除登录外，以下接口要求 Bearer 令牌；管理组还要求系统管理员。
+
+[cols="1,3,3",options="header"]
+|===
+|方法 |路径 |权限与输入/输出
+|POST |/auth/login |公开；account/password → token/user/expiresIn
+|POST |/auth/logout |撤销当前令牌
+|GET |/me、/me/permissions |本人身份/权限集合
+|GET |/me/applications |本人可进入系统
+|POST |/me/applications/{id}/enter |实时校验，写准入日志
+|GET |/me/applications/{id}/modules |需系统准入；模块统计
+|GET |/me/applications/{id}/modules/{moduleId}/features |校验模块归属；功能与操作 allowed
+|POST |/authorize |appCode、permissionCode、可选 requestId → allowed
+|GET |/dashboard、/applications、/roles |管理统计/目录
+|GET |/users、/users/page、/users/filters |管理；q/company/departmentId/page/size
+|GET/PUT |/users/{id}/roles |管理；PUT 输入 ids 数组
+|GET/PUT |/roles/{id}/permissions |管理；PUT 输入 ids 数组
+|GET |/authorization-logs |管理；limit 范围 1–500
+|GET/POST |/users/{id}/handover |管理；详情或发起
+|POST |/users/{id}/handover/complete |管理；note 与字符串 confirmed="true"
+|===
+
+登录示例：
+
+[source,json]
+----
+{"account":"admin","password":"admin123"}
+----
+
+示例凭据仅用于说明请求格式。接口调用须遵守 HTTP 方法与 JSON 结构，
+不设计 GET /api 业务首页。
+已知业务错误按 400/401/403/404 返回 JSON error；JSON 格式或参数类型错误返回 400，
+缺少认证请求头返回 401，未知异常返回通用 500，禁止暴露数据库和内部堆栈。
+不存在的路由与不支持的方法应分别返回 404/405；此为接口设计要求，
+其实现符合性应通过独立测试验证。
+
+== 管理查询和授权写入
+
+=== 用户筛选与分页
+
+q 匹配姓名、用户名、手机号或工号，使用占位符绑定；公司通过
+users → departments → companies 关联过滤，不在用户表重复存储公司名称。
+count 与 rows 复用条件，page 非负、size 为 1–100，offset 使用 long。
+角色名称采用相关子查询 GROUP_CONCAT。列表与总数是两条语句，不保证并发更新下同一快照。
+
+公司/部门选项基于当前规范化组织关系。前端切换公司重置部门与页码，
+使用请求序号丢弃过期响应；模糊匹配不保证走姓名索引。
+
+=== 用户角色与角色权限替换
+
+. 校验会话与系统管理员，ids 不得为 null。
+. 用户角色替换锁定目标 users 行，不存在返回 404；已离职用户拒绝授予。
+. 删除原关系，对去重 ids 执行 INSERT SELECT，仅插入存在的角色/权限。
+. 同事务追加 SET_ROLES 或 SET_PERMISSIONS 变更记录，提交后生效。
+
+空数组表示清空。无效 ID 由 INSERT SELECT 过滤；最后管理员保护、
+授予范围控制、角色编辑版本号与并发覆盖提示作为后续扩展。
+重复 PUT 可得到相同关系状态，但会重复追加审计，非日志级幂等。
+
+== 离职交接状态与事务
+
+[source,text]
+----
+EMPLOYED（无 handovers 记录）
+  → HANDOVER（保留角色、账号和会话）
+  → DEPARTED（撤权、停用账号、撤销全部会话）
+----
+
+发起：禁止操作者为自己办理；锁目标 users 行，确认 ACTIVE 且无交接；
+验证 reason、expectedDate、receiverNo、ownerNo、oaReference。
+接收人和负责人须为启用且无交接记录的其他员工。日期须可解析，不限制必须为将来日期。
+插入 handovers 并记录 BEGIN_HANDOVER，不复制任何权限给接收人。
+
+完成：先锁 users，再锁 handovers；无记录拒绝，已 DEPARTED 直接返回。
+校验 note 和 confirmed="true"，读取旧角色快照，在同一事务内删除全部用户角色、
+将用户置为 DISABLED、撤销全部会话、更新交接完成信息，并记录 COMPLETE_HANDOVER。
+异常回滚。重复完成不重复日志。没有再入职、撤销交接或定时自动完成路径。
+
+历史详情返回人员、当前角色、有效系统和最近 50 条用户变更，已离职人员仍保留。
+目标用户上的锁不解决所有跨用户并发资格变化，需要后续设计。
+
+== 前端与原型边界
+
+Vue 的 api.js 统一附 Bearer，sessionStorage 保存令牌；请求超时 20 秒，
+只对当前令牌的 401 清理会话。路由守卫与轮询用于体验，后端独立执行权限检查。
+权限回收时返回应用列表；网络失败清空目录，禁止离线点击业务动作。
+RoleEditor 保留完整选择集合，筛选不丢失隐藏选项；交接表单在前后端均校验。
+Vue 文本插值避免把姓名、日志作为 HTML 执行。
+
+`06-界面原型.html` 与同目录两份 JS 可本地打开，状态只在页面内存中保存，
+刷新重置。原型仅用于交互评审，真实授权须由后端独立验证。
+
+== 配置与依赖边界
+
+数据库连接、账号凭据、初始化开关与数据文件目录应通过外部配置提供，
+不得在业务代码中绑定机器地址、账号密码或特定文件系统位置。
+业务数据库与测试数据库必须隔离；测试不得修改业务数据。
+数据库连接固定 UTC、READ COMMITTED，连接池最大 10 个连接。
+服务端授权不依赖前端隐藏菜单，网络或数据库故障不得回退为默认允许。
+
+== 验证设计
+
+测试采用真实 MySQL，以验证外键、排序规则、事务与时间语义；
+Spring Boot/MockMvc 用于接口集成测试，业务用例通过事务回滚隔离。
+初始化与 Excel 解析需独立覆盖异常工作簿维度和组织映射。
+
+[cols="1,3",options="header"]
+|===
+|验证领域 |计划验证的行为
+|身份与管理边界 |无效/过期会话拒绝；普通员工不能调用管理接口；管理资格撤销即时生效
+|权限与目录 |目录各级停用、跨应用权限、模块归属、多角色并集、同会话撤权与恢复
+|组织与筛选 |公司部门关联、手机号筛选、组合查询、分页边界及计数一致性
+|交接处置 |发起保留权限；完成集中撤权/停用/撤销会话；重复完成不重复审计；非法输入拒绝
+|数据完整性 |实际 MySQL、UTC 时间、外键和唯一键、权限身份在目录重命名后保持
+|异常响应 |不存在路由、错误 HTTP 方法、错误 JSON、缺少认证和权限不足的响应语义
+|===
+
+JaCoCo 用于度量测试执行后的行、分支、方法和类覆盖率。
+不得通过排除业务类制造覆盖率；应结合未覆盖分支审查缺失用例。
+执行结果、覆盖率数值和测试环境另行记录在测试报告，不作为设计已经满足的证据。
+
+== 设计边界与后续扩展
+
+本阶段采用全局管理员与基本 RBAC0，不细分管理操作和部门范围；
+角色编辑冲突控制、最后管理员保护、密码重置/MFA、限流、敏感字段保护、
+日志归档及外部业务系统接入应另行设计。
+性能、渗透、恢复和并发一致性需要专项验证；功能用例与覆盖率不能替代这些验证。
