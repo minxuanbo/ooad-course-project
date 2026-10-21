@@ -1,0 +1,5 @@
+version: "3.8"
+services:
+  backend:
+    environment:
+      JAVA_TOOL_OPTIONS: -Xms64m -Xmx256m -XX:MaxMetaspaceSize=160m -XX:ReservedCodeCacheSize=64m -XX:+ExitOnOutOfMemoryError -javaagent:/opt/jacoco/agent.jar=output=tcpserver,address=127.0.0.1,port=6300,includes=com.municipal.rbac.*,dumponexit=false
