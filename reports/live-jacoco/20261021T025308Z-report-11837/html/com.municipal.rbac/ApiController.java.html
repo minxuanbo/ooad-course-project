@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ApiController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Deployed RBAC backend - live API demonstration</a> &gt; <a href="index.source.html" class="el_package">com.municipal.rbac</a> &gt; <span class="el_source">ApiController.java</span></div><h1>ApiController.java</h1><pre class="source lang-java linenums">package com.municipal.rbac;
+
+import java.util.*; import org.springframework.http.*; import org.springframework.jdbc.core.JdbcTemplate; import org.springframework.web.bind.annotation.*; import org.springframework.transaction.annotation.Transactional;
+
+@RestController @RequestMapping(&quot;/api&quot;)
+class ApiController {
+  private final JdbcTemplate db; private final AuthService auth;
+<span class="nc" id="L8">  ApiController(JdbcTemplate db,AuthService auth){this.db=db;this.auth=auth;}</span>
+<span class="pc" id="L9">  record Login(String account,String password){} record Check(String appCode,String permissionCode,String requestId){} record Ids(List&lt;Long&gt; ids){}</span>
+<span class="pc bpc" id="L10" title="2 of 4 branches missed.">  @PostMapping(&quot;/auth/login&quot;) Map&lt;String,Object&gt; login(@RequestBody Login x){if(x.account()==null||x.password()==null)throw ApiException.bad(&quot;账号和密码不能为空&quot;);return auth.login(x.account().trim(),x.password());}</span>
+<span class="fc" id="L11">  @PostMapping(&quot;/auth/logout&quot;) void logout(@RequestHeader(value=&quot;Authorization&quot;,required=false)String h){auth.logout(h);}</span>
+<span class="fc" id="L12">  @GetMapping(&quot;/me&quot;) Map&lt;String,Object&gt; me(@RequestHeader(&quot;Authorization&quot;)String h){var u=auth.require(h);long id=(long)u.get(&quot;id&quot;);return Map.of(&quot;canManage&quot;,auth.canManage(id),&quot;user&quot;,u,&quot;roles&quot;,rows(&quot;SELECT r.id,r.code,r.name FROM roles r JOIN user_roles ur ON ur.role_id=r.id WHERE ur.user_id=? ORDER BY r.id&quot;,id),&quot;permissionCount&quot;,db.queryForObject(&quot;SELECT count(DISTINCT p.id) FROM permissions p JOIN role_permissions rp ON rp.permission_id=p.id JOIN user_roles ur ON ur.role_id=rp.role_id WHERE ur.user_id=?&quot;,Integer.class,id));}</span>
+  @GetMapping(&quot;/me/permissions&quot;) List&lt;Map&lt;String,Object&gt;&gt; myPermissions(@RequestHeader(&quot;Authorization&quot;)String h,@RequestParam(required=false)String app){
+<span class="fc" id="L14">    long id=(long)auth.require(h).get(&quot;id&quot;);</span>
+<span class="fc" id="L15">    String sql=&quot;SELECT a.code appCode,a.name appName,p.code,m.name module,f.name feature,ac.name action FROM &quot;+AuthService.CATALOG+&quot; WHERE &quot;+AuthService.ACTIVE+&quot; AND &quot;+AuthService.GRANTED;</span>
+<span class="pc bpc" id="L16" title="1 of 2 branches missed.">    return app==null?rows(sql+&quot; ORDER BY appCode,p.code&quot;,id):rows(sql+&quot; AND a.code=? ORDER BY p.code&quot;,id,app);</span>
+  }
+<span class="pc bpc" id="L18" title="9 of 24 branches missed.">  @PostMapping(&quot;/authorize&quot;) Map&lt;String,Object&gt; check(@RequestHeader(&quot;Authorization&quot;)String h,@RequestBody Check x){var u=auth.require(h);long id=(long)u.get(&quot;id&quot;);if(x.appCode()!=null&amp;&amp;x.appCode().length()&gt;191||x.permissionCode()!=null&amp;&amp;x.permissionCode().length()&gt;512||x.requestId()!=null&amp;&amp;x.requestId().length()&gt;191)throw ApiException.bad(&quot;鉴权字段过长&quot;);boolean ok=x.permissionCode()!=null&amp;&amp;x.appCode()!=null&amp;&amp;auth.has(id,x.permissionCode())&amp;&amp;db.queryForObject(&quot;SELECT count(*) FROM &quot;+AuthService.CATALOG+&quot; WHERE p.code=? AND a.code=?&quot;,Integer.class,x.permissionCode(),x.appCode())==1;db.update(&quot;INSERT INTO authorization_logs(user_id,username,app_code,permission_code,allowed,request_id,reason) VALUES(?,?,?,?,?,?,?)&quot;,id,u.get(&quot;username&quot;),Objects.toString(x.appCode(),&quot;&quot;),Objects.toString(x.permissionCode(),&quot;&quot;),ok?1:0,x.requestId(),ok?&quot;角色权限命中&quot;:&quot;未获任何角色授权&quot;);return Map.of(&quot;allowed&quot;,ok,&quot;permissionCode&quot;,Objects.toString(x.permissionCode(),&quot;&quot;),&quot;requestId&quot;,Objects.toString(x.requestId(),&quot;&quot;));}</span>
+<span class="fc" id="L19">  @GetMapping(&quot;/dashboard&quot;) Map&lt;String,Object&gt; dashboard(@RequestHeader(&quot;Authorization&quot;)String h){auth.requireAdmin((long)auth.require(h).get(&quot;id&quot;));return Map.of(&quot;users&quot;,scalar(&quot;users&quot;),&quot;departments&quot;,scalar(&quot;departments&quot;),&quot;applications&quot;,scalar(&quot;applications&quot;),&quot;permissions&quot;,scalar(&quot;permissions&quot;),&quot;roles&quot;,scalar(&quot;roles&quot;),&quot;authLogs&quot;,scalar(&quot;authorization_logs&quot;));}</span>
+  @GetMapping(&quot;/users&quot;)
+  List&lt;Map&lt;String,Object&gt;&gt; users(@RequestHeader(&quot;Authorization&quot;)String h,@RequestParam(defaultValue=&quot;&quot;)String q,
+      @RequestParam(defaultValue=&quot;&quot;)String company,@RequestParam(required=false)Long departmentId,
+      @RequestParam(defaultValue=&quot;0&quot;)int page,@RequestParam(defaultValue=&quot;30&quot;)int size){
+<span class="nc" id="L24">    auth.requireAdmin((long)auth.require(h).get(&quot;id&quot;));</span>
+<span class="nc" id="L25">    return userRows(q,company,departmentId,Math.max(page,0),Math.min(Math.max(size,1),100));</span>
+  }
+  @GetMapping(&quot;/users/page&quot;)
+  Map&lt;String,Object&gt; userPage(@RequestHeader(&quot;Authorization&quot;)String h,@RequestParam(defaultValue=&quot;&quot;)String q,
+      @RequestParam(defaultValue=&quot;&quot;)String company,@RequestParam(required=false)Long departmentId,
+      @RequestParam(defaultValue=&quot;0&quot;)int page,@RequestParam(defaultValue=&quot;20&quot;)int size){
+<span class="fc" id="L31">    auth.requireAdmin((long)auth.require(h).get(&quot;id&quot;));</span>
+<span class="fc" id="L32">    page=Math.max(page,0);size=Math.min(Math.max(size,1),100);</span>
+<span class="fc" id="L33">    var args=new ArrayList&lt;Object&gt;();</span>
+<span class="fc" id="L34">    String where=userWhere(q,company,departmentId,args);</span>
+<span class="fc" id="L35">    long total=db.queryForObject(&quot;SELECT count(*) FROM users u LEFT JOIN departments d ON d.id=u.department_id LEFT JOIN companies c ON c.id=d.company_id WHERE &quot;+where,Long.class,args.toArray());</span>
+<span class="fc" id="L36">    return Map.of(&quot;items&quot;,userRows(q,company,departmentId,page,size),&quot;total&quot;,total,&quot;page&quot;,page,&quot;size&quot;,size);</span>
+  }
+  @GetMapping(&quot;/users/filters&quot;)
+  Map&lt;String,Object&gt; userFilters(@RequestHeader(&quot;Authorization&quot;)String h,@RequestParam(defaultValue=&quot;&quot;)String company){
+<span class="fc" id="L40">    auth.requireAdmin((long)auth.require(h).get(&quot;id&quot;));</span>
+<span class="fc" id="L41">    return Map.of(&quot;companies&quot;,rows(&quot;SELECT DISTINCT c.name company FROM companies c JOIN departments d ON d.company_id=c.id JOIN users u ON u.department_id=d.id ORDER BY c.name&quot;),</span>
+<span class="fc" id="L42">      &quot;departments&quot;,rows(&quot;SELECT DISTINCT d.id,d.name FROM departments d JOIN companies c ON c.id=d.company_id JOIN users u ON u.department_id=d.id WHERE (?='' OR c.name=?) ORDER BY d.name,d.id&quot;,company,company));</span>
+  }
+  private String userWhere(String q,String company,Long departmentId,List&lt;Object&gt; args){
+<span class="fc" id="L45">    String like=&quot;%&quot;+q.trim()+&quot;%&quot;;</span>
+<span class="fc" id="L46">    args.add(like);args.add(like);args.add(like);args.add(like);</span>
+<span class="fc" id="L47">    String where=&quot;(u.name LIKE ? OR u.username LIKE ? OR u.phone LIKE ? OR u.employee_no LIKE ?)&quot;;</span>
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">    if(!company.isEmpty()){where+=&quot; AND c.name=?&quot;;args.add(company);}</span>
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">    if(departmentId!=null){where+=&quot; AND u.department_id=?&quot;;args.add(departmentId);}</span>
+<span class="fc" id="L50">    return where;</span>
+  }
+  private List&lt;Map&lt;String,Object&gt;&gt; userRows(String q,String company,Long departmentId,int page,int size){
+<span class="fc" id="L53">    var args=new ArrayList&lt;Object&gt;();</span>
+<span class="fc" id="L54">    String where=userWhere(q,company,departmentId,args);</span>
+<span class="fc" id="L55">    args.add(size);args.add((long)page*size);</span>
+<span class="fc" id="L56">    return rows(&quot;SELECT u.id,u.employee_no employeeNo,u.username,u.name,u.phone,c.name company,u.department_id departmentId,d.name department,u.position,u.status,&quot;+</span>
+      &quot;COALESCE((SELECT state FROM handovers WHERE user_id=u.id),'EMPLOYED') employmentStatus,(SELECT GROUP_CONCAT(r.name ORDER BY r.id SEPARATOR '、') FROM user_roles ur JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=u.id) roles &quot;+
+      &quot;FROM users u LEFT JOIN departments d ON d.id=u.department_id LEFT JOIN companies c ON c.id=d.company_id &quot;+
+<span class="fc" id="L59">      &quot;WHERE &quot;+where+&quot; ORDER BY u.id LIMIT ? OFFSET ?&quot;,args.toArray());</span>
+  }
+<span class="nc" id="L61">  @GetMapping(&quot;/users/{id}/roles&quot;) List&lt;Map&lt;String,Object&gt;&gt; userRoles(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id){auth.requireAdmin((long)auth.require(h).get(&quot;id&quot;));return rows(&quot;SELECT r.id,r.code,r.name,CASE WHEN ur.user_id IS NULL THEN 0 ELSE 1 END assigned FROM roles r LEFT JOIN user_roles ur ON ur.role_id=r.id AND ur.user_id=? ORDER BY r.id&quot;,id);}</span>
+<span class="nc bnc" id="L62" title="All 8 branches missed.">  @PutMapping(&quot;/users/{id}/roles&quot;) @Transactional(rollbackFor=Exception.class) void setUserRoles(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id,@RequestBody Ids body){var op=auth.require(h);auth.requireAdmin((long)op.get(&quot;id&quot;));if(body.ids()==null)throw ApiException.bad(&quot;角色列表不能为空&quot;);if(rows(&quot;SELECT id FROM users WHERE id=? FOR UPDATE&quot;,id).isEmpty())throw new ApiException(HttpStatus.NOT_FOUND,&quot;用户不存在&quot;);if(db.queryForObject(&quot;SELECT count(*) FROM handovers WHERE user_id=? AND state=\'DEPARTED\'&quot;,Integer.class,id)&gt;0)throw ApiException.bad(&quot;已离职员工不能再分配角色&quot;);db.update(&quot;DELETE FROM user_roles WHERE user_id=?&quot;,id);for(Long rid:new LinkedHashSet&lt;&gt;(body.ids()))db.update(&quot;INSERT INTO user_roles(user_id,role_id,granted_by) SELECT ?,id,? FROM roles WHERE id=?&quot;,id,op.get(&quot;id&quot;),rid);db.update(&quot;INSERT INTO authorization_changes(operator_id,target_type,target_id,action,detail) VALUES(?,?,?,?,?)&quot;,op.get(&quot;id&quot;),&quot;USER&quot;,id,&quot;SET_ROLES&quot;,body.ids().toString());}</span>
+<span class="fc" id="L63">  @GetMapping(&quot;/roles&quot;) List&lt;Map&lt;String,Object&gt;&gt; roles(@RequestHeader(&quot;Authorization&quot;)String h){auth.requireAdmin((long)auth.require(h).get(&quot;id&quot;));return rows(&quot;SELECT r.id,r.code,r.name,r.description,r.enabled,count(DISTINCT ur.user_id) userCount,count(DISTINCT rp.permission_id) permissionCount FROM roles r LEFT JOIN user_roles ur ON ur.role_id=r.id LEFT JOIN role_permissions rp ON rp.role_id=r.id GROUP BY r.id ORDER BY r.id&quot;);}</span>
+<span class="nc" id="L64">  @GetMapping(&quot;/roles/{id}/permissions&quot;) List&lt;Map&lt;String,Object&gt;&gt; rolePermissions(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id,@RequestParam(defaultValue=&quot;&quot;)String q){auth.requireAdmin((long)auth.require(h).get(&quot;id&quot;));String like=&quot;%&quot;+q+&quot;%&quot;;return rows(&quot;SELECT p.id,a.name appName,m.name module,f.name feature,ac.name action,p.code,CASE WHEN rp.role_id IS NULL THEN 0 ELSE 1 END assigned FROM &quot;+AuthService.CATALOG+&quot; LEFT JOIN role_permissions rp ON rp.permission_id=p.id AND rp.role_id=? WHERE f.name LIKE ? OR m.name LIKE ? OR a.name LIKE ? ORDER BY a.id,p.id&quot;,id,like,like,like);}</span>
+<span class="nc bnc" id="L65" title="All 4 branches missed.">  @PutMapping(&quot;/roles/{id}/permissions&quot;) @Transactional(rollbackFor=Exception.class) void setRolePermissions(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id,@RequestBody Ids body){var op=auth.require(h);auth.requireAdmin((long)op.get(&quot;id&quot;));if(body.ids()==null)throw ApiException.bad(&quot;权限列表不能为空&quot;);db.update(&quot;DELETE FROM role_permissions WHERE role_id=?&quot;,id);for(Long pid:new LinkedHashSet&lt;&gt;(body.ids()))db.update(&quot;INSERT INTO role_permissions(role_id,permission_id) SELECT ?,id FROM permissions WHERE id=?&quot;,id,pid);db.update(&quot;INSERT INTO authorization_changes(operator_id,target_type,target_id,action,detail) VALUES(?,?,?,?,?)&quot;,op.get(&quot;id&quot;),&quot;ROLE&quot;,id,&quot;SET_PERMISSIONS&quot;,&quot;count=&quot;+body.ids().size());}</span>
+<span class="fc" id="L66">  @GetMapping(&quot;/applications&quot;) List&lt;Map&lt;String,Object&gt;&gt; apps(@RequestHeader(&quot;Authorization&quot;)String h){auth.requireAdmin((long)auth.require(h).get(&quot;id&quot;));return rows(&quot;SELECT a.id,a.code,a.name,a.enabled,count(p.id) permissionCount FROM applications a LEFT JOIN modules m ON m.app_id=a.id LEFT JOIN features f ON f.module_id=m.id LEFT JOIN permissions p ON p.feature_id=f.id GROUP BY a.id ORDER BY a.id&quot;);}</span>
+<span class="pc bpc" id="L67" title="2 of 4 branches missed.">  @GetMapping(&quot;/authorization-logs&quot;) List&lt;Map&lt;String,Object&gt;&gt; logs(@RequestHeader(&quot;Authorization&quot;)String h,@RequestParam(defaultValue=&quot;100&quot;)int limit){long uid=(long)auth.require(h).get(&quot;id&quot;);auth.requireAdmin(uid);if(limit&lt;1||limit&gt;500)throw ApiException.bad(&quot;limit 必须为 1–500&quot;);return rows(&quot;SELECT id,occurred_at occurredAt,username,app_code appCode,permission_code permissionCode,allowed,request_id requestId,reason FROM authorization_logs ORDER BY id DESC LIMIT ?&quot;,Math.min(limit,500));}</span>
+  @GetMapping(&quot;/me/applications&quot;)
+  List&lt;Map&lt;String,Object&gt;&gt; myApplications(@RequestHeader(&quot;Authorization&quot;) String h) {
+<span class="fc" id="L70">    long uid=(long)auth.require(h).get(&quot;id&quot;);</span>
+<span class="fc" id="L71">    return rows(&quot;SELECT a.id,a.code,a.name,count(DISTINCT p.id) permissionCount FROM &quot;+AuthService.CATALOG+</span>
+<span class="fc" id="L72">      &quot; WHERE &quot;+AuthService.ACTIVE+&quot; AND &quot;+AuthService.GRANTED+&quot; GROUP BY a.id ORDER BY a.id&quot;,uid);</span>
+  }
+  @PostMapping(&quot;/me/applications/{id}/enter&quot;)
+  ResponseEntity&lt;Map&lt;String,Object&gt;&gt; enterApplication(@RequestHeader(&quot;Authorization&quot;) String h,@PathVariable long id) {
+<span class="fc" id="L76">    var user=auth.require(h);var apps=rows(&quot;SELECT id,code,name FROM applications WHERE id=?&quot;,id);</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">    if(apps.isEmpty())throw new ApiException(HttpStatus.NOT_FOUND,&quot;系统不存在&quot;);</span>
+<span class="fc" id="L78">    boolean allowed=auth.canEnter((long)user.get(&quot;id&quot;),id);</span>
+<span class="fc" id="L79">    db.update(&quot;INSERT INTO authorization_logs(user_id,username,app_code,permission_code,allowed,reason) VALUES(?,?,?,?,?,?)&quot;,</span>
+<span class="pc bpc" id="L80" title="2 of 4 branches missed.">      user.get(&quot;id&quot;),user.get(&quot;username&quot;),apps.get(0).get(&quot;code&quot;),&quot;system:enter&quot;,allowed?1:0,allowed?&quot;系统准入通过&quot;:&quot;无权访问或授权已回收&quot;);</span>
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">    if(!allowed)return ResponseEntity.status(403).body(Map.of(&quot;allowed&quot;,false,&quot;error&quot;,&quot;无权访问该系统或授权已被回收&quot;));</span>
+<span class="fc" id="L82">    return ResponseEntity.ok(Map.of(&quot;allowed&quot;,true,&quot;application&quot;,apps.get(0),&quot;next&quot;,&quot;modules&quot;));</span>
+  }
+  @GetMapping(&quot;/me/applications/{id}/modules&quot;)
+  Map&lt;String,Object&gt; modules(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id){
+<span class="fc" id="L86">    long uid=(long)auth.require(h).get(&quot;id&quot;);auth.requireApplication(uid,id);</span>
+<span class="fc" id="L87">    var modules=rows(&quot;SELECT m.id,m.name,(SELECT count(*) FROM features f WHERE f.module_id=m.id AND f.enabled=1) featureCount,&quot;+</span>
+      &quot;(SELECT count(*) FROM permissions p JOIN features f ON f.id=p.feature_id JOIN actions ac ON ac.code=p.action_code WHERE f.module_id=m.id AND f.enabled=1 AND p.enabled=1 AND ac.enabled=1) permissionCount,&quot;+
+      &quot;(SELECT count(*) FROM permissions p JOIN features f ON f.id=p.feature_id JOIN actions ac ON ac.code=p.action_code WHERE f.module_id=m.id AND f.enabled=1 AND p.enabled=1 AND ac.enabled=1 AND &quot;+AuthService.GRANTED+&quot;) grantedPermissionCount &quot;+
+<span class="fc" id="L90">      &quot;FROM modules m WHERE m.app_id=? AND m.enabled=1 ORDER BY m.sort_order,m.id&quot;,uid,id);</span>
+<span class="fc" id="L91">    return Map.of(&quot;applicationId&quot;,id,&quot;modules&quot;,modules);</span>
+  }
+  @GetMapping(&quot;/me/applications/{id}/modules/{moduleId}/features&quot;)
+  Map&lt;String,Object&gt; features(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id,@PathVariable long moduleId){
+<span class="fc" id="L95">    long uid=(long)auth.require(h).get(&quot;id&quot;);auth.requireApplication(uid,id);</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">    if(db.queryForObject(&quot;SELECT count(*) FROM modules WHERE id=? AND app_id=? AND enabled=1&quot;,Integer.class,moduleId,id)==0)</span>
+<span class="nc" id="L97">      throw new ApiException(HttpStatus.NOT_FOUND,&quot;模块不存在&quot;);</span>
+<span class="fc" id="L98">    var features=rows(&quot;SELECT id,name,description FROM features WHERE module_id=? AND enabled=1 ORDER BY sort_order,id&quot;,moduleId);</span>
+<span class="fc" id="L99">    var operations=rows(&quot;SELECT p.feature_id featureId,p.id permissionId,p.code permissionCode,ac.code actionCode,ac.name label,(&quot;+AuthService.GRANTED+&quot;) allowed FROM permissions p JOIN features f ON f.id=p.feature_id JOIN actions ac ON ac.code=p.action_code WHERE f.module_id=? AND f.enabled=1 AND p.enabled=1 AND ac.enabled=1 ORDER BY ac.sort_order,ac.code,p.id&quot;,uid,moduleId);</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">    for(var feature:features){</span>
+<span class="fc" id="L101">      var list=new ArrayList&lt;Map&lt;String,Object&gt;&gt;();</span>
+<span class="fc bfc" id="L102" title="All 4 branches covered.">      for(var operation:operations)if(Objects.equals(feature.get(&quot;id&quot;),operation.get(&quot;featureId&quot;))){</span>
+<span class="fc" id="L103">        var item=new LinkedHashMap&lt;String,Object&gt;(operation);item.remove(&quot;featureId&quot;);</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        item.put(&quot;allowed&quot;,((Number)operation.get(&quot;allowed&quot;)).intValue()==1);list.add(item);</span>
+      }
+<span class="fc" id="L106">      feature.put(&quot;operations&quot;,list);</span>
+<span class="fc" id="L107">    }</span>
+<span class="fc" id="L108">    return Map.of(&quot;applicationId&quot;,id,&quot;moduleId&quot;,moduleId,&quot;features&quot;,features);</span>
+  }
+  @GetMapping(&quot;/users/{id}/handover&quot;)
+  Map&lt;String,Object&gt; handover(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id){
+<span class="nc" id="L112">    auth.requireAdmin((long)auth.require(h).get(&quot;id&quot;));</span>
+<span class="nc" id="L113">    var user=rows(&quot;SELECT id,name,username,status FROM users WHERE id=?&quot;,id);</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">    if(user.isEmpty())throw new ApiException(HttpStatus.NOT_FOUND,&quot;用户不存在&quot;);</span>
+<span class="nc" id="L115">    var records=rows(&quot;SELECT h.*,receiver.name receiver_name,receiver.employee_no receiver_no,owner.name owner_name,owner.employee_no owner_no &quot;+</span>
+<span class="nc" id="L116">      &quot;FROM handovers h JOIN users receiver ON receiver.id=h.receiver_id JOIN users owner ON owner.id=h.owner_id WHERE h.user_id=?&quot;,id);</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">    return Map.of(&quot;user&quot;,user.get(0),&quot;handover&quot;,records.isEmpty()?Map.of():records.get(0),</span>
+<span class="nc" id="L118">      &quot;roles&quot;,rows(&quot;SELECT r.id,r.name FROM user_roles ur JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=?&quot;,id),</span>
+<span class="nc" id="L119">      &quot;systems&quot;,rows(&quot;SELECT DISTINCT a.name FROM &quot;+AuthService.CATALOG+&quot; WHERE &quot;+AuthService.ACTIVE+&quot; AND &quot;+AuthService.GRANTED,id),</span>
+<span class="nc" id="L120">      &quot;history&quot;,rows(&quot;SELECT occurred_at,operator_id,action,detail FROM authorization_changes WHERE target_type='USER' AND target_id=? ORDER BY id DESC LIMIT 50&quot;,id));</span>
+  }
+  @PostMapping(&quot;/users/{id}/handover&quot;)
+  @Transactional(rollbackFor=Exception.class)
+  void beginHandover(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id,@RequestBody Map&lt;String,String&gt; input)throws Exception{
+<span class="nc" id="L125">    long operator=(long)auth.require(h).get(&quot;id&quot;);auth.requireAdmin(operator);</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">    if(id==operator)throw ApiException.bad(&quot;不能为当前登录账号办理离职，请由其他管理员办理&quot;);</span>
+<span class="nc" id="L127">    var user=rows(&quot;SELECT id,status FROM users WHERE id=? FOR UPDATE&quot;,id);</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">    if(user.isEmpty())throw new ApiException(HttpStatus.NOT_FOUND,&quot;用户不存在&quot;);</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">    if(!&quot;ACTIVE&quot;.equals(user.get(0).get(&quot;status&quot;)))throw ApiException.bad(&quot;该账号已停用，请先核实人员状态&quot;);</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">    if(db.queryForObject(&quot;SELECT count(*) FROM handovers WHERE user_id=?&quot;,Integer.class,id)&gt;0)throw ApiException.bad(&quot;该员工已有离职交接记录，请勿重复发起&quot;);</span>
+<span class="nc" id="L131">    String reason=requiredText(input,&quot;reason&quot;,1000),date=requiredText(input,&quot;expectedDate&quot;,10);</span>
+<span class="nc" id="L132">    try{java.time.LocalDate.parse(date);}catch(java.time.format.DateTimeParseException e){throw ApiException.bad(&quot;预计完成日期格式应为 YYYY-MM-DD&quot;);}</span>
+<span class="nc" id="L133">    long receiver=handoverPerson(requiredText(input,&quot;receiverNo&quot;,100),id);</span>
+<span class="nc" id="L134">    long owner=handoverPerson(requiredText(input,&quot;ownerNo&quot;,100),id);</span>
+<span class="nc bnc" id="L135" title="All 4 branches missed.">    String oa=input.getOrDefault(&quot;oaReference&quot;,&quot;&quot;);if(oa==null)oa=&quot;&quot;;if(oa.length()&gt;200)throw ApiException.bad(&quot;OA单号过长&quot;);</span>
+<span class="nc" id="L136">    db.update(&quot;INSERT INTO handovers(user_id,receiver_id,owner_id,expected_date,reason,oa_reference,state,started_by) VALUES(?,?,?,?,?,?,'HANDOVER',?)&quot;,</span>
+<span class="nc" id="L137">      id,receiver,owner,date,reason,oa,operator);</span>
+<span class="nc" id="L138">    change(operator,id,&quot;BEGIN_HANDOVER&quot;,new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(input));</span>
+<span class="nc" id="L139">  }</span>
+  @PostMapping(&quot;/users/{id}/handover/complete&quot;)
+  @Transactional(rollbackFor=Exception.class)
+  void completeHandover(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id,@RequestBody Map&lt;String,String&gt; input)throws Exception{
+<span class="nc" id="L143">    long operator=(long)auth.require(h).get(&quot;id&quot;);auth.requireAdmin(operator);</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">    if(id==operator)throw ApiException.bad(&quot;不能停用当前登录账号，请由其他管理员办理&quot;);</span>
+<span class="nc" id="L145">    rows(&quot;SELECT id FROM users WHERE id=? FOR UPDATE&quot;,id);</span>
+<span class="nc" id="L146">    var records=rows(&quot;SELECT state FROM handovers WHERE user_id=? FOR UPDATE&quot;,id);</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">    if(records.isEmpty())throw ApiException.bad(&quot;请先发起离职交接&quot;);</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">    if(&quot;DEPARTED&quot;.equals(records.get(0).get(&quot;state&quot;)))return;</span>
+<span class="nc" id="L149">    String note=requiredText(input,&quot;note&quot;,1000);</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">    if(!&quot;true&quot;.equals(input.get(&quot;confirmed&quot;)))throw ApiException.bad(&quot;请确认交接已完成，并确认集中撤权及停用账号&quot;);</span>
+    // 一个事务同时完成撤权、停用、撤销会话、更新交接状态与留痕。
+<span class="nc" id="L152">    var before=rows(&quot;SELECT r.id,r.name FROM user_roles ur JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=?&quot;,id);</span>
+<span class="nc" id="L153">    db.update(&quot;DELETE FROM user_roles WHERE user_id=?&quot;,id);</span>
+<span class="nc" id="L154">    db.update(&quot;UPDATE users SET status='DISABLED' WHERE id=?&quot;,id);</span>
+<span class="nc" id="L155">    db.update(&quot;UPDATE sessions SET revoked=1 WHERE user_id=?&quot;,id);</span>
+<span class="nc" id="L156">    db.update(&quot;UPDATE handovers SET state='DEPARTED',completed_by=?,completed_at=CURRENT_TIMESTAMP,completion_note=? WHERE user_id=?&quot;,operator,note,id);</span>
+<span class="nc" id="L157">    change(operator,id,&quot;COMPLETE_HANDOVER&quot;,new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(Map.of(&quot;revokedRoles&quot;,before,&quot;note&quot;,note,&quot;status&quot;,&quot;DISABLED&quot;)));</span>
+<span class="nc" id="L158">  }</span>
+  private String requiredText(Map&lt;String,String&gt; input,String field,int max){
+<span class="nc" id="L160">    String value=input.get(field);</span>
+<span class="nc bnc" id="L161" title="All 6 branches missed.">    if(value==null||value.isBlank()||value.length()&gt;max)throw ApiException.bad(&quot;请正确填写字段：&quot;+field);</span>
+<span class="nc" id="L162">    return value.trim();</span>
+  }
+  private long handoverPerson(String employeeNo,long departingId){
+<span class="nc" id="L165">    var people=rows(&quot;SELECT u.id FROM users u LEFT JOIN handovers h ON h.user_id=u.id WHERE u.employee_no=? AND u.status='ACTIVE' AND h.user_id IS NULL&quot;,employeeNo);</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">    if(people.isEmpty())throw ApiException.bad(&quot;接收人或负责人必须是启用且未办理离职的员工：&quot;+employeeNo);</span>
+<span class="nc" id="L167">    long id=((Number)people.get(0).get(&quot;id&quot;)).longValue();</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">    if(id==departingId)throw ApiException.bad(&quot;交接人员不能是离职员工本人&quot;);</span>
+<span class="nc" id="L169">    return id;</span>
+  }
+  private void change(long operator,long id,String action,String detail){
+<span class="nc" id="L172">    db.update(&quot;INSERT INTO authorization_changes(operator_id,target_type,target_id,action,detail) VALUES(?,'USER',?,?,?)&quot;,operator,id,action,detail);</span>
+<span class="nc" id="L173">  }</span>
+<span class="fc" id="L174">  private int scalar(String table){return db.queryForObject(&quot;SELECT count(*) FROM &quot;+table,Integer.class);}</span>
+<span class="pc bpc" id="L175" title="2 of 8 branches missed.">  private List&lt;Map&lt;String,Object&gt;&gt; rows(String sql,Object...args){return db.query(sql,(rs,n)-&gt;{var m=new LinkedHashMap&lt;String,Object&gt;();var md=rs.getMetaData();for(int i=1;i&lt;=md.getColumnCount();i++){Object value=rs.getObject(i);if(value instanceof java.sql.Timestamp time)value=time.toLocalDateTime().format(java.time.format.DateTimeFormatter.ofPattern(&quot;yyyy-MM-dd HH:mm:ss&quot;));else if(value instanceof java.time.LocalDateTime time)value=time.format(java.time.format.DateTimeFormatter.ofPattern(&quot;yyyy-MM-dd HH:mm:ss&quot;));else if(value instanceof java.sql.Date date)value=date.toLocalDate().toString();m.put(md.getColumnLabel(i),value);}return m;},args);}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

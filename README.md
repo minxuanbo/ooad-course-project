@@ -166,3 +166,9 @@ npm --prefix frontend run build
 - 历史 `.md` 文档保留作修订记录，口试设计材料以 `.adoc` 为准。
 - [JaCoCo 报告与现场运行说明](reports/README.md)：20 项测试通过，行覆盖率 96.10%，分支覆盖率 80.07%。报告实际执行日期为 2026-10-20。
 - [部署记录](deploy/deployment-2026-10-20.md)独立保存服务器配置与上线验收信息。
+
+### 已部署后端的现场 JaCoCo
+
+已增加仅容器内部可访问的 JaCoCo agent。现场先重置计数，再调用公网 API，最后导出报告。
+参见 [现场运行步骤](deploy/现场运行线上JaCoCo.md) 和 [线上采集样例](reports/live-jacoco/README.md)。
+此报告与独立测试库的自动化测试报告分开，二者覆盖范围和数值不同。

@@ -20,9 +20,9 @@ mkdir "$out"
 reset=
 if [ "$mode" = start ]; then reset=--reset; fi
 # Empty JAVA_TOOL_OPTIONS prevents a second agent from attaching to the CLI process.
-docker exec -e JAVA_TOOL_OPTIONS= "$cid" sh -c 'mkdir -p "$1"; java -jar /opt/jacoco/cli.jar dump --address 127.0.0.1 --port 6300 --retry 0 --destfile "$1/coverage.exec" $2' sh "/tmp/$name" "$reset"
+docker exec -e JAVA_TOOL_OPTIONS= "$cid" sh -c 'mkdir -p "$1"; java -Xmx128m -jar /opt/jacoco/cli.jar dump --address 127.0.0.1 --port 6300 --retry 0 --destfile "$1/coverage.exec" $2' sh "/tmp/$name" "$reset"
 if [ "$mode" = report ]; then
-  docker exec -e JAVA_TOOL_OPTIONS= "$cid" java -jar /opt/jacoco/cli.jar report "/tmp/$name/coverage.exec" \
+  docker exec -e JAVA_TOOL_OPTIONS= "$cid" java -Xmx128m -jar /opt/jacoco/cli.jar report "/tmp/$name/coverage.exec" \
     --classfiles /opt/jacoco/classes --sourcefiles /opt/jacoco/source \
     --name 'Deployed RBAC backend - live API demonstration' \
     --html "/tmp/$name/html" --xml "/tmp/$name/jacoco.xml" --csv "/tmp/$name/jacoco.csv"

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DataInitializer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Deployed RBAC backend - live API demonstration</a> &gt; <a href="index.source.html" class="el_package">com.municipal.rbac</a> &gt; <span class="el_source">DataInitializer.java</span></div><h1>DataInitializer.java</h1><pre class="source lang-java linenums">package com.municipal.rbac;
+
+import java.nio.file.*; import java.text.Normalizer; import java.util.*;
+import org.springframework.beans.factory.annotation.Value; import org.springframework.boot.*; import org.springframework.jdbc.core.JdbcTemplate; import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder; import org.springframework.stereotype.Component; import org.springframework.transaction.annotation.Transactional;
+
+@Component @org.springframework.core.annotation.Order(10)
+class DataInitializer implements ApplicationRunner {
+  @Value(&quot;${rbac.initialize:true}&quot;) private boolean initialize;
+<span class="nc" id="L9">  private final Map&lt;Long,String&gt; managerNames=new LinkedHashMap&lt;&gt;();</span>
+<span class="nc" id="L10">  private final JdbcTemplate db; private final Path source; private final BCryptPasswordEncoder encoder=new BCryptPasswordEncoder();</span>
+<span class="nc" id="L11">  DataInitializer(JdbcTemplate db,@Value(&quot;${rbac.source-dir:.}&quot;)String source){this.db=db;this.source=Path.of(source);}</span>
+<span class="nc bnc" id="L12" title="All 4 branches missed.">  @Override @Transactional(rollbackFor=Exception.class) public void run(ApplicationArguments args)throws Exception { if(initialize &amp;&amp; count(&quot;users&quot;)==0) seed(); }</span>
+<span class="nc" id="L13">  private int count(String table){return db.queryForObject(&quot;SELECT count(*) FROM &quot;+table,Integer.class);}</span>
+  @Transactional(rollbackFor=Exception.class) void seed() throws Exception {
+<span class="nc" id="L15">    seedDepartments(); Map&lt;String,Long&gt; roles=seedRoles(); long admin=insertUser(&quot;ADMIN000&quot;,&quot;admin&quot;,&quot;系统管理员&quot;,null,&quot;总公司&quot;,null,&quot;系统管理员&quot;,encoder.encode(&quot;admin123&quot;));</span>
+<span class="nc" id="L16">    db.update(&quot;INSERT INTO user_roles(user_id,role_id,granted_by) VALUES(?,?,?)&quot;,admin,roles.get(&quot;系统管理员&quot;),admin);</span>
+<span class="nc" id="L17">    seedEmployees(roles,admin); resolveManagers(); seedPermissions(roles); System.out.println(&quot;RBAC 初始化完成：员工=&quot;+count(&quot;users&quot;)+&quot;，部门=&quot;+count(&quot;departments&quot;)+&quot;，权限=&quot;+count(&quot;permissions&quot;));</span>
+<span class="nc" id="L18">  }</span>
+  private void seedDepartments()throws Exception {
+<span class="nc" id="L20">    var employees=ExcelXmlReader.read(source.resolve(&quot;市政公司员工信息表.xlsx&quot;));</span>
+<span class="nc" id="L21">    var companies=new LinkedHashMap&lt;String,Long&gt;();</span>
+<span class="nc bnc" id="L22" title="All 2 branches missed.">    for(int i=1;i&lt;employees.size();i++){</span>
+<span class="nc bnc" id="L23" title="All 4 branches missed.">      String name=get(employees.get(i),2);if(name.isBlank()||companies.containsKey(name))continue;</span>
+<span class="nc" id="L24">      db.update(&quot;INSERT INTO companies(code,name) VALUES(?,?)&quot;,&quot;company-&quot;+(companies.size()+1),name);</span>
+<span class="nc" id="L25">      companies.put(name,db.queryForObject(&quot;SELECT id FROM companies WHERE name=?&quot;,Long.class,name));</span>
+    }
+<span class="nc" id="L27">    var rows=ExcelXmlReader.read(source.resolve(&quot;市政公司部门信息表.xlsx&quot;));</span>
+<span class="nc" id="L28">    var ids=new LinkedHashMap&lt;String,Long&gt;();var owners=new LinkedHashMap&lt;String,Long&gt;();</span>
+<span class="nc bnc" id="L29" title="All 2 branches missed.">    for(int i=1;i&lt;rows.size();i++){</span>
+<span class="nc bnc" id="L30" title="All 2 branches missed.">      String name=get(rows.get(i),0);if(name.isBlank())continue;</span>
+<span class="nc" id="L31">      String company=&quot;总公司&quot;;</span>
+<span class="nc bnc" id="L32" title="All 6 branches missed.">      for(String candidate:companies.keySet())if(name.equals(candidate)||name.startsWith(candidate+&quot;-&quot;))company=candidate;</span>
+<span class="nc bnc" id="L33" title="All 2 branches missed.">      if(!companies.containsKey(company))throw new IllegalStateException(&quot;部门公司归属未确认：&quot;+name);</span>
+<span class="nc" id="L34">      db.update(&quot;INSERT INTO departments(company_id,code,name) VALUES(?,?,?)&quot;,companies.get(company),&quot;dept-&quot;+i,name);</span>
+<span class="nc" id="L35">      long id=db.queryForObject(&quot;SELECT id FROM departments WHERE code=?&quot;,Long.class,&quot;dept-&quot;+i);</span>
+<span class="nc" id="L36">      ids.put(name,id);owners.put(name,companies.get(company));managerNames.put(id,get(rows.get(i),1));</span>
+    }
+<span class="nc bnc" id="L38" title="All 2 branches missed.">    for(int i=1;i&lt;rows.size();i++){</span>
+<span class="nc" id="L39">      String name=get(rows.get(i),0),parent=get(rows.get(i),2);</span>
+<span class="nc bnc" id="L40" title="All 4 branches missed.">      if(!parent.isBlank()&amp;&amp;!ids.containsKey(parent))throw new IllegalStateException(&quot;上级部门不存在&quot;);</span>
+<span class="nc bnc" id="L41" title="All 4 branches missed.">      if(ids.containsKey(parent)&amp;&amp;Objects.equals(owners.get(name),owners.get(parent)))</span>
+<span class="nc" id="L42">        db.update(&quot;UPDATE departments SET parent_id=? WHERE id=?&quot;,ids.get(parent),ids.get(name));</span>
+    }
+<span class="nc" id="L44">  }</span>
+  private void resolveManagers(){
+<span class="nc bnc" id="L46" title="All 2 branches missed.">    for(var entry:managerNames.entrySet()){</span>
+<span class="nc" id="L47">      var ids=db.queryForList(&quot;SELECT id FROM users WHERE department_id=? AND name=? AND status='ACTIVE'&quot;,Long.class,entry.getKey(),entry.getValue());</span>
+<span class="nc bnc" id="L48" title="All 2 branches missed.">      if(ids.size()&gt;1)throw new IllegalStateException(&quot;部门负责人重名，需要核对工号&quot;);</span>
+<span class="nc bnc" id="L49" title="All 2 branches missed.">      if(ids.size()==1)db.update(&quot;UPDATE departments SET manager_user_id=? WHERE id=?&quot;,ids.get(0),entry.getKey());</span>
+<span class="nc" id="L50">    }</span>
+<span class="nc" id="L51">  }</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">  private Map&lt;String,Long&gt; seedRoles(){Map&lt;String,Long&gt; out=new LinkedHashMap&lt;&gt;();String[] names={&quot;系统管理员&quot;,&quot;公司领导&quot;,&quot;部门经理&quot;,&quot;项目经理&quot;,&quot;普通员工&quot;};for(String n:names){String c=safe(n);db.update(&quot;INSERT INTO roles(code,name,description) VALUES(?,?,?)&quot;,c,n,&quot;由功能权限清单初始化&quot;);out.put(n,db.queryForObject(&quot;SELECT id FROM roles WHERE name=?&quot;,Long.class,n));}return out;}</span>
+<span class="nc bnc" id="L53" title="All 10 branches missed.">  private void seedEmployees(Map&lt;String,Long&gt; roles,long admin)throws Exception {var rows=ExcelXmlReader.read(source.resolve(&quot;市政公司员工信息表.xlsx&quot;));String hash=encoder.encode(&quot;123456&quot;);for(int i=1;i&lt;rows.size();i++){var r=rows.get(i);String name=get(r,0),no=get(r,1),company=get(r,2),dept=get(r,3),position=get(r,4),phone=get(r,5);Long deptId=findDepartment(company,dept);long uid=insertUser(no,no,name,phone,company,deptId,position,hash);grant(uid,roles.get(&quot;普通员工&quot;),admin);if(isLeader(position,dept))grant(uid,roles.get(&quot;公司领导&quot;),admin);if(isDepartmentManager(name,dept,company))grant(uid,roles.get(&quot;部门经理&quot;),admin);if((dept.contains(&quot;项目&quot;)&amp;&amp;position.contains(&quot;经理&quot;)))grant(uid,roles.get(&quot;项目经理&quot;),admin);}}</span>
+<span class="nc bnc" id="L54" title="All 29 branches missed.">  private void seedPermissions(Map&lt;String,Long&gt; roles)throws Exception {var rows=ExcelXmlReader.read(ExcelXmlReader.permissionFile(source));String app=&quot;&quot;,module=&quot;&quot;;for(int i=2;i&lt;rows.size();i++){var r=rows.get(i);if(!get(r,0).isBlank())app=get(r,0);if(!get(r,1).isBlank())module=get(r,1);String feature=get(r,2);if(app.isBlank()||feature.isBlank())continue;long appId=ensureApp(app);long featureId=ensureFeature(appId,module,feature,get(r,3));Set&lt;String&gt; allActions=new LinkedHashSet&lt;&gt;();Map&lt;String,Set&lt;String&gt;&gt; byRole=new LinkedHashMap&lt;&gt;();for(int c=4;c&lt;=8;c++){String role=switch(c){case 4-&gt;&quot;系统管理员&quot;;case 5-&gt;&quot;公司领导&quot;;case 6-&gt;&quot;部门经理&quot;;case 7-&gt;&quot;项目经理&quot;;default-&gt;&quot;普通员工&quot;;};Set&lt;String&gt;a=actions(get(r,c));byRole.put(role,a);allActions.addAll(a);}if(byRole.get(&quot;系统管理员&quot;).contains(&quot;全部&quot;)){allActions.remove(&quot;全部&quot;);allActions.addAll(List.of(&quot;查看&quot;,&quot;新增&quot;,&quot;编辑&quot;,&quot;删除&quot;,&quot;审批&quot;,&quot;导出&quot;,&quot;配置&quot;));}for(String action:allActions){if(action.equals(&quot;全部&quot;))continue;String code=safe(app)+&quot;:&quot;+safe(module)+&quot;:&quot;+safe(feature)+&quot;:&quot;+actionCode(action);ensureAction(action);db.update(&quot;INSERT INTO permissions(feature_id,action_code,code) VALUES(?,?,?)&quot;,featureId,actionCode(action),code);long pid=db.queryForObject(&quot;SELECT id FROM permissions WHERE code=?&quot;,Long.class,code);for(var e:byRole.entrySet())if(e.getValue().contains(&quot;全部&quot;)||e.getValue().contains(action))db.update(&quot;INSERT INTO role_permissions(role_id,permission_id) VALUES(?,?) ON DUPLICATE KEY UPDATE role_id=role_id&quot;,roles.get(e.getKey()),pid);}}}</span>
+<span class="nc bnc" id="L55" title="All 4 branches missed.">  private long insertUser(String no,String username,String name,String phone,String company,Long dept,String position,String hash){db.update(&quot;INSERT INTO users(employee_no,username,name,phone,department_id,position,password_hash) VALUES(?,?,?,?,?,?,?)&quot;,no,username,name,phone==null||phone.isBlank()?null:phone,dept,position,hash);return db.queryForObject(&quot;SELECT id FROM users WHERE username=?&quot;,Long.class,username);}</span>
+<span class="nc" id="L56">  private void grant(long u,long r,long by){db.update(&quot;INSERT INTO user_roles(user_id,role_id,granted_by) VALUES(?,?,?) ON DUPLICATE KEY UPDATE user_id=user_id&quot;,u,r,by);}</span>
+  private Long findDepartment(String company,String dept){
+<span class="nc bnc" id="L58" title="All 2 branches missed.">    for(String n:List.of(company+&quot;-&quot;+dept,dept,company)){</span>
+<span class="nc" id="L59">      var ids=db.queryForList(&quot;SELECT d.id FROM departments d JOIN companies c ON c.id=d.company_id WHERE c.name=? AND d.name=?&quot;,Long.class,company,n);</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">      if(ids.size()==1)return ids.get(0);</span>
+<span class="nc" id="L61">    }</span>
+<span class="nc" id="L62">    throw new IllegalStateException(&quot;员工部门未匹配，禁止丢弃公司归属&quot;);</span>
+  }
+  private boolean isDepartmentManager(String name,String dept,String company){
+<span class="nc bnc" id="L65" title="All 2 branches missed.">    for(String n:List.of(dept,company+&quot;-&quot;+dept,company)){</span>
+<span class="nc" id="L66">      var ids=db.queryForList(&quot;SELECT d.id FROM departments d JOIN companies c ON c.id=d.company_id WHERE d.name=? AND c.name=?&quot;,Long.class,n,company);</span>
+<span class="nc bnc" id="L67" title="All 4 branches missed.">      for(Long id:ids)if(name.equals(managerNames.get(id)))return true;</span>
+<span class="nc" id="L68">    }</span>
+<span class="nc" id="L69">    return false;</span>
+  }
+  private long ensureFeature(long app,String module,String feature,String description){
+<span class="nc" id="L72">    db.update(&quot;INSERT INTO modules(app_id,code,name) VALUES(?,?,?) ON DUPLICATE KEY UPDATE id=id&quot;,app,safe(module),module);</span>
+<span class="nc" id="L73">    long mid=db.queryForObject(&quot;SELECT id FROM modules WHERE app_id=? AND name=?&quot;,Long.class,app,module);</span>
+<span class="nc" id="L74">    db.update(&quot;INSERT INTO features(module_id,code,name,description) VALUES(?,?,?,?) ON DUPLICATE KEY UPDATE id=id&quot;,mid,safe(feature),feature,description);</span>
+<span class="nc" id="L75">    return db.queryForObject(&quot;SELECT id FROM features WHERE module_id=? AND name=?&quot;,Long.class,mid,feature);</span>
+  }
+  private void ensureAction(String action){
+<span class="nc" id="L78">    int order=List.of(&quot;查看&quot;,&quot;新增&quot;,&quot;编辑&quot;,&quot;删除&quot;,&quot;审批&quot;,&quot;导出&quot;,&quot;配置&quot;).indexOf(action);</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">    db.update(&quot;INSERT INTO actions(code,name,sort_order) VALUES(?,?,?) ON DUPLICATE KEY UPDATE code=code&quot;,actionCode(action),action,order&lt;0?99:order);</span>
+<span class="nc" id="L80">  }</span>
+<span class="nc bnc" id="L81" title="All 4 branches missed.">  private boolean isLeader(String p,String d){return d.equals(&quot;公司领导&quot;)||p.matches(&quot;.*(董事长|总经理|总工程师|总会计师|党委副书记|工会主席|总经理助理|董事会秘书).*&quot;);}</span>
+<span class="nc" id="L82">  private long ensureApp(String n){String c=safe(n);db.update(&quot;INSERT INTO applications(code,name) VALUES(?,?) ON DUPLICATE KEY UPDATE id=id&quot;,c,n);return db.queryForObject(&quot;SELECT id FROM applications WHERE code=?&quot;,Long.class,c);}</span>
+<span class="nc bnc" id="L83" title="All 10 branches missed.">  private static Set&lt;String&gt; actions(String s){Set&lt;String&gt;r=new LinkedHashSet&lt;&gt;();if(s==null||s.isBlank()||s.equals(&quot;无&quot;))return r;for(String x:s.split(&quot;[/、,，]&quot;))if(!x.isBlank())r.add(x.trim());return r;}</span>
+<span class="nc bnc" id="L84" title="All 4 branches missed.">  private static String get(List&lt;String&gt;r,int i){return i&lt;r.size()&amp;&amp;r.get(i)!=null?r.get(i).trim():&quot;&quot;;}</span>
+<span class="nc" id="L85">  private static String safe(String s){String n=Normalizer.normalize(s,Normalizer.Form.NFKC).replaceAll(&quot;[^\\p{L}\\p{N}]+&quot;,&quot;_&quot;).replaceAll(&quot;^_|_$&quot;,&quot;&quot;);return n.toLowerCase(Locale.ROOT);}</span>
+<span class="nc" id="L86">  private static String actionCode(String s){return Map.of(&quot;查看&quot;,&quot;read&quot;,&quot;新增&quot;,&quot;create&quot;,&quot;编辑&quot;,&quot;update&quot;,&quot;删除&quot;,&quot;delete&quot;,&quot;审批&quot;,&quot;approve&quot;,&quot;导出&quot;,&quot;export&quot;,&quot;配置&quot;,&quot;configure&quot;).getOrDefault(s,safe(s));}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

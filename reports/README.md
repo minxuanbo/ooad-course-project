@@ -62,3 +62,9 @@ JaCoCo agent 使用独立 `jacocoAgentArgLine` 与 Surefire 晚绑定，不被�
 归档保留原始 HTML、XML、CSV、jacoco.exec 和源码标注页面。没有包含 Excel、数据库备份、
 环境文件或 Surefire XML（后者可能含连接凭据）。报告不会自动上传课程网站。
 修改 Java 代码或测试后必须重跑并提交新报告，不应沿用本次数字。
+
+## 老师要求直接测试已部署后端时
+
+使用 [已部署后端现场采集说明](../deploy/现场运行线上JaCoCo.md)，
+不要把本页临时数据库自动化测试的数值描述为线上覆盖率。
+真实线上样例见 [live-jacoco](live-jacoco/README.md)。
