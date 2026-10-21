@@ -1,7 +1,7 @@
 # 对已部署后端现场采集 JaCoCo
 
 此流程直接调用 D 上正在运行的 `rbac_backend`，连接其现有 MySQL，
-不是 `mvn test` 或临时数据库测试。独立测试报告继续保留在 `reports/jacoco/`。
+现场覆盖率以该后端 JVM 在演示期间的执行数据为准。
 
 ## 已准备好的环境
 
@@ -88,7 +88,7 @@ scp -i "$env:USERPROFILE/.ssh/course_deploy_20261020" -o "UserKnownHostsFile=$en
 ## 如何向老师解释结果
 
 - “先清零线上后端 JVM 的覆盖率计数，再通过公网调用真实接口，最后导出这一时间段的执行数据。”
-- “这份是线上操作覆盖率；另一份是 20 项自动化测试的覆盖率，二者没有合并。”
+- “报告来自实际服务的 JVM，包含本轮请求执行的路径。”
 - 清零后没有重新初始化数据库，初始化逻辑通常显示未覆盖；启动入口也可能显示未覆盖。
 - 健康检查和同一时段其他用户的请求也会计入，不能声称是严格单用户隔离数据。
 - 普通读写演示覆盖率通常低于完整测试套件，不应追求通过修改正式数据补齐所有分支。
@@ -118,4 +118,4 @@ docker stack deploy --with-registry-auth -c deploy/stack.yml -c deploy/stack.liv
 `images-before-live-jacoco.env`。
 如需紧急撤销本次更新，可在下一次服务更新前使用 `docker service rollback rbac_backend`；
 后续若已多次更新，rollback 只回退最近一次变更，应核对目标镜像和 JAVA_TOOL_OPTIONS。
-agent 不可用不会影响独立测试库的 JaCoCo 流程；不要重启 Docker 或修改其他 lab 服务排查。
+agent 不可用时先核对后端镜像、参数和容器状态；不要重启 Docker 或修改其他 lab 服务排查。

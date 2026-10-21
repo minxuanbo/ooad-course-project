@@ -13,8 +13,8 @@ docker build -t "$RBAC_BACKEND_IMAGE" .
 docker push "$RBAC_BACKEND_IMAGE"
 ```
 
-构建只编译测试，不执行依赖真实数据库的测试。发布前需在 A 的独立临时
-MySQL 测试库执行 `mvn test`，不得使用现有业务库。三份 Excel 排除在构建
+构建只编译测试，不执行依赖真实数据库的测试。口试覆盖率采用
+[已部署后端现场采集](现场运行线上JaCoCo.md)。三份 Excel 排除在构建
 上下文之外，不进入镜像、不推送 SWR。部署前通过 SSH 将三份文件放入 D 的
 `/opt/course-rbac/source/`，目录与文件分别设为 750、640，属主为容器 UID
 10001。后端只读挂载到 `/app/source`，新库启动自动初始化；数据库已有
