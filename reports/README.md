@@ -4,11 +4,11 @@
 
 - [现场运行说明](../deploy/现场运行线上JaCoCo.md)
 - [线上报告说明](live-jacoco/README.md)
-- [查看 HTML 样例](live-jacoco/20261021T025308Z-report-11837/html/index.html)
-- [完整报告包](live-jacoco/20261021T025308Z-report-11837.tar.gz)
+- [查看 HTML 样例](live-jacoco/20261021T064241Z-report-2102/html/index.html)
+- [完整报告包](live-jacoco/20261021T064241Z-report-2102.tar.gz)
 
 样例生成于 2026-10-21，来自 D 上的 rbac_backend，连接其业务数据库。
-行覆盖率 32.90%，分支覆盖率 19.60%；具体范围见线上报告说明。
+行覆盖率 58.44%，分支覆盖率 44.52%；具体范围见线上报告说明。
 下载完整报告包并解压后打开 html/index.html，不要只下载单个 HTML 文件。
 现场应重新采集并导出新的报告；报告不会自动提交课程网站。
 

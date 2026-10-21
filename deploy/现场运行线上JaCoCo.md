@@ -14,76 +14,99 @@
 - 当前基线业务 JAR SHA256：`267b7c0102b476e32ac845a8b785ecfa5596af23a123bfc1ef259833c93df6c3`。
 - 现场开始与导出都不需要重启服务。未来升级后端代码时，必须重新准备匹配的采集镜像。
 
-## 现场操作：按这三步进行
+## 现场操作：准备 → 开始 → 演示 → 导出
 
-### 1. 在 D 的 Termius 终端开始一轮采集
+### 0. 自己电脑的 PowerShell：每轮创建新演示数据
+
+需要 Python 3、OpenSSH，以及本机已经配置的 SSH 私钥和 known_hosts（不能从 Gitee 获取这些私密文件）。
+先进入项目；首次安装依赖需要联网，以后无需重复安装：
+
+```powershell
+cd C:\Users\21051\Desktop\ooad-course-project
+python -m pip install --target .local/demo-deps bcrypt==5.0.0
+```
+
+每轮演示开始前运行：
+
+```powershell
+python deploy/live-demo-prepare.py
+```
+
+该命令通过 SSH 连接 B，仅在 rbac 数据库事务中 INSERT 三个全新账号及一个空角色。
+现有后端无新增账号/角色接口，因此准备阶段使用 SQL；业务验证阶段全部走已部署后端 API。
+准备 SQL 不属于 JVM 覆盖率。随机编号避免覆盖既有数据；不会重置数据库或已有员工。
+
+| 名称 | 用途及最终状态 |
+|---|---|
+| demo_<随机编号>_worker | 被授权和办理离职的演示员工；结束后 DISABLED，角色清空、会话撤销 |
+| demo_<随机编号>_receiver | 接收人；保持 ACTIVE，无角色权限 |
+| demo_<随机编号>_owner | 交接负责人；保持 ACTIVE，无角色权限 |
+| demo_<随机编号>_role | 专用普通角色；中途授予一个已有业务权限，最后清空权限 |
+
+三个账号使用随机生成的密码，仅存于本机 `.local/live-demo/<编号>.json` 和 `latest.json`，已被 Git 忽略。
+不要上传这些文件。管理员仍用现有 admin，通过隐藏输入读取密码；不会创建额外管理员。
+演示人员无真实姓名和手机号。每轮会保留演示记录和真实审计记录，因此列表人数会增加 3。
+
+### 1. D 的 Termius 终端：开始采集
 
 ```bash
 sh /opt/course-rbac/tools/live-jacoco.sh start
 ```
 
-看到 `Coverage counters reset` 后，再执行第二步。
-它保存一份开始前的原始计数，再清零覆盖率计数；不会重置数据库、账号、角色或日志。
-不要在演示结束后再次执行 start，否则会清掉刚才演示产生的覆盖率。
+看到 `Coverage counters reset` 再继续。这里只重置 JVM 覆盖率，不重置业务数据。
 
-### 2. 在自己的电脑上运行公网 API 演示
-
-本机需要 Python 3。在项目目录打开 PowerShell：
+### 2. 自己电脑的 PowerShell：运行完整演示
 
 ```powershell
-cd C:\Users\21051\Desktop\ooad-course-project
-python deploy/live-api-demo.py --account admin
+python deploy/live-demo-full.py
 ```
 
-提示 `Password (not printed)` 时输入该账号密码（课程默认 `admin123`），输入不回显。
-脚本逐行打印请求方法、路径和 HTTP 状态，不打印令牌和人员信息。
-看到 `Live API demonstration passed` 和注销成功后，可继续普通员工演示：
+提示 `Admin password:` 时输入当前管理员密码（课程初始值 admin123）；输入不回显。
+脚本自动读取刚生成的演示账号密码，不打印令牌或人员响应内容。
+请使用普通 `python`，不要加 `-O`，否则会关闭 Python 的断言检查。
 
-```powershell
-python deploy/live-api-demo.py --account SG010000
-```
+脚本依次验证：
 
-输入该员工密码（课程默认 `123456`）。管理员接口应出现 `GET /dashboard -> 403`。
-账号/密码若已变更，请用实际凭据；脚本会检查结果，不会把失败当成功。
+1. 清单与线上账号/角色 ID 一致，演示员工尚未离职，角色未分配给其他人。
+2. 登录成功/失败、未认证 401、普通员工管理接口 403。
+3. 未授权时拒绝 → 角色获得权限并分配给员工 → 允许鉴权、进入系统及查看目录。
+4. 清空角色权限后立即拒绝；恢复后再撤销用户角色也立即拒绝；重新授权恢复访问。
+5. 参数缺失、超长、无效日期、不存在的对象及重复交接等异常场景。
+6. 发起交接后仍可鉴权 → 确认完成 → 员工停用、角色清空、旧令牌 401、重新登录 401。
+7. 重复完成交接保持幂等，离职后不能重新授权，最后清空演示角色权限并注销会话。
 
-没有本机 Python 时，也可以在 D 运行：
+每次请求检查预期 HTTP 状态，关键业务步骤额外检查 allowed、状态和角色等响应内容。
+出现 `PASS` 且后续两次注销成功才表示完整运行结束。预期 400/401/403/404 是场景通过，不是脚本故障。
+演示会真实写入授权、交接和审计数据，只变更本轮专用员工和角色；不执行真实业务系统的业务操作。
 
-```bash
-python3 /opt/course-rbac/tools/live-api-demo.py --account admin
-python3 /opt/course-rbac/tools/live-api-demo.py --account SG010000
-```
+**复跑或中途失败：重新执行步骤 0 创建新的一组，再按 1 → 2 → 3。**
+已离职账号不可复用，脚本会拒绝；不要手工把员工恢复 ACTIVE 或删除交接历史。
+失败会保留已成功步骤的演示数据，不自动回滚整轮；失败报告不能声称全部场景通过。
+不要同时运行两轮，否则 latest.json 和覆盖率采集窗口会冲突。
 
-也可以用 Apifox/Postman 手动执行相同请求；开始和导出步骤不变。
-登录必须用 POST JSON，不能通过浏览器地址栏 GET 测试。
-
-脚本覆盖：未登录拒绝、登录/注销、本人权限/应用、系统进入、模块/功能目录、
-允许与拒绝的操作鉴权、管理员统计/查询、普通员工管理接口拒绝。
-**不改角色授权、不办理离职、不修改人员记录**；会创建并注销会话，
-并新增系统进入、操作鉴权日志。这些真实审计记录保留，不自动删除。
-如果需要展示授权修改或离职处置，应另行准备专用演示账号，不能对真实人员随意操作。
-
-### 3. 回到 D 导出本轮报告
+### 3. D 的 Termius 终端：导出
 
 ```bash
 sh /opt/course-rbac/tools/live-jacoco.sh report
 ```
 
-成功会打印 `HTML report` 和 `Download archive`，例如：
+成功输出 HTML report 和 Download archive：
 
 ```text
 /opt/course-rbac/reports/live-jacoco/<时间>-report-<编号>/html/index.html
 /opt/course-rbac/reports/live-jacoco/<时间>-report-<编号>.tar.gz
 ```
 
-用 Termius SFTP 从 D 下载打印出的 `.tar.gz` 文件，在本机完整解压，
-打开 `html/index.html` 向老师展示。也可通过本机 SSH/SCP 下载：
+用 Termius SFTP 下载打印出的 `.tar.gz`，完整解压并打开 `html/index.html`。
+也可在本机使用：
 
 ```powershell
-scp -i "$env:USERPROFILE/.ssh/course_deploy_20261020" -o "UserKnownHostsFile=$env:USERPROFILE/.ssh/course_deploy_known_hosts" root@120.46.86.147:/opt/course-rbac/reports/live-jacoco/替换为实际文件名.tar.gz .
+scp -F NUL -i "$env:USERPROFILE/.ssh/course_deploy_20261020" -o "UserKnownHostsFile=$env:USERPROFILE/.ssh/course_deploy_known_hosts" -o StrictHostKeyChecking=yes root@120.46.86.147:/opt/course-rbac/reports/live-jacoco/替换为实际文件名.tar.gz .
 ```
 
-包内包含 HTML 页面及资源、XML、CSV、原始 `coverage.exec`、容器 ID/镜像 ID/JAR 摘要。
-这些信息用于说明报告对应的是哪一个正在运行的后端。
+不要在演示后重新 start，否则会清空刚才的计数。容器重启会导致本轮失效，需用新账号重做。
+包内保留 HTML、XML、CSV、coverage.exec 以及镜像/JAR/容器元数据。
+旧 `live-api-demo.py` 是只读简版，完整口试使用上述 `live-demo-full.py`。
 
 ## 如何向老师解释结果
 
@@ -91,7 +114,7 @@ scp -i "$env:USERPROFILE/.ssh/course_deploy_20261020" -o "UserKnownHostsFile=$en
 - “报告来自实际服务的 JVM，包含本轮请求执行的路径。”
 - 清零后没有重新初始化数据库，初始化逻辑通常显示未覆盖；启动入口也可能显示未覆盖。
 - 健康检查和同一时段其他用户的请求也会计入，不能声称是严格单用户隔离数据。
-- 普通读写演示覆盖率通常低于完整测试套件，不应追求通过修改正式数据补齐所有分支。
+- 总覆盖率包含启动、Excel 导入与异常路径；本轮没有清库、重启或重新导入 Excel，不承诺 100%。
 - 如果容器在 start/report 之间重启，脚本拒绝导出本轮报告；重新 start 并重做演示。
 - 覆盖率保存在 JVM 内存，容器崩溃前未导出的计数可能丢失；导出文件保存在 D 宿主机。
 
