@@ -51,20 +51,17 @@ shell=function(){
     notify('该系统无有效权限或授权已被回收，已返回我的应用。');
   }
   if(page==='logs'&&!canViewLogs())page='portal';
-  // 保留旧管理页面，仅在明确的离线演示模式开放。
-  if(admin()&&!['portal','system','logs'].includes(page)){
-    originalShell();document.querySelector('.prototype-bar span').textContent='离线管理演示 · 授权修改仅在当前页面有效';
-    if(page==='dashboard'){const values=document.querySelectorAll('.metric strong');if(values[2])values[2].textContent=applications.length;if(values[3])values[3].textContent=permissions.length;const paragraphs=document.querySelectorAll('.dashboard-columns .panel:last-child p');if(paragraphs[0])paragraphs[0].textContent='使用 6 名虚构员工与 Excel 完整权限目录演示，非生产数据库统计。';}
-    return;
+  // 所有视图使用同一壳层，菜单顺序、身份栏和页面布局保持一致。
+  if(!['portal','system',...nav.map(item=>item[0])].includes(page))page='portal';
+  originalShell();
+  document.querySelector('.prototype-bar span').textContent='纯离线演示 · 不连接后台 · 刷新即重置';
+  if(page==='dashboard'){
+    const values=document.querySelectorAll('.metric strong');
+    if(values[2])values[2].textContent=applications.length;
+    if(values[3])values[3].textContent=permissions.length;
+    const paragraphs=document.querySelectorAll('.dashboard-columns .panel:last-child p');
+    if(paragraphs[0])paragraphs[0].textContent='使用 6 名虚构员工与 Excel 完整权限目录演示，非生产数据库统计。';
   }
-  if(!['portal','system','logs'].includes(page))page='portal';
-  let links=button('我的应用','navigate','portal',page==='portal'?'active':'');
-  if(canViewLogs())links+=button('鉴权日志','navigate','logs',page==='logs'?'active':'');
-  if(admin())for(const item of nav)if(!['portal','logs'].includes(item[0]))links+=button(item[1],'navigate',item[0],'');
-  const title=page==='system'?(applications[selectedApp]?.name||'应用功能'):page==='logs'?'鉴权日志':'我的应用';
-  document.querySelector('.prototype-bar span').textContent='离线演示 · 刷新即重置';
-  root.innerHTML='<div class="shell"><aside class="sidebar"><div class="brand"><span class="mark">市</span><div>统一权限管理<small>课程设计 · 交互原型</small></div></div><div class="nav-label">'+'离线演示空间'+'</div><nav>'+links+'</nav><div class="sidebar-bottom">功能目录来自 Excel<small>实际业务系统仍未集成</small></div></aside><div class="workspace"><header class="topbar"><span>市政集团 / 应用权限演示</span><div class="profile">'+esc(currentName())+button('退出登录','logout','','text-button')+'</div></header><section class="content"><div class="page-heading"><div><div class="eyebrow">APPLICATION ACCESS / PROTOTYPE</div><h1>'+esc(title)+'</h1><p class="muted" id="sync-status">'+esc(modeLabel())+'</p></div>'+button('刷新权限','refresh')+'</div><div id="view"></div><footer class="content-footer">有权限才能操作 · 每次点击重新鉴权<span>按钮仅演示授权，不修改业务数据</span></footer></section></div></div>';
-  const view=document.getElementById('view');if(page==='system')systemView(view);else if(page==='logs')logsView(view);else portal(view);
 };
 portal=function(view){
   let count=0,cards='';for(const a of applications){const n=appCount(a.id);if(!n)continue;count++;

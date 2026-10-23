@@ -111,14 +111,16 @@ function loginView(){
 }
 function shell(){
   if(!actor)return loginView();
-  if(!admin()&&page!=='portal')page='portal';
+  if(!admin()&&!['portal','system'].includes(page))page='portal';
   let links='',title='';
-  for(const item of nav){if(item[0]===page)title=item[1];if(item[0]==='portal'||admin())links+='<button data-action="navigate" data-id="'+item[0]+'" class="'+(page===item[0]?'active':'')+'"><span>◇</span>'+item[1]+'</button>';}
+  for(const item of nav){if(item[0]===page)title=item[1];if(item[0]==='portal'||admin())links+='<button data-action="navigate" data-id="'+item[0]+'" class="'+(page===item[0]||(page==='system'&&item[0]==='portal')?'active':'')+'"><span>◇</span>'+item[1]+'</button>';}
+  if(page==='system')title=applications[selectedApp]?.name||'应用功能';
   root.innerHTML='<div class="shell"><aside class="sidebar"><div class="brand"><span class="mark">市</span><div>统一权限管理<small>市政集团 · 演示版</small></div></div><div class="nav-label">'+(admin()?'管理空间':'应用空间')+'</div><nav>'+links+'</nav><div class="sidebar-bottom"><span class="dot"></span> 静态交互原型<small>不执行真实认证与授权</small></div></aside><div class="workspace"><header class="topbar"><span>市政集团 <i>/</i> 权限管理平台</span><div class="profile"><span class="avatar">'+(admin()?'管':'甲')+'</span>'+(admin()?'系统管理员':'示例员工甲')+button('切换身份','logout','','text-button')+'</div></header><section class="content"><div class="page-heading"><div><div class="eyebrow">ACCESS CONSOLE / PROTOTYPE</div><h1>'+title+'</h1><p class="muted">依据课程设计文档制作 · 所有内容均为演示数据</p></div>'+button('↻ 刷新视图','refresh')+'</div><div id="view"></div><footer class="content-footer">RBAC0 · 课程界面原型<span>真实权限以 Spring Boot 后端校验为准</span></footer></section></div></div>';
   const view=document.getElementById('view');
   if(page==='dashboard')dashboard(view);
   else if(page==='users')userView(view);
   else if(page==='portal')portal(view);
+  else if(page==='system')systemView(view);
   else if(page==='roles')rolesView(view);
   else if(page==='apps')appsView(view);
   else logsView(view);
