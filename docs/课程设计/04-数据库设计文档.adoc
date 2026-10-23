@@ -6,6 +6,8 @@
 :revnumber: 2.0
 :revdate: 2026-10-21
 
+配套 link:图表/07-数据库ER图.md[数据库 ER 图]（含 Mermaid、PNG 和 SVG）。
+
 == 范围与依据
 
 本文规定 RBAC0 系统的数据模型、字段、完整性约束、索引及事务边界。

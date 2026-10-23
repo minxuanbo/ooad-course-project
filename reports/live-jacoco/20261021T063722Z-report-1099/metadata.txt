@@ -1,6 +1,0 @@
-mode=report
-collected_utc=2026-10-21T06:37:23Z
-container_id=d1576aa46f8bc8b955e80123f9da7144809fd6a6677dd97e0882976b7f1ebd34
-image_id=sha256:f48d97611705b9c7ff67b06e7b51c3a1c7369561549ed6b2d9ec8176fb2456a4
-image_reference=swr.cn-north-4.myhuaweicloud.com/javaee_xmu/rbac-backend@sha256:5b4a9585ff77368514394822375b9dc1fb879f3c7946016b182906743d1be805
-267b7c0102b476e32ac845a8b785ecfa5596af23a123bfc1ef259833c93df6c3  /app/app.jar
