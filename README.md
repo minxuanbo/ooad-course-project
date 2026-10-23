@@ -32,7 +32,7 @@ python3 scripts/local_mysql.py
 python3 scripts/migrate_sqlite_to_mysql.py
 ```
 
-脚本只读原 `data/rbac.db`，建立备份，在 MySQL 事务中导入原 ID、密码摘要、授权、日志、会话和交接数据，并校验所有列。时间统一转换到 UTC 毫秒精度。目标非空时拒绝执行，不覆盖、不删除旧数据。当前本机数据已经迁移，无须重复执行；报告保存在 `.local/mysql/migration-report.txt`。
+脚本只读原 `data/rbac.db`，建立备份，在 MySQL 事务中导入原 ID、密码摘要、授权、日志、会话和交接数据，并校验所有列。时间统一转换到 UTC 毫秒精度。目标非空时拒绝执行，不覆盖、不删除旧数据。仅适用于仍保留旧 SQLite 数据的环境；是否已迁移应检查实际库结构和私有迁移报告，不能重复执行。
 
 终端一，在项目根目录启动后端：
 
@@ -113,7 +113,7 @@ npm run build
 - 当前管理操作限定为“系统管理员”角色。需求中的组织管理范围属于扩展设计，不作为 RBAC0 角色层级或继承实现。
 - 员工初始角色按权限表的五类角色和岗位/部门经理信息推导；它是可修改的初始化方案，不将岗位永久等同于角色。
 
-## 后续优先事项
+## 离职交接功能
 
 ### 离职交接
 
@@ -146,7 +146,7 @@ python3 scripts/normalize_mysql.py --database rbac
 python3 scripts/normalize_mysql.py --database rbac --apply
 ```
 
-第一条仅预检；第二条先备份再升级，并核对保留字段和有效授权。备份与报告位于私有 `.local/mysql/backups/`，包含敏感数据，不得提交 Git。DDL 不能整体事务回滚，出现中断需检查报告或人工恢复，不能盲目重试。本机业务库已迁移，无需重复执行。全新库启动时直接创建 V2；历史 SQLite 导入使用冻结 V1 DDL，再调用 V2 迁移，该历史导入路径本轮未做端到端复测。
+第一条仅预检；第二条先备份再升级，并核对保留字段和有效授权。备份与报告位于私有 `.local/mysql/backups/`，包含敏感数据，不得提交 Git。DDL 不能整体事务回滚，出现中断需检查报告或人工恢复，不能盲目重试。已有 V2 库无需重复执行。全新库启动时直接创建 V2；历史 SQLite 导入使用冻结 V1 DDL，再调用 V2 迁移，该历史导入路径本轮未做端到端复测。
 
 新增目录接口：`GET /api/me/applications/{id}/modules`、`GET /api/me/applications/{id}/modules/{moduleId}/features`，均独立校验系统准入。原离线原型保持离线，不连接真实后端。
 
@@ -158,17 +158,16 @@ npm --prefix frontend test
 npm --prefix frontend run build
 ```
 
-本轮迁移测试库及全新测试库各通过 20 项后端测试，前端通过 6 项逻辑测试及生产构建。详细范围、限制与结果见 [实施与测试报告](docs/测试/08-实施与测试报告.md)。
+当前测试结果以最新报告为准，不沿用旧日期的通过数量。详细范围、限制与结果见 [实施与测试报告](docs/测试/08-实施与测试报告.md)。
 
 ## 口试提交材料
 
 - 设计文档采用上述两份 `.adoc`：描述数据结构、接口与算法，不含部署实况或测试执行结果。
 - 数据库设计和详细设计统一以 `.adoc` 为准。
-- [JaCoCo 报告与现场运行说明](reports/README.md)：采集已部署后端的真实接口执行覆盖率，样例生成于 2026-10-21。
+- [JaCoCo 报告与现场运行说明](reports/README.md)：使用独立 MySQL 测试库执行后端自动化测试，报告来源与现场步骤详见链接。
 - [部署记录](deploy/deployment-2026-10-20.md)独立保存服务器配置与上线验收信息。
 
-### 已部署后端的现场 JaCoCo
+### 现场运行 JaCoCo
 
-已增加仅容器内部可访问的 JaCoCo agent。现场先重置计数，再调用公网 API，最后导出报告。
-参见 [现场运行步骤](deploy/现场运行线上JaCoCo.md) 和 [线上采集样例](reports/live-jacoco/README.md)。
-口试覆盖率统一采用已部署后端的现场采集流程。
+在 A 构建服务器执行独立数据库测试，详见 [现场说明](deploy/现场运行JaCoCo.md)。
+该报告来自测试 JVM，不是线上业务实例；不连接或修改 B 的业务数据库。

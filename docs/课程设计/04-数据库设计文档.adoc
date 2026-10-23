@@ -4,7 +4,7 @@
 :toclevels: 3
 :sectnums:
 :revnumber: 2.0
-:revdate: 2026-10-21
+:revdate: 2026-10-23
 
 配套 link:图表/07-数据库ER图.md[数据库 ER 图]（含 Mermaid、PNG 和 SVG）。
 
@@ -70,7 +70,7 @@ authorization_changes.operator_id/target_id 是逻辑引用，不设物理外键
 |companies |code 为唯一公司编码，name 为唯一名称，enabled 为启用标记。
 |departments |code 全局唯一；name 在公司内唯一；company_id 为归属；parent_id 为同公司父部门；manager_user_id 为负责人。
 |users |employee_no 工号、username 登录名、name 姓名、phone 手机号；position 岗位；password_hash 为 BCrypt；status 为 ACTIVE/DISABLED。
-|applications |业务系统目录，code/name 唯一；没有真实业务入口 URL 或客户端密钥字段。
+|applications |业务系统目录，code 唯一，name 不设唯一约束；没有真实业务入口 URL 或客户端密钥字段。
 |modules |app_id 所属系统；code/name 在系统内唯一；sort_order 控制排序。
 |features |module_id 所属模块；code/name 在模块内唯一；description 功能说明。
 |actions |code 为 read/create/update/delete/approve/export/configure 等动作编码；name 为中文标签。

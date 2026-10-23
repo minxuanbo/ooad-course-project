@@ -4,7 +4,7 @@
 :toclevels: 3
 :sectnums:
 :revnumber: 2.0
-:revdate: 2026-10-21
+:revdate: 2026-10-23
 
 == 设计范围
 
@@ -81,7 +81,7 @@ POST /api/auth/login {account,password}
   → 返回 token、user、expiresIn（12 小时）
 ----
 
-登录失败统一返回 401。每次受保护请求要求 Authorization: Bearer <token>；
+凭据不匹配或账号停用返回 401；account/password 缺失返回 400。每次受保护请求要求 Authorization: Bearer <token>；
 require 对令牌求摘要，关联 sessions/users，检查 revoked=0、未过期、用户 ACTIVE。
 数据库不保存明文令牌，不在会话中固化角色与权限。
 退出仅撤销当前会话；关闭浏览器不等于服务端即时撤销。
@@ -114,7 +114,7 @@ ACTIVE 要求上述所有层级 enabled=1；GRANTED 通过 EXISTS 检查用户�
 
 == 接口契约
 
-所有路径都以 /api 开头。除登录外，以下接口要求 Bearer 令牌；管理组还要求系统管理员。
+所有路径都以 /api 开头。除登录及允许缺失令牌的退出接口外，以下接口要求 Bearer 令牌；管理组还要求系统管理员。
 
 [cols="1,3,3",options="header"]
 |===
@@ -148,7 +148,7 @@ ACTIVE 要求上述所有层级 enabled=1；GRANTED 通过 EXISTS 检查用户�
 已知业务错误按 400/401/403/404 返回 JSON error；JSON 格式或参数类型错误返回 400，
 缺少认证请求头返回 401，未知异常返回通用 500，禁止暴露数据库和内部堆栈。
 不存在的路由与不支持的方法应分别返回 404/405；此为接口设计要求，
-其实现符合性应通过独立测试验证。
+当前通用异常处理尚未满足该项要求，会返回 500；该差距应通过独立测试显式记录，后续完善异常映射。
 
 == 管理查询和授权写入
 

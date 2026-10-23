@@ -25,8 +25,7 @@
 
 - [08-实施与测试报告](测试/08-实施与测试报告.md)：实施范围、验证结果与限制。
 - [JaCoCo 报告入口](../reports/README.md)：最终覆盖率报告及完整报告包。
-- [线上报告说明](../reports/live-jacoco/README.md)：采集范围、指标与请求检查记录。
-- [现场运行线上 JaCoCo](../deploy/现场运行线上JaCoCo.md)：口试现场采集步骤。
+- [现场运行 JaCoCo](../deploy/现场运行JaCoCo.md)：独立 MySQL 测试库、自动化测试及报告生成步骤。
 
 ## 项目与部署
 
