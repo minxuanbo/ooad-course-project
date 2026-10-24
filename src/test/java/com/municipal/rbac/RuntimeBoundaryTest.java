@@ -27,6 +27,7 @@ class RuntimeBoundaryTest {
   }
   @Test void jdbcLocalDateTimeIsSerializedWithoutDriverSpecificTypeLeak()throws Exception{
     JdbcTemplate db=mock(JdbcTemplate.class);AuthService auth=mock(AuthService.class);
+    when(auth.management()).thenReturn(mock(ManagementAccess.class));
     when(auth.require("Bearer test")).thenReturn(java.util.Map.of("id",1L));
     for(Object value:new Object[]{LocalDateTime.of(2026,10,23,12,0),java.sql.Timestamp.valueOf("2026-10-23 12:00:00"),java.sql.Date.valueOf("2026-10-23")}){
     when(db.query(anyString(),org.mockito.ArgumentMatchers.<RowMapper<java.util.Map<String,Object>>>any(),any(Object[].class))).thenAnswer(call->{

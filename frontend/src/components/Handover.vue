@@ -30,7 +30,7 @@ onMounted(async function() {
       <p>人员状态：<strong>{{ employmentLabel(state) }}</strong>　账号：{{ data.user.status === 'ACTIVE' ? '启用' : '停用' }}</p>
       <p>当前角色：<span v-for="r in data.roles" :key="r.id" class="badge">{{ r.name }}</span><span v-if="!data.roles.length">无角色</span></p>
       <details><summary>当前可用系统（{{ data.systems.length }} 个）</summary><ul><li v-for="s in data.systems" :key="s.name">{{ s.name }}</li></ul></details>
-      <template v-if="state === 'EMPLOYED'">
+      <template v-if="state === 'EMPLOYED' && target.managementActions.includes('handover.start')">
         <p class="muted">开始交接保留现有授权，可按需手动回收。接收人不会自动获得原员工权限。</p>
         <label>交接接收人工号<input v-model="form.receiverNo" required maxlength="100"></label>
         <label>交接负责人工号<input v-model="form.ownerNo" required maxlength="100"></label>
@@ -38,13 +38,13 @@ onMounted(async function() {
         <label>离职交接说明<textarea v-model="form.reason" required maxlength="1000"></textarea></label>
         <label>OA 单号（可选）<input v-model="form.oaReference" maxlength="200"></label>
       </template>
-      <template v-else>
+      <template v-else-if="state !== 'EMPLOYED'">
         <div class="handover-summary"><p>接收人：{{ data.handover.receiver_name }}（{{ data.handover.receiver_no }}）</p><p>负责人：{{ data.handover.owner_name }}（{{ data.handover.owner_no }}）</p><p>预计完成：{{ data.handover.expected_date }}</p><p>交接说明：{{ data.handover.reason }}</p><p>OA 单号：{{ data.handover.oa_reference || '未填写' }}</p></div>
-        <template v-if="state === 'HANDOVER'"><p class="error">完成处置将回收全部角色、停用账号并撤销所有登录会话。</p><label>完成交接说明<textarea v-model="form.note" required maxlength="1000"></textarea></label><label class="choice"><input v-model="form.confirmed" type="checkbox" required><span>确认交接已完成，执行集中撤权和停用账号</span></label></template>
-        <template v-else><p>实际完成：{{ data.handover.completed_at }} UTC</p><p>完成说明：{{ data.handover.completion_note }}</p><p>账号已停用。用户和历史记录保留，不物理删除。</p></template>
+        <template v-if="state === 'HANDOVER' && target.managementActions.includes('handover.complete')"><p class="error">完成处置将回收全部角色、停用账号并撤销所有登录会话。</p><label>完成交接说明<textarea v-model="form.note" required maxlength="1000"></textarea></label><label class="choice"><input v-model="form.confirmed" type="checkbox" required><span>确认交接已完成，执行集中撤权和停用账号</span></label></template>
+        <template v-else-if="state === 'DEPARTED'"><p>实际完成：{{ data.handover.completed_at }} UTC</p><p>完成说明：{{ data.handover.completion_note }}</p><p>账号已停用。用户和历史记录保留，不物理删除。</p></template>
       </template>
       <details><summary>最近变更记录</summary><details v-for="(h, i) in data.history" :key="i"><summary>{{ h.occurred_at }} · {{ h.action }} · 操作人 ID {{ h.operator_id }}</summary><pre>{{ h.detail }}</pre></details></details>
     </template>
-    <p class="error" role="alert">{{ error }}</p><footer><small>记录时间采用 UTC</small><button v-if="data && state !== 'DEPARTED'" class="primary" :disabled="busy">{{ state === 'EMPLOYED' ? '开始离职交接' : '完成离职处置' }}</button></footer>
+    <p class="error" role="alert">{{ error }}</p><footer><small>记录时间采用 UTC</small><button v-if="data && ((state === 'EMPLOYED' && target.managementActions.includes('handover.start')) || (state === 'HANDOVER' && target.managementActions.includes('handover.complete')))" class="primary" :disabled="busy">{{ state === 'EMPLOYED' ? '开始离职交接' : '完成离职处置' }}</button></footer>
   </form></dialog>
 </template>

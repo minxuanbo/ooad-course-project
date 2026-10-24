@@ -51,3 +51,11 @@ export function employmentLabel(state) {
   if (state === 'DEPARTED') return '已离职'
   return '在职'
 }
+
+export const routePermissions = { dashboard: 'user.read', users: 'user.read', roles: 'role.read', apps: 'app.read', logs: 'audit.read', organizations: 'org.read' }
+export function can(permission, global = false) {
+  return (session.me?.managementGrants || []).some(g => g.permission === permission && (!global || g.scope === 'GLOBAL'))
+}
+export function scopeSummary() {
+  return [...new Set((session.me?.managementGrants || []).map(g => `${g.roleName}：` + (g.scope === 'GLOBAL' ? '全平台' : g.scope === 'COMPANY' ? g.company : `${g.company} / ${g.department}`)))].join('；') || '无管理范围'
+}

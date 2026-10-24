@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ManagementAccess.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rbac0</a> &gt; <a href="index.source.html" class="el_package">com.municipal.rbac</a> &gt; <span class="el_source">ManagementAccess.java</span></div><h1>ManagementAccess.java</h1><pre class="source lang-java linenums">package com.municipal.rbac;
+
+import java.util.*;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+/** Each grant binds one operation to one scope; scopes never cross-multiply permissions. */
+class ManagementAccess {
+<span class="fc" id="L8">  static final Map&lt;String,String&gt; PERMISSIONS = Collections.unmodifiableMap(new LinkedHashMap&lt;&gt;(Map.ofEntries(</span>
+<span class="fc" id="L9">    Map.entry(&quot;user.read&quot;,&quot;人员查询&quot;), Map.entry(&quot;user.roles&quot;,&quot;用户角色分配&quot;),</span>
+<span class="fc" id="L10">    Map.entry(&quot;role.read&quot;,&quot;角色查看&quot;), Map.entry(&quot;role.permissions&quot;,&quot;角色权限配置&quot;),</span>
+<span class="fc" id="L11">    Map.entry(&quot;org.read&quot;,&quot;组织查看&quot;), Map.entry(&quot;org.write&quot;,&quot;组织维护&quot;),</span>
+<span class="fc" id="L12">    Map.entry(&quot;app.read&quot;,&quot;系统目录查看&quot;), Map.entry(&quot;audit.read&quot;,&quot;审计日志查看&quot;),</span>
+<span class="fc" id="L13">    Map.entry(&quot;handover.start&quot;,&quot;离职发起&quot;), Map.entry(&quot;handover.complete&quot;,&quot;离职完成&quot;),</span>
+<span class="fc" id="L14">    Map.entry(&quot;management.grant&quot;,&quot;管理授权配置&quot;))));</span>
+  private final JdbcTemplate db;
+<span class="fc" id="L16">  ManagementAccess(JdbcTemplate db){this.db=db;}</span>
+  List&lt;Map&lt;String,Object&gt;&gt; grants(long uid){
+<span class="fc" id="L18">    return db.queryForList(&quot;SELECT g.id,g.permission_code permission,g.scope_type scope,g.company_id companyId,g.department_id departmentId,g.include_descendants descendants,c.name company,d.name department FROM management_grants g JOIN users u ON u.id=g.user_id LEFT JOIN companies c ON c.id=g.company_id LEFT JOIN departments d ON d.id=g.department_id WHERE g.user_id=? AND u.status='ACTIVE' ORDER BY g.id&quot;,uid);</span>
+  }
+  boolean has(long uid,String permission){
+<span class="fc bfc" id="L21" title="All 2 branches covered.">    return db.queryForObject(&quot;SELECT count(*) FROM management_grants g JOIN users u ON u.id=g.user_id WHERE g.user_id=? AND g.permission_code=? AND u.status='ACTIVE'&quot;,Integer.class,uid,permission)&gt;0;</span>
+  }
+  boolean global(long uid,String permission){
+<span class="fc bfc" id="L24" title="All 2 branches covered.">    return db.queryForObject(&quot;SELECT count(*) FROM management_grants g JOIN users u ON u.id=g.user_id WHERE g.user_id=? AND g.permission_code=? AND g.scope_type='GLOBAL' AND u.status='ACTIVE'&quot;,Integer.class,uid,permission)&gt;0;</span>
+  }
+<span class="fc bfc" id="L26" title="All 2 branches covered.">  void require(long uid,String permission){if(!has(uid,permission))throw ApiException.forbidden();}</span>
+<span class="fc bfc" id="L27" title="All 2 branches covered.">  void requireGlobal(long uid,String permission){if(!global(uid,permission))throw ApiException.forbidden();}</span>
+  // uid and SQL expressions are server-owned, permission is always a catalog constant.
+  String scope(long uid,String permission,String department){
+<span class="fc bfc" id="L30" title="All 2 branches covered.">    if(!PERMISSIONS.containsKey(permission))throw new IllegalArgumentException(&quot;Unknown management permission&quot;);</span>
+<span class="fc" id="L31">    return &quot;EXISTS(SELECT 1 FROM management_grants g JOIN users actor ON actor.id=g.user_id WHERE g.user_id=&quot;+uid+</span>
+      &quot; AND actor.status='ACTIVE' AND g.permission_code='&quot;+permission+&quot;' AND (g.scope_type='GLOBAL' OR (g.scope_type='COMPANY' AND g.company_id=(SELECT sd.company_id FROM departments sd WHERE sd.id=&quot;+department+&quot;)) OR (g.scope_type='DEPARTMENT' AND (g.department_id=&quot;+department+
+      &quot; OR (g.include_descendants=1 AND &quot;+department+&quot; IN (WITH RECURSIVE descendants AS (SELECT id FROM departments WHERE id=g.department_id UNION ALL SELECT child.id FROM departments child JOIN descendants parent ON child.parent_id=parent.id) SELECT id FROM descendants))))))&quot;;
+  }
+  void user(long uid,String permission,long target){
+<span class="fc" id="L36">    require(uid,permission);</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">    if(global(uid,permission))return;</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">    if(db.queryForObject(&quot;SELECT count(*) FROM users u WHERE u.id=? AND &quot;+scope(uid,permission,&quot;u.department_id&quot;),Integer.class,target)==0)throw ApiException.forbidden();</span>
+<span class="fc" id="L39">  }</span>
+  void department(long uid,String permission,long target){
+<span class="fc bfc" id="L41" title="All 2 branches covered.">    if(db.queryForObject(&quot;SELECT count(*) FROM departments d WHERE d.id=? AND &quot;+scope(uid,permission,&quot;d.id&quot;),Integer.class,target)==0)throw ApiException.forbidden();</span>
+<span class="fc" id="L42">  }</span>
+<span class="fc" id="L43">  void lock(){db.queryForObject(&quot;SELECT version FROM management_migrations WHERE version=1 FOR UPDATE&quot;,Integer.class);}</span>
+  void protectTarget(long actor,String permission,long target){
+<span class="fc" id="L45">    user(actor,permission,target);</span>
+<span class="fc bfc" id="L46" title="All 6 branches covered.">    if(!global(actor,permission) &amp;&amp; (actor==target || db.queryForObject(&quot;SELECT count(*) FROM management_grants WHERE user_id=?&quot;,Integer.class,target)&gt;0))throw ApiException.forbidden();</span>
+<span class="fc" id="L47">  }</span>
+  void retainPlatformAdmin(){
+<span class="fc bfc" id="L49" title="All 2 branches covered.">    if(db.queryForObject(&quot;SELECT count(*) FROM management_grants g JOIN users u ON u.id=g.user_id WHERE g.permission_code='management.grant' AND g.scope_type='GLOBAL' AND u.status='ACTIVE'&quot;,Integer.class)==0)</span>
+<span class="fc" id="L50">      throw ApiException.bad(&quot;必须保留至少一名可配置管理授权的平台管理员&quot;);</span>
+<span class="fc" id="L51">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

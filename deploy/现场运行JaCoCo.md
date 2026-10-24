@@ -4,6 +4,24 @@
 报告来自 Maven 测试 JVM，包含真实 MySQL 集成测试与单元测试；不是公网线上实例的运行覆盖率。
 B/C/D 的业务服务不参与，不需要重启；已有业务库不会被清空或改动。
 
+## 本次已验证版本
+
+A 的独立目录 `/root/rbac-role-scope-20261025` 保存本次送测源码。它独立于 Git 克隆，适合直接复现已验证报告。
+
+在 A 的 Termius 中执行：
+
+```bash
+cd /root/rbac-role-scope-20261025
+export RBAC_BUILD_IMAGE=rbac-build:test-20261023
+export RBAC_TEST_EXCEL_DIR=/root/ooad-course-project
+export RBAC_TEST_MYSQL_IMAGE=swr.cn-north-4.myhuaweicloud.com/javaee_xmu/rbac-mysql@sha256:54ad54987c01f1d7af9e1343910fd0cf0d4c4526b552f13e712ddbeacf13dd02
+sh deploy/test-backend.sh
+```
+
+工具镜像只提供 JDK/Maven/依赖，实际测试复制本目录当前 pom.xml/src 重新编译；Excel 从原克隆目录读取，不进入镜像。本次 48 项测试通过，全部 19 个生产类的六项覆盖率均为 100%。现场以实际输出为准。
+
+下节是更新 Git 克隆后测试当前源码的通用方法，不必与上节重复执行。
+
 ## 预约前准备
 
 A 已安装 Docker。代码位于 ~/ooad-course-project，三份课程 Excel 位于该目录。
@@ -35,10 +53,10 @@ sh deploy/test-backend.sh
 2. 等待数据库可连接；新建 rbac_test，测试账号只有该库权限。
 3. 将当前源码、三份 Excel 只读挂载并复制到测试容器临时目录。
 4. 执行 mvn clean verify：真实空库建表/初始化、接口集成测试、单元测试、JaCoCo 报告及覆盖率门槛检查。
-5. 成功后保存报告；退出时删除本轮测试数据库容器及匿名卷、网络和临时凭据文件。不会删除现有业务卷。
+5. 已生成覆盖率文件时保存诊断报告；退出时删除本轮测试数据库容器及匿名卷、网络和临时凭据文件。不会删除现有业务卷。
 
 成功判断：Tests run 的 Failures/Errors/Skipped 均为 0，出现 BUILD SUCCESS、All coverage checks have been met，以及 JaCoCo report 路径。
-当前门槛要求全部生产类的指令、分支、行、复杂度、方法、类六项 MISSEDCOUNT=0；有任何遗漏时 verify 失败，不会输出一份冒充成功的报告。
+当前门槛要求全部生产类的指令、分支、行、复杂度、方法、类六项 MISSEDCOUNT=0；有任何遗漏时 verify 失败。失败时可能保留诊断报告，不得将其当成成功报告；以 BUILD SUCCESS 与 All coverage checks have been met 为准。
 不要使用 -DskipTests、覆盖 argLine 或排除生产类来通过检查。
 
 每次生成新目录 reports/jacoco/<UTC时间>-<进程号>/，重复执行会从另一全新数据库开始，不复用上次测试业务数据。
@@ -73,4 +91,4 @@ JaCoCo report: /root/ooad-course-project/reports/jacoco/<时间>-<编号>/index.
 - 测试/覆盖率失败：保留终端结果，修复当前代码或用例后重跑；不要混入旧 jacoco.exec。
 - 不要将 RBAC_TEST_DB_URL 指向业务库，也不要用线上演示账号替代测试数据。
 
-原线上采集脚本、报告和演示账号创建工具已从当前仓库移除。此前服务器上的 agent、历史导出和演示数据未在本次清理中删除；它们不参与当前验收报告。
+原线上采集脚本、报告和演示账号创建工具已从当前仓库移除。本版后端镜像不含线上采集 agent，部署时移除旧 JAVA_TOOL_OPTIONS 中的 agent 参数；历史导出和演示数据保留，不参与当前报告。

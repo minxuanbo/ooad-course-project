@@ -1,0 +1,10 @@
+Tests run: 9, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 7.688 s -- in com.municipal.rbac.AccessBoundaryTest
+Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.230 s -- in com.municipal.rbac.CatalogAuthorizationTest
+Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.965 s -- in com.municipal.rbac.EndpointBoundaryTest
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.371 s -- in com.municipal.rbac.ExcelXmlReaderTest
+Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.875 s -- in com.municipal.rbac.InfrastructureBoundaryTest
+Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.104 s -- in com.municipal.rbac.InitializerValidationTest
+Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 33.56 s -- in com.municipal.rbac.ManagementScopeTest
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.115 s -- in com.municipal.rbac.ManagementTransactionTest
+Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.363 s -- in com.municipal.rbac.RolePolicyTest
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.074 s -- in com.municipal.rbac.RuntimeBoundaryTest

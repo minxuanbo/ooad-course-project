@@ -86,7 +86,7 @@ class CatalogAuthorizationTest {
     authorize(true);mvc.perform(get("/api/authorization-logs").header("Authorization",employee)).andExpect(status().isForbidden());
     mvc.perform(get("/api/authorization-logs").header("Authorization",manager)).andExpect(status().isOk()).andExpect(jsonPath("$[0].requestId").value("catalog-test"));
     for(String limit:new String[]{"0","-1","501","abc"})mvc.perform(get("/api/authorization-logs").param("limit",limit).header("Authorization",manager)).andExpect(status().isBadRequest());
-    db.update("UPDATE roles SET enabled=0 WHERE code='系统管理员'");mvc.perform(get("/api/authorization-logs").header("Authorization",manager)).andExpect(status().isForbidden());
+    db.update("DELETE FROM role_management_permissions WHERE permission_code='audit.read'");mvc.perform(get("/api/authorization-logs").header("Authorization",manager)).andExpect(status().isForbidden());
   }
   @Test void renamedFeatureKeepsPermissionIdentity()throws Exception{
     db.update("UPDATE features SET name='重命名功能',description='统一说明' WHERE id=?",feature);authorize(true);

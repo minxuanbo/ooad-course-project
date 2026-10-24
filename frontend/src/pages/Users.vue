@@ -1,11 +1,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { api, employmentLabel } from '../api.js'
+import { api, employmentLabel, can } from '../api.js'
 import RoleEditor from '../components/RoleEditor.vue'
+import ManagementGrants from '../components/ManagementGrants.vue'
 import Handover from '../components/Handover.vue'
 const q = ref(''), company = ref(''), departmentId = ref(''), page = ref(0)
 const companies = ref([]), departments = ref([]), items = ref([]), total = ref(0), busy = ref(false), error = ref('')
-const editor = ref(null), handover = ref(null)
+const editor = ref(null), handover = ref(null), grants = ref(null)
 let request = 0, filterRequest = 0
 async function load() {
   const id = ++request
@@ -34,7 +35,7 @@ async function companyChanged() {
 function search() { page.value = 0; load() }
 async function reset() { q.value = ''; company.value = ''; await companyChanged() }
 function turn(delta) { page.value += delta; load() }
-function saved() { editor.value = null; handover.value = null; load() }
+function saved() { editor.value = null; handover.value = null; grants.value = null; load() }
 onMounted(function() { load(); loadFilters() })
 </script>
 <template>
@@ -48,11 +49,12 @@ onMounted(function() { load(); loadFilters() })
     <p v-if="error" class="error panel" role="alert">{{ error }}</p>
     <div class="table-scroll" :aria-busy="busy"><table><thead><tr><th>员工</th><th>工号</th><th>电话</th><th>所属组织</th><th>岗位</th><th>当前角色</th><th>账号／人员状态</th><th>操作</th></tr></thead>
       <tbody><tr v-if="busy"><td colspan="8" class="empty">正在查询…</td></tr>
-      <template v-else><tr v-for="u in items" :key="u.id"><td><strong>{{ u.name }}</strong></td><td class="mono">{{ u.employeeNo }}</td><td class="mono nowrap">{{ u.phone || '—' }}</td><td>{{ u.company || '—' }}<small>{{ u.department || '—' }}</small></td><td>{{ u.position }}</td><td>{{ u.roles || '未分配角色' }}</td><td><span class="badge" :class="{ green: u.status === 'ACTIVE' }">{{ u.status === 'ACTIVE' ? '已启用' : '已停用' }}</span><small>{{ employmentLabel(u.employmentStatus) }}</small></td><td class="nowrap"><button class="text-button" :disabled="u.employmentStatus === 'DEPARTED'" @click="editor = u">分配角色</button><button class="text-button" @click="handover = u">离职交接</button></td></tr>
+      <template v-else><tr v-for="u in items" :key="u.id"><td><strong>{{ u.name }}</strong></td><td class="mono">{{ u.employeeNo }}</td><td class="mono nowrap">{{ u.phone || '—' }}</td><td>{{ u.company || '—' }}<small>{{ u.department || '—' }}</small></td><td>{{ u.position }}</td><td>{{ u.roles || '未分配角色' }}</td><td><span class="badge" :class="{ green: u.status === 'ACTIVE' }">{{ u.status === 'ACTIVE' ? '已启用' : '已停用' }}</span><small>{{ employmentLabel(u.employmentStatus) }}</small></td><td class="nowrap"><button v-if="!can('management.grant', true) && u.managementActions.includes('user.roles')" class="text-button" :disabled="u.employmentStatus === 'DEPARTED'" @click="editor = u">分配角色</button><button v-if="u.managementActions.includes('handover.start') || u.managementActions.includes('handover.complete')" class="text-button" @click="handover = u">离职交接</button><button v-if="can('management.grant', true)" class="text-button" @click="grants = u" :disabled="u.status !== 'ACTIVE'">分配角色与管理范围</button></td></tr>
       <tr v-if="!items.length"><td colspan="8" class="empty">未找到匹配的用户</td></tr></template></tbody>
     </table></div>
     <div class="pagination"><span>共 {{ total }} 人 · 第 {{ page + 1 }} / {{ Math.max(1, Math.ceil(total / 20)) }} 页</span><div><button class="secondary" :disabled="busy || page === 0" @click="turn(-1)">上一页</button> <button class="secondary" :disabled="busy || (page + 1) * 20 >= total" @click="turn(1)">下一页</button></div></div>
   </section>
+  <ManagementGrants v-if="grants" :target="grants" @close="grants = null" @saved="saved" />
   <RoleEditor v-if="editor" kind="users" :target="editor" @close="editor = null" @saved="saved" />
   <Handover v-if="handover" :target="handover" @close="handover = null" @saved="saved" />
 </template>

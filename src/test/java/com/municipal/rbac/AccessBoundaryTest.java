@@ -118,7 +118,7 @@ class AccessBoundaryTest {
     db.update("DELETE FROM role_permissions WHERE role_id=(SELECT id FROM roles WHERE name='普通员工')");
     String response=mvc.perform(get("/api/me/applications").header("Authorization",employee)).andReturn().getResponse().getContentAsString();
     for(JsonNode a:json.readTree(response))assertEquals(0,a.get("permissionCount").asInt());
-    db.update("DELETE FROM user_roles WHERE user_id=(SELECT id FROM users WHERE username='admin')");
+    db.update("DELETE FROM user_role_scopes WHERE user_id=(SELECT id FROM users WHERE username='admin')");
     mvc.perform(get("/api/me").header("Authorization",manager)).andExpect(jsonPath("$.canManage").value(false));
     mvc.perform(get("/api/users").header("Authorization",manager)).andExpect(status().isForbidden());
   }

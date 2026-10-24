@@ -21,7 +21,7 @@ class AuthService {
       throw new ApiException(HttpStatus.NOT_FOUND,"系统不存在");
     if(!canEnter(uid,app))throw ApiException.forbidden();
   }
-  boolean canManage(long uid){return db.queryForObject("SELECT count(*) FROM user_roles ur JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=? AND r.code='系统管理员' AND r.enabled=1",Integer.class,uid)>0;}
-  void requireAdmin(long uid){if(!canManage(uid))throw ApiException.forbidden();}
+  ManagementAccess management(){return new ManagementAccess(db);}
+  boolean canManage(long uid){return !management().grants(uid).isEmpty();}
   private static String hash(String s){try{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(s.getBytes(StandardCharsets.UTF_8)));}catch(Exception e){throw new IllegalStateException(e);}}
 }

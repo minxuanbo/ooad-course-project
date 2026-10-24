@@ -53,7 +53,7 @@ docker run --rm --network "$test_name" --memory 800m \
     cp /project/pom.xml . && cp -R /project/src . && cp /source/*.xlsx . || exit 1
     /opt/apache-maven-3.9.9/bin/mvn -B -ntp -s /opt/maven-settings.xml clean verify
     result=$?
-    if [ "$result" -eq 0 ]; then
+    if [ -s target/site/jacoco/index.html ]; then
       test -s target/site/jacoco/index.html && test -s target/jacoco.exec || exit 1
       cp -R target/site/jacoco/. /reports/ || exit 1
       cp target/jacoco.exec /reports/ || exit 1

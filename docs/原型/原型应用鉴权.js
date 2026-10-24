@@ -31,7 +31,7 @@ buildCatalog();
 initialData=function(){originalInitialData();rolePermissions=[];for(const ids of catalogRoles)rolePermissions.push(ids.slice());};
 permissionLabel=function(p){return applications[p.app].name+' / '+p.module+' / '+p.feature+' / '+p.action;};
 function currentName(){return admin()?'演示管理员':'示例员工甲';}
-function canViewLogs(){return !!actor&&admin();}
+function canViewLogs(){return mgCan('audit.read');}
 function canUse(p){return allowedPermissions().includes(p.id);}
 function modeLabel(){return '离线演示 · 不连接后台';}
 function localLog(a,p,allowed,requestId='',reason=''){
@@ -42,7 +42,7 @@ function dropSession(){operationBusy=false;actor=null;selectedApp=null;selectedM
 loginView=function(){
   actor=null;closeModal();
   document.querySelector('.prototype-bar span').textContent='纯离线演示 · 不连接后台 · 不执行业务操作';
-  root.innerHTML='<div class="login-layout"><section class="login-story"><div class="brand"><span class="mark">市</span>市政集团 · 课程原型</div><div class="story"><div class="eyebrow">IDENTITY & ACCESS MANAGEMENT</div><h1>权限可见，<br>操作可验。</h1><p>从应用、模块到功能操作，<br>检查员工每一步的访问权限。</p><div class="diagram"><span>系统</span><i>—</i><span>模块</span><i>—</i><span>功能</span></div><small>'+applications.length+' 个系统 · '+permissions.length+' 项操作权限</small></div></section><section class="login-panel"><div class="login-card"><span class="pill">统一登录 · 界面原型</span><h2>欢迎回来</h2><form id="prototype-login"><label>演示身份<select id="identity"><option value="employee">普通员工 · 示例员工甲</option><option value="admin">系统管理员</option></select></label><p id="login-error" class="error" role="alert"></p><button class="primary login-submit" type="submit">登录并查看我的应用 →</button></form><div class="demo"><strong>演示边界</strong><p>授权来自 Excel 初始角色，可在原型管理页面修改。</p><p>无需账号密码或后台服务。操作仅模拟鉴权，日志仅管理员可见，刷新页面恢复初始数据。</p></div></div></section></div>';
+  root.innerHTML='<div class="login-layout"><section class="login-story"><div class="brand"><span class="mark">市</span>市政集团 · 课程原型</div><div class="story"><div class="eyebrow">IDENTITY & ACCESS MANAGEMENT</div><h1>权限可见，<br>操作可验。</h1><p>从应用、模块到功能操作，<br>检查员工每一步的访问权限。</p><div class="diagram"><span>系统</span><i>—</i><span>模块</span><i>—</i><span>功能</span></div><small>'+applications.length+' 个系统 · '+permissions.length+' 项操作权限</small></div></section><section class="login-panel"><div class="login-card"><span class="pill">统一登录 · 界面原型</span><h2>欢迎回来</h2><form id="prototype-login"><label>演示身份<select id="identity"><option value="employee">普通员工 · 示例员工甲</option><option value="admin">系统管理员 · 全平台</option><option value="company">公司领导 · 道路工程分公司</option><option value="department">部长 · 总公司综合办公室</option><option value="deputy">副部长 · 总公司综合办公室</option><option value="project">项目经理 · 道路公司第一项目部</option><option value="projectDeputy">项目副经理 · 道路公司第一项目部</option><option value="projectChief">项目总工程师 · 桥梁公司第一项目部</option></select></label><p id="login-error" class="error" role="alert"></p><button class="primary login-submit" type="submit">登录并查看我的应用 →</button></form><div class="demo"><strong>演示边界</strong><p>授权来自 Excel 初始角色，可在原型管理页面修改。</p><p>无需账号密码或后台服务。操作仅模拟鉴权，日志仅管理员可见，刷新页面恢复初始数据。</p></div></div></section></div>';
 };
 shell=function(){
   if(!actor)return loginView();
@@ -57,10 +57,11 @@ shell=function(){
   document.querySelector('.prototype-bar span').textContent='纯离线演示 · 不连接后台 · 刷新即重置';
   if(page==='dashboard'){
     const values=document.querySelectorAll('.metric strong');
+    if(values[0])values[0].textContent=users.filter(u=>mgCan('user.read',u)).length;
     if(values[2])values[2].textContent=applications.length;
     if(values[3])values[3].textContent=permissions.length;
     const paragraphs=document.querySelectorAll('.dashboard-columns .panel:last-child p');
-    if(paragraphs[0])paragraphs[0].textContent='使用 6 名虚构员工与 Excel 完整权限目录演示，非生产数据库统计。';
+    if(paragraphs[0])paragraphs[0].textContent='人员统计受当前管理范围限制；使用虚构员工与 Excel 完整目录演示。';
   }
 };
 portal=function(view){

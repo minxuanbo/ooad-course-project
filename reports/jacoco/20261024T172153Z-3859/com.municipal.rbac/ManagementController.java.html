@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ManagementController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rbac0</a> &gt; <a href="index.source.html" class="el_package">com.municipal.rbac</a> &gt; <span class="el_source">ManagementController.java</span></div><h1>ManagementController.java</h1><pre class="source lang-java linenums">package com.municipal.rbac;
+
+import java.util.*;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.*;
+
+@RestController @RequestMapping(&quot;/api&quot;)
+class ManagementController {
+  private final JdbcTemplate db;
+  private final AuthService auth;
+  private final ManagementAccess access;
+<span class="fc" id="L13">  ManagementController(JdbcTemplate db,AuthService auth){this.db=db;this.auth=auth;this.access=auth.management();}</span>
+<span class="fc" id="L14">  record Scope(Long roleId,String scope,Long companyId,Long departmentId){}</span>
+<span class="fc" id="L15">  record Assignments(List&lt;Long&gt; roleIds,List&lt;Scope&gt; scopes){}</span>
+<span class="fc" id="L16">  record Permissions(List&lt;String&gt; permissions){}</span>
+<span class="fc" id="L17">  record Organization(String code,String name,Long companyId,Long parentId){}</span>
+<span class="fc" id="L18">  private long operator(String header){return (long)auth.require(header).get(&quot;id&quot;);}</span>
+  @GetMapping(&quot;/management/permissions&quot;) Map&lt;String,String&gt; catalog(@RequestHeader(&quot;Authorization&quot;)String h){
+<span class="fc" id="L20">    access.requireGlobal(operator(h),&quot;role.permissions&quot;);return ManagementAccess.PERMISSIONS;</span>
+  }
+  @GetMapping(&quot;/roles/{id}/management-permissions&quot;) List&lt;String&gt; rolePermissions(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id){
+<span class="fc" id="L23">    access.require(operator(h),&quot;role.read&quot;);return db.queryForList(&quot;SELECT permission_code FROM role_management_permissions WHERE role_id=? ORDER BY permission_code&quot;,String.class,id);</span>
+  }
+  @PutMapping(&quot;/roles/{id}/management-permissions&quot;) @Transactional
+  void rolePermissions(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id,@RequestBody Permissions body){
+<span class="fc" id="L27">    access.lock();long actor=operator(h);access.requireGlobal(actor,&quot;role.permissions&quot;);</span>
+<span class="fc" id="L28">    String code=roleCode(id);</span>
+<span class="fc bfc" id="L29" title="All 4 branches covered.">    if(body.permissions()==null || !ManagementAccess.PERMISSIONS.keySet().containsAll(body.permissions()))throw ApiException.bad(&quot;管理权限列表无效&quot;);</span>
+<span class="fc bfc" id="L30" title="All 4 branches covered.">    if(!code.equals(&quot;系统管理员&quot;) &amp;&amp; body.permissions().stream().anyMatch(ManagementAccess.PLATFORM_ONLY::contains))throw ApiException.bad(&quot;日志查看与平台授权配置仅限系统管理员角色&quot;);</span>
+<span class="fc" id="L31">    db.update(&quot;DELETE FROM role_management_permissions WHERE role_id=?&quot;,id);</span>
+<span class="fc bfc" id="L32" title="All 2 branches covered.">    for(String permission:new LinkedHashSet&lt;&gt;(body.permissions()))db.update(&quot;INSERT INTO role_management_permissions(role_id,permission_code) VALUES(?,?)&quot;,id,permission);</span>
+<span class="fc" id="L33">    access.retainPlatformAdmin();audit(actor,&quot;ROLE&quot;,id,&quot;SET_ROLE_MANAGEMENT_PERMISSIONS&quot;,body.permissions().toString());</span>
+<span class="fc" id="L34">  }</span>
+  @GetMapping(&quot;/users/{id}/role-assignments&quot;) Map&lt;String,Object&gt; assignments(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id){
+<span class="fc" id="L36">    access.requireGlobal(operator(h),&quot;management.grant&quot;);</span>
+<span class="fc" id="L37">    return Map.of(&quot;roles&quot;,db.queryForList(&quot;SELECT r.id,r.code,r.name,r.enabled,(ur.user_id IS NOT NULL) assigned,(SELECT count(*) FROM role_management_permissions mp WHERE mp.role_id=r.id) managementPermissionCount FROM roles r LEFT JOIN user_roles ur ON ur.role_id=r.id AND ur.user_id=? ORDER BY r.id&quot;,id),</span>
+<span class="fc" id="L38">      &quot;scopes&quot;,db.queryForList(&quot;SELECT role_id roleId,scope_type scope,company_id companyId,department_id departmentId FROM user_role_scopes WHERE user_id=? ORDER BY id&quot;,id));</span>
+  }
+  @PutMapping(&quot;/users/{id}/role-assignments&quot;) @Transactional
+  void assign(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id,@RequestBody Assignments body){
+<span class="fc" id="L42">    access.lock();long actor=operator(h);access.requireGlobal(actor,&quot;management.grant&quot;);</span>
+<span class="fc bfc" id="L43" title="All 6 branches covered.">    if(body.roleIds()==null || body.scopes()==null || body.scopes().size()&gt;200)throw ApiException.bad(&quot;角色与范围列表必填，范围最多 200 条&quot;);</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">    if(db.queryForObject(&quot;SELECT count(*) FROM users WHERE id=? AND status='ACTIVE'&quot;,Integer.class,id)==0)throw ApiException.bad(&quot;只能为启用用户分配角色与范围&quot;);</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">    for(Long role:body.roleIds())roleCode(role);</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">    for(Scope scope:body.scopes())validate(scope,body.roleIds());</span>
+<span class="fc" id="L47">    access.replaceRoles(id,body.roleIds(),actor);</span>
+<span class="fc" id="L48">    db.update(&quot;DELETE FROM user_role_scopes WHERE user_id=?&quot;,id);</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">    for(Scope g:new LinkedHashSet&lt;&gt;(body.scopes()))db.update(&quot;INSERT INTO user_role_scopes(user_id,role_id,scope_type,company_id,department_id) VALUES(?,?,?,?,?)&quot;,id,g.roleId(),g.scope(),g.companyId(),g.departmentId());</span>
+<span class="fc" id="L50">    access.retainPlatformAdmin();audit(actor,&quot;USER&quot;,id,&quot;SET_ROLE_ASSIGNMENTS&quot;,body.toString());</span>
+<span class="fc" id="L51">  }</span>
+  private String roleCode(Long id){
+<span class="fc" id="L53">    var roles=db.queryForList(&quot;SELECT code FROM roles WHERE id=? AND enabled=1&quot;,String.class,id);</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">    if(roles.isEmpty())throw ApiException.bad(&quot;角色不存在或已停用&quot;);return roles.get(0);</span>
+  }
+  private void validate(Scope g,List&lt;Long&gt; roles){
+<span class="fc bfc" id="L57" title="All 6 branches covered.">    if(g==null || g.roleId()==null || !roles.contains(g.roleId()))throw ApiException.bad(&quot;范围必须绑定已选择的角色&quot;);</span>
+<span class="fc" id="L58">    String code=roleCode(g.roleId());</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">    if(!Set.of(&quot;GLOBAL&quot;,&quot;COMPANY&quot;,&quot;DEPARTMENT&quot;).contains(Objects.toString(g.scope(),&quot;&quot;)))throw ApiException.bad(&quot;未知管理范围&quot;);</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">    if(code.equals(&quot;系统管理员&quot;) != g.scope().equals(&quot;GLOBAL&quot;))throw ApiException.bad(&quot;系统管理员使用全平台范围，其他角色使用公司或部门范围&quot;);</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">    if(g.scope().equals(&quot;GLOBAL&quot;)){</span>
+<span class="fc bfc" id="L62" title="All 4 branches covered.">      if(g.companyId()!=null || g.departmentId()!=null)throw ApiException.bad(&quot;平台范围不能指定组织&quot;);</span>
+    }else{
+<span class="fc bfc" id="L64" title="All 4 branches covered.">      if(g.companyId()==null || db.queryForObject(&quot;SELECT count(*) FROM companies WHERE id=? AND enabled=1&quot;,Integer.class,g.companyId())==0)throw ApiException.bad(&quot;公司不存在或已停用&quot;);</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">      if(g.scope().equals(&quot;COMPANY&quot;)){</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        if(g.departmentId()!=null)throw ApiException.bad(&quot;公司范围不能指定部门&quot;);</span>
+<span class="fc bfc" id="L67" title="All 4 branches covered.">      }else if(g.departmentId()==null || db.queryForObject(&quot;SELECT count(*) FROM departments WHERE id=? AND company_id=? AND enabled=1&quot;,Integer.class,g.departmentId(),g.companyId())==0)throw ApiException.bad(&quot;部门不属于指定公司或已停用&quot;);</span>
+    }
+<span class="fc" id="L69">  }</span>
+  @GetMapping(&quot;/organizations&quot;) Map&lt;String,Object&gt; organizations(@RequestHeader(&quot;Authorization&quot;)String h){
+<span class="fc" id="L71">    long actor=operator(h);access.require(actor,&quot;org.read&quot;);</span>
+<span class="fc" id="L72">    String scope=access.scope(actor,&quot;org.read&quot;,&quot;d.id&quot;);</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">    return Map.of(&quot;companies&quot;,db.queryForList(&quot;SELECT c.id,c.code,c.name,c.enabled FROM companies c WHERE &quot;+(access.global(actor,&quot;org.read&quot;)?&quot;1=1&quot;:&quot;EXISTS(SELECT 1 FROM departments d WHERE d.company_id=c.id AND &quot;+scope+&quot;)&quot;)+&quot; ORDER BY c.id&quot;),</span>
+<span class="fc" id="L74">      &quot;departments&quot;,db.queryForList(&quot;SELECT d.id,d.code,d.name,d.company_id companyId,d.parent_id parentId,d.enabled,(&quot;+access.scope(actor,&quot;org.write&quot;,&quot;d.id&quot;)+&quot;) writable FROM departments d WHERE &quot;+scope+&quot; ORDER BY d.id&quot;));</span>
+  }
+  @PostMapping(&quot;/organizations/companies&quot;) @Transactional
+  void createCompany(@RequestHeader(&quot;Authorization&quot;)String h,@RequestBody Organization body){
+<span class="fc" id="L78">    access.lock();long actor=operator(h);access.requireGlobal(actor,&quot;org.write&quot;);validateOrganization(body);</span>
+<span class="fc" id="L79">    db.update(&quot;INSERT INTO companies(code,name) VALUES(?,?)&quot;,body.code(),body.name());</span>
+<span class="fc" id="L80">    audit(actor,&quot;COMPANY&quot;,db.queryForObject(&quot;SELECT id FROM companies WHERE code=?&quot;,Long.class,body.code()),&quot;CREATE_COMPANY&quot;,body.name());</span>
+<span class="fc" id="L81">  }</span>
+  @PutMapping(&quot;/organizations/companies/{id}&quot;) @Transactional
+  void renameCompany(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id,@RequestBody Organization body){
+<span class="fc" id="L84">    access.lock();long actor=operator(h);access.requireGlobal(actor,&quot;org.write&quot;);validateOrganization(body);</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">    if(db.update(&quot;UPDATE companies SET code=?,name=? WHERE id=?&quot;,body.code(),body.name(),id)==0)throw ApiException.bad(&quot;公司不存在&quot;);</span>
+<span class="fc" id="L86">    audit(actor,&quot;COMPANY&quot;,id,&quot;UPDATE_COMPANY&quot;,body.name());</span>
+<span class="fc" id="L87">  }</span>
+  @PostMapping(&quot;/organizations/departments&quot;) @Transactional
+  void createDepartment(@RequestHeader(&quot;Authorization&quot;)String h,@RequestBody Organization body){
+<span class="fc" id="L90">    access.lock();long actor=operator(h);access.require(actor,&quot;org.write&quot;);validateOrganization(body);</span>
+<span class="fc bfc" id="L91" title="All 4 branches covered.">    if(body.companyId()==null || db.queryForObject(&quot;SELECT count(*) FROM companies WHERE id=?&quot;,Integer.class,body.companyId())==0)throw ApiException.bad(&quot;公司不存在&quot;);</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">    if(body.parentId()!=null){</span>
+<span class="fc" id="L93">      access.department(actor,&quot;org.write&quot;,body.parentId());</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">      if(db.queryForObject(&quot;SELECT count(*) FROM departments WHERE id=? AND company_id=?&quot;,Integer.class,body.parentId(),body.companyId())==0)throw ApiException.bad(&quot;上级部门必须属于同一公司&quot;);</span>
+    }
+    // Only company/global maintainers may create departments: exact department grants cannot expand their scope.
+<span class="fc bfc" id="L97" title="All 2 branches covered.">    if(!access.company(actor,&quot;org.write&quot;,body.companyId()))throw ApiException.forbidden();</span>
+<span class="fc" id="L98">    db.update(&quot;INSERT INTO departments(company_id,code,name,parent_id) VALUES(?,?,?,?)&quot;,body.companyId(),body.code(),body.name(),body.parentId());</span>
+<span class="fc" id="L99">    audit(actor,&quot;DEPARTMENT&quot;,db.queryForObject(&quot;SELECT id FROM departments WHERE code=?&quot;,Long.class,body.code()),&quot;CREATE_DEPARTMENT&quot;,body.name());</span>
+<span class="fc" id="L100">  }</span>
+  @PutMapping(&quot;/organizations/departments/{id}&quot;) @Transactional
+  void renameDepartment(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id,@RequestBody Organization body){
+<span class="fc" id="L103">    access.lock();long actor=operator(h);access.department(actor,&quot;org.write&quot;,id);validateOrganization(body);</span>
+<span class="fc bfc" id="L104" title="All 4 branches covered.">    if(body.companyId()!=null || body.parentId()!=null)throw ApiException.bad(&quot;此接口仅修改名称与编码，不允许移动组织&quot;);</span>
+<span class="fc" id="L105">    db.update(&quot;UPDATE departments SET code=?,name=? WHERE id=?&quot;,body.code(),body.name(),id);</span>
+<span class="fc" id="L106">    audit(actor,&quot;DEPARTMENT&quot;,id,&quot;UPDATE_DEPARTMENT&quot;,body.name());</span>
+<span class="fc" id="L107">  }</span>
+  private void validateOrganization(Organization body){
+<span class="fc bfc" id="L109" title="All 12 branches covered.">    if(body.code()==null || body.code().isBlank() || body.code().length()&gt;100 || body.name()==null || body.name().isBlank() || body.name().length()&gt;191)throw ApiException.bad(&quot;请填写有效的组织编码与名称&quot;);</span>
+<span class="fc" id="L110">  }</span>
+<span class="fc" id="L111">  private void audit(long actor,String type,long target,String action,String detail){db.update(&quot;INSERT INTO authorization_changes(operator_id,target_type,target_id,action,detail) VALUES(?,?,?,?,?)&quot;,actor,type,target,action,detail);}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

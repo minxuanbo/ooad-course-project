@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RolePolicy.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rbac0</a> &gt; <a href="index.source.html" class="el_package">com.municipal.rbac</a> &gt; <span class="el_source">RolePolicy.java</span></div><h1>RolePolicy.java</h1><pre class="source lang-java linenums">package com.municipal.rbac;
+
+import java.util.Set;
+
+/** Explicit mapping of the source job titles to the five existing permission-matrix roles. */
+final class RolePolicy {
+  private RolePolicy(){}
+  static String primary(String position,String department,boolean namedManager){
+<span class="fc bfc" id="L9" title="All 2 branches covered.">    if(Set.of(&quot;项目经理&quot;,&quot;项目副经理&quot;,&quot;项目总工程师&quot;).contains(position))return &quot;项目经理&quot;;</span>
+<span class="fc bfc" id="L10" title="All 4 branches covered.">    if(Set.of(&quot;公司领导&quot;,&quot;分公司领导&quot;).contains(department) || Set.of(&quot;董事长&quot;,&quot;总经理&quot;,&quot;副总经理&quot;,&quot;总工程师&quot;,&quot;总会计师&quot;,&quot;党委副书记&quot;,&quot;工会主席&quot;,&quot;总经理助理&quot;,&quot;董事会秘书&quot;,&quot;经理&quot;,&quot;副经理&quot;,&quot;经理助理&quot;,&quot;安全总监&quot;).contains(position))return &quot;公司领导&quot;;</span>
+<span class="fc bfc" id="L11" title="All 4 branches covered.">    if(Set.of(&quot;部长&quot;,&quot;副部长&quot;,&quot;主任&quot;,&quot;副主任&quot;).contains(position)||namedManager)return &quot;部门经理&quot;;</span>
+<span class="fc" id="L12">    return &quot;普通员工&quot;;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

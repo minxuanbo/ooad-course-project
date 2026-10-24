@@ -43,6 +43,8 @@ select,textarea{font:inherit;border:1px solid #dce2eb;border-radius:8px;padding:
 .shell{min-height:calc(100vh - 57px)}a{color:#3865e8}
 @media print{.prototype-bar,.sidebar,.topbar button,.page-heading button,#notice{display:none}.shell{display:block}.content{padding:0}.card{break-inside:avoid}.login-layout{display:block}.login-story{display:none}}
 @media(max-width:720px){.prototype-bar{gap:6px;padding:10px 16px}.prototype-bar span{width:100%;order:3}.prototype-bar button{margin-left:auto}.pagination{flex-wrap:wrap;gap:12px}}
+
+.mg-editor-section{border:1px solid #dfe5ef;border-radius:10px;padding:18px;margin:22px 0;background:#f8faff}.mg-editor-section h3{margin:0;color:#294c86;font-size:17px}.mg-editor-section p{margin:10px 0 16px}.mg-role-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 16px;background:white;border-radius:8px}.mg-scope-row{margin:18px 0;padding:16px;border:1px solid #dce2eb;border-radius:8px;background:white;min-width:0}.mg-scope-row legend{font-weight:600;color:#53617a;padding:0 6px}.mg-scope-row label{display:block;margin:10px 0}.mg-scope-row select{display:block;width:100%;margin-top:5px;border:1px solid #dce2eb;border-radius:7px;padding:10px;font:inherit;color:inherit;background:white}.mg-empty{padding:16px;background:white;border-radius:8px;color:#728096}@media(max-width:480px){.mg-role-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -74,16 +76,18 @@ const permissions = [
 let users, rolePermissions, logs, actor=null, page='portal', query='', company='', department='', pageNumber=0;
 let selectedApp=null, revokedDemo=false, selectedIds=[], editorKind='', editorTarget=0, modalReturn=null, noticeTimer;
 const root=document.getElementById('app'), modal=document.getElementById('modal');
-const nav=[['portal','我的应用'],['dashboard','工作台'],['users','用户与授权'],['roles','角色与权限'],['apps','业务系统'],['logs','鉴权日志']];
+const nav=[['portal','我的应用'],['dashboard','工作台'],['organizations','组织管理'],['users','用户与授权'],['roles','角色与权限'],['apps','业务系统'],['logs','鉴权日志']];
 
 function initialData(){
   users=[
     {id:1,name:'示例员工甲',no:'DEMO001',phone:'13800000001',company:'总公司',department:'综合办公室',position:'职员',roles:[4],state:'EMPLOYED'},
-    {id:2,name:'示例员工乙',no:'DEMO002',phone:'13800000002',company:'总公司',department:'综合办公室',position:'主任',roles:[2,4],state:'EMPLOYED'},
-    {id:3,name:'示例员工丙',no:'DEMO003',phone:'13800000003',company:'道路工程分公司',department:'工程技术部',position:'项目经理',roles:[3,4],state:'EMPLOYED'},
-    {id:4,name:'示例员工丁',no:'DEMO004',phone:'13800000004',company:'道路工程分公司',department:'综合办公室',position:'职员',roles:[4],state:'EMPLOYED'},
-    {id:5,name:'示例员工戊',no:'DEMO005',phone:'',company:'桥梁工程分公司',department:'工程技术部',position:'工程师',roles:[4],state:'EMPLOYED'},
-    {id:6,name:'示例员工己',no:'DEMO006',phone:'13800000006',company:'桥梁工程分公司',department:'综合办公室',position:'负责人',roles:[1,4],state:'EMPLOYED'}
+    {id:2,name:'示例员工乙',no:'DEMO002',phone:'13800000002',company:'总公司',department:'综合办公室',position:'部长',roles:[2,4],state:'EMPLOYED'},
+    {id:3,name:'示例员工丙',no:'DEMO003',phone:'13800000003',company:'道路工程分公司',department:'第一项目部',position:'项目经理',roles:[3,4],state:'EMPLOYED'},
+    {id:4,name:'示例员工丁',no:'DEMO004',phone:'13800000004',company:'道路工程分公司',department:'第一项目部',position:'项目副经理',roles:[3,4],state:'EMPLOYED'},
+    {id:5,name:'示例员工戊',no:'DEMO005',phone:'',company:'桥梁工程分公司',department:'第一项目部',position:'项目总工程师',roles:[3,4],state:'EMPLOYED'},
+    {id:6,name:'示例员工己',no:'DEMO006',phone:'13800000006',company:'桥梁工程分公司',department:'工程技术部',position:'副部长',roles:[2,4],state:'EMPLOYED'},
+    {id:7,name:'示例员工庚',no:'DEMO007',phone:'',company:'道路工程分公司',department:'公司领导',position:'经理',roles:[1,4],state:'EMPLOYED'},
+    {id:8,name:'示例员工辛',no:'DEMO008',phone:'',company:'总公司',department:'综合办公室',position:'副部长',roles:[2,4],state:'EMPLOYED'}
   ];
   rolePermissions=[[0,1,2,3,4,5,6,7],[0,2,4],[0,1,2],[0,2,3],[0,2]];
   logs=[];
@@ -94,11 +98,11 @@ function button(text,action,id='',classes='secondary'){return '<button type="but
 function badge(text,ok=true){return '<span class="badge '+(ok?'green':'red')+'">'+esc(text)+'</span>';}
 function notify(text){const n=document.getElementById('notice');n.textContent=text;n.className='visible';clearTimeout(noticeTimer);noticeTimer=setTimeout(function(){n.className='';},4500);}
 function person(id){for(const u of users)if(u.id===Number(id))return u;return null;}
-function admin(){return actor==='admin';}
+function admin(){return !!actor && mgEffective().length>0;}
 function roleText(ids){let list=[];for(const id of ids)list.push(roleNames[id]);return list.join('、')||'未分配角色';}
 function allowedPermissions(){
-  if(admin())return rolePermissions[0];
-  const u=person(1),out=[];
+  if(actor==='admin')return rolePermissions[0];
+  const u=person(mgId())||person(1),out=[];
   if(!actor||u.state==='DEPARTED'||revokedDemo)return out;
   for(const r of u.roles)for(const p of rolePermissions[r])if(!out.includes(p))out.push(p);
   return out;
@@ -111,11 +115,11 @@ function loginView(){
 }
 function shell(){
   if(!actor)return loginView();
-  if(!admin()&&!['portal','system'].includes(page))page='portal';
+  if(!mgPage(page))page='portal';
   let links='',title='';
-  for(const item of nav){if(item[0]===page)title=item[1];if(item[0]==='portal'||admin())links+='<button data-action="navigate" data-id="'+item[0]+'" class="'+(page===item[0]||(page==='system'&&item[0]==='portal')?'active':'')+'"><span>◇</span>'+item[1]+'</button>';}
+  for(const item of nav){if(item[0]===page)title=item[1];if(mgPage(item[0]))links+='<button data-action="navigate" data-id="'+item[0]+'" class="'+(page===item[0]||(page==='system'&&item[0]==='portal')?'active':'')+'"><span>◇</span>'+item[1]+'</button>';}
   if(page==='system')title=applications[selectedApp]?.name||'应用功能';
-  root.innerHTML='<div class="shell"><aside class="sidebar"><div class="brand"><span class="mark">市</span><div>统一权限管理<small>市政集团 · 演示版</small></div></div><div class="nav-label">'+(admin()?'管理空间':'应用空间')+'</div><nav>'+links+'</nav><div class="sidebar-bottom"><span class="dot"></span> 静态交互原型<small>不执行真实认证与授权</small></div></aside><div class="workspace"><header class="topbar"><span>市政集团 <i>/</i> 权限管理平台</span><div class="profile"><span class="avatar">'+(admin()?'管':'甲')+'</span>'+(admin()?'系统管理员':'示例员工甲')+button('切换身份','logout','','text-button')+'</div></header><section class="content"><div class="page-heading"><div><div class="eyebrow">ACCESS CONSOLE / PROTOTYPE</div><h1>'+title+'</h1><p class="muted">依据课程设计文档制作 · 所有内容均为演示数据</p></div>'+button('↻ 刷新视图','refresh')+'</div><div id="view"></div><footer class="content-footer">RBAC0 · 课程界面原型<span>真实权限以 Spring Boot 后端校验为准</span></footer></section></div></div>';
+  root.innerHTML='<div class="shell"><aside class="sidebar"><div class="brand"><span class="mark">市</span><div>统一权限管理<small>市政集团 · 演示版</small></div></div><div class="nav-label">'+(admin()?'管理空间':'应用空间')+'</div><nav>'+links+'</nav><div class="sidebar-bottom"><span class="dot"></span> 静态交互原型<small>不执行真实认证与授权</small></div></aside><div class="workspace"><header class="topbar"><span>市政集团 <i>/</i> 权限管理平台</span><div class="profile"><span class="avatar">'+(admin()?'管':'甲')+'</span>'+esc(mgName())+button('切换身份','logout','','text-button')+'</div></header><section class="content"><div class="page-heading"><div><div class="eyebrow">ACCESS CONSOLE / PROTOTYPE</div><h1>'+title+'</h1><p class="muted">管理范围：'+esc(mgSummary())+' · 仅虚构数据</p></div>'+button('↻ 刷新视图','refresh')+'</div><div id="view"></div><footer class="content-footer">RBAC0 · 课程界面原型<span>真实权限以 Spring Boot 后端校验为准</span></footer></section></div></div>';
   const view=document.getElementById('view');
   if(page==='dashboard')dashboard(view);
   else if(page==='users')userView(view);
@@ -123,10 +127,11 @@ function shell(){
   else if(page==='system')systemView(view);
   else if(page==='roles')rolesView(view);
   else if(page==='apps')appsView(view);
+  else if(page==='organizations')organizationView(view);
   else logsView(view);
 }
 function dashboard(view){
-  view.innerHTML='<div class="welcome"><div><span class="pill">组织访问管理</span><h2>让权限清晰，让管理有序</h2><p>按组织查找人员，按角色配置权限，按流程完成交接。</p>'+button('进入用户授权 <span aria-hidden="true">→</span>','navigate','users','primary action-link')+'</div><div class="welcome-symbol" aria-hidden="true">◇</div></div><div class="metrics">'+metric('示例员工',users.length)+metric('授权角色',5)+metric('示例系统',4)+metric('示例权限',8)+'</div><div class="dashboard-columns"><section class="card panel"><h2>授权管理流程</h2><div class="step"><b>01</b><div><strong>按公司与部门定位员工</strong><p>支持组合筛选、电话展示和分页。</p></div></div><div class="step"><b>02</b><div><strong>维护角色与功能权限</strong><p>一个用户可持有多个角色，权限取并集。</p></div></div><div class="step"><b>03</b><div><strong>交接后集中撤权</strong><p>保留历史人员，停用账号并撤销登录会话。</p></div></div></section><section class="card panel"><h2>原型演示说明</h2><p class="muted">此处用 6 名虚构员工、4 个系统与 8 项权限展示主要交互，不是生产数据库统计。</p><p class="muted">授权编辑只影响当前 HTML 的内存状态；切换身份保留演示变更，刷新浏览器恢复初始状态。</p><p class="muted">本原型不展示尚未实现的用户新增、删除、修改或真实业务系统页面。</p><a href="../课程设计/02-界面设计文档.md">查看界面设计文档 →</a></section></div>';
+  view.innerHTML='<div class="welcome"><div><span class="pill">组织访问管理</span><h2>让权限清晰，让管理有序</h2><p>按组织查找人员，按角色配置权限，按流程完成交接。</p>'+button('进入用户授权 <span aria-hidden="true">→</span>','navigate','users','primary action-link')+'</div><div class="welcome-symbol" aria-hidden="true">◇</div></div><div class="metrics">'+metric('示例员工',users.length)+metric('授权角色',5)+metric('示例系统',4)+metric('示例权限',8)+'</div><div class="dashboard-columns"><section class="card panel"><h2>授权管理流程</h2><div class="step"><b>01</b><div><strong>按公司与部门定位员工</strong><p>支持组合筛选、电话展示和分页。</p></div></div><div class="step"><b>02</b><div><strong>维护角色与功能权限</strong><p>一个用户可持有多个角色，权限取并集。</p></div></div><div class="step"><b>03</b><div><strong>交接后集中撤权</strong><p>保留历史人员，停用账号并撤销登录会话。</p></div></div></section><section class="card panel"><h2>原型演示说明</h2><p class="muted">此处用 8 名虚构员工、4 个系统与 8 项权限展示主要交互，不是生产数据库统计。</p><p class="muted">授权编辑只影响当前 HTML 的内存状态；切换身份保留演示变更，刷新浏览器恢复初始状态。</p><p class="muted">本原型不展示尚未实现的用户新增、删除、修改或真实业务系统页面。</p><a href="../课程设计/02-界面设计文档.md">查看界面设计文档 →</a></section></div>';
 }
 function metric(name,value){return '<article class="card metric"><div>'+name+'</div><strong>'+value+'</strong><small>仅示例数据</small></article>';}
 function portal(view){
@@ -138,18 +143,18 @@ function portal(view){
 function accessResult(){const box=document.getElementById('access-result');if(!box)return;const ok=appCount(selectedApp)>0;box.className='card access-result '+(ok?'':'error');box.textContent=ok?'您有权限访问所选系统，但系统暂未接入。':'您当前无权限访问所选系统；授权可能已被回收。';}
 function userView(view){
   let companies=[],departments=[],matches=[];
-  for(const u of users){if(!companies.includes(u.company))companies.push(u.company);if((!company||u.company===company)&&!departments.includes(u.department))departments.push(u.department);if((!company||u.company===company)&&(!department||u.department===department)&&(!query||(u.name+u.no+u.phone).includes(query)))matches.push(u);}
+  for(const u of users.filter(u=>mgCan('user.read',u))){if(!companies.includes(u.company))companies.push(u.company);if((!company||u.company===company)&&!departments.includes(u.department))departments.push(u.department);if((!company||u.company===company)&&(!department||u.department===department)&&(!query||(u.name+u.no+u.phone).includes(query)))matches.push(u);}
   const pages=Math.max(1,Math.ceil(matches.length/3));pageNumber=Math.min(pageNumber,pages-1);
   let co='<option value="">全部公司</option>',de='<option value="">全部部门</option>';
   for(const c of companies)co+='<option '+(c===company?'selected':'')+'>'+esc(c)+'</option>';
   for(const d of departments)de+='<option '+(d===department?'selected':'')+'>'+esc(d)+'</option>';
   let rows='';
-  for(let i=pageNumber*3;i<Math.min(matches.length,pageNumber*3+3);i++){const u=matches[i];rows+='<tr><td><strong>'+u.name+'</strong></td><td class="mono">'+u.no+'</td><td class="mono nowrap">'+(u.phone||'—')+'</td><td>'+u.company+'<small>'+u.department+'</small></td><td>'+u.position+'</td><td>'+roleText(u.roles)+'</td><td>'+badge(u.state==='DEPARTED'?'已停用':'已启用',u.state!=='DEPARTED')+'<small>'+label(u.state)+'</small></td><td class="nowrap"><button class="text-button" data-action="user-role" data-id="'+u.id+'" '+(u.state==='DEPARTED'?'disabled':'')+'>分配角色</button>'+button('离职交接','handover',u.id,'text-button')+'</td></tr>';}
+  for(let i=pageNumber*3;i<Math.min(matches.length,pageNumber*3+3);i++){const u=matches[i];rows+='<tr><td><strong>'+u.name+'</strong></td><td class="mono">'+u.no+'</td><td class="mono nowrap">'+(u.phone||'—')+'</td><td>'+u.company+'<small>'+u.department+'</small></td><td>'+u.position+'</td><td>'+roleText(u.roles)+'</td><td>'+badge(u.state==='DEPARTED'?'已停用':'已启用',u.state!=='DEPARTED')+'<small>'+label(u.state)+'</small></td><td class="nowrap">'+(!mgGlobal('management.grant')&&mgTarget('user.roles',u)&&u.state!=='DEPARTED'?button('分配角色','user-role',u.id,'text-button'):'')+(mgTarget('handover.start',u)||mgTarget('handover.complete',u)?button('离职交接','handover',u.id,'text-button'):'')+(mgCan('management.grant')?button('分配角色与管理范围','management-grant',u.id,'text-button'):'')+'</td></tr>';}
   view.innerHTML='<section class="card"><form id="search-form" class="toolbar user-filters"><label>所属公司<select id="company">'+co+'</select></label><label>所属部门<select id="department">'+de+'</select></label><label class="keyword">员工搜索<input id="query" placeholder="姓名、工号或手机号" value="'+esc(query)+'"></label><button class="primary" type="submit">查询</button>'+button('重置','clear-filters')+'</form><div class="table-scroll"><table><thead><tr><th>员工</th><th>工号</th><th>电话</th><th>所属组织</th><th>岗位</th><th>当前角色</th><th>账号/人员状态</th><th>操作</th></tr></thead><tbody>'+(rows||'<tr><td colspan="8" class="empty">未找到匹配的用户</td></tr>')+'</tbody></table></div><div class="pagination"><span>共 '+matches.length+' 人 · 第 '+(pageNumber+1)+' / '+pages+' 页 · 原型每页 3 人</span><div><button class="secondary" data-action="previous" '+(pageNumber===0?'disabled':'')+'>上一页</button> <button class="secondary" data-action="next" '+(pageNumber+1>=pages?'disabled':'')+'>下一页</button></div></div></section><p class="prototype-note muted">正式页面每页 20 人。此原型缩短页长便于演示翻页；电话均为虚构占位数据。</p>';
 }
 function rolesView(view){
   let html='<div class="role-grid">';
-  for(let i=0;i<roleNames.length;i++){let count=i===0?1:0;for(const u of users)if(u.roles.includes(i))count++;html+='<article class="card role-card"><span class="role-icon">◇</span>'+badge('已启用')+'<h2>'+roleNames[i]+'</h2><p class="muted">跨系统的功能权限集合</p><div class="role-counts"><div><strong>'+count+'</strong><small>示例关联用户</small></div><div><strong>'+rolePermissions[i].length+'</strong><small>示例操作权限</small></div></div>'+button('配置角色权限 →','role-permission',i)+'</article>';}
+  for(let i=0;i<roleNames.length;i++){let count=i===0?1:0;for(const u of users)if(u.roles.includes(i))count++;html+='<article class="card role-card"><span class="role-icon">◇</span>'+badge('已启用')+'<h2>'+roleNames[i]+'</h2><p class="muted">跨系统的功能权限集合</p><div class="role-counts"><div><strong>'+count+'</strong><small>示例关联用户</small></div><div><strong>'+rolePermissions[i].length+'</strong><small>示例操作权限</small></div></div>'+(mgCan('role.permissions')?button('业务功能权限','role-permission',i)+button('管理操作权限','mg-role-permissions',i):'')+'</article>';}
   view.innerHTML=html+'</div>';
 }
 function appsView(view){let html='<div class="app-grid">';for(const a of applications)html+='<article class="card app-card"><span class="app-icon">'+a.name[0]+'</span>'+badge('已启用')+'<h2>'+a.name+'</h2><p>'+a.description+'</p><p class="muted">2 项示例权限 · 暂未接入</p><small>演示系统标识</small><code>'+a.code+'</code></article>';view.innerHTML=html+'</div><p class="muted prototype-note">仅展示 4 个代表性系统，正式目录当前有 18 个系统。</p>';}
@@ -162,6 +167,7 @@ function openModal(title,body,footer,formId){
 function closeModal(){if(modal.open)modal.close();if(modalReturn?.isConnected)modalReturn.focus();}
 function permissionLabel(p){return applications[p.app].name+' / '+p.feature+' / '+p.action;}
 function openEditor(kind,id){
+  if(kind==='users'?!mgTarget('user.roles',person(id)):!mgCan('role.permissions'))return notify('没有此项管理权限或超出管理范围');
   editorKind=kind;editorTarget=Number(id);selectedIds=[];
   const ids=kind==='users'?person(id).roles:rolePermissions[id];
   for(const value of ids)selectedIds.push(value);
@@ -171,12 +177,12 @@ function openEditor(kind,id){
   openModal(kind==='users'?person(id).name:roleNames[id],'<p class="muted">搜索只筛选显示项，保存保留其他已选项；取消全部选项表示回收全部授权。</p><input id="option-search" aria-label="筛选授权选项" placeholder="筛选选项…"><div class="choices">'+html+'</div><p id="selected-count">已选择 '+selectedIds.length+' 项</p>','<button class="primary" type="submit">保存演示授权</button>','editor-form');
 }
 function handover(id){
-  const u=person(id);editorTarget=u.id;
+  const u=person(id);if(!mgTarget(u.state==='EMPLOYED'?'handover.start':'handover.complete',u))return notify('无此项操作权限或超出范围');editorTarget=u.id;
   let body='<p>人员状态：<strong>'+label(u.state)+'</strong>　账号：'+(u.state==='DEPARTED'?'停用':'启用')+'</p><p>当前角色：'+roleText(u.roles)+'</p>';
   let submit='';
   if(u.state==='EMPLOYED'){
     let options='<option value="">请选择示例员工</option>';
-    for(const p of users)if(p.id!==u.id&&p.state==='EMPLOYED')options+='<option value="'+p.id+'">'+p.name+'（'+p.no+'）</option>';
+    for(const p of users)if(p.id!==u.id&&p.state==='EMPLOYED'&&mgCan('handover.start',p))options+='<option value="'+p.id+'">'+p.name+'（'+p.no+'）</option>';
     body+='<p class="muted">开始交接保留原有权限，接收人不会自动获得其角色。</p><label>交接接收人<select name="receiver" required>'+options+'</select></label><label>交接负责人<select name="owner" required>'+options+'</select></label><label>预计完成日期<input name="date" type="date" required></label><label>离职交接说明<textarea name="reason" maxlength="1000" required></textarea></label><label>OA 单号（可选）<input name="oa" maxlength="200"></label><small>原型采用示例人员下拉框；正式页面按工号录入并由后端验证。</small>';
     submit='<button class="primary" type="submit">开始离职交接</button>';
   }else{
@@ -222,16 +228,17 @@ document.addEventListener('submit',function(event){
     if(count===1){selectedApp=id;logEvent(applications[id],true);accessResult();notify('仅一个可用系统，已自动模拟准入校验。');}
   }else if(form.id==='search-form'){query=document.getElementById('query').value.trim();pageNumber=0;shell();}
   else if(admin()&&form.id==='editor-form'){
-    if(editorKind==='users')person(editorTarget).roles=selectedIds.slice();else rolePermissions[editorTarget]=selectedIds.slice();
+    if(editorKind==='users'){if(!mgTarget('user.roles',person(editorTarget)))return notify('管理权限已变化');if(actor!=='admin'&&selectedIds.some(r=>rolePermissions[r].some(p=>!allowedPermissions().includes(p))))return notify('不能分配超出自身业务权限的角色');person(editorTarget).roles=selectedIds.slice();}else{if(!mgCan('role.permissions'))return;rolePermissions[editorTarget]=selectedIds.slice();}
     closeModal();shell();notify('演示授权已保存，仅在此页面内生效。');
   }else if(admin()&&form.id==='handover-form'){
     const values=new FormData(form),u=person(editorTarget);
+    if(!mgTarget(u.state==='EMPLOYED'?'handover.start':'handover.complete',u))return notify('管理权限或范围不足');
     if(u.state==='EMPLOYED'){
       const reason=String(values.get('reason')).trim();if(!reason){document.getElementById('modal-error').textContent='请输入交接说明。';return;}
       u.handover={receiver:person(values.get('receiver')).name,owner:person(values.get('owner')).name,date:values.get('date'),reason,oa:values.get('oa')};u.state='HANDOVER';
     }else if(u.state==='HANDOVER'){
       const note=String(values.get('note')).trim();if(!values.get('confirmed')||!note){document.getElementById('modal-error').textContent='请填写完成说明并确认处置。';return;}
-      u.handover.note=note;u.state='DEPARTED';u.roles=[];
+      u.handover.note=note;u.state='DEPARTED';u.roles=[];mgScopes[u.id]=[];
     }
     closeModal();shell();notify(u.state==='DEPARTED'?'演示处置完成：角色已回收，账号已停用。':'演示交接已开始，原权限保持不变。');
   }
@@ -241,5 +248,6 @@ initialData();loginView();
 </script>
 <script src="原型权限清单.js"></script>
 <script src="原型应用鉴权.js"></script>
+<script src="原型管理权限.js"></script>
 </body>
 </html>

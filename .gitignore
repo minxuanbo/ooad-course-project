@@ -8,3 +8,6 @@ frontend/node_modules/
 frontend/dist/
 .local/
 __pycache__/
+
+# Microsoft Office lock files are local editor state.
+~$*.xlsx
