@@ -91,4 +91,4 @@ JaCoCo report: /root/ooad-course-project/reports/jacoco/<时间>-<编号>/index.
 - 测试/覆盖率失败：保留终端结果，修复当前代码或用例后重跑；不要混入旧 jacoco.exec。
 - 不要将 RBAC_TEST_DB_URL 指向业务库，也不要用线上演示账号替代测试数据。
 
-原线上采集脚本、报告和演示账号创建工具已从当前仓库移除。本版后端镜像不含线上采集 agent，部署时移除旧 JAVA_TOOL_OPTIONS 中的 agent 参数；历史导出和演示数据保留，不参与当前报告。
+原线上采集脚本、报告和演示账号创建工具已从当前仓库移除。本版后端镜像不含线上采集 agent，部署时移除旧 JAVA_TOOL_OPTIONS 中的 agent 参数；旧线上采集导出已清理；演示人员数据保留，不参与当前报告。

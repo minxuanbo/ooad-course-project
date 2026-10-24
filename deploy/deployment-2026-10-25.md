@@ -37,12 +37,19 @@ Excel 继续从 D `/opt/course-rbac/source` 只读挂载到 `/app/source`，RW=f
 
 公网验证公司过滤、精确部门、多范围、越权拒绝、管理员日志及同会话撤权。使用既有专用演示账号，验证结束恢复原角色和范围并退出，不修改真实员工做测试。
 
-## 备份与恢复
+## 当前保留的最新备份
 
-- B：`/root/rbac-backups/role-scope-20261025/before.sql.gz`、`before.sha256`、`counts-before.txt`。
-- C：`/root/rbac-backups/role-scope-20261025/backend-before.json`、`images-before.env`、`services-before.txt`。
-- 上一镜像：`sha256:65e93d5759bd42839535add1e66a894530644b2960fac7d2dc25780c6d23a6ef`。
+按用户要求清理旧 JaCoCo 和旧备份前，重新创建并校验了当前 V4 状态快照。仅保留以下最新数据库及服务配置备份，文件位于服务器私有目录，不提交 Git：
 
-本次改变授权数据语义，单独 rollback 镜像不会还原角色或管理范围。若需要完整回退，须先停止本项目写入、保留更新后数据备份，核对发布后新增记录后再协调数据库恢复及镜像回退；不要直接清空业务库或操作其他 Stack。MySQL DDL 不具备整体事务回滚能力。
+- B：`/root/rbac-backups/current-20261025/current.sql.gz`、`current.sha256`、`counts-current.txt`。完整 rbac 库逻辑备份，包含表结构、数据、例程及触发器，gzip 和 SHA256 已校验。
+- C：`/root/rbac-backups/current-20261025/backend.json`、`mysql.json`、`images.env`、`services.txt`、`config.sha256`。后端／MySQL 服务规格及镜像配置，JSON 与镜像摘要已核对。
+
+两台的 management-20261024、role-scope-20261025 旧部署前备份，以及旧 live-jacoco 配置快照已删除。上文“发布前备份”是当时的执行记录，不代表旧备份目前仍存在。当前备份用于恢复 V4 状态，不能用于回退 V3。
+
+恢复需保留现有 Swarm secrets 和 D 的 Excel 挂载来源；以上是项目数据库及服务规格备份，不是整机或 Swarm 集群灾备。恢复前停止本项目写入、核对快照后新增数据，并按所保存的固定镜像摘要恢复；不要操作其他 Stack。MySQL DDL 不具备整体事务回滚能力。
+
+## 报告清理
+
+本地及 A 删除旧测试报告、旧源码打包副本；D 删除旧线上覆盖率采集输出。最新完整报告、ZIP、A 的 `/root/rbac-role-scope-20261025` 送测源码和测试工具镜像均保留，现场复现命令不变。三份 Excel、业务数据和其他项目服务／备份未删除。
 
 本次使用独立送测目录发布；Git 克隆更新不等于自动发布。未来更新应先测试、备份，再构建固定摘要镜像并仅更新本项目服务。
