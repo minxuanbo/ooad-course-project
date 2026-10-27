@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuditService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rbac0</a> &gt; <a href="index.source.html" class="el_package">com.municipal.rbac</a> &gt; <span class="el_source">AuditService.java</span></div><h1>AuditService.java</h1><pre class="source lang-java linenums">package com.municipal.rbac;
+
+import java.nio.charset.StandardCharsets;
+import java.time.*;
+import java.util.*;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+class AuditService {
+  private final AuditRepository repository;private final AuthService auth;
+<span class="fc" id="L12">  AuditService(AuditRepository repository,AuthService auth){this.repository=repository;this.auth=auth;}</span>
+  AuditDtos.Page list(String header,AuditDtos.Query input){
+<span class="fc" id="L14">    long actor=(long)auth.require(header).get(&quot;id&quot;);auth.management().requireGlobal(actor,&quot;audit.read&quot;);</span>
+<span class="fc bfc" id="L15" title="All 16 branches covered.">    if(input.username()!=null&amp;&amp;input.username().length()&gt;100 || input.appCode()!=null&amp;&amp;input.appCode().length()&gt;191 || input.event()!=null&amp;&amp;input.event().length()&gt;32 || input.cursor()!=null&amp;&amp;input.cursor().length()&gt;4096)throw ApiException.bad(&quot;筛选字段过长&quot;);</span>
+<span class="fc bfc" id="L16" title="All 6 branches covered.">    int limit=input.limit()==null?100:input.limit();if(limit&lt;1||limit&gt;500)throw ApiException.bad(&quot;limit 必须为 1–500&quot;);</span>
+<span class="fc bfc" id="L17" title="All 4 branches covered.">    String storage=input.storage()==null?&quot;ALL&quot;:input.storage();if(!Set.of(&quot;ALL&quot;,&quot;ACTIVE&quot;,&quot;ARCHIVED&quot;).contains(storage))throw ApiException.bad(&quot;未知归档状态&quot;);</span>
+<span class="fc bfc" id="L18" title="All 6 branches covered.">    String from=time(input.from()),to=time(input.to());if(from!=null&amp;&amp;to!=null&amp;&amp;from.compareTo(to)&gt;=0)throw ApiException.bad(&quot;开始时间必须早于结束时间&quot;);</span>
+<span class="fc bfc" id="L19" title="All 4 branches covered.">    if(input.userId()!=null&amp;&amp;input.userId()&lt;1)throw ApiException.bad(&quot;用户 ID 必须为正整数&quot;);</span>
+<span class="fc" id="L20">    var q=new AuditDtos.Query(input.userId(),input.username(),input.appCode(),input.allowed(),from,to,input.event(),storage,null,limit);</span>
+<span class="fc" id="L21">    String key=Base64.getUrlEncoder().withoutPadding().encodeToString(DtoMapper.MAPPER.valueToTree(q).toString().getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L22">    long snapshot=repository.snapshot(),before=Long.MAX_VALUE;</span>
+<span class="fc bfc" id="L23" title="All 2 branches covered.">    if(input.cursor()!=null){try{</span>
+<span class="fc" id="L24">      String[] parts=new String(Base64.getUrlDecoder().decode(input.cursor()),StandardCharsets.UTF_8).split(&quot;:&quot;,3);</span>
+<span class="fc bfc" id="L25" title="All 6 branches covered.">      snapshot=Long.parseLong(parts[0]);before=Long.parseLong(parts[1]);if(snapshot&lt;0||before&lt;1||!parts[2].equals(key))throw new IllegalArgumentException();</span>
+<span class="fc" id="L26">    }catch(RuntimeException e){throw new ApiException(org.springframework.http.HttpStatus.BAD_REQUEST,&quot;INVALID_CURSOR&quot;,&quot;游标无效或筛选条件已改变&quot;);}}</span>
+<span class="fc bfc" id="L27" title="All 2 branches covered.">    var entries=repository.find(q,snapshot,before,limit+1);boolean more=entries.size()&gt;limit;var items=List.copyOf(entries.subList(0,Math.min(limit,entries.size())));</span>
+<span class="fc bfc" id="L28" title="All 2 branches covered.">    String next=more?Base64.getUrlEncoder().withoutPadding().encodeToString((snapshot+&quot;:&quot;+items.get(items.size()-1).id()+&quot;:&quot;+key).getBytes(StandardCharsets.UTF_8)):null;</span>
+<span class="fc" id="L29">    return new AuditDtos.Page(items,next,more,snapshot);</span>
+  }
+  @Transactional public AuditDtos.ArchiveResult archive(String header,AuditDtos.Archive input){
+<span class="fc" id="L32">    auth.management().lock();long actor=(long)auth.require(header).get(&quot;id&quot;);auth.management().requireGlobal(actor,&quot;audit.read&quot;);</span>
+<span class="fc bfc" id="L33" title="All 4 branches covered.">    String before=time(input.before());if(before==null||LocalDateTime.parse(before.replace(' ','T')).isAfter(LocalDateTime.now(ZoneOffset.UTC)))throw ApiException.bad(&quot;归档截止时间必须有效且不晚于当前时间&quot;);</span>
+<span class="fc bfc" id="L34" title="All 6 branches covered.">    int batch=input.batchSize()==null?1000:input.batchSize();if(batch&lt;1||batch&gt;5000)throw ApiException.bad(&quot;归档批量必须为 1–5000&quot;);</span>
+<span class="fc" id="L35">    long snapshot=repository.snapshot();int count=repository.archive(actor,before,batch,snapshot);repository.archiveChange(actor,count,before);</span>
+<span class="fc" id="L36">    return new AuditDtos.ArchiveResult(count,repository.remaining(before,snapshot),snapshot);</span>
+  }
+  private String time(String value){
+<span class="fc bfc" id="L39" title="All 2 branches covered.">    if(value==null)return null;</span>
+<span class="fc" id="L40">    try{return LocalDateTime.ofInstant(Instant.parse(value),ZoneOffset.UTC).format(java.time.format.DateTimeFormatter.ofPattern(&quot;yyyy-MM-dd HH:mm:ss.SSS&quot;));}catch(java.time.format.DateTimeParseException e){throw ApiException.bad(&quot;时间使用 UTC ISO-8601，例如 2026-10-27T00:00:00Z&quot;);}</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

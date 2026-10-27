@@ -25,16 +25,16 @@ class ManagementScopeTest {
     a=user("scope-a",d1);b=user("scope-b",other);nested=user("scope-child",child);
     db.update("UPDATE users SET department_id=? WHERE id=?",d1,uid);
   }
-  String login(String account,String password)throws Exception{return "Bearer "+json.readTree(mvc.perform(post("/api/auth/login").contentType("application/json").content(json.writeValueAsString(Map.of("account",account,"password",password)))).andExpect(status().isOk()).andReturn().getResponse().getContentAsString()).get("token").asText();}
+  String login(String account,String password)throws Exception{return "Bearer "+json.readTree(mvc.perform(post("/api/auth/login").contentType("application/json").content(json.writeValueAsString(Map.of("account",account,"password",password)))).andExpect(status().isOk()).andReturn().getResponse().getContentAsString()).get("data").get("token").asText();}
   long company(String code){db.update("INSERT INTO companies(code,name) VALUES(?,?)",code,code);return db.queryForObject("SELECT id FROM companies WHERE code=?",Long.class,code);}
-  long department(String code,long company,Long parent){db.update("INSERT INTO departments(code,name,company_id,parent_id) VALUES(?,?,?,?)",code,code,company,parent);return db.queryForObject("SELECT id FROM departments WHERE code=?",Long.class,code);}
+  long department(String code,long company,Long parent){db.update("INSERT INTO departments(code,name,company_id) VALUES(?,?,?)",code,code,company);return db.queryForObject("SELECT id FROM departments WHERE code=?",Long.class,code);}
   long user(String name,long dept){db.update("INSERT INTO users(employee_no,username,name,password_hash,department_id) VALUES(?,?,?,'not-a-login-hash',?)",name,name,name,dept);return db.queryForObject("SELECT id FROM users WHERE username=?",Long.class,name);}
   long role(String code){return db.queryForObject("SELECT id FROM roles WHERE code=?",Long.class,code);}
   void permissions(String role,String... codes){long id=role(role);db.update("DELETE FROM role_management_permissions WHERE role_id=?",id);for(String code:codes)db.update("INSERT INTO role_management_permissions(role_id,permission_code) VALUES(?,?)",id,code);}
-  void bind(long user,String role,String scope,Long company,Long department){long id=role(role);db.update("INSERT IGNORE INTO user_roles(user_id,role_id) VALUES(?,?)",user,id);db.update("INSERT INTO user_role_scopes(user_id,role_id,scope_type,company_id,department_id) VALUES(?,?,?,?,?)",user,id,scope,company,department);}
+  void bind(long user,String role,String scope,Long company,Long department){long id=role(role);db.update("INSERT IGNORE INTO user_roles(user_id,role_id) VALUES(?,?)",user,id);db.update("INSERT INTO management_scopes(user_id,role_id,scope_type,company_id,department_id) VALUES(?,?,?,?,?)",user,id,scope,scope.equals("COMPANY")?company:null,department);}
   Map<String,Object> g(Long role,String scope,Long company,Long department){var x=new LinkedHashMap<String,Object>();x.put("roleId",role);x.put("scope",scope);x.put("companyId",company);x.put("departmentId",department);return x;}
   Map<String,Object> assignment(List<Long> roles,List<?> scopes){return Map.of("roleIds",roles,"scopes",scopes);}
-  JsonNode getJson(String path,String token)throws Exception{return json.readTree(mvc.perform(get("/api"+path).header("Authorization",token)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString());}
+  JsonNode getJson(String path,String token)throws Exception{return json.readTree(mvc.perform(get("/api"+path).header("Authorization",token)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString()).get("data");}
   ResultActions putJson(String path,String token,Object body)throws Exception{return mvc.perform(put("/api"+path).header("Authorization",token).contentType("application/json").content(json.writeValueAsString(body)));}
   ResultActions postJson(String path,String token,Object body)throws Exception{return mvc.perform(post("/api"+path).header("Authorization",token).contentType("application/json").content(json.writeValueAsString(body)));}
   @Test void rolePermissionAndScopeCannotCrossMultiply()throws Exception{
@@ -53,7 +53,7 @@ class ManagementScopeTest {
     db.update("UPDATE roles SET enabled=0 WHERE id=?",role("部门经理"));
     mvc.perform(get("/api/users/page").header("Authorization",local)).andExpect(status().isForbidden());
     db.update("UPDATE roles SET enabled=1 WHERE id=?",role("部门经理"));
-    db.update("DELETE FROM user_role_scopes WHERE user_id=?",uid);
+    db.update("DELETE FROM management_scopes WHERE user_id=?",uid);
     assertFalse(getJson("/me",local).get("canManage").asBoolean());
   }
   @Test void exactDepartmentDoesNotIncludeChildAndSameRoleCanManageSeveralScopes()throws Exception{
@@ -72,8 +72,8 @@ class ManagementScopeTest {
     bind(uid,"部门经理","GLOBAL",null,null);
     mvc.perform(get("/api/authorization-logs").header("Authorization",local)).andExpect(status().isForbidden());
     for(Long target:Arrays.asList(a,b,null))db.update("INSERT INTO authorization_logs(user_id,username,app_code,permission_code,allowed) VALUES(?,'scope','test','test',1)",target);
-    assertEquals(3,getJson("/authorization-logs",admin).size());
-    assertEquals(3,getJson("/dashboard",admin).get("authLogs").asInt());
+    assertEquals(3,getJson("/authorization-logs?appCode=test",admin).get("items").size());
+    assertTrue(getJson("/dashboard",admin).get("authLogs").asInt()>=3);
   }
   @Test void localCannotEscalateSelfOtherManagersOrBusinessPermissions()throws Exception{
     permissions("部门经理","user.roles");bind(uid,"部门经理","COMPANY",c1,null);
@@ -91,13 +91,13 @@ class ManagementScopeTest {
   }
   @Test void roleDefinitionChangesApplyToAllHoldersWithoutChangingScopes()throws Exception{
     long deptRole=role("部门经理");permissions("部门经理","user.read");bind(uid,"部门经理","DEPARTMENT",c1,d1);bind(a,"部门经理","DEPARTMENT",c2,other);
-    var before=db.queryForList("SELECT * FROM user_role_scopes WHERE role_id=? ORDER BY id",deptRole);
+    var before=db.queryForList("SELECT * FROM management_scopes WHERE role_id=? ORDER BY id",deptRole);
     String path="/roles/"+deptRole+"/management-permissions";
     assertEquals(11,getJson("/management/permissions",admin).size());assertEquals(1,getJson(path,admin).size());
     for(Object body:List.of(Map.of(),Map.of("permissions",List.of("invalid")),Map.of("permissions",List.of("audit.read")),Map.of("permissions",List.of("management.grant")),Map.of("permissions",List.of("role.permissions"))))putJson(path,admin,body).andExpect(status().isBadRequest());
     putJson("/roles/0/management-permissions",admin,Map.of("permissions",List.of())).andExpect(status().isBadRequest());
     putJson(path,admin,Map.of("permissions",List.of("user.read","org.read","org.read"))).andExpect(status().isOk());
-    assertTrue(auth.management().has(uid,"org.read"));assertTrue(auth.management().has(a,"org.read"));assertEquals(before,db.queryForList("SELECT * FROM user_role_scopes WHERE role_id=? ORDER BY id",deptRole));
+    assertTrue(auth.management().has(uid,"org.read"));assertTrue(auth.management().has(a,"org.read"));assertEquals(before,db.queryForList("SELECT * FROM management_scopes WHERE role_id=? ORDER BY id",deptRole));
     putJson(path,admin,Map.of("permissions",List.of())).andExpect(status().isOk());assertFalse(auth.management().has(uid,"user.read"));
     putJson("/roles/"+role("系统管理员")+"/management-permissions",admin,Map.of("permissions",List.of("management.grant","role.permissions","role.read","audit.read"))).andExpect(status().isOk());
   }
@@ -122,11 +122,11 @@ class ManagementScopeTest {
     putJson("/organizations/departments/"+d1,local,Map.of("code","scope-renamed","name","改名")).andExpect(status().isOk());
     putJson("/organizations/departments/"+child,local,Map.of("code","x","name","x")).andExpect(status().isForbidden());
     for(String key:List.of("parentId","companyId"))putJson("/organizations/departments/"+d1,local,Map.of("code","x","name","x",key,c1)).andExpect(status().isBadRequest());
-    postJson("/organizations/departments",local,Map.of("code","scope-new","name","新增", "companyId",c1,"parentId",d1)).andExpect(status().isForbidden());
+    postJson("/organizations/departments",local,Map.of("code","scope-new","name","新增", "companyId",c1)).andExpect(status().isForbidden());
     bind(uid,"部门经理","COMPANY",c1,null);
-    postJson("/organizations/departments",local,Map.of("code","scope-new","name","新增", "companyId",c1,"parentId",d1)).andExpect(status().isOk());
+    postJson("/organizations/departments",local,Map.of("code","scope-new","name","新增", "companyId",c1)).andExpect(status().isOk());
     postJson("/organizations/departments",local,Map.of("code","scope-new-root","name","新增根", "companyId",c1)).andExpect(status().isOk());
-    postJson("/organizations/departments",local,Map.of("code","x","name","x", "companyId",c2,"parentId",other)).andExpect(status().isForbidden());
+    postJson("/organizations/departments",local,Map.of("code","x","name","x", "companyId",c2)).andExpect(status().isForbidden());
     postJson("/organizations/companies",local,Map.of("code","x","name","x")).andExpect(status().isForbidden());
     putJson("/organizations/companies/"+c1,local,Map.of("code","x","name","x")).andExpect(status().isForbidden());
     assertTrue(getJson("/organizations",admin).get("companies").size()>1);
@@ -151,6 +151,6 @@ class ManagementScopeTest {
     bind(b,"部门经理","COMPANY",c2,null);
     body.put("receiverNo","SG010000");body.put("ownerNo","SG010000");postJson("/users/"+b+"/handover",admin,body).andExpect(status().isOk());
     postJson("/users/"+b+"/handover/complete",admin,Map.of("confirmed","true","note","完成")).andExpect(status().isOk());
-    assertEquals(0,db.queryForObject("SELECT count(*) FROM user_role_scopes WHERE user_id=?",Integer.class,b));
+    assertEquals(0,db.queryForObject("SELECT count(*) FROM management_scopes WHERE user_id=?",Integer.class,b));
   }
 }

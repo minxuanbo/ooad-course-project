@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DesignSchemaMigration.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rbac0</a> &gt; <a href="index.source.html" class="el_package">com.municipal.rbac</a> &gt; <span class="el_source">DesignSchemaMigration.java</span></div><h1>DesignSchemaMigration.java</h1><pre class="source lang-java linenums">package com.municipal.rbac;
+
+import java.util.*;
+import org.springframework.boot.*;
+import org.springframework.core.annotation.Order;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Component;
+
+/** Idempotent infrastructure migration; DDL is intentionally outside business transactions. */
+@Component @Order(5)
+class DesignSchemaMigration implements ApplicationRunner {
+  private final JdbcTemplate db;
+<span class="fc" id="L13">  DesignSchemaMigration(JdbcTemplate db){this.db=db;}</span>
+  public void run(ApplicationArguments args){
+<span class="fc" id="L15">    String aliases=&quot;SELECT username identifier,id user_id FROM users UNION SELECT employee_no,id FROM users UNION SELECT phone,id FROM users WHERE phone IS NOT NULL&quot;;</span>
+<span class="fc bfc" id="L16" title="All 2 branches covered.">    if(db.queryForObject(&quot;SELECT count(*) FROM (SELECT identifier FROM (&quot;+aliases+&quot;) a GROUP BY identifier HAVING count(DISTINCT user_id)&gt;1) conflicts&quot;,Integer.class)&gt;0)</span>
+<span class="fc" id="L17">      throw new IllegalStateException(&quot;存在跨用户登录标识冲突，禁止自动合并账号，请先核对标识&quot;);</span>
+<span class="fc" id="L18">    db.update(&quot;INSERT INTO login_identifiers(identifier,user_id) &quot;+aliases+&quot; ON DUPLICATE KEY UPDATE user_id=IF(login_identifiers.user_id=VALUES(user_id),login_identifiers.user_id,NULL)&quot;);</span>
+<span class="fc" id="L19">    String claims=&quot;INSERT INTO login_identifiers(identifier,user_id) VALUES(NEW.username,NEW.id),(NEW.employee_no,NEW.id) ON DUPLICATE KEY UPDATE user_id=IF(user_id=NEW.id,user_id,NULL); IF NEW.phone IS NOT NULL THEN INSERT INTO login_identifiers(identifier,user_id) VALUES(NEW.phone,NEW.id) ON DUPLICATE KEY UPDATE user_id=IF(user_id=NEW.id,user_id,NULL); END IF;&quot;;</span>
+<span class="fc bfc" id="L20" title="All 2 branches covered.">    if(!trigger(&quot;users_identifier_insert&quot;))db.execute(&quot;CREATE TRIGGER users_identifier_insert AFTER INSERT ON users FOR EACH ROW BEGIN &quot;+claims+&quot; END&quot;);</span>
+<span class="fc bfc" id="L21" title="All 2 branches covered.">    if(!trigger(&quot;users_identifier_update&quot;))db.execute(&quot;CREATE TRIGGER users_identifier_update AFTER UPDATE ON users FOR EACH ROW BEGIN IF NOT(OLD.username&lt;=&gt;NEW.username) OR NOT(OLD.employee_no&lt;=&gt;NEW.employee_no) OR NOT(OLD.phone&lt;=&gt;NEW.phone) THEN DELETE FROM login_identifiers WHERE user_id=NEW.id; &quot;+claims+&quot; END IF; END&quot;);</span>
+<span class="fc bfc" id="L22" title="All 2 branches covered.">    if(table(&quot;user_role_scopes&quot;)){</span>
+<span class="fc" id="L23">      db.update(&quot;INSERT IGNORE INTO management_scopes(id,user_id,role_id,scope_type,company_id,department_id) SELECT id,user_id,role_id,scope_type,IF(scope_type='COMPANY',company_id,NULL),department_id FROM user_role_scopes&quot;);</span>
+<span class="fc bfc" id="L24" title="All 2 branches covered.">      if(db.queryForObject(&quot;SELECT count(*) FROM user_role_scopes old LEFT JOIN management_scopes n ON n.id=old.id AND n.user_id=old.user_id AND n.role_id=old.role_id AND n.scope_type=old.scope_type AND n.department_id&lt;=&gt;old.department_id AND n.company_id&lt;=&gt;IF(old.scope_type='COMPANY',old.company_id,NULL) WHERE n.id IS NULL&quot;,Integer.class)&gt;0)</span>
+<span class="fc" id="L25">        throw new IllegalStateException(&quot;角色范围迁移核对失败&quot;);</span>
+<span class="fc" id="L26">      db.execute(&quot;DROP TABLE user_role_scopes&quot;);</span>
+    }
+<span class="fc bfc" id="L28" title="All 2 branches covered.">    if(table(&quot;management_grants&quot;)){</span>
+<span class="fc bfc" id="L29" title="All 2 branches covered.">      if(db.queryForObject(&quot;SELECT count(*) FROM management_grants old WHERE old.include_descendants&lt;&gt;0 OR NOT EXISTS(SELECT 1 FROM management_scopes g JOIN role_management_permissions p ON p.role_id=g.role_id WHERE g.user_id=old.user_id AND p.permission_code=old.permission_code AND g.scope_type=old.scope_type AND g.company_id&lt;=&gt;IF(old.scope_type='COMPANY',old.company_id,NULL) AND g.department_id&lt;=&gt;old.department_id)&quot;,Integer.class)&gt;0)throw new IllegalStateException(&quot;存在未迁移的独立管理授权，禁止删除&quot;);</span>
+<span class="fc" id="L30">      db.execute(&quot;DROP TABLE management_grants&quot;);</span>
+    }
+<span class="fc bfc" id="L32" title="All 2 branches covered.">    if(column(&quot;departments&quot;,&quot;parent_id&quot;)){</span>
+<span class="fc bfc" id="L33" title="All 2 branches covered.">      for(String name:db.queryForList(&quot;SELECT DISTINCT constraint_name FROM information_schema.key_column_usage WHERE table_schema=DATABASE() AND table_name='departments' AND column_name='parent_id' AND referenced_table_name IS NOT NULL&quot;,String.class))db.execute(&quot;ALTER TABLE departments DROP FOREIGN KEY `&quot;+name.replace(&quot;`&quot;,&quot;``&quot;)+&quot;`&quot;);</span>
+<span class="fc" id="L34">      db.execute(&quot;ALTER TABLE departments DROP COLUMN parent_id&quot;);</span>
+    }
+<span class="fc" id="L36">    var columns=new LinkedHashMap&lt;String,String&gt;();columns.put(&quot;event_type&quot;,&quot;VARCHAR(32) NOT NULL DEFAULT 'AUTHORIZATION'&quot;);columns.put(&quot;http_method&quot;,&quot;VARCHAR(16) NOT NULL DEFAULT ''&quot;);columns.put(&quot;request_path&quot;,&quot;VARCHAR(512) NOT NULL DEFAULT ''&quot;);columns.put(&quot;http_status&quot;,&quot;INT&quot;);columns.put(&quot;archived_at&quot;,&quot;DATETIME(3)&quot;);columns.put(&quot;archived_by&quot;,&quot;BIGINT&quot;);</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">    columns.forEach((name,definition)-&gt;{if(!column(&quot;authorization_logs&quot;,name))db.execute(&quot;ALTER TABLE authorization_logs ADD COLUMN &quot;+name+&quot; &quot;+definition);});</span>
+<span class="fc" id="L38">    var indexes=Map.of(&quot;idx_log_user_id&quot;,&quot;user_id,id&quot;,&quot;idx_log_app_id&quot;,&quot;app_code,id&quot;,&quot;idx_log_archive_time&quot;,&quot;archived_at,occurred_at,id&quot;);</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">    indexes.forEach((name,fields)-&gt;{if(db.queryForObject(&quot;SELECT count(*) FROM information_schema.statistics WHERE table_schema=DATABASE() AND table_name='authorization_logs' AND index_name=?&quot;,Integer.class,name)==0)db.execute(&quot;CREATE INDEX &quot;+name+&quot; ON authorization_logs(&quot;+fields+&quot;)&quot;);});</span>
+<span class="fc" id="L40">    db.update(&quot;INSERT INTO management_migrations(version,completed) VALUES(3,1) ON DUPLICATE KEY UPDATE completed=1&quot;);</span>
+<span class="fc" id="L41">  }</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">  private boolean trigger(String name){return db.queryForObject(&quot;SELECT count(*) FROM information_schema.triggers WHERE trigger_schema=DATABASE() AND trigger_name=?&quot;,Integer.class,name)&gt;0;}</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">  private boolean table(String name){return db.queryForObject(&quot;SELECT count(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name=?&quot;,Integer.class,name)&gt;0;}</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">  private boolean column(String table,String column){return db.queryForObject(&quot;SELECT count(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name=? AND column_name=?&quot;,Integer.class,table,column)&gt;0;}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

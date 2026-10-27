@@ -7,6 +7,7 @@ import System from './pages/System.vue'
 import Organizations from './pages/Organizations.vue'
 import Users from './pages/Users.vue'
 import Management from './pages/Management.vue'
+import AuditLogs from './pages/AuditLogs.vue'
 import { session, refreshSession, notify, can, routePermissions } from './api.js'
 import './style.css'
 const router = createRouter({
@@ -21,7 +22,7 @@ const router = createRouter({
     { path: '/dashboard', component: Management, meta: { admin: true, title: '工作台' } },
     { path: '/roles', component: Management, meta: { admin: true, title: '角色与权限' } },
     { path: '/apps', component: Management, meta: { admin: true, title: '业务系统' } },
-    { path: '/logs', component: Management, meta: { admin: true, title: '鉴权日志' } },
+    { path: '/logs', component: AuditLogs, meta: { admin: true, title: '鉴权日志' } },
     { path: '/:pathMatch(.*)*', redirect: '/portal' }
   ]
 })

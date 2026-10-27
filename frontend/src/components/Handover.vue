@@ -5,7 +5,7 @@ const props = defineProps({ target: Object })
 const emit = defineEmits(['close', 'saved'])
 const dialog = ref(null), data = ref(null), error = ref(''), busy = ref(true)
 const form = reactive({ receiverNo: '', ownerNo: '', expectedDate: '', reason: '', oaReference: '', note: '', confirmed: false })
-const state = computed(function() { return data.value?.handover.state || 'EMPLOYED' })
+const state = computed(function() { return data.value?.handover?.state || 'EMPLOYED' })
 async function save() {
   busy.value = true; error.value = ''
   const body = { ...form, confirmed: String(form.confirmed) }

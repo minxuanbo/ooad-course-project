@@ -131,9 +131,10 @@ document.addEventListener('submit',function(event){
   if(event.target.id!=='prototype-login')return;event.preventDefault();event.stopImmediatePropagation();
   const identity=document.getElementById('identity').value;
   if(identity==='employee'&&person(1).state==='DEPARTED'){
+    prototypeAudit('示例员工甲','LOGIN_FAILED',false,'LOGIN_FAILED');
     document.getElementById('login-error').textContent='该演示员工已离职停用，请选择管理员或重置演示。';return;
   }
-  actor=identity;page='portal';selectedApp=null;selectedModule='';shell();
+  actor=identity;prototypeAudit(currentName(),'LOGIN_SUCCESS',true,'OK');page='portal';selectedApp=null;selectedModule='';shell();
   let count=0,only=0;
   for(const a of applications)if(appCount(a.id)){count++;only=a.id;}
   if(count===1)enterSystem(only);

@@ -12,12 +12,9 @@ CREATE TABLE IF NOT EXISTS departments (
   code VARCHAR(100) NOT NULL UNIQUE,
   name VARCHAR(191) NOT NULL,
   manager_user_id BIGINT,
-  parent_id BIGINT,
   enabled TINYINT NOT NULL DEFAULT 1,
   UNIQUE KEY uk_department_name (company_id,name),
-  UNIQUE KEY uk_department_company_id (company_id,id),
   FOREIGN KEY (company_id) REFERENCES companies(id),
-  FOREIGN KEY (company_id,parent_id) REFERENCES departments(company_id,id),
   CHECK (enabled IN (0,1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
 CREATE TABLE IF NOT EXISTS users (
@@ -134,9 +131,18 @@ CREATE TABLE IF NOT EXISTS authorization_logs (
   allowed TINYINT NOT NULL,
   request_id VARCHAR(191),
   reason TEXT,
+  event_type VARCHAR(32) NOT NULL DEFAULT 'AUTHORIZATION',
+  http_method VARCHAR(16) NOT NULL DEFAULT '',
+  request_path VARCHAR(512) NOT NULL DEFAULT '',
+  http_status INT,
+  archived_at DATETIME(3),
+  archived_by BIGINT,
   CHECK (allowed IN (0,1)),
   INDEX idx_auth_logs_time (occurred_at),
-  INDEX idx_auth_logs_user (user_id)
+  INDEX idx_auth_logs_user (user_id),
+  INDEX idx_log_user_id (user_id,id),
+  INDEX idx_log_app_id (app_code,id),
+  INDEX idx_log_archive_time (archived_at,occurred_at,id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
 CREATE TABLE IF NOT EXISTS authorization_changes (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -169,38 +175,18 @@ CREATE TABLE IF NOT EXISTS handovers (
   CHECK (state IN ('HANDOVER','DEPARTED'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
 
--- Additive management authorization schema. Business role grants remain independent.
+-- Schema revision and role-bound management authorization.
 CREATE TABLE IF NOT EXISTS management_migrations (
   version INT PRIMARY KEY,
   completed TINYINT NOT NULL DEFAULT 0
 ) ENGINE=InnoDB;
-CREATE TABLE IF NOT EXISTS management_grants (
-  id BIGINT PRIMARY KEY AUTO_INCREMENT,
-  user_id BIGINT NOT NULL,
-  permission_code VARCHAR(64) NOT NULL,
-  scope_type VARCHAR(16) NOT NULL,
-  company_id BIGINT,
-  department_id BIGINT,
-  include_descendants TINYINT NOT NULL DEFAULT 0,
-  FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
-  FOREIGN KEY(company_id) REFERENCES companies(id),
-  FOREIGN KEY(company_id,department_id) REFERENCES departments(company_id,id),
-  CHECK (include_descendants IN (0,1)),
-  CHECK ((scope_type='GLOBAL' AND company_id IS NULL AND department_id IS NULL AND include_descendants=0)
-    OR (scope_type='COMPANY' AND company_id IS NOT NULL AND department_id IS NULL AND include_descendants=0)
-    OR (scope_type='DEPARTMENT' AND company_id IS NOT NULL AND department_id IS NOT NULL)),
-  INDEX idx_management_user_permission(user_id,permission_code)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
-
--- V4: runtime authorization uses role permissions and per-user, per-role scopes.
--- management_grants above is retained only as the V3 migration archive, never consulted at runtime.
 CREATE TABLE IF NOT EXISTS role_management_permissions (
   role_id BIGINT NOT NULL,
   permission_code VARCHAR(64) NOT NULL,
   PRIMARY KEY(role_id,permission_code),
   FOREIGN KEY(role_id) REFERENCES roles(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
-CREATE TABLE IF NOT EXISTS user_role_scopes (
+CREATE TABLE IF NOT EXISTS management_scopes (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   user_id BIGINT NOT NULL,
   role_id BIGINT NOT NULL,
@@ -209,9 +195,15 @@ CREATE TABLE IF NOT EXISTS user_role_scopes (
   department_id BIGINT,
   FOREIGN KEY(user_id,role_id) REFERENCES user_roles(user_id,role_id) ON DELETE CASCADE,
   FOREIGN KEY(company_id) REFERENCES companies(id),
-  FOREIGN KEY(company_id,department_id) REFERENCES departments(company_id,id),
+  FOREIGN KEY(department_id) REFERENCES departments(id),
   CHECK ((scope_type='GLOBAL' AND company_id IS NULL AND department_id IS NULL)
     OR (scope_type='COMPANY' AND company_id IS NOT NULL AND department_id IS NULL)
-    OR (scope_type='DEPARTMENT' AND company_id IS NOT NULL AND department_id IS NOT NULL)),
-  INDEX idx_role_scope_user(user_id,role_id)
+    OR (scope_type='DEPARTMENT' AND company_id IS NULL AND department_id IS NOT NULL)),
+  INDEX idx_management_scope_user(user_id,role_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
+CREATE TABLE IF NOT EXISTS login_identifiers (
+  identifier VARCHAR(100) PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_login_identifier_user(user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;

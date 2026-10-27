@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ApiResponseAdvice.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rbac0</a> &gt; <a href="index.source.html" class="el_package">com.municipal.rbac</a> &gt; <span class="el_source">ApiResponseAdvice.java</span></div><h1>ApiResponseAdvice.java</h1><pre class="source lang-java linenums">package com.municipal.rbac;
+
+import org.springframework.core.MethodParameter;
+import org.springframework.http.*;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.server.*;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
+
+@RestControllerAdvice
+<span class="fc" id="L11">class ApiResponseAdvice implements ResponseBodyAdvice&lt;Object&gt; {</span>
+<span class="fc" id="L12">  public boolean supports(MethodParameter method,Class&lt;? extends HttpMessageConverter&lt;?&gt;&gt; converter){return true;}</span>
+  public Object beforeBodyWrite(Object body,MethodParameter method,MediaType type,Class&lt;? extends HttpMessageConverter&lt;?&gt;&gt; converter,ServerHttpRequest request,ServerHttpResponse response){
+<span class="fc" id="L14">    response.getHeaders().setContentType(MediaType.APPLICATION_JSON);</span>
+<span class="fc bfc" id="L15" title="All 2 branches covered.">    return body instanceof ApiResponse&lt;?&gt;?body:ApiResponse.success(body,RequestAuditFilter.requestId());</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -9,7 +9,7 @@ const kind = route.path.slice(1), data = ref(null), error = ref(''), editor = re
 const metrics = [['users','组织用户'],['roles','授权角色'],['applications','系统目录'],['permissions','操作权限']]
 let alive = true
 async function load() {
-  try { const result = await api(kind === 'logs' ? '/authorization-logs?limit=100' : kind === 'apps' ? '/applications' : '/' + kind); if (alive) { data.value = result; error.value = '' } }
+  try { const result = await api(kind === 'apps' ? '/applications' : '/' + kind); if (alive) { data.value = result; error.value = '' } }
   catch (e) { if (alive) { data.value = null; error.value = e.message } }
 }
 function saved() { editor.value = null; managementEditor.value = null; load() }
@@ -25,7 +25,6 @@ onUnmounted(function() { alive = false })
   </template>
   <div v-else-if="kind === 'roles'" class="role-grid"><article v-for="r in data" :key="r.id" class="card role-card"><span class="role-icon">◇</span><span class="badge" :class="{ green: r.enabled }">{{ r.enabled ? '已启用' : '已停用' }}</span><h2>{{ r.name }}</h2><p class="muted">{{ r.description }}</p><div class="role-counts"><div><strong>{{ r.userCount }}</strong><small>关联用户</small></div><div><strong>{{ r.permissionCount }}</strong><small>操作权限</small></div></div><button v-if="can('role.permissions', true)" class="secondary" @click="editor = r">业务功能权限</button><button v-if="can('role.permissions', true)" class="secondary" @click="managementEditor = r">管理操作权限</button></article></div>
   <div v-else-if="kind === 'apps'" class="app-grid"><article v-for="a in data" :key="a.id" class="card app-card"><span class="app-icon">{{ a.name[0] }}</span><span class="badge" :class="{ green: a.enabled }">{{ a.enabled ? '已启用' : '已停用' }}</span><h2>{{ a.name }}</h2><p>{{ a.permissionCount }} 项操作权限</p><p class="muted">已提供功能鉴权演示，非实际业务操作</p><code>{{ a.code }}</code></article></div>
-  <section v-else class="card"><div class="toolbar"><strong>最近鉴权记录</strong><span class="muted">最近 100 条 · 时间为 UTC</span></div><div class="table-scroll"><table><thead><tr><th>鉴权时间</th><th>用户账号</th><th>目标系统</th><th>权限编码</th><th>结果</th><th>原因</th></tr></thead><tbody><tr v-for="l in data" :key="l.id"><td class="nowrap">{{ l.occurredAt }}</td><td>{{ l.username }}</td><td>{{ l.appCode }}</td><td class="code-cell">{{ l.permissionCode }}</td><td><span class="badge" :class="l.allowed ? 'green' : 'red'">{{ l.allowed ? '允许' : '拒绝' }}</span></td><td>{{ l.reason }}</td></tr><tr v-if="!data.length"><td colspan="6" class="empty">暂无鉴权记录</td></tr></tbody></table></div></section>
   <RoleManagementEditor v-if="managementEditor" :target="managementEditor" @close="managementEditor = null" @saved="saved" />
   <RoleEditor v-if="editor" kind="roles" :target="editor" @close="editor = null" @saved="saved" />
 </template>

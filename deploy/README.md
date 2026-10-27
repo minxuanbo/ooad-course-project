@@ -1,6 +1,6 @@
 # 华为云后端部署
 
-当前 2026-10-25 版本仅更新后端，详见 [本次发布记录](deployment-2026-10-25.md)。现场测试可使用已验证的独立上传目录，见 [现场说明](现场运行JaCoCo.md)。
+当前 2026-10-27 版本仅更新后端，详见 [本次发布记录](deployment-2026-10-27.md)。现场测试可使用已验证的独立上传目录，见 [现场说明](现场运行JaCoCo.md)。
 
 此配置只新增 `rbac` Stack，不操作现有 `lab` 服务。A 构建和推送镜像，
 C 发布 Stack，B 保存独立 MySQL 数据卷，D 运行后端。
@@ -51,14 +51,21 @@ Swarm 不保证 MySQL 先启动。后端初次连接失败时会自动重试启�
 安全组应允许所需来源访问 D 的 TCP 8081。MySQL 不发布宿主机端口，
 仅在独立加密 overlay 网络供后端连接。
 
-先登录，再使用响应中的 token 请求 `/api/me`、`/api/dashboard` 验证。
+先登录，再使用响应中的 data.token 请求 `/api/me`、`/api/dashboard` 验证。
 默认课程账号见根目录 README；当前接口为 HTTP，未配置 TLS。
 健康检查用无效令牌访问 `/api/me`，预期 401，同时触发数据库会话查询。
 
 ## 更新、回滚和备份
 
 每次更新使用新版本镜像；数据库已有数据时保留。单实例更新有短暂中断。
-应用更新失败由 Swarm 回滚；也可以运行 `docker service rollback rbac_backend`。
+仅无结构变化的兼容版本可直接应用回滚。涉及数据库结构变更时，必须协调对应数据库快照与镜像，不能单独回滚到使用旧表／旧字段的镜像。
 首次部署没有上一版本可回滚。数据库变更需事先备份，不能通过应用回滚撤销。
 使用 MySQL 逻辑备份并保存到独立位置，禁止把数据库文件或密码提交 Git。
 不要执行全局 prune、删除 lab Stack、重启 Docker 或清理已有数据卷。
+
+## 登录唯一约束与结构迁移
+
+首次建库由 DBA 执行 src/main/resources/schema.sql，再执行 deploy/install-login-constraints.sql，之后启动后端。现有库先备份并检查跨用户标识冲突；DBA 安装触发器，应用启动验证／回填统一标识，迁移范围并逐条核对后移除冗余结构。
+生产应用不授予 SUPER，也不修改生产 MySQL 的 log_bin_trust_function_creators。当前两条 users 触发器由 DBA 安装，维护 username、employee_no、phone 的统一唯一性；冲突时语句回滚。
+DesignSchemaMigration 的 DDL 不可整体事务回滚。结构转换失败应停止发布并检查备份与实际完成步骤；不能清数据后强行继续。
+健康检查使用无效令牌访问 /api/me，预期 401；此类请求也按规则形成 UNAUTHENTICATED 日志，可按事件、路径识别。

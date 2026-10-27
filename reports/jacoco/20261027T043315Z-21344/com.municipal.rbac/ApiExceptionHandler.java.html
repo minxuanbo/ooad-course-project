@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ApiExceptionHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rbac0</a> &gt; <a href="index.source.html" class="el_package">com.municipal.rbac</a> &gt; <span class="el_source">ApiExceptionHandler.java</span></div><h1>ApiExceptionHandler.java</h1><pre class="source lang-java linenums">package com.municipal.rbac;
+
+import org.springframework.http.*;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.dao.*;
+
+@RestControllerAdvice
+<span class="fc" id="L8">class ApiExceptionHandler {</span>
+  @ExceptionHandler(ApiException.class)
+<span class="fc" id="L10">  ResponseEntity&lt;ApiResponse&lt;Object&gt;&gt; api(ApiException e){return error(e.status,e.code,e.getMessage());}</span>
+  @ExceptionHandler({org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,org.springframework.http.converter.HttpMessageNotReadableException.class,org.springframework.web.bind.MissingServletRequestParameterException.class,org.springframework.validation.BindException.class})
+<span class="fc" id="L12">  ResponseEntity&lt;ApiResponse&lt;Object&gt;&gt; invalid(Exception e){return error(HttpStatus.BAD_REQUEST,&quot;INVALID_ARGUMENT&quot;,&quot;请求参数或 JSON 格式错误&quot;);}</span>
+  @ExceptionHandler(org.springframework.web.bind.MissingRequestHeaderException.class)
+<span class="fc" id="L14">  ResponseEntity&lt;ApiResponse&lt;Object&gt;&gt; missingHeader(Exception e){return error(HttpStatus.UNAUTHORIZED,&quot;AUTHENTICATION_REQUIRED&quot;,&quot;请先登录&quot;);}</span>
+  @ExceptionHandler({org.springframework.web.servlet.NoHandlerFoundException.class,org.springframework.web.servlet.resource.NoResourceFoundException.class})
+<span class="fc" id="L16">  ResponseEntity&lt;ApiResponse&lt;Object&gt;&gt; notFound(Exception e){return error(HttpStatus.NOT_FOUND,&quot;ENDPOINT_NOT_FOUND&quot;,&quot;接口不存在&quot;);}</span>
+  @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+<span class="fc" id="L18">  ResponseEntity&lt;ApiResponse&lt;Object&gt;&gt; method(Exception e){return error(HttpStatus.METHOD_NOT_ALLOWED,&quot;METHOD_NOT_ALLOWED&quot;,&quot;请求方法不支持&quot;);}</span>
+  @ExceptionHandler(DataIntegrityViolationException.class)
+<span class="fc" id="L20">  ResponseEntity&lt;ApiResponse&lt;Object&gt;&gt; conflict(Exception e){return error(HttpStatus.CONFLICT,&quot;DATA_CONFLICT&quot;,&quot;数据违反唯一性或关联约束&quot;);}</span>
+  @ExceptionHandler(Exception.class)
+<span class="fc" id="L22">  ResponseEntity&lt;ApiResponse&lt;Object&gt;&gt; unexpected(Exception e){return error(HttpStatus.INTERNAL_SERVER_ERROR,&quot;INTERNAL_ERROR&quot;,&quot;服务器内部错误&quot;);}</span>
+  private ResponseEntity&lt;ApiResponse&lt;Object&gt;&gt; error(HttpStatus status,String code,String message){
+<span class="fc" id="L24">    RequestAuditFilter.error(code);</span>
+<span class="fc" id="L25">    return ResponseEntity.status(status).body(new ApiResponse&lt;&gt;(code,message,null,RequestAuditFilter.requestId()));</span>
+  }
+}
+class ApiException extends RuntimeException {
+  final HttpStatus status;final String code;
+<span class="fc" id="L30">  ApiException(HttpStatus status,String code,String message){super(message);this.status=status;this.code=code;}</span>
+<span class="fc" id="L31">  static ApiException bad(String code,String message){return new ApiException(HttpStatus.BAD_REQUEST,code,message);}</span>
+<span class="fc" id="L32">  static ApiException bad(String message){return new ApiException(HttpStatus.BAD_REQUEST,&quot;INVALID_ARGUMENT&quot;,message);}</span>
+<span class="fc" id="L33">  static ApiException forbidden(){return new ApiException(HttpStatus.FORBIDDEN,&quot;PERMISSION_DENIED&quot;,&quot;没有执行该操作的权限&quot;);}</span>
+<span class="fc" id="L34">  static ApiException scopeDenied(){return new ApiException(HttpStatus.FORBIDDEN,&quot;MANAGEMENT_SCOPE_DENIED&quot;,&quot;目标不在允许的管理范围内&quot;);}</span>
+<span class="fc" id="L35">  static ApiException unauthorized(){return new ApiException(HttpStatus.UNAUTHORIZED,&quot;SESSION_INVALID&quot;,&quot;登录已失效&quot;);}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

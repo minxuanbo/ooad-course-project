@@ -18,7 +18,7 @@ class RuntimeBoundaryTest {
     }
   }
   @Test void digestProviderFailureFailsClosed(){
-    JdbcTemplate db=mock(JdbcTemplate.class);var auth=new AuthService(db,12);
+    JdbcTemplate db=mock(JdbcTemplate.class);var auth=new AuthService(new AuthRepository(db),new ManagementAccess(new ManagementAccessRepository(db)),12);
     try(var digest=mockStatic(MessageDigest.class)){
       digest.when(()->MessageDigest.getInstance("SHA-256")).thenThrow(new NoSuchAlgorithmException("test unavailable provider"));
       var ex=assertThrows(IllegalStateException.class,()->auth.require("Bearer test"));
@@ -36,7 +36,7 @@ class RuntimeBoundaryTest {
       when(rs.getObject(1)).thenReturn(value);
       return java.util.List.of(mapper.mapRow(rs,0));
     });
-    assertEquals(value instanceof java.sql.Date ? "2026-10-23" : "2026-10-23 12:00:00",new ApiController(db,auth).logs("Bearer test",1).get(0).get("occurredAt"));
+    assertEquals(value instanceof java.sql.Date ? "2026-10-23" : "2026-10-23 12:00:00",new ApplicationRepository(db).handoverDetail(1).get(0).get("occurredAt"));
     }
   }
 }

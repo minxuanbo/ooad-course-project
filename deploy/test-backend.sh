@@ -31,7 +31,7 @@ unset password
 docker network create "$test_name" >/dev/null
 docker run -d --name "$test_name" --network "$test_name" --memory 512m \
   --env-file "$test_dir/mysql.env" "$RBAC_TEST_MYSQL_IMAGE" \
-  --innodb-buffer-pool-size=128M --performance-schema=OFF --mysqlx=OFF >/dev/null
+  --innodb-buffer-pool-size=128M --performance-schema=OFF --mysqlx=OFF --log-bin-trust-function-creators=ON >/dev/null
 ready=false
 for attempt in $(seq 1 90); do
   if docker exec "$test_name" sh -c \

@@ -25,7 +25,7 @@ class EndpointBoundaryTest {
   String login(String account,String password)throws Exception{
     var r=mvc.perform(post("/api/auth/login").contentType("application/json").content(json.writeValueAsString(Map.of("account",account,"password",password))))
       .andExpect(status().isOk()).andReturn().getResponse();
-    return "Bearer "+json.readTree(r.getContentAsString()).get("token").asText();
+    return "Bearer "+json.readTree(r.getContentAsString()).get("data").get("token").asText();
   }
   @Test void invalidLoginAndExpiredOrRevokedSessions()throws Exception{
     for(String body:List.of("{}","{\"account\":\"admin\"}","{"))
@@ -46,7 +46,7 @@ class EndpointBoundaryTest {
   }
   @Test void authorizationNullAndLengthBoundaries()throws Exception{
     for(String body:List.of("{}","{\"permissionCode\":\"missing\"}","{\"appCode\":\"missing\"}"))
-      mvc.perform(post("/api/authorize").header("Authorization",admin).contentType("application/json").content(body)).andExpect(status().isOk()).andExpect(jsonPath("$.allowed").value(false));
+      mvc.perform(post("/api/authorize").header("Authorization",admin).contentType("application/json").content(body)).andExpect(status().isOk()).andExpect(jsonPath("$.data.allowed").value(false));
     for(var entry:Map.of("appCode",192,"permissionCode",513,"requestId",192).entrySet())
       mvc.perform(post("/api/authorize").header("Authorization",admin).contentType("application/json").content(json.writeValueAsString(Map.of(entry.getKey(),"x".repeat(entry.getValue()))))).andExpect(status().isBadRequest());
   }
@@ -58,7 +58,7 @@ class EndpointBoundaryTest {
     mvc.perform(put("/api/users/0/roles").header("Authorization",admin).contentType("application/json").content("{\"ids\":[]}")).andExpect(status().isNotFound());
     mvc.perform(put("/api/users/"+uid+"/roles").header("Authorization",admin).contentType("application/json").content("{\"ids\":["+role+","+role+",0]}")).andExpect(status().isOk());
     assertEquals(1,db.queryForObject("SELECT count(*) FROM user_roles WHERE user_id=?",Integer.class,uid));
-    mvc.perform(get("/api/users/"+uid+"/roles").header("Authorization",admin)).andExpect(status().isOk()).andExpect(jsonPath("$[0].id").exists());
+    mvc.perform(get("/api/users/"+uid+"/roles").header("Authorization",admin)).andExpect(status().isOk()).andExpect(jsonPath("$.data[0].id").exists());
     mvc.perform(post("/api/me/applications/0/enter").header("Authorization",admin)).andExpect(status().isNotFound());
     mvc.perform(put("/api/roles/"+role+"/permissions").header("Authorization",admin).contentType("application/json").content("{\"ids\":["+permission+","+permission+",0]}")).andExpect(status().isOk());
     assertEquals(1,db.queryForObject("SELECT count(*) FROM role_permissions WHERE role_id=?",Integer.class,role));
@@ -81,18 +81,18 @@ class EndpointBoundaryTest {
     assertEquals(0,db.queryForObject("SELECT count(*) FROM handovers WHERE user_id=?",Integer.class,uid));
     mvc.perform(post("/api/users/0/handover").header("Authorization",admin).contentType("application/json").content(json.writeValueAsString(valid))).andExpect(status().isNotFound());
     mvc.perform(get("/api/users/0/handover").header("Authorization",admin)).andExpect(status().isNotFound());
-    mvc.perform(get("/api/users/"+uid+"/handover").header("Authorization",admin)).andExpect(jsonPath("$.handover").isEmpty());
+    mvc.perform(get("/api/users/"+uid+"/handover").header("Authorization",admin)).andExpect(jsonPath("$.data.handover").isEmpty());
     mvc.perform(post("/api/users/1/handover/complete").header("Authorization",admin).contentType("application/json").content("{}")).andExpect(status().isBadRequest());
     valid.put("oaReference",null);
     mvc.perform(post("/api/users/"+uid+"/handover").header("Authorization",admin).contentType("application/json").content(json.writeValueAsString(valid))).andExpect(status().isOk());
     assertEquals("",db.queryForObject("SELECT oa_reference FROM handovers WHERE user_id=?",String.class,uid));
-    mvc.perform(get("/api/users/"+uid+"/handover").header("Authorization",admin)).andExpect(jsonPath("$.handover.state").value("HANDOVER"));
+    mvc.perform(get("/api/users/"+uid+"/handover").header("Authorization",admin)).andExpect(jsonPath("$.data.handover.state").value("HANDOVER"));
     db.update("UPDATE users SET status='DISABLED' WHERE id=?",uid);
     mvc.perform(post("/api/users/"+uid+"/handover").header("Authorization",admin).contentType("application/json").content(json.writeValueAsString(valid))).andExpect(status().isBadRequest());
   }
   @Test void currentUnknownRouteAndMethodLimitationIsExplicit()throws Exception{
     // Characterize the current generic exception mapping; do not claim 404/405 are implemented.
-    mvc.perform(get("/api/no-such-route")).andExpect(status().isInternalServerError()).andExpect(jsonPath("$.error").value("服务器内部错误"));
-    mvc.perform(get("/api/auth/login")).andExpect(status().isInternalServerError());
+    mvc.perform(get("/api/no-such-route")).andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("ENDPOINT_NOT_FOUND"));
+    mvc.perform(get("/api/auth/login")).andExpect(status().isMethodNotAllowed());
   }
 }

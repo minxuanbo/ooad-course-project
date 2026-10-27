@@ -1,6 +1,6 @@
-# API 设计文档（管理权限与组织范围版）
+# API 设计文档
 
-版本 4.0 · 2026-10-25。设计依据：现有角色的业务／管理权限 + 员工角色管理范围。本文规定接口契约，不记录部署状态。所有路径以 `/api` 为前缀，JSON 使用 UTF-8。
+版本 5.0 · 2026-10-27。设计依据：现有角色的业务／管理权限 + 员工角色管理范围。本文规定接口契约，不记录部署状态。所有路径以 `/api` 为前缀，JSON 使用 UTF-8。所有响应统一为 `{code,message,data,requestId}`；以下接口表及字段描述均指 data 的内容。成功 code=OK，错误 data=null；集合放在 data，写操作无返回值时 data=null，HTTP 状态仍表达成功或错误。requestId 与 X-Request-Id 响应头相同，由服务端生成。
 
 ## 1. 认证与授权规则
 
@@ -43,7 +43,7 @@
 | 方法与路径 | 所需权限 | 返回／用途 |
 | --- | --- | --- |
 | POST /auth/login | 无 | token、user、expiresIn |
-| POST /auth/logout | 可无令牌 | 撤销当前令牌，200 空响应 |
+| POST /auth/logout | 可无令牌 | 撤销当前令牌，200，data=null |
 | GET /me | 登录 | user、roles、permissionCount、canManage、managementGrants |
 | GET /me/permissions?app= | 登录 | 当前有效业务权限列表 |
 | GET /me/applications | 登录 | 有有效业务权限的应用 |
@@ -61,7 +61,8 @@
 | GET /roles/{id}/permissions?q= | role.read | 共享权限选项及 assigned |
 | PUT /roles/{id}/permissions | GLOBAL role.permissions | 替换共享角色权限 |
 | GET /applications | app.read | 共享应用目录及权限计数 |
-| GET /authorization-logs?limit=100 | GLOBAL audit.read | 全部最近日志，limit 1–500 |
+| GET /authorization-logs | GLOBAL audit.read | 游标分页与筛选，返回 items、nextCursor、hasMore、snapshotId |
+| POST /authorization-logs/archive | GLOBAL audit.read | 按截止时间分批逻辑归档，返回 archived、hasMore、snapshotId |
 | GET /users/{id}/handover | user.read + 目标范围 | 交接详情、角色、系统、最近 50 条变更 |
 | POST /users/{id}/handover | handover.start + 目标保护规则 | 开始交接 |
 | POST /users/{id}/handover/complete | handover.complete + 目标保护规则 | 完成撤权、停用、撤会话 |
@@ -73,16 +74,16 @@
 | GET /organizations | org.read | companies、departments；部门附 writable |
 | POST /organizations/companies | GLOBAL org.write | 新增公司 |
 | PUT /organizations/companies/{id} | GLOBAL org.write | 修改公司编码／名称 |
-| POST /organizations/departments | COMPANY 或 GLOBAL org.write | 新增指定公司部门，可指定同公司上级部门 |
+| POST /organizations/departments | COMPANY 或 GLOBAL org.write | 新增指定公司部门 |
 | PUT /organizations/departments/{id} | org.write + 部门范围 | 修改部门编码／名称 |
 
 ## 3. 请求与响应契约
 
 ### 登录、自身信息与业务鉴权
 
-登录请求：`{"account":"账号","password":"密码"}`。任一字段为 null 返回 400；不匹配、密码错误、停用账号或登录别名匹配多条返回 401。
+登录请求：`{"account":"账号","password":"密码"}`。账号为空值或超过 100 字符、密码为空值或超过 200 字符返回 400；账号不存在、密码错误或停用账号返回 401/LOGIN_FAILED。用户名、工号、手机号在数据库统一命名空间中跨字段唯一；同人多个字段同值允许，不同人不允许占用同一值。
 
-`GET /me` 中 managementGrants 为数组，每项含 id、roleId、roleName、permission、scope、companyId、departmentId、company、department；由当前角色权限和员工角色范围联表计算。无组织字段为 null。旧字段 permissionCount 是原始角色关联权限数，不代表有效可操作数量；有效业务权限请用 `/me/permissions`。
+`GET /me` 中 managementGrants 为数组，每项含 id、roleId、roleName、permission、scope、companyId、departmentId、company、department；由当前角色权限和员工角色范围联表计算。无组织字段为 null。permissionCount 是原始角色关联权限数，不代表有效可操作数量；有效业务权限请用 `/me/permissions`。
 
 `POST /authorize` 请求：`{"appCode":"系统码","permissionCode":"权限码","requestId":"跟踪号"}`。appCode/requestId 最多 191 字符，permissionCode 最多 512。返回 `allowed` 布尔值、permissionCode、requestId。没有权限时本接口仍为 200/allowed=false；这只是鉴权结果，不执行真实业务。
 
@@ -101,7 +102,7 @@
 
 ### 业务角色与权限替换
 
-请求体统一为 `{"ids":[1,2]}`；null 列表为 400；空数组表示撤销全部。去重处理，历史兼容行为仍忽略不存在的角色／权限 id；界面应仅提交服务器返回选项。所有授权替换均写 authorization_changes。
+请求体统一为 `{"ids":[1,2]}`；null 列表为 400；空数组表示撤销全部。去重处理，不存在的角色／权限 id 不建立关联；界面应仅提交服务器返回选项。所有授权替换均写 authorization_changes。
 
 角色替换采用增量更新：保留角色的范围不变；撤销角色级联删除其范围；新角色不会自动获得管理范围。范围由 role-assignments 专用接口调整。禁止已完成离职的人员重新分配角色；局部管理员对子集校验不通过的目标不能部分修改。
 
@@ -128,15 +129,15 @@
 保存会原子替换角色与范围并写 SET_ROLE_ASSIGNMENTS；空数组可撤销全部，但不能撤销最后平台授权管理员。任何失败整体回滚。仅设置角色并不会自动授予管理范围。
 
 例如某人持有角色 A 的人员查询权限并绑定甲公司、角色 B 的人员修改权限并绑定乙公司，不能用 B 的修改权操作甲公司人员。
-旧 `/users/{id}/management-grants` 接口已移除；`/me.managementGrants` 字段仅作为派生有效权限供前端消费。
+`/me.managementGrants` 字段仅作为派生有效权限供前端消费。
 
 ### 组织维护
 
 新增公司与修改公司：`{"code":"COMPANY_A","name":"A 公司"}`。
-新增部门：`{"code":"DEPT_A","name":"工程部","companyId":10,"parentId":null}`。
+新增部门：`{"code":"DEPT_A","name":"工程部","companyId":10}`。
 修改部门只允许 `{"code":"DEPT_A","name":"新名称"}`，不得提交 companyId 或 parentId。编码 1–100 字符，名称 1–191 字符，不允许空白值。
 
-此版本不提供组织删除、移动、修改父节点或停用接口，因此不会通过移动节点扩大既有授权。拥有 org.write 的部门范围管理员可改名其已有部门，但不能新增部门；公司／平台管理员可在有权公司新增部门。parentId 仅为历史结构兼容参数，界面不展示上级部门、不提供子部门管理；授权计算始终按精确部门。部门负责人字段不在此维护接口中调整。
+组织只包含公司及其部门，不设部门层级。组织维护不提供删除、移动或停用接口。拥有 org.write 的部门范围管理员可改名其已有部门，但不能新增部门；公司／平台管理员可在有权公司新增部门。parentId 非空属于无效输入；授权计算始终按精确部门。部门负责人字段不在此维护接口中调整。
 
 ### 离职与审计
 
@@ -150,11 +151,63 @@
 
 鉴权日志仅系统管理员在 GLOBAL audit.read 生效时可读，返回全部范围日志，包括无法关联当前用户的历史记录。公司领导、部门经理、项目经理不能查看该全局日志。
 
-## 4. 错误与一致性
+## 4. 日志查询与归档
 
-统一错误格式 `{"error":"提示"}`。401 表示无效登录，403 表示没有操作权限、越界或保护规则拒绝；局部管理员访问范围外或不存在的人员统一 403，避免探测。平台访问不存在的人员在原有详情／写接口返回 404，角色分配查询仍返回角色选项及空范围。参数无效返回 400。
+GET `/authorization-logs` 的可选参数：
 
-未知路径、HTTP 方法错误和未单独映射的数据库约束异常仍落入通用 500；不应以浏览器 GET 登录地址判断登录接口是否可用。组织重复编码／名称目前由数据库拒绝，界面显示通用错误。
+| 参数 | 类型与语义 |
+| --- | --- |
+| userId | 正整数，精确匹配内部用户 ID；未识别身份的记录为空 ID |
+| username | 最长 100 字符，精确匹配记录中的账号快照；登录事件保留尝试的登录标识 |
+| appCode | 最长 191 字符，精确匹配系统编码；认证事件为空系统码 |
+| allowed | true 或 false；成功／允许与失败／拒绝 |
+| from / to | UTC ISO-8601，含 from、不含 to；from 必须早于 to |
+| event | 最长 32 字符；AUTHORIZATION、APPLICATION_ENTRY、LOGIN_SUCCESS、LOGIN_FAILED、UNAUTHENTICATED、REQUEST_DENIED |
+| storage | ALL（默认）、ACTIVE、ARCHIVED |
+| limit | 1–500，默认 100 |
+| cursor | 后端返回的不透明游标；继续查询须保持所有筛选条件及 limit 不变 |
+
+```json
+{"code":"OK","message":"成功","data":{"items":[],"nextCursor":null,"hasMore":false,"snapshotId":0},"requestId":"服务端生成的 UUID"}
+```
+
+items 每项包含 id、occurredAt、userId、username、appCode、permissionCode、allowed、requestId、reason、eventType、httpMethod、requestPath、httpStatus、archivedAt、archivedBy。
+时间按 UTC 解释；归档字段为空表示未归档。按 id 倒序，首次记录最大 id 作为查询上界，后续按小于上一页末 id 查询，避免新日志插入导致重复；新记录在重新查询时出现。
+这不是数据库事务快照：若同时归档，ACTIVE/ARCHIVED 集合会变化，应重新查询；ALL 的事件集合保持可追溯。不提供按页码跳转。
+
+POST `/authorization-logs/archive` 请求 `{"before":"2026-10-01T00:00:00Z","batchSize":1000}`。
+截止时间必填且不能晚于当前时间；batchSize 1–5000，默认 1000。仅归档 occurred_at < before 且尚未归档的记录；一次固定最大 id 后按 id 升序更新至批量上限。
+返回 `{"archived":1000,"hasMore":true,"snapshotId":12345}`，hasMore=true 时可用同一条件继续。每批事务写 archived_at/archived_by 和 ARCHIVE_LOGS 变更审计；重复请求不会重复归档已完成记录。
+此操作针对截止时间前的全部记录，不受列表筛选影响。逻辑归档不删除、不搬离数据库、不减少表占用空间；本设计不提供自动清理或外部冷存储。
+
+认证审计在请求结束时记录登录成功、登录失败及 API 的 401/403；未提供令牌、过期、撤销、停用账号均留痕。无法识别身份时 userId 为空；JSON 无法解析时账号也可为空。
+不得记录密码、令牌、请求体或查询字符串。业务鉴权和应用准入记录操作结果；拒绝的应用准入还可能产生一条 REQUEST_DENIED 请求记录，通过请求标识关联。
+不存在的系统返回 404，属于资源错误，不伪装成鉴权判定。日志写入使用独立事务，使业务回滚不撤销认证失败留痕；数据库本身不可用时不能保证持久化成功。
+
+## 5. 统一响应与业务错误码
+
+```json
+{"code":"MANAGEMENT_SCOPE_DENIED","message":"目标不在允许的管理范围内","data":null,"requestId":"服务端生成的 UUID"}
+```
+
+客户端按 code 判断业务类型，message 用于显示，不依赖中文字符串判断。主要错误码：
+
+| HTTP | code | 含义 |
+| --- | --- | --- |
+| 400 | INVALID_ARGUMENT / INVALID_CURSOR | 参数、格式或游标不合法 |
+| 400 | ROLE_UNAVAILABLE / USER_INACTIVE / USER_DEPARTED | 角色、用户状态不允许操作 |
+| 400 | SCOPE_ROLE_REQUIRED / SCOPE_ROLE_MISMATCH / SCOPE_TYPE_INVALID / SCOPE_ORGANIZATION_INVALID | 范围与角色或组织不匹配 |
+| 400 | COMPANY_UNAVAILABLE / DEPARTMENT_UNAVAILABLE / COMPANY_NOT_FOUND | 组织不存在、停用或不属于指定公司 |
+| 400 | LAST_PLATFORM_ADMIN / PLATFORM_ROLE_REQUIRED | 保护最后平台管理员或平台专属角色 |
+| 400 | HANDOVER_EXISTS / HANDOVER_NOT_STARTED / SELF_HANDOVER_DENIED | 离职流程前置条件不成立 |
+| 401 | AUTHENTICATION_REQUIRED / SESSION_INVALID / LOGIN_FAILED | 缺认证、会话失效或登录失败 |
+| 403 | PERMISSION_DENIED / MANAGEMENT_SCOPE_DENIED / APPLICATION_ACCESS_DENIED | 缺操作权、超出管理范围或无应用准入权 |
+| 404 | USER_NOT_FOUND / APPLICATION_NOT_FOUND / MODULE_NOT_FOUND / ENDPOINT_NOT_FOUND | 资源或接口不存在 |
+| 405 | METHOD_NOT_ALLOWED | HTTP 方法错误 |
+| 409 | DATA_CONFLICT | 唯一性或关联完整性冲突 |
+| 500 | INTERNAL_ERROR | 未预期的内部错误，不暴露堆栈或 SQL |
+
+局部管理员访问范围外或不存在的人员统一拒绝，避免用返回差异探测。GLOBAL 查询角色分配时，即使目标不存在也返回角色选项和空范围；写入必须校验目标状态。
 
 权限在每次请求中读取；撤权提交后新查询立即生效。Vue 定时和窗口聚焦刷新 `/me`，管理授权集合变化时卸载旧视图、重取范围内数据；无当前页面权限时回到我的应用。已经通过鉴权的外部在途业务操作不保证被中断。
 

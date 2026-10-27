@@ -9,6 +9,7 @@ for(const m of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g))if(m[1
 vm.runInContext(fs.readFileSync(dir+'原型权限清单.js','utf8'),ctx);
 vm.runInContext(fs.readFileSync(dir+'原型应用鉴权.js','utf8'),ctx);
 vm.runInContext(fs.readFileSync(dir+'原型管理权限.js','utf8'),ctx);
+vm.runInContext(fs.readFileSync(dir+'原型审计日志.js','utf8'),ctx);
 let sidebar;
 for(const page of ['portal','dashboard','users','roles','apps','logs','organizations']){
  vm.runInContext(`actor='admin';page='${page}';shell()`,ctx);
@@ -80,5 +81,20 @@ vm.runInContext("mgChange('assignedRole',0,'2',false)",ctx);
 assert.equal(vm.runInContext('mgDraftScopes.length',ctx),0);
 assert.equal(vm.runInContext('mgScopes[2].length',ctx),2);
 console.log('PASS: conditional scope fields, company-linked departments, separate sections and save/cancel drafts');
+
+vm.runInContext("initialData();actor='admin';for(let i=0;i<25;i++)prototypeAudit('audit-user','LOGIN_FAILED',false,'LOGIN_FAILED');logsView(document.getElementById('view'))",ctx);
+assert.equal(vm.runInContext('auditSnapshot.length',ctx),25);
+assert(node('view').innerHTML.includes('加载更多'));
+vm.runInContext("prototypeAudit('new-user','UNAUTHENTICATED',false,'AUTHENTICATION_REQUIRED')",ctx);
+assert.equal(vm.runInContext('auditSnapshot.length',ctx),25);
+for(const key of ['user','app','result','event','from','to','storage'])node('audit-'+key).value=key==='storage'?'ALL':key==='user'?'audit-user':'';
+vm.runInContext('auditSearch()',ctx);assert.equal(vm.runInContext('auditSnapshot.length',ctx),25);
+vm.runInContext("for(const l of logs)l.at='2025-01-01T00:00:00.000Z'",ctx);
+node('audit-before').value='2026-01-01T00:00';vm.runInContext('auditArchive()',ctx);
+assert.equal(vm.runInContext('logs.filter(l=>l.archived).length',ctx),26);
+node('audit-storage').value='ACTIVE';vm.runInContext('auditSearch()',ctx);assert.equal(vm.runInContext('auditSnapshot.length',ctx),0);
+node('audit-storage').value='ARCHIVED';vm.runInContext('auditSearch()',ctx);assert.equal(vm.runInContext('auditSnapshot.length',ctx),25);
+vm.runInContext('initialData()',ctx);assert.equal(vm.runInContext('auditSnapshot.length',ctx),0);
+console.log('PASS: audit snapshot pagination, filter matching, retained archive and reset');
 
 });

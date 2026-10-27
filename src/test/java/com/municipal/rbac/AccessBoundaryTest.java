@@ -36,7 +36,7 @@ class AccessBoundaryTest {
     String employee=login("SG010000","123456");
     db.update("UPDATE applications SET enabled=0");
     mvc.perform(get("/api/me/permissions").header("Authorization",employee))
-      .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+      .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(0));
   }
   @Test void mysqlSupportsEveryManagementReadAndPermissionCatalog()throws Exception{
     String manager=login("admin","admin123");
@@ -47,7 +47,7 @@ class AccessBoundaryTest {
     String response=mvc.perform(post("/api/auth/login").contentType("application/json")
       .content(json.writeValueAsString(java.util.Map.of("account",account,"password",password))))
       .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-    return "Bearer "+json.readTree(response).get("token").asText();
+    return "Bearer "+json.readTree(response).get("data").get("token").asText();
   }
   @Test void employeeCannotReadOrWriteManagementEndpoints()throws Exception{
     String token=login("SG010000","123456");
@@ -55,7 +55,7 @@ class AccessBoundaryTest {
       mvc.perform(get("/api"+path).header("Authorization",token)).andExpect(status().isForbidden());
     for(String path:new String[]{"/users/1/roles","/roles/1/permissions"})
       mvc.perform(put("/api"+path).header("Authorization",token).contentType("application/json").content("{\"ids\":[]}")).andExpect(status().isForbidden());
-    mvc.perform(get("/api/me").header("Authorization",token)).andExpect(jsonPath("$.canManage").value(false));
+    mvc.perform(get("/api/me").header("Authorization",token)).andExpect(jsonPath("$.data.canManage").value(false));
   }
   @Test void handoverPreservesAccessThenRevokesSessionsAndKeepsHistory()throws Exception{
     String employee=login("SG010000","123456"),manager=login("admin","admin123");
@@ -80,7 +80,7 @@ class AccessBoundaryTest {
     mvc.perform(post(path+"/complete").header("Authorization",manager).contentType("application/json").content(finish)).andExpect(status().isOk());
     assertEquals(1,db.queryForObject("SELECT count(*) FROM authorization_changes WHERE target_id=? AND action='COMPLETE_HANDOVER'",Integer.class,uid));
     mvc.perform(put("/api/users/"+uid+"/roles").header("Authorization",manager).contentType("application/json").content("{\"ids\":[5]}")).andExpect(status().isBadRequest());
-    mvc.perform(get("/api/users/"+uid+"/handover").header("Authorization",manager)).andExpect(jsonPath("$.handover.state").value("DEPARTED"));
+    mvc.perform(get("/api/users/"+uid+"/handover").header("Authorization",manager)).andExpect(jsonPath("$.data.handover.state").value("DEPARTED"));
     assertEquals("ACTIVE",db.queryForObject("SELECT status FROM users WHERE employee_no='SG000012'",String.class));
   }
   @Test void handoverRejectsInvalidPeopleDatesAndSelf()throws Exception{
@@ -100,13 +100,13 @@ class AccessBoundaryTest {
     long role=db.queryForObject("SELECT id FROM roles WHERE name='普通员工'",Long.class);
     String response=mvc.perform(get("/api/me/applications").header("Authorization",employee)).andReturn().getResponse().getContentAsString();
     long app=0;
-    for(JsonNode a:json.readTree(response))if(a.get("permissionCount").asInt()>0){app=a.get("id").asLong();break;}
+    for(JsonNode a:json.readTree(response).get("data"))if(a.get("permissionCount").asInt()>0){app=a.get("id").asLong();break;}
     assertTrue(app>0);
-    mvc.perform(post("/api/me/applications/"+app+"/enter").header("Authorization",employee)).andExpect(status().isOk()).andExpect(jsonPath("$.next").value("modules"));
+    mvc.perform(post("/api/me/applications/"+app+"/enter").header("Authorization",employee)).andExpect(status().isOk()).andExpect(jsonPath("$.data.next").value("modules"));
     mvc.perform(put("/api/users/"+uid+"/roles").header("Authorization",manager).contentType("application/json").content("{\"ids\":[]}")).andExpect(status().isOk());
     mvc.perform(post("/api/me/applications/"+app+"/enter").header("Authorization",employee)).andExpect(status().isForbidden());
     response=mvc.perform(get("/api/me/applications").header("Authorization",employee)).andReturn().getResponse().getContentAsString();
-    assertEquals(0,json.readTree(response).size());
+    assertEquals(0,json.readTree(response).get("data").size());
     mvc.perform(put("/api/users/"+uid+"/roles").header("Authorization",manager).contentType("application/json").content("{\"ids\":["+role+"]}")).andExpect(status().isOk());
     mvc.perform(post("/api/me/applications/"+app+"/enter").header("Authorization",employee)).andExpect(status().isOk());
     db.update("UPDATE roles SET enabled=0 WHERE id=?",role);
@@ -117,9 +117,9 @@ class AccessBoundaryTest {
     String employee=login("SG010000","123456"), manager=login("admin","admin123");
     db.update("DELETE FROM role_permissions WHERE role_id=(SELECT id FROM roles WHERE name='普通员工')");
     String response=mvc.perform(get("/api/me/applications").header("Authorization",employee)).andReturn().getResponse().getContentAsString();
-    for(JsonNode a:json.readTree(response))assertEquals(0,a.get("permissionCount").asInt());
-    db.update("DELETE FROM user_role_scopes WHERE user_id=(SELECT id FROM users WHERE username='admin')");
-    mvc.perform(get("/api/me").header("Authorization",manager)).andExpect(jsonPath("$.canManage").value(false));
+    for(JsonNode a:json.readTree(response).get("data"))assertEquals(0,a.get("permissionCount").asInt());
+    db.update("DELETE FROM management_scopes WHERE user_id=(SELECT id FROM users WHERE username='admin')");
+    mvc.perform(get("/api/me").header("Authorization",manager)).andExpect(jsonPath("$.data.canManage").value(false));
     mvc.perform(get("/api/users").header("Authorization",manager)).andExpect(status().isForbidden());
   }
   @Test void userFiltersCombineCompanyDepartmentAndPhoneWithAccuratePagination()throws Exception{
@@ -128,27 +128,27 @@ class AccessBoundaryTest {
     String company=user.get("company").toString(),dept=user.get("department_id").toString(),phone=user.get("phone").toString();
     int expected=db.queryForObject("SELECT count(*) FROM users u JOIN departments d ON d.id=u.department_id JOIN companies c ON c.id=d.company_id WHERE c.name=? AND u.department_id=?",Integer.class,company,user.get("department_id"));
     mvc.perform(get("/api/users/page").header("Authorization",manager).param("company",company).param("departmentId",dept).param("size","1"))
-      .andExpect(status().isOk()).andExpect(jsonPath("$.total").value(expected))
-      .andExpect(jsonPath("$.items.length()").value(1)).andExpect(jsonPath("$.items[0].company").value(company))
-      .andExpect(jsonPath("$.items[0].departmentId").value(Integer.parseInt(dept)));
+      .andExpect(status().isOk()).andExpect(jsonPath("$.data.total").value(expected))
+      .andExpect(jsonPath("$.data.items.length()").value(1)).andExpect(jsonPath("$.data.items[0].company").value(company))
+      .andExpect(jsonPath("$.data.items[0].departmentId").value(Integer.parseInt(dept)));
     mvc.perform(get("/api/users/page").header("Authorization",manager).param("company",company).param("departmentId",dept).param("q",phone))
-      .andExpect(status().isOk()).andExpect(jsonPath("$.total").value(1)).andExpect(jsonPath("$.items[0].phone").value(phone));
+      .andExpect(status().isOk()).andExpect(jsonPath("$.data.total").value(1)).andExpect(jsonPath("$.data.items[0].phone").value(phone));
     mvc.perform(get("/api/users/page").header("Authorization",manager).param("company","不存在的公司").param("q",phone))
-      .andExpect(status().isOk()).andExpect(jsonPath("$.total").value(0)).andExpect(jsonPath("$.items.length()").value(0));
+      .andExpect(status().isOk()).andExpect(jsonPath("$.data.total").value(0)).andExpect(jsonPath("$.data.items.length()").value(0));
     mvc.perform(get("/api/users/page").header("Authorization",manager).param("page","-1").param("size","0"))
-      .andExpect(status().isOk()).andExpect(jsonPath("$.page").value(0)).andExpect(jsonPath("$.size").value(1));
+      .andExpect(status().isOk()).andExpect(jsonPath("$.data.page").value(0)).andExpect(jsonPath("$.data.size").value(1));
     mvc.perform(get("/api/users/page").header("Authorization",manager).param("page","999999"))
-      .andExpect(status().isOk()).andExpect(jsonPath("$.items.length()").value(0));
+      .andExpect(status().isOk()).andExpect(jsonPath("$.data.items.length()").value(0));
     String response=mvc.perform(get("/api/users/filters").header("Authorization",manager).param("company",company))
       .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-    JsonNode filters=json.readTree(response);
+    JsonNode filters=json.readTree(response).get("data");
     assertTrue(filters.get("companies").size()>0);
     assertTrue(filters.get("departments").size()>0);
     for(JsonNode d:filters.get("departments"))
       assertTrue(db.queryForObject("SELECT count(*) FROM users u JOIN departments d ON d.id=u.department_id JOIN companies c ON c.id=d.company_id WHERE c.name=? AND u.department_id=?",Integer.class,company,d.get("id").asLong())>0);
     mvc.perform(get("/api/users/filters").header("Authorization",manager).param("company","不存在的公司"))
-      .andExpect(jsonPath("$.departments.length()").value(0));
+      .andExpect(jsonPath("$.data.departments.length()").value(0));
     mvc.perform(get("/api/users").header("Authorization",manager).param("q",phone).param("company",company))
-      .andExpect(status().isOk()).andExpect(jsonPath("$[0].phone").value(phone));
+      .andExpect(status().isOk()).andExpect(jsonPath("$.data[0].phone").value(phone));
   }
 }

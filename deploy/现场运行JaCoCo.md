@@ -6,19 +6,19 @@ B/C/D 的业务服务不参与，不需要重启；已有业务库不会被清�
 
 ## 本次已验证版本
 
-A 的独立目录 `/root/rbac-role-scope-20261025` 保存本次送测源码。它独立于 Git 克隆，适合直接复现已验证报告。
+A 的独立目录 `/root/rbac-design-20261027` 保存本次送测源码。它独立于 Git 克隆，适合直接复现已验证报告。
 
 在 A 的 Termius 中执行：
 
 ```bash
-cd /root/rbac-role-scope-20261025
+cd /root/rbac-design-20261027
 export RBAC_BUILD_IMAGE=rbac-build:test-20261023
 export RBAC_TEST_EXCEL_DIR=/root/ooad-course-project
 export RBAC_TEST_MYSQL_IMAGE=swr.cn-north-4.myhuaweicloud.com/javaee_xmu/rbac-mysql@sha256:54ad54987c01f1d7af9e1343910fd0cf0d4c4526b552f13e712ddbeacf13dd02
 sh deploy/test-backend.sh
 ```
 
-工具镜像只提供 JDK/Maven/依赖，实际测试复制本目录当前 pom.xml/src 重新编译；Excel 从原克隆目录读取，不进入镜像。本次 48 项测试通过，全部 19 个生产类的六项覆盖率均为 100%。现场以实际输出为准。
+工具镜像只提供 JDK/Maven/依赖，实际测试复制本目录当前 pom.xml/src 重新编译；Excel 从原克隆目录读取，不进入镜像。本次 61 项测试通过，全部生产代码的六项覆盖率均为 100%（69 个有可执行代码的类，发布共 72 个 class 文件）。现场以实际输出为准。
 
 下节是更新 Git 克隆后测试当前源码的通用方法，不必与上节重复执行。
 
@@ -50,7 +50,7 @@ sh deploy/test-backend.sh
 脚本自动完成：
 
 1. 创建唯一命名的 Docker 网络、临时 MySQL 容器和随机凭据，不发布数据库端口。
-2. 等待数据库可连接；新建 rbac_test，测试账号只有该库权限。
+2. 等待数据库可连接；新建 rbac_test，测试账号只有该库权限；临时实例启用 log_bin_trust_function_creators 以安装触发器，不对业务库修改此设置。
 3. 将当前源码、三份 Excel 只读挂载并复制到测试容器临时目录。
 4. 执行 mvn clean verify：真实空库建表/初始化、接口集成测试、单元测试、JaCoCo 报告及覆盖率门槛检查。
 5. 已生成覆盖率文件时保存诊断报告；退出时删除本轮测试数据库容器及匿名卷、网络和临时凭据文件。不会删除现有业务卷。
@@ -91,4 +91,4 @@ JaCoCo report: /root/ooad-course-project/reports/jacoco/<时间>-<编号>/index.
 - 测试/覆盖率失败：保留终端结果，修复当前代码或用例后重跑；不要混入旧 jacoco.exec。
 - 不要将 RBAC_TEST_DB_URL 指向业务库，也不要用线上演示账号替代测试数据。
 
-原线上采集脚本、报告和演示账号创建工具已从当前仓库移除。本版后端镜像不含线上采集 agent，部署时移除旧 JAVA_TOOL_OPTIONS 中的 agent 参数；旧线上采集导出已清理；演示人员数据保留，不参与当前报告。
+当前报告只保留最新完整版本。现场每次执行仍产生新目录，成功后再按需清理旧报告；不要将不同版本的 exec 混合。

@@ -74,6 +74,8 @@ def main():
             sql += f"GRANT ALL PRIVILEGES ON {name}.* TO '{name}'@'localhost';"
         sql += f"ALTER USER 'root'@'localhost' IDENTIFIED BY '{config['root']}';"
         client(sql)
+    # This is the isolated project development instance, not a shared server.
+    client("SET GLOBAL log_bin_trust_function_creators=ON;", password=config["root"])
     props = LOCAL / "application-local.properties"
     props.write_text(
         "RBAC_DB_PASSWORD=" + config["rbac"] + "\n" +

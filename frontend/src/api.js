@@ -33,12 +33,15 @@ export async function api(path, method = 'GET', body) {
       setToken('')
       notify('登录已失效或账号已停用，请重新登录。')
     }
-    const error = Error(data?.error || data?.message || '请求失败：' + response.status)
+    const error = Error(data?.message || '请求失败：' + response.status)
     error.status = response.status
+    error.code = data?.code || 'HTTP_ERROR'
+    error.requestId = data?.requestId || ''
     throw error
   }
   if (session.token !== requestToken) throw Error('登录身份已改变，请重新加载。')
-  return data
+  if (data?.code !== 'OK' || !Object.hasOwn(data, 'data')) throw Error('接口响应格式不符合约定。')
+  return data.data
 }
 export async function refreshSession() {
   const token = session.token

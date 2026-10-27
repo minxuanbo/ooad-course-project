@@ -38,8 +38,7 @@ class DataInitializer implements ApplicationRunner {
     for(int i=1;i<rows.size();i++){
       String name=get(rows.get(i),0),parent=get(rows.get(i),2);
       if(!parent.isBlank()&&!ids.containsKey(parent))throw new IllegalStateException("上级部门不存在");
-      if(ids.containsKey(parent)&&Objects.equals(owners.get(name),owners.get(parent)))
-        db.update("UPDATE departments SET parent_id=? WHERE id=?",ids.get(parent),ids.get(name));
+
     }
   }
   private void resolveManagers(){

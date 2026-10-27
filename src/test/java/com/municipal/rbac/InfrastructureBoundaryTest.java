@@ -33,7 +33,7 @@ class InfrastructureBoundaryTest {
   }
   @Test void nullAuthorizationFailsBeforeDatabaseAccess(){
     JdbcTemplate db=mock(JdbcTemplate.class);
-    AuthService auth=new AuthService(db,12);
+    AuthService auth=new AuthService(new AuthRepository(db),new ManagementAccess(new ManagementAccessRepository(db)),12);
     assertThrows(ApiException.class,()->auth.require(null));
     assertThrows(ApiException.class,()->auth.require("Basic abc"));
     auth.logout(null);auth.logout("Basic abc");verifyNoInteractions(db);

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuthRepository.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rbac0</a> &gt; <a href="index.source.html" class="el_package">com.municipal.rbac</a> &gt; <span class="el_source">AuthRepository.java</span></div><h1>AuthRepository.java</h1><pre class="source lang-java linenums">package com.municipal.rbac;
+import java.util.*;
+import java.sql.Timestamp;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
+@Repository
+class AuthRepository {
+  private final JdbcTemplate db;
+<span class="fc" id="L9">  AuthRepository(JdbcTemplate db){this.db=db;}</span>
+  static final String CATALOG=&quot;permissions p JOIN features f ON f.id=p.feature_id JOIN modules m ON m.id=f.module_id JOIN applications a ON a.id=m.app_id JOIN actions ac ON ac.code=p.action_code&quot;;
+  static final String ACTIVE=&quot;p.enabled=1 AND f.enabled=1 AND m.enabled=1 AND a.enabled=1 AND ac.enabled=1&quot;;
+  static final String GRANTED=&quot;EXISTS(SELECT 1 FROM role_permissions rp JOIN roles r ON r.id=rp.role_id JOIN user_roles ur ON ur.role_id=r.id JOIN users gu ON gu.id=ur.user_id WHERE rp.permission_id=p.id AND r.enabled=1 AND gu.status='ACTIVE' AND ur.user_id=?)&quot;;
+
+<span class="fc" id="L14">  List&lt;Map&lt;String,Object&gt;&gt; loginUser(String account){return db.query(&quot;SELECT u.id,u.username,u.name,u.password_hash,u.status FROM login_identifiers li JOIN users u ON u.id=li.user_id WHERE li.identifier=?&quot;,(r,i)-&gt;Map.&lt;String,Object&gt;of(&quot;id&quot;,r.getLong(1),&quot;username&quot;,r.getString(2),&quot;name&quot;,r.getString(3),&quot;hash&quot;,r.getString(4),&quot;status&quot;,r.getString(5)),account);}</span>
+<span class="fc" id="L15">  void createSession(String hash,Object id,Timestamp expires){db.update(&quot;INSERT INTO sessions(token_hash,user_id,expires_at) VALUES(?,?,?)&quot;,hash,id,expires);}</span>
+<span class="fc" id="L16">  List&lt;Map&lt;String,Object&gt;&gt; sessionUser(String hash,Timestamp now){return db.query(&quot;SELECT u.id,u.username,u.name FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.revoked=0 AND s.expires_at&gt;? AND u.status='ACTIVE'&quot;,(r,i)-&gt;Map.&lt;String,Object&gt;of(&quot;id&quot;,r.getLong(1),&quot;username&quot;,r.getString(2),&quot;name&quot;,r.getString(3)),hash,now);}</span>
+<span class="fc" id="L17">  void revoke(String hash){db.update(&quot;UPDATE sessions SET revoked=1 WHERE token_hash=?&quot;,hash);}</span>
+<span class="fc bfc" id="L18" title="All 2 branches covered.">  boolean has(long uid,String permission){return db.queryForObject(&quot;SELECT count(*) FROM &quot;+CATALOG+&quot; WHERE &quot;+ACTIVE+&quot; AND &quot;+GRANTED+&quot; AND p.code=?&quot;,Integer.class,uid,permission)&gt;0;}</span>
+<span class="fc bfc" id="L19" title="All 2 branches covered.">  boolean canEnter(long uid,long app){return db.queryForObject(&quot;SELECT count(*) FROM &quot;+CATALOG+&quot; WHERE &quot;+ACTIVE+&quot; AND &quot;+GRANTED+&quot; AND a.id=?&quot;,Integer.class,uid,app)&gt;0;}</span>
+<span class="fc bfc" id="L20" title="All 2 branches covered.">  boolean applicationExists(long app){return db.queryForObject(&quot;SELECT count(*) FROM applications WHERE id=?&quot;,Integer.class,app)&gt;0;}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

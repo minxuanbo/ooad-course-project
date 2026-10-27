@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuthService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rbac0</a> &gt; <a href="index.source.html" class="el_package">com.municipal.rbac</a> &gt; <span class="el_source">AuthService.java</span></div><h1>AuthService.java</h1><pre class="source lang-java linenums">package com.municipal.rbac;
+import java.nio.charset.StandardCharsets; import java.security.*; import java.time.*; import java.util.*;
+import org.springframework.beans.factory.annotation.Value; import org.springframework.http.HttpStatus; import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder; import org.springframework.stereotype.Service; import org.springframework.transaction.annotation.Transactional;
+@Service
+class AuthService {
+<span class="fc" id="L6">  private final AuthRepository repository;private final ManagementAccess access;private final BCryptPasswordEncoder encoder=new BCryptPasswordEncoder();private final int hours;private final SecureRandom random=new SecureRandom();</span>
+<span class="fc" id="L7">  AuthService(AuthRepository repository,ManagementAccess access,@Value(&quot;${rbac.session-hours:12}&quot;)int hours){this.repository=repository;this.access=access;this.hours=hours;}</span>
+  @Transactional public Responses.Login login(String account,String password){
+<span class="fc" id="L9">    RequestAuditFilter.actor(null,account);</span>
+<span class="fc" id="L10">    var users=repository.loginUser(account);</span>
+<span class="fc bfc" id="L11" title="All 2 branches covered.">    if(!users.isEmpty())RequestAuditFilter.actor((Long)users.get(0).get(&quot;id&quot;),account);</span>
+<span class="fc bfc" id="L12" title="All 6 branches covered.">    if(users.size()!=1||!&quot;ACTIVE&quot;.equals(users.get(0).get(&quot;status&quot;))||!encoder.matches(password,(String)users.get(0).get(&quot;hash&quot;)))throw new ApiException(HttpStatus.UNAUTHORIZED,&quot;LOGIN_FAILED&quot;,&quot;账号或密码错误&quot;);</span>
+<span class="fc" id="L13">    byte[] b=new byte[32];random.nextBytes(b);String token=Base64.getUrlEncoder().withoutPadding().encodeToString(b);</span>
+<span class="fc" id="L14">    repository.createSession(hash(token),users.get(0).get(&quot;id&quot;),java.sql.Timestamp.from(Instant.now().plus(Duration.ofHours(hours))));</span>
+<span class="fc" id="L15">    return new Responses.Login(token,new Responses.Identity((Long)users.get(0).get(&quot;id&quot;),(String)users.get(0).get(&quot;username&quot;),(String)users.get(0).get(&quot;name&quot;),&quot;ACTIVE&quot;),hours*3600);</span>
+  }
+  Map&lt;String,Object&gt; require(String header){
+<span class="fc bfc" id="L18" title="All 4 branches covered.">    if(header==null||!header.startsWith(&quot;Bearer &quot;))throw new ApiException(HttpStatus.UNAUTHORIZED,&quot;AUTHENTICATION_REQUIRED&quot;,&quot;请先登录&quot;);</span>
+<span class="fc" id="L19">    var users=repository.sessionUser(hash(header.substring(7)),java.sql.Timestamp.from(Instant.now()));</span>
+<span class="fc bfc" id="L20" title="All 2 branches covered.">    if(users.isEmpty())throw ApiException.unauthorized();</span>
+<span class="fc" id="L21">    var user=users.get(0);RequestAuditFilter.actor((Long)user.get(&quot;id&quot;),(String)user.get(&quot;username&quot;));return user;</span>
+  }
+<span class="fc bfc" id="L23" title="All 4 branches covered.">  void logout(String header){if(header!=null&amp;&amp;header.startsWith(&quot;Bearer &quot;))repository.revoke(hash(header.substring(7)));}</span>
+<span class="fc" id="L24">  boolean has(long uid,String permission){return repository.has(uid,permission);}</span>
+<span class="fc" id="L25">  boolean canEnter(long uid,long app){return repository.canEnter(uid,app);}</span>
+<span class="fc bfc" id="L26" title="All 4 branches covered.">  void requireApplication(long uid,long app){if(!repository.applicationExists(app))throw new ApiException(HttpStatus.NOT_FOUND,&quot;APPLICATION_NOT_FOUND&quot;,&quot;系统不存在&quot;);if(!canEnter(uid,app))throw new ApiException(HttpStatus.FORBIDDEN,&quot;APPLICATION_ACCESS_DENIED&quot;,&quot;没有访问该系统的权限&quot;);}</span>
+<span class="fc" id="L27">  ManagementAccess management(){return access;}</span>
+<span class="fc bfc" id="L28" title="All 2 branches covered.">  boolean canManage(long uid){return !access.grants(uid).isEmpty();}</span>
+<span class="fc" id="L29">  private static String hash(String s){try{return HexFormat.of().formatHex(MessageDigest.getInstance(&quot;SHA-256&quot;).digest(s.getBytes(StandardCharsets.UTF_8)));}catch(Exception e){throw new IllegalStateException(e);}}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

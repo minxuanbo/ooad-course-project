@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RequestAuditFilter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rbac0</a> &gt; <a href="index.source.html" class="el_package">com.municipal.rbac</a> &gt; <span class="el_source">RequestAuditFilter.java</span></div><h1>RequestAuditFilter.java</h1><pre class="source lang-java linenums">package com.municipal.rbac;
+
+import java.io.IOException;
+import java.util.UUID;
+import jakarta.servlet.*;
+import jakarta.servlet.http.*;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.context.request.*;
+
+/** Never stores passwords, tokens, request bodies, or query strings. */
+@Component
+class RequestAuditFilter extends OncePerRequestFilter {
+  private final AuditRecorder recorder;
+<span class="fc" id="L15">  RequestAuditFilter(AuditRecorder recorder){this.recorder=recorder;}</span>
+<span class="fc bfc" id="L16" title="All 2 branches covered.">  static HttpServletRequest current(){var context=RequestContextHolder.getRequestAttributes();return context instanceof ServletRequestAttributes a?a.getRequest():null;}</span>
+<span class="fc bfc" id="L17" title="All 2 branches covered.">  static String requestId(){var r=current();return r==null?&quot;&quot;:String.valueOf(r.getAttribute(&quot;requestId&quot;));}</span>
+<span class="fc bfc" id="L18" title="All 2 branches covered.">  static void error(String code){var r=current();if(r!=null)r.setAttribute(&quot;errorCode&quot;,code);}</span>
+<span class="fc bfc" id="L19" title="All 2 branches covered.">  static void actor(Long id,String account){var r=current();if(r!=null){r.setAttribute(&quot;auditUserId&quot;,id);r.setAttribute(&quot;auditAccount&quot;,account);}}</span>
+  protected void doFilterInternal(HttpServletRequest request,HttpServletResponse response,FilterChain chain)throws ServletException,IOException{
+<span class="fc" id="L21">    String id=UUID.randomUUID().toString();request.setAttribute(&quot;requestId&quot;,id);response.setHeader(&quot;X-Request-Id&quot;,id);</span>
+<span class="fc" id="L22">    try{chain.doFilter(request,response);}finally{</span>
+<span class="fc" id="L23">      String path=request.getRequestURI();int status=response.getStatus();</span>
+<span class="fc bfc" id="L24" title="All 4 branches covered.">      boolean login=path.equals(&quot;/api/auth/login&quot;)&amp;&amp;request.getMethod().equals(&quot;POST&quot;);</span>
+<span class="fc bfc" id="L25" title="All 8 branches covered.">      if(path.startsWith(&quot;/api/&quot;)&amp;&amp;(login||status==401||status==403)){</span>
+<span class="fc bfc" id="L26" title="All 6 branches covered.">        String event=login?(status&lt;400?&quot;LOGIN_SUCCESS&quot;:&quot;LOGIN_FAILED&quot;):(status==401?&quot;UNAUTHENTICATED&quot;:&quot;REQUEST_DENIED&quot;);</span>
+<span class="fc bfc" id="L27" title="All 2 branches covered.">        recorder.record((Long)request.getAttribute(&quot;auditUserId&quot;),(String)request.getAttribute(&quot;auditAccount&quot;),event,status&lt;400,id,</span>
+<span class="fc" id="L28">          java.util.Objects.toString(request.getAttribute(&quot;errorCode&quot;), &quot;OK&quot;),request.getMethod(),path,status);</span>
+      }
+    }
+<span class="fc" id="L31">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

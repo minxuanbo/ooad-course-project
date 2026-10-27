@@ -1,35 +1,588 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="2840" height="2540" viewBox="0 0 2840 2540"><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10" fill="none" stroke="#64748b" stroke-width="1.4"/></marker></defs><style>text{font-family:"PingFang SC","Microsoft YaHei",Arial,sans-serif;fill:#26364b}.field{font-family:Menlo,Consolas,monospace;font-size:19px}.edge{fill:none;stroke:#64748b;stroke-width:2;marker-end:url(#arrow)}.rel{font-size:19px;fill:#475569;paint-order:stroke;stroke:#f5f7fb;stroke-width:7px;stroke-linejoin:round}.key{fill:#2563eb;font-size:18px}.note{font-size:22px;fill:#52637c}</style><rect width="2840" height="2540" fill="#f5f7fb"/><text x="60" y="66" font-size="38" font-weight="700">市政公司统一权限管理系统 · 数据库 ER 图</text><text x="60" y="108" class="note">RBAC0 V4 / 19 张表（含旧存档）/ MySQL 8 / 2026-10-25　　已核对字段；业务约束与 DDL 保证范围见设计文档</text><path class="edge" d="M540 275H620"/><text class="rel" x="580" y="254" text-anchor="middle">1 : 0..N</text><path class="edge" d="M1100 275H1180"/><text class="rel" x="1140" y="254" text-anchor="middle">0..1 : 0..N</text><path class="edge" d="M1660 275H1740"/><text class="rel" x="1700" y="254" text-anchor="middle">1 : 0..N</text><path class="edge" d="M1420 190V155H2540V190"/><text class="rel" x="1980" y="145" text-anchor="middle">离职主体 1 : 0..1</text><path class="edge" d="M1420 560V790"/><text class="rel" x="1490" y="705" text-anchor="middle">1 : 0..N</text><path class="edge" d="M1740 875H1660"/><text class="rel" x="1700" y="854" text-anchor="middle">1 : 0..N</text><path class="edge" d="M2220 875H2300"/><text class="rel" x="2260" y="854" text-anchor="middle">1 : 0..N</text><path class="edge" d="M1980 1330V1210H2540V936"/><text class="rel" x="2250" y="1197" text-anchor="middle">1 : 0..N</text><path class="edge" d="M540 1415H620"/><text class="rel" x="580" y="1394" text-anchor="middle">1 : 0..N</text><path class="edge" d="M1100 1415H1180"/><text class="rel" x="1140" y="1394" text-anchor="middle">1 : 0..N</text><path class="edge" d="M1660 1415H1740"/><text class="rel" x="1700" y="1394" text-anchor="middle">1 : 0..N</text><path class="edge" d="M2300 1415H2220"/><text class="rel" x="2260" y="1394" text-anchor="middle">1 : 0..N</text><path class="edge" d="M620 365H586V680H860V476"/><text class="rel" x="860" y="710" text-anchor="middle">历史父节点兼容关系（不用于范围递归）</text><rect x="60" y="190" width="480" height="202" rx="12" fill="white" stroke="#cbd5e1" stroke-width="1.5"/><path d="M72 190H528Q540 190 540 202V262H60V202Q60 190 72 190" fill="#294c86"/><text x="80" y="219" style="fill:white" font-size="22" font-weight="700">公司</text><text x="80" y="245" style="fill:#e2e8f0" font-size="19">companies</text><text x="78" y="288" class="field">id</text><text x="370" y="288" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="446" y="288" class="key">PK</text><text x="78" y="316" class="field">code</text><text x="370" y="316" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="446" y="316" class="key">UK</text><text x="78" y="344" class="field">name</text><text x="370" y="344" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="446" y="344" class="key">UK</text><text x="78" y="372" class="field">enabled</text><text x="370" y="372" class="field" style="fill:#7c8796;font-size:16px">tinyint</text><text x="446" y="372" class="key"></text><rect x="620" y="190" width="480" height="286" rx="12" fill="white" stroke="#cbd5e1" stroke-width="1.5"/><path d="M632 190H1088Q1100 190 1100 202V262H620V202Q620 190 632 190" fill="#294c86"/><text x="640" y="219" style="fill:white" font-size="22" font-weight="700">部门</text><text x="640" y="245" style="fill:#e2e8f0" font-size="19">departments</text><text x="638" y="288" class="field">id</text><text x="930" y="288" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="1006" y="288" class="key">PK</text><text x="638" y="316" class="field">company_id</text><text x="930" y="316" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="1006" y="316" class="key">FK</text><text x="638" y="344" class="field">code</text><text x="930" y="344" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="1006" y="344" class="key">UK</text><text x="638" y="372" class="field">name</text><text x="930" y="372" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="1006" y="372" class="key"></text><text x="638" y="400" class="field">manager_user_id</text><text x="930" y="400" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="1006" y="400" class="key">FK</text><text x="638" y="428" class="field">parent_id</text><text x="930" y="428" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="1006" y="428" class="key">FK</text><text x="638" y="456" class="field">enabled</text><text x="930" y="456" class="field" style="fill:#7c8796;font-size:16px">tinyint</text><text x="1006" y="456" class="key"></text><rect x="1180" y="190" width="480" height="370" rx="12" fill="white" stroke="#cbd5e1" stroke-width="1.5"/><path d="M1192 190H1648Q1660 190 1660 202V262H1180V202Q1180 190 1192 190" fill="#294c86"/><text x="1200" y="219" style="fill:white" font-size="22" font-weight="700">用户</text><text x="1200" y="245" style="fill:#e2e8f0" font-size="19">users</text><text x="1198" y="288" class="field">id</text><text x="1490" y="288" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="1566" y="288" class="key">PK</text><text x="1198" y="316" class="field">employee_no</text><text x="1490" y="316" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="1566" y="316" class="key">UK</text><text x="1198" y="344" class="field">username</text><text x="1490" y="344" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="1566" y="344" class="key">UK</text><text x="1198" y="372" class="field">name</text><text x="1490" y="372" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="1566" y="372" class="key"></text><text x="1198" y="400" class="field">phone</text><text x="1490" y="400" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="1566" y="400" class="key">UK</text><text x="1198" y="428" class="field">department_id</text><text x="1490" y="428" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="1566" y="428" class="key">FK</text><text x="1198" y="456" class="field">position</text><text x="1490" y="456" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="1566" y="456" class="key"></text><text x="1198" y="484" class="field">password_hash</text><text x="1490" y="484" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="1566" y="484" class="key"></text><text x="1198" y="512" class="field">status</text><text x="1490" y="512" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="1566" y="512" class="key"></text><text x="1198" y="540" class="field">created_at</text><text x="1490" y="540" class="field" style="fill:#7c8796;font-size:16px">datetime</text><text x="1566" y="540" class="key"></text><rect x="60" y="1330" width="480" height="202" rx="12" fill="white" stroke="#cbd5e1" stroke-width="1.5"/><path d="M72 1330H528Q540 1330 540 1342V1402H60V1342Q60 1330 72 1330" fill="#146d72"/><text x="80" y="1359" style="fill:white" font-size="22" font-weight="700">业务系统</text><text x="80" y="1385" style="fill:#e2e8f0" font-size="19">applications</text><text x="78" y="1428" class="field">id</text><text x="370" y="1428" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="446" y="1428" class="key">PK</text><text x="78" y="1456" class="field">code</text><text x="370" y="1456" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="446" y="1456" class="key">UK</text><text x="78" y="1484" class="field">name</text><text x="370" y="1484" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="446" y="1484" class="key"></text><text x="78" y="1512" class="field">enabled</text><text x="370" y="1512" class="field" style="fill:#7c8796;font-size:16px">tinyint</text><text x="446" y="1512" class="key"></text><rect x="620" y="1330" width="480" height="258" rx="12" fill="white" stroke="#cbd5e1" stroke-width="1.5"/><path d="M632 1330H1088Q1100 1330 1100 1342V1402H620V1342Q620 1330 632 1330" fill="#146d72"/><text x="640" y="1359" style="fill:white" font-size="22" font-weight="700">功能模块</text><text x="640" y="1385" style="fill:#e2e8f0" font-size="19">modules</text><text x="638" y="1428" class="field">id</text><text x="930" y="1428" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="1006" y="1428" class="key">PK</text><text x="638" y="1456" class="field">app_id</text><text x="930" y="1456" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="1006" y="1456" class="key">FK</text><text x="638" y="1484" class="field">code</text><text x="930" y="1484" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="1006" y="1484" class="key"></text><text x="638" y="1512" class="field">name</text><text x="930" y="1512" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="1006" y="1512" class="key"></text><text x="638" y="1540" class="field">sort_order</text><text x="930" y="1540" class="field" style="fill:#7c8796;font-size:16px">int</text><text x="1006" y="1540" class="key"></text><text x="638" y="1568" class="field">enabled</text><text x="930" y="1568" class="field" style="fill:#7c8796;font-size:16px">tinyint</text><text x="1006" y="1568" class="key"></text><rect x="1180" y="1330" width="480" height="286" rx="12" fill="white" stroke="#cbd5e1" stroke-width="1.5"/><path d="M1192 1330H1648Q1660 1330 1660 1342V1402H1180V1342Q1180 1330 1192 1330" fill="#146d72"/><text x="1200" y="1359" style="fill:white" font-size="22" font-weight="700">功能点</text><text x="1200" y="1385" style="fill:#e2e8f0" font-size="19">features</text><text x="1198" y="1428" class="field">id</text><text x="1490" y="1428" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="1566" y="1428" class="key">PK</text><text x="1198" y="1456" class="field">module_id</text><text x="1490" y="1456" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="1566" y="1456" class="key">FK</text><text x="1198" y="1484" class="field">code</text><text x="1490" y="1484" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="1566" y="1484" class="key"></text><text x="1198" y="1512" class="field">name</text><text x="1490" y="1512" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="1566" y="1512" class="key"></text><text x="1198" y="1540" class="field">description</text><text x="1490" y="1540" class="field" style="fill:#7c8796;font-size:16px">text</text><text x="1566" y="1540" class="key"></text><text x="1198" y="1568" class="field">sort_order</text><text x="1490" y="1568" class="field" style="fill:#7c8796;font-size:16px">int</text><text x="1566" y="1568" class="key"></text><text x="1198" y="1596" class="field">enabled</text><text x="1490" y="1596" class="field" style="fill:#7c8796;font-size:16px">tinyint</text><text x="1566" y="1596" class="key"></text><rect x="2300" y="1330" width="480" height="202" rx="12" fill="white" stroke="#cbd5e1" stroke-width="1.5"/><path d="M2312 1330H2768Q2780 1330 2780 1342V1402H2300V1342Q2300 1330 2312 1330" fill="#146d72"/><text x="2320" y="1359" style="fill:white" font-size="22" font-weight="700">操作类型</text><text x="2320" y="1385" style="fill:#e2e8f0" font-size="19">actions</text><text x="2318" y="1428" class="field">code</text><text x="2610" y="1428" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="2686" y="1428" class="key">PK</text><text x="2318" y="1456" class="field">name</text><text x="2610" y="1456" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="2686" y="1456" class="key">UK</text><text x="2318" y="1484" class="field">sort_order</text><text x="2610" y="1484" class="field" style="fill:#7c8796;font-size:16px">int</text><text x="2686" y="1484" class="key"></text><text x="2318" y="1512" class="field">enabled</text><text x="2610" y="1512" class="field" style="fill:#7c8796;font-size:16px">tinyint</text><text x="2686" y="1512" class="key"></text><rect x="1740" y="1330" width="480" height="230" rx="12" fill="white" stroke="#cbd5e1" stroke-width="1.5"/><path d="M1752 1330H2208Q2220 1330 2220 1342V1402H1740V1342Q1740 1330 1752 1330" fill="#146d72"/><text x="1760" y="1359" style="fill:white" font-size="22" font-weight="700">操作权限</text><text x="1760" y="1385" style="fill:#e2e8f0" font-size="19">permissions</text><text x="1758" y="1428" class="field">id</text><text x="2050" y="1428" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="2126" y="1428" class="key">PK</text><text x="1758" y="1456" class="field">feature_id</text><text x="2050" y="1456" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="2126" y="1456" class="key">FK</text><text x="1758" y="1484" class="field">action_code</text><text x="2050" y="1484" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="2126" y="1484" class="key">FK</text><text x="1758" y="1512" class="field">code</text><text x="2050" y="1512" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="2126" y="1512" class="key">UK</text><text x="1758" y="1540" class="field">enabled</text><text x="2050" y="1540" class="field" style="fill:#7c8796;font-size:16px">tinyint</text><text x="2126" y="1540" class="key"></text><rect x="1740" y="790" width="480" height="230" rx="12" fill="white" stroke="#cbd5e1" stroke-width="1.5"/><path d="M1752 790H2208Q2220 790 2220 802V862H1740V802Q1740 790 1752 790" fill="#294c86"/><text x="1760" y="819" style="fill:white" font-size="22" font-weight="700">角色</text><text x="1760" y="845" style="fill:#e2e8f0" font-size="19">roles</text><text x="1758" y="888" class="field">id</text><text x="2050" y="888" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="2126" y="888" class="key">PK</text><text x="1758" y="916" class="field">code</text><text x="2050" y="916" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="2126" y="916" class="key">UK</text><text x="1758" y="944" class="field">name</text><text x="2050" y="944" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="2126" y="944" class="key">UK</text><text x="1758" y="972" class="field">description</text><text x="2050" y="972" class="field" style="fill:#7c8796;font-size:16px">text</text><text x="2126" y="972" class="key"></text><text x="1758" y="1000" class="field">enabled</text><text x="2050" y="1000" class="field" style="fill:#7c8796;font-size:16px">tinyint</text><text x="2126" y="1000" class="key"></text><rect x="1180" y="790" width="480" height="202" rx="12" fill="white" stroke="#cbd5e1" stroke-width="1.5"/><path d="M1192 790H1648Q1660 790 1660 802V862H1180V802Q1180 790 1192 790" fill="#294c86"/><text x="1200" y="819" style="fill:white" font-size="22" font-weight="700">用户—角色</text><text x="1200" y="845" style="fill:#e2e8f0" font-size="19">user_roles</text><text x="1198" y="888" class="field">user_id</text><text x="1490" y="888" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="1566" y="888" class="key">PK, FK</text><text x="1198" y="916" class="field">role_id</text><text x="1490" y="916" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="1566" y="916" class="key">PK, FK</text><text x="1198" y="944" class="field">granted_by</text><text x="1490" y="944" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="1566" y="944" class="key">FK</text><text x="1198" y="972" class="field">granted_at</text><text x="1490" y="972" class="field" style="fill:#7c8796;font-size:16px">datetime</text><text x="1566" y="972" class="key"></text><rect x="2300" y="790" width="480" height="146" rx="12" fill="white" stroke="#cbd5e1" stroke-width="1.5"/><path d="M2312 790H2768Q2780 790 2780 802V862H2300V802Q2300 790 2312 790" fill="#294c86"/><text x="2320" y="819" style="fill:white" font-size="22" font-weight="700">角色—权限</text><text x="2320" y="845" style="fill:#e2e8f0" font-size="19">role_permissions</text><text x="2318" y="888" class="field">role_id</text><text x="2610" y="888" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="2686" y="888" class="key">PK, FK</text><text x="2318" y="916" class="field">permission_id</text><text x="2610" y="916" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="2686" y="916" class="key">PK, FK</text><rect x="1740" y="190" width="480" height="230" rx="12" fill="white" stroke="#cbd5e1" stroke-width="1.5"/><path d="M1752 190H2208Q2220 190 2220 202V262H1740V202Q1740 190 1752 190" fill="#294c86"/><text x="1760" y="219" style="fill:white" font-size="22" font-weight="700">登录会话</text><text x="1760" y="245" style="fill:#e2e8f0" font-size="19">sessions</text><text x="1758" y="288" class="field">token_hash</text><text x="2050" y="288" class="field" style="fill:#7c8796;font-size:16px">char</text><text x="2126" y="288" class="key">PK</text><text x="1758" y="316" class="field">user_id</text><text x="2050" y="316" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="2126" y="316" class="key">FK</text><text x="1758" y="344" class="field">expires_at</text><text x="2050" y="344" class="field" style="fill:#7c8796;font-size:16px">datetime</text><text x="2126" y="344" class="key"></text><text x="1758" y="372" class="field">revoked</text><text x="2050" y="372" class="field" style="fill:#7c8796;font-size:16px">tinyint</text><text x="2126" y="372" class="key"></text><text x="1758" y="400" class="field">created_at</text><text x="2050" y="400" class="field" style="fill:#7c8796;font-size:16px">datetime</text><text x="2126" y="400" class="key"></text><rect x="2300" y="190" width="480" height="426" rx="12" fill="white" stroke="#cbd5e1" stroke-width="1.5"/><path d="M2312 190H2768Q2780 190 2780 202V262H2300V202Q2300 190 2312 190" fill="#294c86"/><text x="2320" y="219" style="fill:white" font-size="22" font-weight="700">离职交接</text><text x="2320" y="245" style="fill:#e2e8f0" font-size="19">handovers</text><text x="2318" y="288" class="field">user_id</text><text x="2610" y="288" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="2686" y="288" class="key">PK, FK</text><text x="2318" y="316" class="field">receiver_id</text><text x="2610" y="316" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="2686" y="316" class="key">FK</text><text x="2318" y="344" class="field">owner_id</text><text x="2610" y="344" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="2686" y="344" class="key">FK</text><text x="2318" y="372" class="field">expected_date</text><text x="2610" y="372" class="field" style="fill:#7c8796;font-size:16px">date</text><text x="2686" y="372" class="key"></text><text x="2318" y="400" class="field">reason</text><text x="2610" y="400" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="2686" y="400" class="key"></text><text x="2318" y="428" class="field">oa_reference</text><text x="2610" y="428" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="2686" y="428" class="key"></text><text x="2318" y="456" class="field">state</text><text x="2610" y="456" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="2686" y="456" class="key"></text><text x="2318" y="484" class="field">started_by</text><text x="2610" y="484" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="2686" y="484" class="key">FK</text><text x="2318" y="512" class="field">started_at</text><text x="2610" y="512" class="field" style="fill:#7c8796;font-size:16px">datetime</text><text x="2686" y="512" class="key"></text><text x="2318" y="540" class="field">completed_by</text><text x="2610" y="540" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="2686" y="540" class="key">FK</text><text x="2318" y="568" class="field">completed_at</text><text x="2610" y="568" class="field" style="fill:#7c8796;font-size:16px">datetime</text><text x="2686" y="568" class="key"></text><text x="2318" y="596" class="field">completion_note</text><text x="2610" y="596" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="2686" y="596" class="key"></text><rect x="60" y="790" width="480" height="342" rx="12" fill="white" stroke="#cbd5e1" stroke-width="1.5"/><path d="M72 790H528Q540 790 540 802V862H60V802Q60 790 72 790" fill="#7c5b28"/><text x="80" y="819" style="fill:white" font-size="22" font-weight="700">鉴权日志</text><text x="80" y="845" style="fill:#e2e8f0" font-size="19">authorization_logs</text><text x="78" y="888" class="field">id</text><text x="370" y="888" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="446" y="888" class="key">PK</text><text x="78" y="916" class="field">occurred_at</text><text x="370" y="916" class="field" style="fill:#7c8796;font-size:16px">datetime</text><text x="446" y="916" class="key"></text><text x="78" y="944" class="field">user_id</text><text x="370" y="944" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="446" y="944" class="key"></text><text x="78" y="972" class="field">username</text><text x="370" y="972" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="446" y="972" class="key"></text><text x="78" y="1000" class="field">app_code</text><text x="370" y="1000" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="446" y="1000" class="key"></text><text x="78" y="1028" class="field">permission_code</text><text x="370" y="1028" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="446" y="1028" class="key"></text><text x="78" y="1056" class="field">allowed</text><text x="370" y="1056" class="field" style="fill:#7c8796;font-size:16px">tinyint</text><text x="446" y="1056" class="key"></text><text x="78" y="1084" class="field">request_id</text><text x="370" y="1084" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="446" y="1084" class="key"></text><text x="78" y="1112" class="field">reason</text><text x="370" y="1112" class="field" style="fill:#7c8796;font-size:16px">text</text><text x="446" y="1112" class="key"></text><rect x="620" y="790" width="480" height="286" rx="12" fill="white" stroke="#cbd5e1" stroke-width="1.5"/><path d="M632 790H1088Q1100 790 1100 802V862H620V802Q620 790 632 790" fill="#7c5b28"/><text x="640" y="819" style="fill:white" font-size="22" font-weight="700">授权变更日志</text><text x="640" y="845" style="fill:#e2e8f0" font-size="19">authorization_changes</text><text x="638" y="888" class="field">id</text><text x="930" y="888" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="1006" y="888" class="key">PK</text><text x="638" y="916" class="field">occurred_at</text><text x="930" y="916" class="field" style="fill:#7c8796;font-size:16px">datetime</text><text x="1006" y="916" class="key"></text><text x="638" y="944" class="field">operator_id</text><text x="930" y="944" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="1006" y="944" class="key"></text><text x="638" y="972" class="field">target_type</text><text x="930" y="972" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="1006" y="972" class="key"></text><text x="638" y="1000" class="field">target_id</text><text x="930" y="1000" class="field" style="fill:#7c8796;font-size:16px">bigint</text><text x="1006" y="1000" class="key"></text><text x="638" y="1028" class="field">action</text><text x="930" y="1028" class="field" style="fill:#7c8796;font-size:16px">varchar</text><text x="1006" y="1028" class="key"></text><text x="638" y="1056" class="field">detail</text><text x="930" y="1056" class="field" style="fill:#7c8796;font-size:16px">text</text><text x="1006" y="1056" class="key"></text><rect x="60" y="1755" width="2720" height="232" rx="12" fill="#eaf0f8"/>
-<text x="84" y="1793" font-size="24" font-weight="700">关系图例与补充约束</text>
-<text x="84" y="1830" class="note">实线箭头：父实体 → 子实体；标注为父端 : 子端基数。PK 主键，FK 外键，UK 单列唯一；同表多个 PK 字段共同构成复合主键。</text>
-<text x="84" y="1865" class="note">其他用户外键：departments.manager_user_id、user_roles.granted_by 可空；handovers.receiver_id / owner_id / started_by 必填，completed_by 可空。</text>
-<text x="84" y="1900" class="note">复合唯一：部门(公司,名称)；模块(系统,代码/名称)；功能点(模块,代码/名称)；操作权限(功能点,操作代码)。负责人初始化按部门姓名匹配；DDL 仅校验用户存在。</text>
-<text x="84" y="1935" class="note">审计表不设物理外键：日志 user_id 逻辑引用用户；变更 operator_id 引用操作者，target_type + target_id 指向用户或角色；名称及代码为历史快照。</text>
-<text x="84" y="1970" class="note">用户公司由部门关联获得；功能说明只存功能点；会话不保存权限快照；allowed 与权限数量实时派生。完整字段约束见《04-数据库设计文档》逐表 SQL 字典。</text>
-<g>
-<rect x="60" y="2040" width="2720" height="450" rx="12" fill="#eaf0f8"/>
-<text x="90" y="2085" font-size="28">管理权限：角色定义操作，员工角色分配绑定范围</text>
-<rect x="90" y="2120" width="770" height="330" rx="10" fill="white" stroke="#294c86"/>
-<text x="115" y="2160" font-size="24">role_management_permissions</text>
-<text x="115" y="2205" font-size="21">role_id BIGINT PK/FK → roles.id</text>
-<text x="115" y="2245" font-size="21">permission_code VARCHAR(64) PK</text>
-<text x="115" y="2290" font-size="21">角色 1:N 管理操作；与同角色的员工范围关联</text>
-<text x="115" y="2335" font-size="21">management_migrations</text>
-<text x="115" y="2375" font-size="20">version INT PK · completed TINYINT</text>
-<text x="115" y="2415" font-size="20">一次性转换标记及管理写事务锁行</text>
-<rect x="900" y="2120" width="970" height="330" rx="10" fill="white" stroke="#294c86"/>
-<text x="925" y="2160" font-size="24">user_role_scopes</text>
-<text x="925" y="2205" font-size="21">id BIGINT PK · user_id BIGINT · role_id BIGINT</text>
-<text x="925" y="2245" font-size="21">(user_id,role_id) FK → user_roles，撤角色级联撤范围</text>
-<text x="925" y="2285" font-size="21">scope_type VARCHAR(16) · company_id FK → companies</text>
-<text x="925" y="2325" font-size="21">department_id · 同公司复合 FK → departments</text>
-<text x="925" y="2370" font-size="21">GLOBAL 无组织；COMPANY 仅公司；DEPARTMENT 精确部门</text>
-<text x="925" y="2415" font-size="20">用户角色 1:N 范围；公司／部门 1:N 范围；无后代标志</text>
-<rect x="1910" y="2120" width="830" height="330" rx="10" fill="white" stroke="#94a3b8"/>
-<text x="1935" y="2160" font-size="24">management_grants · 旧授权存档</text>
-<text x="1935" y="2205" font-size="21">id PK · user_id FK · permission_code · scope_type</text>
-<text x="1935" y="2245" font-size="21">company_id FK · department_id（同公司复合 FK）</text>
-<text x="1935" y="2285" font-size="21">include_descendants 仅为旧字段，运行时不读取</text>
-<text x="1935" y="2335" font-size="21">GLOBAL 日志及平台配置权限仅系统管理员可有</text>
-<text x="1935" y="2380" font-size="21">不新增管理角色；范围不可跨角色组合</text>
-<text x="1935" y="2415" font-size="20">详细列类型与约束见 SQL 字典</text>
-</g></svg>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 16.1.0 (20260904.0139)
+ -->
+<!-- Title: ER Pages: 1 -->
+<svg width="2870pt" height="1664pt"
+ viewBox="0.00 0.00 2870.00 1664.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(36 1627.7)">
+<title>ER</title>
+<polygon fill="#f5f8fc" stroke="none" points="-36,36 -36,-1627.7 2834.04,-1627.7 2834.04,36 -36,36"/>
+<text xml:space="preserve" text-anchor="middle" x="1399.02" y="-1566.1" font-family="Microsoft YaHei" font-size="24.00">RBAC 数据库完整关系图 · 19 张表</text>
+<text xml:space="preserve" text-anchor="middle" x="1399.02" y="-1537.3" font-family="Microsoft YaHei" font-size="24.00">实线：数据库外键；虚线：审计逻辑引用（无物理外键）</text>
+<text xml:space="preserve" text-anchor="middle" x="1399.02" y="-1508.5" font-family="Microsoft YaHei" font-size="24.00">字段后的 ? 表示可空；1 : N / 1 : 0..1 表示父实体到子实体基数</text>
+<!-- companies -->
+<g id="node1" class="node">
+<title>companies</title>
+<polygon fill="white" stroke="none" points="480.8,-1358.7 480.8,-1497.3 780.8,-1497.3 780.8,-1358.7 480.8,-1358.7"/>
+<polygon fill="none" stroke="#bbcbdc" points="480.8,-1358.7 480.8,-1497.3 780.8,-1497.3 780.8,-1358.7 480.8,-1358.7"/>
+<polygon fill="#234c77" stroke="none" points="481.8,-1457.3 481.8,-1496.3 771.8,-1496.3 771.8,-1457.3 481.8,-1457.3"/>
+<text xml:space="preserve" text-anchor="start" x="614.8" y="-1477.9" font-family="Microsoft YaHei" font-weight="bold" font-size="16.00" fill="white">公司</text>
+<text xml:space="preserve" text-anchor="start" x="599" y="-1464.6" font-family="Microsoft YaHei" font-size="13.00" fill="white">companies</text>
+<text xml:space="preserve" text-anchor="start" x="486.8" y="-1440.3" font-family="Microsoft YaHei" font-size="12.00">id</text>
+<text xml:space="preserve" text-anchor="start" x="706.8" y="-1441.1" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">PK</text>
+<text xml:space="preserve" text-anchor="start" x="486.8" y="-1415.9" font-family="Microsoft YaHei" font-size="12.00">code</text>
+<text xml:space="preserve" text-anchor="start" x="706.8" y="-1416.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">UK</text>
+<text xml:space="preserve" text-anchor="start" x="486.8" y="-1391.5" font-family="Microsoft YaHei" font-size="12.00">name</text>
+<text xml:space="preserve" text-anchor="start" x="706.8" y="-1392.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">UK</text>
+<text xml:space="preserve" text-anchor="start" x="486.8" y="-1367.1" font-family="Microsoft YaHei" font-size="12.00">enabled</text>
+<text xml:space="preserve" text-anchor="start" x="706.8" y="-1367.9" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">tinyint</text>
+</g>
+<!-- departments -->
+<g id="node2" class="node">
+<title>departments</title>
+<polygon fill="white" stroke="none" points="993.97,-823.3 993.97,-1010.7 1293.97,-1010.7 1293.97,-823.3 993.97,-823.3"/>
+<polygon fill="none" stroke="#bbcbdc" points="993.97,-823.3 993.97,-1010.7 1293.97,-1010.7 1293.97,-823.3 993.97,-823.3"/>
+<polygon fill="#234c77" stroke="none" points="994.97,-970.7 994.97,-1009.7 1284.97,-1009.7 1284.97,-970.7 994.97,-970.7"/>
+<text xml:space="preserve" text-anchor="start" x="1127.97" y="-991.3" font-family="Microsoft YaHei" font-weight="bold" font-size="16.00" fill="white">部门</text>
+<text xml:space="preserve" text-anchor="start" x="1108.2" y="-978" font-family="Microsoft YaHei" font-size="13.00" fill="white">departments</text>
+<text xml:space="preserve" text-anchor="start" x="999.97" y="-953.7" font-family="Microsoft YaHei" font-size="12.00">id</text>
+<text xml:space="preserve" text-anchor="start" x="1219.97" y="-954.5" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">PK</text>
+<text xml:space="preserve" text-anchor="start" x="999.97" y="-929.3" font-family="Microsoft YaHei" font-size="12.00">company_id</text>
+<text xml:space="preserve" text-anchor="start" x="1219.97" y="-930.1" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">FK</text>
+<text xml:space="preserve" text-anchor="start" x="999.97" y="-904.9" font-family="Microsoft YaHei" font-size="12.00">code</text>
+<text xml:space="preserve" text-anchor="start" x="1219.97" y="-905.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">UK</text>
+<text xml:space="preserve" text-anchor="start" x="999.97" y="-880.5" font-family="Microsoft YaHei" font-size="12.00">name</text>
+<text xml:space="preserve" text-anchor="start" x="1219.97" y="-881.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">varchar</text>
+<text xml:space="preserve" text-anchor="start" x="999.97" y="-856.1" font-family="Microsoft YaHei" font-size="12.00">manager_user_id ?</text>
+<text xml:space="preserve" text-anchor="start" x="1219.97" y="-856.9" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">FK</text>
+<text xml:space="preserve" text-anchor="start" x="999.97" y="-831.7" font-family="Microsoft YaHei" font-size="12.00">enabled</text>
+<text xml:space="preserve" text-anchor="start" x="1219.97" y="-832.5" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">tinyint</text>
+</g>
+<!-- companies&#45;&gt;departments -->
+<g id="fk_companies_departments" class="edge">
+<title>companies&#45;&gt;departments</title>
+<path fill="none" stroke="#526c8b" stroke-width="1.35" d="M780.59,-1380.49C861.39,-1354.69 944.97,-1328 944.97,-1328 944.97,-1328 1035.65,-1139.77 1094.28,-1018.07"/>
+<polygon fill="#526c8b" stroke="#526c8b" stroke-width="1.35" points="1096.26,-1019.2 1097.03,-1012.36 1092.16,-1017.23 1096.26,-1019.2"/>
+<text xml:space="preserve" text-anchor="middle" x="887.38" y="-1366.5" font-family="Microsoft YaHei" font-size="11.00" fill="#314c70">company_id &#160;1 : N</text>
+</g>
+<!-- authorization_changes -->
+<g id="node14" class="node">
+<title>authorization_changes</title>
+<polygon fill="white" stroke="none" points="0,-913.1 0,-1124.9 300,-1124.9 300,-913.1 0,-913.1"/>
+<polygon fill="none" stroke="#bbcbdc" points="0,-913.1 0,-1124.9 300,-1124.9 300,-913.1 0,-913.1"/>
+<polygon fill="#73502c" stroke="none" points="1,-1084.9 1,-1123.9 291,-1123.9 291,-1084.9 1,-1084.9"/>
+<text xml:space="preserve" text-anchor="start" x="110" y="-1105.5" font-family="Microsoft YaHei" font-weight="bold" font-size="16.00" fill="white">管理变更审计</text>
+<text xml:space="preserve" text-anchor="start" x="87.52" y="-1092.2" font-family="Microsoft YaHei" font-size="13.00" fill="white">authorization_changes</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-1067.9" font-family="Microsoft YaHei" font-size="12.00">id</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-1068.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">PK</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-1043.5" font-family="Microsoft YaHei" font-size="12.00">occurred_at</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-1044.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">datetime</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-1019.1" font-family="Microsoft YaHei" font-size="12.00">operator_id ?</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-1019.9" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">bigint</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-994.7" font-family="Microsoft YaHei" font-size="12.00">target_type</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-995.5" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">varchar</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-970.3" font-family="Microsoft YaHei" font-size="12.00">target_id</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-971.1" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">bigint</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-945.9" font-family="Microsoft YaHei" font-size="12.00">action</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-946.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">varchar</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-921.5" font-family="Microsoft YaHei" font-size="12.00">detail ?</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-922.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">text</text>
+</g>
+<!-- companies&#45;&gt;authorization_changes -->
+<g id="logical_companies_authorization_changes" class="edge">
+<title>companies&#45;&gt;authorization_changes</title>
+<path fill="none" stroke="#a07944" stroke-width="1.35" stroke-dasharray="5,2" d="M548.87,-1358.87C475.71,-1296.38 366.72,-1203.27 281.29,-1130.3"/>
+<polygon fill="#a07944" stroke="#a07944" stroke-width="1.35" points="282.9,-1128.68 276.48,-1126.19 279.94,-1132.14 282.9,-1128.68"/>
+<text xml:space="preserve" text-anchor="middle" x="390.4" y="-1251.29" font-family="Microsoft YaHei" font-size="11.00" fill="#855e2c">COMPANY target</text>
+</g>
+<!-- management_scopes -->
+<g id="node18" class="node">
+<title>management_scopes</title>
+<polygon fill="white" stroke="none" points="2498.04,-491.3 2498.04,-724.7 2798.04,-724.7 2798.04,-491.3 2498.04,-491.3"/>
+<polygon fill="none" stroke="#bbcbdc" points="2498.04,-491.3 2498.04,-724.7 2798.04,-724.7 2798.04,-491.3 2498.04,-491.3"/>
+<polygon fill="#234c77" stroke="none" points="2499.04,-684.7 2499.04,-723.7 2789.04,-723.7 2789.04,-684.7 2499.04,-684.7"/>
+<text xml:space="preserve" text-anchor="start" x="2608.04" y="-705.3" font-family="Microsoft YaHei" font-weight="bold" font-size="16.00" fill="white">员工角色范围</text>
+<text xml:space="preserve" text-anchor="start" x="2590.25" y="-692" font-family="Microsoft YaHei" font-size="13.00" fill="white">management_scopes</text>
+<text xml:space="preserve" text-anchor="start" x="2504.04" y="-667.7" font-family="Microsoft YaHei" font-size="12.00">id</text>
+<text xml:space="preserve" text-anchor="start" x="2724.04" y="-668.5" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">PK</text>
+<text xml:space="preserve" text-anchor="start" x="2504.04" y="-643.3" font-family="Microsoft YaHei" font-size="12.00">user_id</text>
+<text xml:space="preserve" text-anchor="start" x="2724.04" y="-644.1" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">FK</text>
+<text xml:space="preserve" text-anchor="start" x="2504.04" y="-618.9" font-family="Microsoft YaHei" font-size="12.00">role_id</text>
+<text xml:space="preserve" text-anchor="start" x="2724.04" y="-619.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">FK</text>
+<text xml:space="preserve" text-anchor="start" x="2504.04" y="-594.5" font-family="Microsoft YaHei" font-size="12.00">scope_type</text>
+<text xml:space="preserve" text-anchor="start" x="2724.04" y="-595.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">varchar</text>
+<text xml:space="preserve" text-anchor="start" x="2504.04" y="-570.1" font-family="Microsoft YaHei" font-size="12.00">company_id ?</text>
+<text xml:space="preserve" text-anchor="start" x="2724.04" y="-570.9" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">FK</text>
+<text xml:space="preserve" text-anchor="start" x="2504.04" y="-545.7" font-family="Microsoft YaHei" font-size="12.00">department_id ?</text>
+<text xml:space="preserve" text-anchor="start" x="2724.04" y="-546.5" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">FK</text>
+<text xml:space="preserve" text-anchor="start" x="2517.38" y="-523.3" font-family="Microsoft YaHei" font-size="10.00">GLOBAL：无组织</text>
+<text xml:space="preserve" text-anchor="start" x="2512.65" y="-511.3" font-family="Microsoft YaHei" font-size="10.00">COMPANY：仅公司</text>
+<text xml:space="preserve" text-anchor="start" x="2504.04" y="-499.3" font-family="Microsoft YaHei" font-size="10.00">DEPARTMENT：仅部门</text>
+</g>
+<!-- companies&#45;&gt;management_scopes -->
+<g id="fk_companies_management_scopes" class="edge">
+<title>companies&#45;&gt;management_scopes</title>
+<path fill="none" stroke="#526c8b" stroke-width="1.35" d="M780.68,-1436.74C931.58,-1445.59 1142.97,-1458 1142.97,-1458 1142.97,-1458 1142.97,-1458 2157.25,-1458 2157.25,-1458 2306.25,-1414 2306.25,-1414 2306.25,-1414 2499.07,-957.96 2594.63,-731.95"/>
+<polygon fill="#526c8b" stroke="#526c8b" stroke-width="1.35" points="2596.62,-733.09 2597.06,-726.22 2592.43,-731.32 2596.62,-733.09"/>
+<text xml:space="preserve" text-anchor="middle" x="1656.22" y="-1461.3" font-family="Microsoft YaHei" font-size="11.00" fill="#314c70">company_id &#160;0..1 : N</text>
+</g>
+<!-- users -->
+<g id="node3" class="node">
+<title>users</title>
+<polygon fill="white" stroke="none" points="1506.22,-750.5 1506.22,-1035.5 1806.22,-1035.5 1806.22,-750.5 1506.22,-750.5"/>
+<polygon fill="none" stroke="#bbcbdc" points="1506.22,-750.5 1506.22,-1035.5 1806.22,-1035.5 1806.22,-750.5 1506.22,-750.5"/>
+<polygon fill="#234c77" stroke="none" points="1507.22,-995.5 1507.22,-1034.5 1797.22,-1034.5 1797.22,-995.5 1507.22,-995.5"/>
+<text xml:space="preserve" text-anchor="start" x="1640.22" y="-1016.1" font-family="Microsoft YaHei" font-weight="bold" font-size="16.00" fill="white">员工</text>
+<text xml:space="preserve" text-anchor="start" x="1638.86" y="-1002.8" font-family="Microsoft YaHei" font-size="13.00" fill="white">users</text>
+<text xml:space="preserve" text-anchor="start" x="1512.22" y="-978.5" font-family="Microsoft YaHei" font-size="12.00">id</text>
+<text xml:space="preserve" text-anchor="start" x="1732.22" y="-979.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">PK</text>
+<text xml:space="preserve" text-anchor="start" x="1512.22" y="-954.1" font-family="Microsoft YaHei" font-size="12.00">employee_no</text>
+<text xml:space="preserve" text-anchor="start" x="1732.22" y="-954.9" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">UK</text>
+<text xml:space="preserve" text-anchor="start" x="1512.22" y="-929.7" font-family="Microsoft YaHei" font-size="12.00">username</text>
+<text xml:space="preserve" text-anchor="start" x="1732.22" y="-930.5" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">UK</text>
+<text xml:space="preserve" text-anchor="start" x="1512.22" y="-905.3" font-family="Microsoft YaHei" font-size="12.00">name</text>
+<text xml:space="preserve" text-anchor="start" x="1732.22" y="-906.1" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">varchar</text>
+<text xml:space="preserve" text-anchor="start" x="1512.22" y="-880.9" font-family="Microsoft YaHei" font-size="12.00">phone ?</text>
+<text xml:space="preserve" text-anchor="start" x="1732.22" y="-881.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">UK</text>
+<text xml:space="preserve" text-anchor="start" x="1512.22" y="-856.5" font-family="Microsoft YaHei" font-size="12.00">department_id ?</text>
+<text xml:space="preserve" text-anchor="start" x="1732.22" y="-857.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">FK</text>
+<text xml:space="preserve" text-anchor="start" x="1512.22" y="-832.1" font-family="Microsoft YaHei" font-size="12.00">position ?</text>
+<text xml:space="preserve" text-anchor="start" x="1732.22" y="-832.9" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">varchar</text>
+<text xml:space="preserve" text-anchor="start" x="1512.22" y="-807.7" font-family="Microsoft YaHei" font-size="12.00">password_hash</text>
+<text xml:space="preserve" text-anchor="start" x="1732.22" y="-808.5" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">varchar</text>
+<text xml:space="preserve" text-anchor="start" x="1512.22" y="-783.3" font-family="Microsoft YaHei" font-size="12.00">status</text>
+<text xml:space="preserve" text-anchor="start" x="1732.22" y="-784.1" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">varchar</text>
+<text xml:space="preserve" text-anchor="start" x="1512.22" y="-758.9" font-family="Microsoft YaHei" font-size="12.00">created_at</text>
+<text xml:space="preserve" text-anchor="start" x="1732.22" y="-759.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">datetime</text>
+</g>
+<!-- departments&#45;&gt;users -->
+<g id="fk_departments_users" class="edge">
+<title>departments&#45;&gt;users</title>
+<path fill="none" stroke="#526c8b" stroke-width="1.35" d="M1293.92,-909.99C1358.1,-906.98 1433.18,-903.44 1498.23,-900.38"/>
+<polygon fill="#526c8b" stroke="#526c8b" stroke-width="1.35" points="1498.09,-902.67 1504.47,-900.09 1497.87,-898.12 1498.09,-902.67"/>
+<text xml:space="preserve" text-anchor="middle" x="1400.09" y="-910.45" font-family="Microsoft YaHei" font-size="11.00" fill="#314c70">department_id &#160;0..1 : N</text>
+</g>
+<!-- departments&#45;&gt;authorization_changes -->
+<g id="logical_departments_authorization_changes" class="edge">
+<title>departments&#45;&gt;authorization_changes</title>
+<path fill="none" stroke="#a07944" stroke-width="1.35" stroke-dasharray="5,2" d="M1079.23,-1010.68C1021.35,-1095.74 944.97,-1208 944.97,-1208 944.97,-1208 829.8,-1208 829.8,-1208 829.8,-1208 480.8,-1124 480.8,-1124 480.8,-1124 392.95,-1096.03 307.93,-1068.96"/>
+<polygon fill="#a07944" stroke="#a07944" stroke-width="1.35" points="308.81,-1066.86 301.93,-1067.05 307.43,-1071.19 308.81,-1066.86"/>
+<text xml:space="preserve" text-anchor="middle" x="630.8" y="-1198.7" font-family="Microsoft YaHei" font-size="11.00" fill="#855e2c">DEPARTMENT target</text>
+</g>
+<!-- departments&#45;&gt;management_scopes -->
+<g id="fk_departments_management_scopes" class="edge">
+<title>departments&#45;&gt;management_scopes</title>
+<path fill="none" stroke="#526c8b" stroke-width="1.35" d="M1293.73,-839.58C1393.3,-787.76 1506.22,-729 1506.22,-729 1506.22,-729 2006.25,-517 2006.25,-517 2006.25,-517 2306.25,-517 2306.25,-517 2306.25,-517 2400.58,-542.19 2489.98,-566.06"/>
+<polygon fill="#526c8b" stroke="#526c8b" stroke-width="1.35" points="2489.22,-568.21 2496.09,-567.69 2490.39,-563.82 2489.22,-568.21"/>
+<text xml:space="preserve" text-anchor="middle" x="1906.23" y="-583.39" font-family="Microsoft YaHei" font-size="11.00" fill="#314c70">department_id &#160;0..1 : N</text>
+</g>
+<!-- users&#45;&gt;departments -->
+<g id="fk_users_departments" class="edge">
+<title>users&#45;&gt;departments</title>
+<path fill="none" stroke="#526c8b" stroke-width="1.35" d="M1506.41,-883.08C1478.16,-881.2 1457.22,-879.8 1457.22,-879.8 1457.22,-879.8 1342.97,-879.8 1342.97,-879.8 1342.97,-879.8 1326.07,-882.98 1302.14,-887.47"/>
+<polygon fill="#526c8b" stroke="#526c8b" stroke-width="1.35" points="1301.75,-885.23 1295.78,-888.67 1302.59,-889.7 1301.75,-885.23"/>
+<text xml:space="preserve" text-anchor="middle" x="1400.09" y="-883.1" font-family="Microsoft YaHei" font-size="11.00" fill="#314c70">manager_user_id &#160;0..1 : N</text>
+</g>
+<!-- user_roles -->
+<g id="node10" class="node">
+<title>user_roles</title>
+<polygon fill="white" stroke="none" points="2006.25,-538.7 2006.25,-677.3 2306.25,-677.3 2306.25,-538.7 2006.25,-538.7"/>
+<polygon fill="none" stroke="#bbcbdc" points="2006.25,-538.7 2006.25,-677.3 2306.25,-677.3 2306.25,-538.7 2006.25,-538.7"/>
+<polygon fill="#234c77" stroke="none" points="2007.25,-637.3 2007.25,-676.3 2297.25,-676.3 2297.25,-637.3 2007.25,-637.3"/>
+<text xml:space="preserve" text-anchor="start" x="2128.25" y="-657.9" font-family="Microsoft YaHei" font-weight="bold" font-size="16.00" fill="white">用户角色</text>
+<text xml:space="preserve" text-anchor="start" x="2125.54" y="-644.6" font-family="Microsoft YaHei" font-size="13.00" fill="white">user_roles</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-620.3" font-family="Microsoft YaHei" font-size="12.00">user_id</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-621.1" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">PK FK</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-595.9" font-family="Microsoft YaHei" font-size="12.00">role_id</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-596.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">PK FK</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-571.5" font-family="Microsoft YaHei" font-size="12.00">granted_by ?</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-572.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">FK</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-547.1" font-family="Microsoft YaHei" font-size="12.00">granted_at</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-547.9" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">datetime</text>
+</g>
+<!-- users&#45;&gt;user_roles -->
+<g id="fk_users_user_roles" class="edge">
+<title>users&#45;&gt;user_roles</title>
+<path fill="none" stroke="#526c8b" stroke-width="1.35" d="M1805.97,-807.88C1876.35,-767.6 1959.56,-719.98 2027.11,-681.33"/>
+<polygon fill="#526c8b" stroke="#526c8b" stroke-width="1.35" points="2028.14,-683.36 2032.65,-678.16 2025.88,-679.41 2028.14,-683.36"/>
+<text xml:space="preserve" text-anchor="middle" x="1906.23" y="-792.53" font-family="Microsoft YaHei" font-size="11.00" fill="#314c70">user_id &#160;1 : N</text>
+<text xml:space="preserve" text-anchor="middle" x="1906.23" y="-779.33" font-family="Microsoft YaHei" font-size="11.00" fill="#314c70">granted_by &#160;0..1 : N</text>
+</g>
+<!-- sessions -->
+<g id="node12" class="node">
+<title>sessions</title>
+<polygon fill="white" stroke="none" points="2006.25,-1229.5 2006.25,-1392.5 2306.25,-1392.5 2306.25,-1229.5 2006.25,-1229.5"/>
+<polygon fill="none" stroke="#bbcbdc" points="2006.25,-1229.5 2006.25,-1392.5 2306.25,-1392.5 2306.25,-1229.5 2006.25,-1229.5"/>
+<polygon fill="#234c77" stroke="none" points="2007.25,-1352.5 2007.25,-1391.5 2297.25,-1391.5 2297.25,-1352.5 2007.25,-1352.5"/>
+<text xml:space="preserve" text-anchor="start" x="2140.25" y="-1373.1" font-family="Microsoft YaHei" font-weight="bold" font-size="16.00" fill="white">会话</text>
+<text xml:space="preserve" text-anchor="start" x="2130.94" y="-1359.8" font-family="Microsoft YaHei" font-size="13.00" fill="white">sessions</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-1335.5" font-family="Microsoft YaHei" font-size="12.00">token_hash</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-1336.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">PK</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-1311.1" font-family="Microsoft YaHei" font-size="12.00">user_id</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-1311.9" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">FK</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-1286.7" font-family="Microsoft YaHei" font-size="12.00">expires_at</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-1287.5" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">datetime</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-1262.3" font-family="Microsoft YaHei" font-size="12.00">revoked</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-1263.1" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">tinyint</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-1237.9" font-family="Microsoft YaHei" font-size="12.00">created_at</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-1238.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">datetime</text>
+</g>
+<!-- users&#45;&gt;sessions -->
+<g id="fk_users_sessions" class="edge">
+<title>users&#45;&gt;sessions</title>
+<path fill="none" stroke="#526c8b" stroke-width="1.35" d="M1806,-1027.27C1900.93,-1112.95 2006.25,-1208 2006.25,-1208 2006.25,-1208 2016,-1214.74 2030.5,-1224.77"/>
+<polygon fill="#526c8b" stroke="#526c8b" stroke-width="1.35" points="2029.16,-1226.61 2035.81,-1228.43 2031.75,-1222.86 2029.16,-1226.61"/>
+<text xml:space="preserve" text-anchor="middle" x="1906.23" y="-1165.58" font-family="Microsoft YaHei" font-size="11.00" fill="#314c70">user_id &#160;1 : N</text>
+</g>
+<!-- authorization_logs -->
+<g id="node13" class="node">
+<title>authorization_logs</title>
+<polygon fill="white" stroke="none" points="0,-463.5 0,-870.5 300,-870.5 300,-463.5 0,-463.5"/>
+<polygon fill="none" stroke="#bbcbdc" points="0,-463.5 0,-870.5 300,-870.5 300,-463.5 0,-463.5"/>
+<polygon fill="#73502c" stroke="none" points="1,-830.5 1,-869.5 291,-869.5 291,-830.5 1,-830.5"/>
+<text xml:space="preserve" text-anchor="start" x="104" y="-851.1" font-family="Microsoft YaHei" font-weight="bold" font-size="16.00" fill="white">认证与鉴权日志</text>
+<text xml:space="preserve" text-anchor="start" x="97.62" y="-837.8" font-family="Microsoft YaHei" font-size="13.00" fill="white">authorization_logs</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-813.5" font-family="Microsoft YaHei" font-size="12.00">id</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-814.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">PK</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-789.1" font-family="Microsoft YaHei" font-size="12.00">occurred_at</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-789.9" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">datetime</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-764.7" font-family="Microsoft YaHei" font-size="12.00">user_id ?</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-765.5" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">bigint</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-740.3" font-family="Microsoft YaHei" font-size="12.00">username ?</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-741.1" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">varchar</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-715.9" font-family="Microsoft YaHei" font-size="12.00">app_code</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-716.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">varchar</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-691.5" font-family="Microsoft YaHei" font-size="12.00">permission_code</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-692.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">varchar</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-667.1" font-family="Microsoft YaHei" font-size="12.00">allowed</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-667.9" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">tinyint</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-642.7" font-family="Microsoft YaHei" font-size="12.00">request_id ?</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-643.5" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">varchar</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-618.3" font-family="Microsoft YaHei" font-size="12.00">reason ?</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-619.1" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">text</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-593.9" font-family="Microsoft YaHei" font-size="12.00">event_type</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-594.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">varchar</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-569.5" font-family="Microsoft YaHei" font-size="12.00">http_method</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-570.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">varchar</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-545.1" font-family="Microsoft YaHei" font-size="12.00">request_path</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-545.9" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">varchar</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-520.7" font-family="Microsoft YaHei" font-size="12.00">http_status ?</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-521.5" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">int</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-496.3" font-family="Microsoft YaHei" font-size="12.00">archived_at ?</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-497.1" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">datetime</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-471.9" font-family="Microsoft YaHei" font-size="12.00">archived_by ?</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-472.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">bigint</text>
+</g>
+<!-- users&#45;&gt;authorization_logs -->
+<g id="logical_users_authorization_logs" class="edge">
+<title>users&#45;&gt;authorization_logs</title>
+<path fill="none" stroke="#a07944" stroke-width="1.35" stroke-dasharray="5,2" d="M1506.46,-855.53C1406.88,-830.44 1293.97,-802 1293.97,-802 1293.97,-802 621.36,-722.56 308.08,-685.55"/>
+<polygon fill="#a07944" stroke="#a07944" stroke-width="1.35" points="308.59,-683.32 301.87,-684.82 308.05,-687.84 308.59,-683.32"/>
+<text xml:space="preserve" text-anchor="middle" x="887.38" y="-763.68" font-family="Microsoft YaHei" font-size="11.00" fill="#855e2c">user_id / archived_by</text>
+</g>
+<!-- users&#45;&gt;authorization_changes -->
+<g id="logical_users_authorization_changes" class="edge">
+<title>users&#45;&gt;authorization_changes</title>
+<path fill="none" stroke="#a07944" stroke-width="1.35" stroke-dasharray="5,2" d="M1599.8,-750.82C1541.22,-600.53 1457.22,-385 1457.22,-385 1457.22,-385 1342.97,-385 1342.97,-385 1342.97,-385 1293.97,-519 1293.97,-519 1293.97,-519 620.69,-813.53 307.62,-950.48"/>
+<polygon fill="#a07944" stroke="#a07944" stroke-width="1.35" points="306.75,-948.38 301.71,-953.07 308.58,-952.55 306.75,-948.38"/>
+<text xml:space="preserve" text-anchor="middle" x="887.38" y="-720.71" font-family="Microsoft YaHei" font-size="11.00" fill="#855e2c">operator_id / USER target</text>
+</g>
+<!-- handovers -->
+<g id="node15" class="node">
+<title>handovers</title>
+<polygon fill="white" stroke="none" points="2006.25,-853.1 2006.25,-1186.9 2306.25,-1186.9 2306.25,-853.1 2006.25,-853.1"/>
+<polygon fill="none" stroke="#bbcbdc" points="2006.25,-853.1 2006.25,-1186.9 2306.25,-1186.9 2306.25,-853.1 2006.25,-853.1"/>
+<polygon fill="#234c77" stroke="none" points="2007.25,-1146.9 2007.25,-1185.9 2297.25,-1185.9 2297.25,-1146.9 2007.25,-1146.9"/>
+<text xml:space="preserve" text-anchor="start" x="2128.25" y="-1167.5" font-family="Microsoft YaHei" font-weight="bold" font-size="16.00" fill="white">离职交接</text>
+<text xml:space="preserve" text-anchor="start" x="2125.54" y="-1154.2" font-family="Microsoft YaHei" font-size="13.00" fill="white">handovers</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-1129.9" font-family="Microsoft YaHei" font-size="12.00">user_id</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-1130.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">PK FK</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-1105.5" font-family="Microsoft YaHei" font-size="12.00">receiver_id</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-1106.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">FK</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-1081.1" font-family="Microsoft YaHei" font-size="12.00">owner_id</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-1081.9" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">FK</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-1056.7" font-family="Microsoft YaHei" font-size="12.00">expected_date</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-1057.5" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">date</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-1032.3" font-family="Microsoft YaHei" font-size="12.00">reason</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-1033.1" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">varchar</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-1007.9" font-family="Microsoft YaHei" font-size="12.00">oa_reference</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-1008.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">varchar</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-983.5" font-family="Microsoft YaHei" font-size="12.00">state</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-984.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">varchar</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-959.1" font-family="Microsoft YaHei" font-size="12.00">started_by</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-959.9" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">FK</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-934.7" font-family="Microsoft YaHei" font-size="12.00">started_at</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-935.5" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">datetime</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-910.3" font-family="Microsoft YaHei" font-size="12.00">completed_by ?</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-911.1" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">FK</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-885.9" font-family="Microsoft YaHei" font-size="12.00">completed_at ?</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-886.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">datetime</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-861.5" font-family="Microsoft YaHei" font-size="12.00">completion_note ?</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-862.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">varchar</text>
+</g>
+<!-- users&#45;&gt;handovers -->
+<g id="fk_users_handovers" class="edge">
+<title>users&#45;&gt;handovers</title>
+<path fill="none" stroke="#526c8b" stroke-width="1.35" d="M1805.97,-930.93C1866.59,-946.39 1936.73,-964.28 1998.18,-979.95"/>
+<polygon fill="#526c8b" stroke="#526c8b" stroke-width="1.35" points="1997.56,-982.14 2004.43,-981.54 1998.69,-977.73 1997.56,-982.14"/>
+<text xml:space="preserve" text-anchor="middle" x="1906.23" y="-1023.98" font-family="Microsoft YaHei" font-size="11.00" fill="#314c70">user_id &#160;1 : 0..1</text>
+<text xml:space="preserve" text-anchor="middle" x="1906.23" y="-1010.78" font-family="Microsoft YaHei" font-size="11.00" fill="#314c70">receiver_id &#160;1 : N</text>
+<text xml:space="preserve" text-anchor="middle" x="1906.23" y="-997.58" font-family="Microsoft YaHei" font-size="11.00" fill="#314c70">owner_id &#160;1 : N</text>
+<text xml:space="preserve" text-anchor="middle" x="1906.23" y="-984.38" font-family="Microsoft YaHei" font-size="11.00" fill="#314c70">started_by &#160;1 : N</text>
+<text xml:space="preserve" text-anchor="middle" x="1906.23" y="-971.18" font-family="Microsoft YaHei" font-size="11.00" fill="#314c70">completed_by &#160;0..1 : N</text>
+</g>
+<!-- login_identifiers -->
+<g id="node19" class="node">
+<title>login_identifiers</title>
+<polygon fill="white" stroke="none" points="2006.25,-720.1 2006.25,-809.9 2306.25,-809.9 2306.25,-720.1 2006.25,-720.1"/>
+<polygon fill="none" stroke="#bbcbdc" points="2006.25,-720.1 2006.25,-809.9 2306.25,-809.9 2306.25,-720.1 2006.25,-720.1"/>
+<polygon fill="#234c77" stroke="none" points="2007.25,-769.9 2007.25,-808.9 2297.25,-808.9 2297.25,-769.9 2007.25,-769.9"/>
+<text xml:space="preserve" text-anchor="start" x="2116.25" y="-790.5" font-family="Microsoft YaHei" font-weight="bold" font-size="16.00" fill="white">统一登录标识</text>
+<text xml:space="preserve" text-anchor="start" x="2109.29" y="-777.2" font-family="Microsoft YaHei" font-size="13.00" fill="white">login_identifiers</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-752.9" font-family="Microsoft YaHei" font-size="12.00">identifier</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-753.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">PK</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-728.5" font-family="Microsoft YaHei" font-size="12.00">user_id</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-729.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">FK</text>
+</g>
+<!-- users&#45;&gt;login_identifiers -->
+<g id="fk_users_login_identifiers" class="edge">
+<title>users&#45;&gt;login_identifiers</title>
+<path fill="none" stroke="#526c8b" stroke-width="1.35" d="M1805.97,-854.77C1866.59,-839.19 1936.73,-821.16 1998.18,-805.37"/>
+<polygon fill="#526c8b" stroke="#526c8b" stroke-width="1.35" points="1998.7,-807.58 2004.43,-803.76 1997.56,-803.18 1998.7,-807.58"/>
+<text xml:space="preserve" text-anchor="middle" x="1906.23" y="-843.76" font-family="Microsoft YaHei" font-size="11.00" fill="#314c70">user_id &#160;1 : N</text>
+</g>
+<!-- applications -->
+<g id="node4" class="node">
+<title>applications</title>
+<polygon fill="white" stroke="none" points="0,-239.7 0,-378.3 300,-378.3 300,-239.7 0,-239.7"/>
+<polygon fill="none" stroke="#bbcbdc" points="0,-239.7 0,-378.3 300,-378.3 300,-239.7 0,-239.7"/>
+<polygon fill="#234c77" stroke="none" points="1,-338.3 1,-377.3 291,-377.3 291,-338.3 1,-338.3"/>
+<text xml:space="preserve" text-anchor="start" x="122" y="-358.9" font-family="Microsoft YaHei" font-weight="bold" font-size="16.00" fill="white">业务系统</text>
+<text xml:space="preserve" text-anchor="start" x="114.59" y="-345.6" font-family="Microsoft YaHei" font-size="13.00" fill="white">applications</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-321.3" font-family="Microsoft YaHei" font-size="12.00">id</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-322.1" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">PK</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-296.9" font-family="Microsoft YaHei" font-size="12.00">code</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-297.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">UK</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-272.5" font-family="Microsoft YaHei" font-size="12.00">name</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-273.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">varchar</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-248.1" font-family="Microsoft YaHei" font-size="12.00">enabled</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-248.9" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">tinyint</text>
+</g>
+<!-- modules -->
+<g id="node5" class="node">
+<title>modules</title>
+<polygon fill="white" stroke="none" points="480.8,-215.3 480.8,-402.7 780.8,-402.7 780.8,-215.3 480.8,-215.3"/>
+<polygon fill="none" stroke="#bbcbdc" points="480.8,-215.3 480.8,-402.7 780.8,-402.7 780.8,-215.3 480.8,-215.3"/>
+<polygon fill="#234c77" stroke="none" points="481.8,-362.7 481.8,-401.7 771.8,-401.7 771.8,-362.7 481.8,-362.7"/>
+<text xml:space="preserve" text-anchor="start" x="614.8" y="-383.3" font-family="Microsoft YaHei" font-weight="bold" font-size="16.00" fill="white">模块</text>
+<text xml:space="preserve" text-anchor="start" x="604.77" y="-370" font-family="Microsoft YaHei" font-size="13.00" fill="white">modules</text>
+<text xml:space="preserve" text-anchor="start" x="486.8" y="-345.7" font-family="Microsoft YaHei" font-size="12.00">id</text>
+<text xml:space="preserve" text-anchor="start" x="706.8" y="-346.5" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">PK</text>
+<text xml:space="preserve" text-anchor="start" x="486.8" y="-321.3" font-family="Microsoft YaHei" font-size="12.00">app_id</text>
+<text xml:space="preserve" text-anchor="start" x="706.8" y="-322.1" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">FK</text>
+<text xml:space="preserve" text-anchor="start" x="486.8" y="-296.9" font-family="Microsoft YaHei" font-size="12.00">code</text>
+<text xml:space="preserve" text-anchor="start" x="706.8" y="-297.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">varchar</text>
+<text xml:space="preserve" text-anchor="start" x="486.8" y="-272.5" font-family="Microsoft YaHei" font-size="12.00">name</text>
+<text xml:space="preserve" text-anchor="start" x="706.8" y="-273.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">varchar</text>
+<text xml:space="preserve" text-anchor="start" x="486.8" y="-248.1" font-family="Microsoft YaHei" font-size="12.00">sort_order</text>
+<text xml:space="preserve" text-anchor="start" x="706.8" y="-248.9" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">int</text>
+<text xml:space="preserve" text-anchor="start" x="486.8" y="-223.7" font-family="Microsoft YaHei" font-size="12.00">enabled</text>
+<text xml:space="preserve" text-anchor="start" x="706.8" y="-224.5" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">tinyint</text>
+</g>
+<!-- applications&#45;&gt;modules -->
+<g id="fk_applications_modules" class="edge">
+<title>applications&#45;&gt;modules</title>
+<path fill="none" stroke="#526c8b" stroke-width="1.35" d="M299.87,-309C354.7,-309 416.97,-309 472.52,-309"/>
+<polygon fill="#526c8b" stroke="#526c8b" stroke-width="1.35" points="472.48,-311.28 478.98,-309 472.48,-306.73 472.48,-311.28"/>
+<text xml:space="preserve" text-anchor="middle" x="390.4" y="-312.3" font-family="Microsoft YaHei" font-size="11.00" fill="#314c70">app_id &#160;1 : N</text>
+</g>
+<!-- applications&#45;&gt;authorization_logs -->
+<g id="logical_applications_authorization_logs" class="edge">
+<title>applications&#45;&gt;authorization_logs</title>
+<path fill="none" stroke="#a07944" stroke-width="1.35" stroke-dasharray="5,2" d="M150,-378.03C150,-400.86 150,-427.6 150,-455.43"/>
+<polygon fill="#a07944" stroke="#a07944" stroke-width="1.35" points="147.73,-455.15 150,-461.65 152.28,-455.15 147.73,-455.15"/>
+<text xml:space="preserve" text-anchor="middle" x="140.4" y="-417.6" font-family="Microsoft YaHei" font-size="11.00" fill="#855e2c">app_code 快照</text>
+</g>
+<!-- features -->
+<g id="node6" class="node">
+<title>features</title>
+<polygon fill="white" stroke="none" points="993.97,-203.1 993.97,-414.9 1293.97,-414.9 1293.97,-203.1 993.97,-203.1"/>
+<polygon fill="none" stroke="#bbcbdc" points="993.97,-203.1 993.97,-414.9 1293.97,-414.9 1293.97,-203.1 993.97,-203.1"/>
+<polygon fill="#234c77" stroke="none" points="994.97,-374.9 994.97,-413.9 1284.97,-413.9 1284.97,-374.9 994.97,-374.9"/>
+<text xml:space="preserve" text-anchor="start" x="1121.97" y="-395.5" font-family="Microsoft YaHei" font-weight="bold" font-size="16.00" fill="white">功能点</text>
+<text xml:space="preserve" text-anchor="start" x="1119.4" y="-382.2" font-family="Microsoft YaHei" font-size="13.00" fill="white">features</text>
+<text xml:space="preserve" text-anchor="start" x="999.97" y="-357.9" font-family="Microsoft YaHei" font-size="12.00">id</text>
+<text xml:space="preserve" text-anchor="start" x="1219.97" y="-358.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">PK</text>
+<text xml:space="preserve" text-anchor="start" x="999.97" y="-333.5" font-family="Microsoft YaHei" font-size="12.00">module_id</text>
+<text xml:space="preserve" text-anchor="start" x="1219.97" y="-334.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">FK</text>
+<text xml:space="preserve" text-anchor="start" x="999.97" y="-309.1" font-family="Microsoft YaHei" font-size="12.00">code</text>
+<text xml:space="preserve" text-anchor="start" x="1219.97" y="-309.9" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">varchar</text>
+<text xml:space="preserve" text-anchor="start" x="999.97" y="-284.7" font-family="Microsoft YaHei" font-size="12.00">name</text>
+<text xml:space="preserve" text-anchor="start" x="1219.97" y="-285.5" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">varchar</text>
+<text xml:space="preserve" text-anchor="start" x="999.97" y="-260.3" font-family="Microsoft YaHei" font-size="12.00">description ?</text>
+<text xml:space="preserve" text-anchor="start" x="1219.97" y="-261.1" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">text</text>
+<text xml:space="preserve" text-anchor="start" x="999.97" y="-235.9" font-family="Microsoft YaHei" font-size="12.00">sort_order</text>
+<text xml:space="preserve" text-anchor="start" x="1219.97" y="-236.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">int</text>
+<text xml:space="preserve" text-anchor="start" x="999.97" y="-211.5" font-family="Microsoft YaHei" font-size="12.00">enabled</text>
+<text xml:space="preserve" text-anchor="start" x="1219.97" y="-212.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">tinyint</text>
+</g>
+<!-- modules&#45;&gt;features -->
+<g id="fk_modules_features" class="edge">
+<title>modules&#45;&gt;features</title>
+<path fill="none" stroke="#526c8b" stroke-width="1.35" d="M780.68,-309C845.12,-309 920.6,-309 985.93,-309"/>
+<polygon fill="#526c8b" stroke="#526c8b" stroke-width="1.35" points="985.71,-311.28 992.21,-309 985.71,-306.73 985.71,-311.28"/>
+<text xml:space="preserve" text-anchor="middle" x="887.38" y="-312.3" font-family="Microsoft YaHei" font-size="11.00" fill="#314c70">module_id &#160;1 : N</text>
+</g>
+<!-- permissions -->
+<g id="node8" class="node">
+<title>permissions</title>
+<polygon fill="white" stroke="none" points="1506.22,-39.5 1506.22,-202.5 1806.22,-202.5 1806.22,-39.5 1506.22,-39.5"/>
+<polygon fill="none" stroke="#bbcbdc" points="1506.22,-39.5 1506.22,-202.5 1806.22,-202.5 1806.22,-39.5 1506.22,-39.5"/>
+<polygon fill="#234c77" stroke="none" points="1507.22,-162.5 1507.22,-201.5 1797.22,-201.5 1797.22,-162.5 1507.22,-162.5"/>
+<text xml:space="preserve" text-anchor="start" x="1628.22" y="-183.1" font-family="Microsoft YaHei" font-weight="bold" font-size="16.00" fill="white">业务权限</text>
+<text xml:space="preserve" text-anchor="start" x="1621.16" y="-169.8" font-family="Microsoft YaHei" font-size="13.00" fill="white">permissions</text>
+<text xml:space="preserve" text-anchor="start" x="1512.22" y="-145.5" font-family="Microsoft YaHei" font-size="12.00">id</text>
+<text xml:space="preserve" text-anchor="start" x="1732.22" y="-146.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">PK</text>
+<text xml:space="preserve" text-anchor="start" x="1512.22" y="-121.1" font-family="Microsoft YaHei" font-size="12.00">feature_id</text>
+<text xml:space="preserve" text-anchor="start" x="1732.22" y="-121.9" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">FK</text>
+<text xml:space="preserve" text-anchor="start" x="1512.22" y="-96.7" font-family="Microsoft YaHei" font-size="12.00">action_code</text>
+<text xml:space="preserve" text-anchor="start" x="1732.22" y="-97.5" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">FK</text>
+<text xml:space="preserve" text-anchor="start" x="1512.22" y="-72.3" font-family="Microsoft YaHei" font-size="12.00">code</text>
+<text xml:space="preserve" text-anchor="start" x="1732.22" y="-73.1" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">UK</text>
+<text xml:space="preserve" text-anchor="start" x="1512.22" y="-47.9" font-family="Microsoft YaHei" font-size="12.00">enabled</text>
+<text xml:space="preserve" text-anchor="start" x="1732.22" y="-48.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">tinyint</text>
+</g>
+<!-- features&#45;&gt;permissions -->
+<g id="fk_features_permissions" class="edge">
+<title>features&#45;&gt;permissions</title>
+<path fill="none" stroke="#526c8b" stroke-width="1.35" d="M1293.92,-254.12C1358.23,-230.42 1433.49,-202.69 1498.62,-178.7"/>
+<polygon fill="#526c8b" stroke="#526c8b" stroke-width="1.35" points="1499.29,-180.88 1504.6,-176.49 1497.71,-176.61 1499.29,-180.88"/>
+<text xml:space="preserve" text-anchor="middle" x="1400.09" y="-235.14" font-family="Microsoft YaHei" font-size="11.00" fill="#314c70">feature_id &#160;1 : N</text>
+</g>
+<!-- actions -->
+<g id="node7" class="node">
+<title>actions</title>
+<polygon fill="white" stroke="none" points="993.97,-21.7 993.97,-160.3 1293.97,-160.3 1293.97,-21.7 993.97,-21.7"/>
+<polygon fill="none" stroke="#bbcbdc" points="993.97,-21.7 993.97,-160.3 1293.97,-160.3 1293.97,-21.7 993.97,-21.7"/>
+<polygon fill="#234c77" stroke="none" points="994.97,-120.3 994.97,-159.3 1284.97,-159.3 1284.97,-120.3 994.97,-120.3"/>
+<text xml:space="preserve" text-anchor="start" x="1127.97" y="-140.9" font-family="Microsoft YaHei" font-weight="bold" font-size="16.00" fill="white">动作</text>
+<text xml:space="preserve" text-anchor="start" x="1121.56" y="-127.6" font-family="Microsoft YaHei" font-size="13.00" fill="white">actions</text>
+<text xml:space="preserve" text-anchor="start" x="999.97" y="-103.3" font-family="Microsoft YaHei" font-size="12.00">code</text>
+<text xml:space="preserve" text-anchor="start" x="1219.97" y="-104.1" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">PK</text>
+<text xml:space="preserve" text-anchor="start" x="999.97" y="-78.9" font-family="Microsoft YaHei" font-size="12.00">name</text>
+<text xml:space="preserve" text-anchor="start" x="1219.97" y="-79.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">UK</text>
+<text xml:space="preserve" text-anchor="start" x="999.97" y="-54.5" font-family="Microsoft YaHei" font-size="12.00">sort_order</text>
+<text xml:space="preserve" text-anchor="start" x="1219.97" y="-55.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">int</text>
+<text xml:space="preserve" text-anchor="start" x="999.97" y="-30.1" font-family="Microsoft YaHei" font-size="12.00">enabled</text>
+<text xml:space="preserve" text-anchor="start" x="1219.97" y="-30.9" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">tinyint</text>
+</g>
+<!-- actions&#45;&gt;permissions -->
+<g id="fk_actions_permissions" class="edge">
+<title>actions&#45;&gt;permissions</title>
+<path fill="none" stroke="#526c8b" stroke-width="1.35" d="M1293.92,-99.76C1358.1,-103.53 1433.18,-107.95 1498.23,-111.77"/>
+<polygon fill="#526c8b" stroke="#526c8b" stroke-width="1.35" points="1497.85,-114.03 1504.48,-112.14 1498.12,-109.48 1497.85,-114.03"/>
+<text xml:space="preserve" text-anchor="middle" x="1400.09" y="-111.99" font-family="Microsoft YaHei" font-size="11.00" fill="#314c70">action_code &#160;1 : N</text>
+</g>
+<!-- role_permissions -->
+<g id="node11" class="node">
+<title>role_permissions</title>
+<polygon fill="white" stroke="none" points="2006.25,-131.1 2006.25,-220.9 2306.25,-220.9 2306.25,-131.1 2006.25,-131.1"/>
+<polygon fill="none" stroke="#bbcbdc" points="2006.25,-131.1 2006.25,-220.9 2306.25,-220.9 2306.25,-131.1 2006.25,-131.1"/>
+<polygon fill="#234c77" stroke="none" points="2007.25,-180.9 2007.25,-219.9 2297.25,-219.9 2297.25,-180.9 2007.25,-180.9"/>
+<text xml:space="preserve" text-anchor="start" x="2116.25" y="-201.5" font-family="Microsoft YaHei" font-weight="bold" font-size="16.00" fill="white">角色业务权限</text>
+<text xml:space="preserve" text-anchor="start" x="2107.84" y="-188.2" font-family="Microsoft YaHei" font-size="13.00" fill="white">role_permissions</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-163.9" font-family="Microsoft YaHei" font-size="12.00">role_id</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-164.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">PK FK</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-139.5" font-family="Microsoft YaHei" font-size="12.00">permission_id</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-140.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">PK FK</text>
+</g>
+<!-- permissions&#45;&gt;role_permissions -->
+<g id="fk_permissions_role_permissions" class="edge">
+<title>permissions&#45;&gt;role_permissions</title>
+<path fill="none" stroke="#526c8b" stroke-width="1.35" d="M1805.97,-137.43C1866.59,-144.12 1936.73,-151.87 1998.18,-158.65"/>
+<polygon fill="#526c8b" stroke="#526c8b" stroke-width="1.35" points="1997.66,-160.89 2004.37,-159.34 1998.16,-156.36 1997.66,-160.89"/>
+<text xml:space="preserve" text-anchor="middle" x="1906.23" y="-156.73" font-family="Microsoft YaHei" font-size="11.00" fill="#314c70">permission_id &#160;1 : N</text>
+</g>
+<!-- permissions&#45;&gt;authorization_logs -->
+<g id="logical_permissions_authorization_logs" class="edge">
+<title>permissions&#45;&gt;authorization_logs</title>
+<path fill="none" stroke="#a07944" stroke-width="1.35" stroke-dasharray="5,2" d="M1506.46,-71.17C1406.88,-37.82 1293.97,0 1293.97,0 1293.97,0 993.97,0 993.97,0 993.97,0 480.8,-194 480.8,-194 480.8,-194 349,-299 349,-299 349,-299 300,-400 300,-400 300,-400 286.92,-423.44 268.51,-456.43"/>
+<polygon fill="#a07944" stroke="#a07944" stroke-width="1.35" points="266.68,-455.05 265.5,-461.83 270.65,-457.26 266.68,-455.05"/>
+<text xml:space="preserve" text-anchor="middle" x="887.38" y="-65.21" font-family="Microsoft YaHei" font-size="11.00" fill="#855e2c">permission_code 快照</text>
+</g>
+<!-- roles -->
+<g id="node9" class="node">
+<title>roles</title>
+<polygon fill="white" stroke="none" points="1506.22,-245.5 1506.22,-408.5 1806.22,-408.5 1806.22,-245.5 1506.22,-245.5"/>
+<polygon fill="none" stroke="#bbcbdc" points="1506.22,-245.5 1506.22,-408.5 1806.22,-408.5 1806.22,-245.5 1506.22,-245.5"/>
+<polygon fill="#234c77" stroke="none" points="1507.22,-368.5 1507.22,-407.5 1797.22,-407.5 1797.22,-368.5 1507.22,-368.5"/>
+<text xml:space="preserve" text-anchor="start" x="1640.22" y="-389.1" font-family="Microsoft YaHei" font-weight="bold" font-size="16.00" fill="white">角色</text>
+<text xml:space="preserve" text-anchor="start" x="1639.58" y="-375.8" font-family="Microsoft YaHei" font-size="13.00" fill="white">roles</text>
+<text xml:space="preserve" text-anchor="start" x="1512.22" y="-351.5" font-family="Microsoft YaHei" font-size="12.00">id</text>
+<text xml:space="preserve" text-anchor="start" x="1732.22" y="-352.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">PK</text>
+<text xml:space="preserve" text-anchor="start" x="1512.22" y="-327.1" font-family="Microsoft YaHei" font-size="12.00">code</text>
+<text xml:space="preserve" text-anchor="start" x="1732.22" y="-327.9" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">UK</text>
+<text xml:space="preserve" text-anchor="start" x="1512.22" y="-302.7" font-family="Microsoft YaHei" font-size="12.00">name</text>
+<text xml:space="preserve" text-anchor="start" x="1732.22" y="-303.5" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">UK</text>
+<text xml:space="preserve" text-anchor="start" x="1512.22" y="-278.3" font-family="Microsoft YaHei" font-size="12.00">description ?</text>
+<text xml:space="preserve" text-anchor="start" x="1732.22" y="-279.1" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">text</text>
+<text xml:space="preserve" text-anchor="start" x="1512.22" y="-253.9" font-family="Microsoft YaHei" font-size="12.00">enabled</text>
+<text xml:space="preserve" text-anchor="start" x="1732.22" y="-254.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">tinyint</text>
+</g>
+<!-- roles&#45;&gt;user_roles -->
+<g id="fk_roles_user_roles" class="edge">
+<title>roles&#45;&gt;user_roles</title>
+<path fill="none" stroke="#526c8b" stroke-width="1.35" d="M1805.92,-367.04C1881.36,-387.36 1957.25,-407.8 1957.25,-407.8 1957.25,-407.8 2024.88,-476.18 2081.09,-533.01"/>
+<polygon fill="#526c8b" stroke="#526c8b" stroke-width="1.35" points="2079.21,-534.35 2085.4,-537.37 2082.44,-531.15 2079.21,-534.35"/>
+<text xml:space="preserve" text-anchor="middle" x="1906.23" y="-411.1" font-family="Microsoft YaHei" font-size="11.00" fill="#314c70">role_id &#160;1 : N</text>
+</g>
+<!-- roles&#45;&gt;role_permissions -->
+<g id="fk_roles_role_permissions" class="edge">
+<title>roles&#45;&gt;role_permissions</title>
+<path fill="none" stroke="#526c8b" stroke-width="1.35" d="M1805.97,-281.9C1866.99,-263.4 1937.66,-241.97 1999.39,-223.25"/>
+<polygon fill="#526c8b" stroke="#526c8b" stroke-width="1.35" points="1999.75,-225.52 2005.31,-221.46 1998.43,-221.17 1999.75,-225.52"/>
+<text xml:space="preserve" text-anchor="middle" x="1906.23" y="-268.32" font-family="Microsoft YaHei" font-size="11.00" fill="#314c70">role_id &#160;1 : N</text>
+</g>
+<!-- roles&#45;&gt;authorization_changes -->
+<g id="logical_roles_authorization_changes" class="edge">
+<title>roles&#45;&gt;authorization_changes</title>
+<path fill="none" stroke="#a07944" stroke-width="1.35" stroke-dasharray="5,2" d="M1506.41,-349.88C1425.99,-362.24 1342.97,-375 1342.97,-375 1342.97,-375 1293.97,-436 1293.97,-436 1293.97,-436 993.97,-513 993.97,-513 993.97,-513 480.8,-736 480.8,-736 480.8,-736 300,-892 300,-892 300,-892 292.71,-898.21 281.35,-907.89"/>
+<polygon fill="#a07944" stroke="#a07944" stroke-width="1.35" points="280.09,-905.98 276.62,-911.93 283.04,-909.45 280.09,-905.98"/>
+<text xml:space="preserve" text-anchor="middle" x="887.38" y="-587.46" font-family="Microsoft YaHei" font-size="11.00" fill="#855e2c">ROLE target</text>
+</g>
+<!-- role_management_permissions -->
+<g id="node17" class="node">
+<title>role_management_permissions</title>
+<polygon fill="white" stroke="none" points="2006.25,-282.1 2006.25,-371.9 2306.25,-371.9 2306.25,-282.1 2006.25,-282.1"/>
+<polygon fill="none" stroke="#bbcbdc" points="2006.25,-282.1 2006.25,-371.9 2306.25,-371.9 2306.25,-282.1 2006.25,-282.1"/>
+<polygon fill="#234c77" stroke="none" points="2007.25,-331.9 2007.25,-370.9 2297.25,-370.9 2297.25,-331.9 2007.25,-331.9"/>
+<text xml:space="preserve" text-anchor="start" x="2116.25" y="-352.5" font-family="Microsoft YaHei" font-weight="bold" font-size="16.00" fill="white">角色管理操作</text>
+<text xml:space="preserve" text-anchor="start" x="2071.38" y="-339.2" font-family="Microsoft YaHei" font-size="13.00" fill="white">role_management_permissions</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-314.9" font-family="Microsoft YaHei" font-size="12.00">role_id</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-315.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">PK FK</text>
+<text xml:space="preserve" text-anchor="start" x="2012.25" y="-290.5" font-family="Microsoft YaHei" font-size="12.00">permission_code</text>
+<text xml:space="preserve" text-anchor="start" x="2232.25" y="-291.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">PK</text>
+</g>
+<!-- roles&#45;&gt;role_management_permissions -->
+<g id="fk_roles_role_management_permissions" class="edge">
+<title>roles&#45;&gt;role_management_permissions</title>
+<path fill="none" stroke="#526c8b" stroke-width="1.35" d="M1805.97,-327C1866.59,-327 1936.73,-327 1998.18,-327"/>
+<polygon fill="#526c8b" stroke="#526c8b" stroke-width="1.35" points="1997.86,-329.28 2004.36,-327 1997.86,-324.73 1997.86,-329.28"/>
+<text xml:space="preserve" text-anchor="middle" x="1906.23" y="-330.3" font-family="Microsoft YaHei" font-size="11.00" fill="#314c70">role_id &#160;1 : N</text>
+</g>
+<!-- user_roles&#45;&gt;management_scopes -->
+<g id="fk_user_roles_management_scopes" class="edge">
+<title>user_roles&#45;&gt;management_scopes</title>
+<path fill="none" stroke="#526c8b" stroke-width="1.35" d="M2306.2,-608C2364.39,-608 2431.18,-608 2490.12,-608"/>
+<polygon fill="#526c8b" stroke="#526c8b" stroke-width="1.35" points="2489.84,-610.28 2496.34,-608 2489.84,-605.73 2489.84,-610.28"/>
+<text xml:space="preserve" text-anchor="middle" x="2402.15" y="-611.3" font-family="Microsoft YaHei" font-size="11.00" fill="#314c70">user_id,role_id &#160;1 : N</text>
+</g>
+<!-- management_migrations -->
+<g id="node16" class="node">
+<title>management_migrations</title>
+<polygon fill="white" stroke="none" points="0,-1168.1 0,-1291.9 300,-1291.9 300,-1168.1 0,-1168.1"/>
+<polygon fill="none" stroke="#bbcbdc" points="0,-1168.1 0,-1291.9 300,-1291.9 300,-1168.1 0,-1168.1"/>
+<polygon fill="#234c77" stroke="none" points="1,-1251.9 1,-1290.9 291,-1290.9 291,-1251.9 1,-1251.9"/>
+<text xml:space="preserve" text-anchor="start" x="86" y="-1272.5" font-family="Microsoft YaHei" font-weight="bold" font-size="16.00" fill="white">初始化版本与管理写锁</text>
+<text xml:space="preserve" text-anchor="start" x="81.74" y="-1259.2" font-family="Microsoft YaHei" font-size="13.00" fill="white">management_migrations</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-1234.9" font-family="Microsoft YaHei" font-size="12.00">version</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-1235.7" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">PK</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-1210.5" font-family="Microsoft YaHei" font-size="12.00">completed</text>
+<text xml:space="preserve" text-anchor="start" x="226" y="-1211.3" font-family="Microsoft YaHei" font-size="10.00" fill="#61758a">tinyint</text>
+<text xml:space="preserve" text-anchor="start" x="6" y="-1188.1" font-family="Microsoft YaHei" font-size="10.00">基础设施元数据，无业务外键</text>
+<text xml:space="preserve" text-anchor="start" x="7.21" y="-1176.1" font-family="Microsoft YaHei" font-size="10.00">version=1 行作为管理写锁</text>
+</g>
+</g>
+</svg>

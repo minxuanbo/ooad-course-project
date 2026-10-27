@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Responses.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rbac0</a> &gt; <a href="index.source.html" class="el_package">com.municipal.rbac</a> &gt; <span class="el_source">Responses.java</span></div><h1>Responses.java</h1><pre class="source lang-java linenums">package com.municipal.rbac;
+import java.util.*;
+public interface Responses {
+<span class="fc" id="L4">  record Identity(long id,String username,String name,String status){}</span>
+<span class="fc" id="L5">  record Role(long id,String code,String name,String description,Integer enabled,Long userCount,Long permissionCount,Integer assigned,Integer managementPermissionCount){}</span>
+<span class="fc" id="L6">  record Grant(long id,long roleId,String roleName,String permission,String scope,Long companyId,Long departmentId,String company,String department){}</span>
+<span class="fc" id="L7">  record User(long id,String employeeNo,String username,String name,String phone,String company,Long departmentId,String department,String position,String status,String employmentStatus,String roles,List&lt;String&gt; managementActions){}</span>
+<span class="fc" id="L8">  record Permission(Long id,String appCode,String appName,String code,String module,String feature,String action,Integer assigned){}</span>
+<span class="fc" id="L9">  record Application(long id,String code,String name,Integer enabled,Long permissionCount){}</span>
+<span class="fc" id="L10">  record Module(long id,String name,long featureCount,long permissionCount,long grantedPermissionCount){}</span>
+<span class="fc" id="L11">  record Operation(long permissionId,String permissionCode,String actionCode,String label,boolean allowed){}</span>
+<span class="fc" id="L12">  record Feature(long id,String name,String description,List&lt;Operation&gt; operations){}</span>
+<span class="fc" id="L13">  record Company(long id,String code,String name,int enabled){}</span>
+<span class="fc" id="L14">  record Department(long id,String code,String name,long companyId,int enabled,boolean writable){}</span>
+<span class="fc" id="L15">  record CompanyOption(String company){}</span>
+<span class="fc" id="L16">  record DepartmentOption(long id,String name){}</span>
+<span class="fc" id="L17">  record SystemName(String name){}</span>
+<span class="fc" id="L18">  record Change(String occurred_at,Long operator_id,String action,String detail){}</span>
+<span class="fc" id="L19">  record HandoverRecord(Long user_id,Long receiver_id,Long owner_id,String expected_date,String reason,String oa_reference,String state,Long started_by,String started_at,Long completed_by,String completed_at,String completion_note,String receiver_name,String receiver_no,String owner_name,String owner_no){}</span>
+
+<span class="fc" id="L21">  record Login(String token,Identity user,int expiresIn){}</span>
+<span class="fc" id="L22">  record Me(List&lt;Grant&gt; managementGrants,boolean canManage,Identity user,List&lt;Role&gt; roles,int permissionCount){}</span>
+<span class="fc" id="L23">  record Decision(boolean allowed,String permissionCode,String requestId){}</span>
+<span class="fc" id="L24">  record Dashboard(int users,int departments,int applications,int permissions,int roles,int authLogs){}</span>
+<span class="fc" id="L25">  record UserPage(List&lt;User&gt; items,long total,int page,int size){}</span>
+<span class="fc" id="L26">  record Filters(List&lt;CompanyOption&gt; companies,List&lt;DepartmentOption&gt; departments){}</span>
+<span class="fc" id="L27">  record Entry(boolean allowed,Application application,String next){}</span>
+<span class="fc" id="L28">  record Modules(long applicationId,List&lt;Module&gt; modules){}</span>
+<span class="fc" id="L29">  record Features(long applicationId,long moduleId,List&lt;Feature&gt; features){}</span>
+<span class="fc" id="L30">  record Handover(Identity user,HandoverRecord handover,List&lt;Role&gt; roles,List&lt;SystemName&gt; systems,List&lt;Change&gt; history){}</span>
+<span class="fc" id="L31">  record Assignments(List&lt;Role&gt; roles,List&lt;Requests.Scope&gt; scopes){}</span>
+<span class="fc" id="L32">  record Organizations(List&lt;Company&gt; companies,List&lt;Department&gt; departments){}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

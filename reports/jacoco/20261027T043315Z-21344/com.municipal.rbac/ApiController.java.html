@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ApiController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rbac0</a> &gt; <a href="index.source.html" class="el_package">com.municipal.rbac</a> &gt; <span class="el_source">ApiController.java</span></div><h1>ApiController.java</h1><pre class="source lang-java linenums">package com.municipal.rbac;
+import java.util.*;
+import org.springframework.web.bind.annotation.*;
+import com.municipal.rbac.Requests.*;
+@RestController @RequestMapping(&quot;/api&quot;)
+class ApiController {
+  private final ApplicationService service;
+<span class="fc" id="L8">  ApiController(ApplicationService service){this.service=service;}</span>
+  @PostMapping(&quot;/auth/login&quot;)
+<span class="fc" id="L10">  Responses.Login login(@RequestBody Login x) { return service.login(x); }</span>
+  @PostMapping(&quot;/auth/logout&quot;)
+<span class="fc" id="L12">  void logout(@RequestHeader(value=&quot;Authorization&quot;,required=false)String h) { service.logout(h); }</span>
+  @GetMapping(&quot;/me&quot;)
+<span class="fc" id="L14">  Responses.Me me(@RequestHeader(&quot;Authorization&quot;)String h) { return service.me(h); }</span>
+  @GetMapping(&quot;/me/permissions&quot;)
+<span class="fc" id="L16">  List&lt;Responses.Permission&gt; myPermissions(@RequestHeader(&quot;Authorization&quot;)String h,@RequestParam(required=false)String app) { return service.myPermissions(h,app); }</span>
+  @PostMapping(&quot;/authorize&quot;)
+<span class="fc" id="L18">  Responses.Decision check(@RequestHeader(&quot;Authorization&quot;)String h,@RequestBody Check x) { return service.check(h,x); }</span>
+  @GetMapping(&quot;/dashboard&quot;)
+<span class="fc" id="L20">  Responses.Dashboard dashboard(@RequestHeader(&quot;Authorization&quot;)String h) { return service.dashboard(h); }</span>
+  @GetMapping(&quot;/users&quot;)
+  List&lt;Responses.User&gt; users(@RequestHeader(&quot;Authorization&quot;)String h,@RequestParam(defaultValue=&quot;&quot;)String q,
+      @RequestParam(defaultValue=&quot;&quot;)String company,@RequestParam(required=false)Long departmentId,
+<span class="fc" id="L24">      @RequestParam(defaultValue=&quot;0&quot;)int page,@RequestParam(defaultValue=&quot;30&quot;)int size) { return service.users(h,q,company,departmentId,page,size); }</span>
+  @GetMapping(&quot;/users/page&quot;)
+  Responses.UserPage userPage(@RequestHeader(&quot;Authorization&quot;)String h,@RequestParam(defaultValue=&quot;&quot;)String q,
+      @RequestParam(defaultValue=&quot;&quot;)String company,@RequestParam(required=false)Long departmentId,
+<span class="fc" id="L28">      @RequestParam(defaultValue=&quot;0&quot;)int page,@RequestParam(defaultValue=&quot;20&quot;)int size) { return service.userPage(h,q,company,departmentId,page,size); }</span>
+  @GetMapping(&quot;/users/filters&quot;)
+<span class="fc" id="L30">  Responses.Filters userFilters(@RequestHeader(&quot;Authorization&quot;)String h,@RequestParam(defaultValue=&quot;&quot;)String company) { return service.userFilters(h,company); }</span>
+  @GetMapping(&quot;/users/{id}/roles&quot;)
+<span class="fc" id="L32">  List&lt;Responses.Role&gt; userRoles(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id) { return service.userRoles(h,id); }</span>
+  @PutMapping(&quot;/users/{id}/roles&quot;)
+<span class="fc" id="L34">  void setUserRoles(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id,@RequestBody Ids body) { service.setUserRoles(h,id,body); }</span>
+  @GetMapping(&quot;/roles&quot;)
+<span class="fc" id="L36">  List&lt;Responses.Role&gt; roles(@RequestHeader(&quot;Authorization&quot;)String h) { return service.roles(h); }</span>
+  @GetMapping(&quot;/roles/{id}/permissions&quot;)
+<span class="fc" id="L38">  List&lt;Responses.Permission&gt; rolePermissions(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id,@RequestParam(defaultValue=&quot;&quot;)String q) { return service.rolePermissions(h,id,q); }</span>
+  @PutMapping(&quot;/roles/{id}/permissions&quot;)
+<span class="fc" id="L40">  void setRolePermissions(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id,@RequestBody Ids body) { service.setRolePermissions(h,id,body); }</span>
+  @GetMapping(&quot;/applications&quot;)
+<span class="fc" id="L42">  List&lt;Responses.Application&gt; apps(@RequestHeader(&quot;Authorization&quot;)String h) { return service.apps(h); }</span>
+  @GetMapping(&quot;/me/applications&quot;)
+<span class="fc" id="L44">  List&lt;Responses.Application&gt; myApplications(@RequestHeader(&quot;Authorization&quot;) String h) { return service.myApplications(h); }</span>
+  @PostMapping(&quot;/me/applications/{id}/enter&quot;)
+<span class="fc" id="L46">  Responses.Entry enterApplication(@RequestHeader(&quot;Authorization&quot;) String h,@PathVariable long id) { return service.enterApplication(h,id); }</span>
+  @GetMapping(&quot;/me/applications/{id}/modules&quot;)
+<span class="fc" id="L48">  Responses.Modules modules(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id) { return service.modules(h,id); }</span>
+  @GetMapping(&quot;/me/applications/{id}/modules/{moduleId}/features&quot;)
+<span class="fc" id="L50">  Responses.Features features(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id,@PathVariable long moduleId) { return service.features(h,id,moduleId); }</span>
+  @GetMapping(&quot;/users/{id}/handover&quot;)
+<span class="fc" id="L52">  Responses.Handover handover(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id) { return service.handover(h,id); }</span>
+  @PostMapping(&quot;/users/{id}/handover&quot;)
+<span class="fc" id="L54">  void beginHandover(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id,@RequestBody Handover body) throws Exception { service.beginHandover(h,id,body); }</span>
+  @PostMapping(&quot;/users/{id}/handover/complete&quot;)
+<span class="fc" id="L56">  void completeHandover(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id,@RequestBody Completion body) throws Exception { service.completeHandover(h,id,body); }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

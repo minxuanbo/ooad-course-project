@@ -3,8 +3,8 @@
 :toc:
 :toclevels: 3
 :sectnums:
-:revnumber: 4.0
-:revdate: 2026-10-25
+:revnumber: 5.0
+:revdate: 2026-10-27
 
 == 目标与边界
 
@@ -17,38 +17,35 @@ HR 增量同步、OA 流程联动、SSO、角色继承和互斥角色不在本�
 部长和副部长使用部门经理；项目经理、项目副经理、项目总工程师使用项目经理。
 不新增独立管理角色或审计员。公司范围覆盖所属全部部门，部门范围只覆盖选定部门／项目部。
 
-== 组件职责
+== 分层与组件职责
 
 [cols="1,3",options="header"]
 |===
-|组件 |职责
-|RbacApplication |启动 Spring Boot
-|AuthService |密码认证、会话验证、有效业务权限与应用准入
-|ManagementAccess |管理权限目录、单条授权范围判定、目标保护、管理写锁、最后平台管理员约束
-|ApiController |登录、个人应用、鉴权、人员角色、共享目录、日志与离职接口
-|ManagementController |角色管理操作权限、员工角色范围配置、公司／部门查询与维护
-|SchemaGuard |旧结构拒绝与部门负责人外键补充
-|DataInitializer |按 Excel 建立组织人员和业务 RBAC 初始数据
-|RolePolicy |按明确岗位优先级映射既有角色，避免项目总工程师误获公司领导
-|ManagementBootstrap |Excel 初始化后执行一次性管理授权兼容转换
-|ExcelXmlReader |读取 XLSX ZIP/XML 中工作表与共享字符串
-|ApiExceptionHandler |将业务异常映射为统一 HTTP 错误响应
-|schema.sql |19 张表（含旧授权存档）的字段、外键、唯一键、索引和 CHECK
-|Vue 前端 |身份状态、按操作过滤菜单、按范围展示人员和组织、授权编辑与离职交互
-|离线 HTML 原型 |使用虚构人员模拟交互，不进行真实认证或网络调用
+|层／组件 |职责与依赖
+|Controller |ApiController、ManagementController、AuditController 仅绑定路径、参数、请求 DTO 并调用 Service；不执行 SQL 或制定业务规则。
+|Service |ApplicationService 负责人员、角色、目录、鉴权及离职事务；ManagementService 负责组织及角色范围配置；AuditService 负责日志筛选、游标和归档；AuthService 负责认证会话；ManagementAccess 统一权限及范围规则。
+|Repository |ApplicationRepository、ManagementRepository、AuditRepository、AuthRepository、ManagementAccessRepository 封装 JdbcTemplate 和参数化 SQL；不直接读取 HTTP 请求，不组装 HTTP 响应。
+|DTO |Requests 声明登录、鉴权、角色、范围、组织、离职输入；Responses 声明个人资料、人员、角色、目录、组织和交接输出；AuditDtos 声明查询、游标页、归档输入输出。DtoMapper 将内部 SQL 投影转换为显式响应记录。
+|ApiResponse / Advice |所有成功响应包装为 code、message、data、requestId，写操作 data=null；集合在 data 内。HTTP 层一次包装，已包装错误不重复包装。
+|ApiExceptionHandler |业务错误按稳定 code 与 HTTP 状态映射；参数 400、认证 401、权限 403、资源 404、方法 405、约束冲突 409、未知内部异常 500。
+|RequestAuditFilter / AuditRecorder |生成请求 ID，捕获登录及 API 401/403；独立事务记录认证事件，不写密码、令牌、请求体或查询串。
+|SchemaGuard / DesignSchemaMigration |验证结构、登录唯一性，维护外键、标识登记及数据库版本；DDL 属基础设施职责。
+|DataInitializer / ExcelXmlReader / RolePolicy / ManagementBootstrap |事务导入 Excel，校验源数据、映射现有角色并一次性配置管理权限和范围。
+|Vue / 离线原型 |Vue 使用统一响应和业务错误码；HTML 原型模拟交互，不调用真实服务。
 |===
 
-持久层使用 JdbcTemplate 和参数化 SQL。SQL 范围片段只接受服务端固定列名、已校验权限码和数值型主体 id，
-外部筛选值使用占位参数。READ COMMITTED 下每次查询读取当前授权，不使用客户端传入权限或缓存快照作为依据。
+请求依赖方向为 Controller → Service → Repository → MySQL。业务服务复用 AuthService、ManagementAccess；Repository 不反向依赖服务层。
+Service 在写事务内重新检查规则；Controller 不负责事务。Repository 返回内部查询投影，Service 组装 DTO，外部不直接消费 JDBC Map。
+SQL 范围片段只来自固定列名、已校验权限码和数值 ID；外部筛选值用占位参数。READ COMMITTED 下每次读取最新权限，不信任客户端权限快照。
 
 == 数据模型
 
 业务域为 users → user_roles → roles → role_permissions → permissions → features → modules → applications；
 actions 描述动作种类。启用的用户、角色、权限、功能点、模块、系统及动作共同决定有效业务权限。
 
-管理域为 roles → role_management_permissions，以及 user_roles → user_role_scopes。
+管理域为 roles → role_management_permissions，以及 user_roles → management_scopes。
 员工范围含 user_id、role_id、scope_type、company_id、department_id；通过复合外键绑定员工已有角色。
-management_grants 仅作为旧结构存档，运行时不读取。
+DEPARTMENT 范围只保存 department_id，其公司在查询时派生；COMPANY 仅保存 company_id，GLOBAL 不存组织。login_identifiers 维护跨字段登录唯一空间。
 management_migrations 记录兼容初始化状态，version=1 提供管理写事务公共互斥行。
 详细字段和 SQL 见 link:04-数据库设计文档.adoc[数据库设计文档]。
 
@@ -56,11 +53,11 @@ management_migrations 记录兼容初始化状态，version=1 提供管理写事
 
 . schema.sql 建表，SchemaGuard 拒绝未迁移的旧 users.company 结构，补充部门负责人外键。
 . DataInitializer 仅在 users 为空且初始化开关启用时导入三份 Excel。
-. 公司与部门先建立，再处理同公司父部门；人员据部门归属公司；负责人名称必须唯一匹配。
+. 公司与部门先建立；人员据部门归属公司；负责人名称必须唯一匹配。部门无父节点，源父名称只作导入完整性校验。
 . 建立五类业务角色和初始管理员，导入应用／模块／功能／动作／权限及角色关联。
 . RolePolicy 先识别项目经理、项目副经理、项目总工程师为项目经理，再识别公司领导部门或明确公司岗位，最后识别部长／副部长／主任／副主任或实名部门负责人为部门经理，其余为普通员工。业务员工保留普通员工基础角色。
 . ManagementBootstrap 在 version=1 锁下检查 version=2 标记，已完成直接返回。
-. 未完成时拒绝未知的旧局部管理授权；只自动转换既有系统管理员全平台旧记录。
+. 数据库初始化必须先验证统一登录标识及规范化范围约束；冲突时停止，不自动合并用户或丢弃授权。
 . 按明确岗位规则修正无人工角色调整历史的启用导入员工；保留额外自定义角色和已手动修改过的分配，并写 ROLE_POLICY_V2 记录。
 . 设置角色默认管理操作和员工默认范围，保留有效系统管理员，标记 version=2 完成，后续不重授。
 
@@ -71,7 +68,7 @@ Excel 只读导入，非空库不重复导入；兼容转换仅做上述一次�
 
 == 认证与会话
 
-登录按 username、employee_no 或 phone 查询；不允许匹配多名人员。
+登录通过 login_identifiers.identifier 查询唯一用户；三种标识由数据库触发器在同一事务登记，不同用户跨字段冲突时整体回滚。
 用户必须 ACTIVE 且 BCrypt 校验成功。服务生成 32 字节随机令牌并以 URL-safe Base64 返回，
 数据库只保存 SHA-256 摘要和到期时间，默认 12 小时。
 
@@ -85,7 +82,7 @@ Excel 只读导入，非空库不重复导入；兼容转换仅做上述一次�
 功能点允许展示操作目录，但每个按钮携带实时 allowed，拒绝的按钮不可操作。
 
 POST /authorize 返回 allowed，不执行实际业务。系统准入和功能鉴权均写 authorization_logs，记录主体、应用、
-权限、结果、原因及可选 requestId。目录改名不会自动改变权限主键；停用任一目录节点会使对应授权失效。
+权限、结果、原因、事件类型和请求标识。目录改名不会自动改变权限主键；停用任一目录节点会使对应授权失效。
 
 == 管理鉴权算法
 
@@ -128,20 +125,20 @@ audit.read、role.permissions、management.grant 仅系统管理员角色可拥�
 
 GET /organizations 返回 org.read 范围内公司及部门，部门 writable 由 org.write 独立计算。
 公司新增与改名仅允许 GLOBAL org.write；部门新增要求对应公司的 COMPANY 或 GLOBAL org.write，
-parentId 是保留的兼容参数，如传入须同公司且在维护范围内；当前界面不提供上级部门选项，范围不递归。拥有 org.write 的部门范围管理员仅维护已有范围内部门名称和编码。
+组织模型只有公司与部门；parentId 非空请求会被拒绝，范围不递归。拥有 org.write 的部门范围管理员仅维护已有范围内部门名称和编码。
 
 不开放删除、移动、修改父节点、修改公司归属、停用组织或负责人调整接口。
-新增只能指向已有父节点，因此不能由维护接口产生组织环。组织改名保持 id 不变，原有管理范围仍然有效。
+新增部门必须指定已有公司。组织改名保持 id 不变，原有管理范围仍然有效。
 公司、部门编码和名称的唯一性由数据库约束保护，异常通过统一错误处理返回。
 
 == 业务角色编辑
 
 用户角色替换先检查 user.roles、目标组织范围、管理账号保护及权限子集，再锁定目标用户，拒绝已离职人员。
-仅删除取消的 user_roles（级联撤其范围），插入新增角色，保留仍选角色及范围，写 SET_ROLES。历史接口保持忽略不存在 id 的行为。
+仅删除取消的 user_roles（级联撤其范围），插入新增角色，保留仍选角色及范围，写 SET_ROLES。不存在的 id 不建立关联。
 
 角色权限替换检查 GLOBAL role.permissions，替换 role_permissions 并写 SET_PERMISSIONS。
 角色目录全平台共享，不能授权公司管理员局部修改共享角色定义，否则会影响其他公司。
-本版本不引入公司私有角色模型，也没有编辑版本冲突提示；合法管理员顺序保存采用最后一次提交。
+角色采用全平台共享模型，不提供公司私有角色，也没有编辑版本冲突提示；合法管理员顺序保存采用最后一次提交。
 
 == 离职状态机
 
@@ -194,3 +191,25 @@ Vue 登录后读取 /me。managementGrants 为角色操作与员工角色范围�
 JaCoCo 在测试 JVM 中统计完整生产类的指令、分支、行、复杂度、方法和类覆盖率，
 以报告中的实际分子／分母为准。覆盖率是执行证据，不能替代业务正确性、安全审查、浏览器验证或并发压力测试。
 设计文档不记录部署地址、镜像版本或测试达成结果，这些信息另记实施文档。
+
+== 审计查询与独立事务
+
+AuditController 绑定 Query DTO；AuditService 要求系统管理员 GLOBAL audit.read，校验用户 ID、字段长度、UTC 时间和批量大小。
+规范化筛选条件及 limit 编码进不透明游标，同时保存首次最大 ID 与上一页最后 ID。后页先检查条件一致，再查询 id ≤ 首次最大 ID 且 id < 上页末 ID，取 limit+1 判断 hasMore。
+游标不作为授权凭证；每页仍核验当前认证与权限。最大 ID 是插入上界，不是冻结归档状态的事务快照。
+归档同样要求 GLOBAL audit.read，在管理写锁和事务内，按 before、snapshotId 及 batchSize 批量更新未归档记录并写 ARCHIVE_LOGS。多批调用可重复执行，已归档记录不重复计数。
+RequestAuditFilter 生成 UUID，响应 X-Request-Id 与外层 requestId 一致。AuthService 提供已识别身份；失败事件保留尝试账号，未解析请求允许主体为空。
+AuditRecorder 使用 REQUIRES_NEW，业务回滚不影响认证失败记录。事件不包含凭据和查询串；数据库中断的持久化保证需另行设计可靠消息机制。
+
+== 响应契约与错误处理
+
+正常响应统一 code=OK、message=成功、data=具体 DTO 或 null、requestId=UUID。数组是 data 的值，不作为顶层响应。
+ApiException 使用稳定业务码，如 MANAGEMENT_SCOPE_DENIED、LAST_PLATFORM_ADMIN、LOGIN_FAILED；界面显示 message，逻辑依赖 code，定位使用 requestId。
+未知路径返回 ENDPOINT_NOT_FOUND/404，错误方法 METHOD_NOT_ALLOWED/405，数据库唯一或关联冲突 DATA_CONFLICT/409。
+未预期异常返回 INTERNAL_ERROR/500，不向调用方泄露堆栈、数据库语句或凭据。完整错误码表见 API 设计。
+
+== 验证设计
+
+测试使用独立真实 MySQL，覆盖 HTTP 契约、权限与范围隔离、事务回滚、登录跨字段唯一性、分页不重复、UTC 半开区间、归档重复执行和认证失败审计。
+迁移测试验证复制后核对、拒绝冲突和幂等；故障注入验证数据库和运行时边界。JaCoCo 对全部生产类生成指令、分支、行、复杂度、方法和类指标，门槛为无遗漏，不通过时不得发布为已验证版本。
+前端用实际脚本逻辑测试分页条件锁定、异步卸载、归档失败提示与响应解包；原型模拟 DOM 验证菜单、授权、筛选与归档。真实视觉和端到端结果应单独说明。

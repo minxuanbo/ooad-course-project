@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ApplicationService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rbac0</a> &gt; <a href="index.source.html" class="el_package">com.municipal.rbac</a> &gt; <span class="el_source">ApplicationService.java</span></div><h1>ApplicationService.java</h1><pre class="source lang-java linenums">package com.municipal.rbac;
+
+import java.util.*; import com.municipal.rbac.Requests.*; import org.springframework.http.*;   import org.springframework.transaction.annotation.Transactional;
+
+ 
+@org.springframework.stereotype.Service
+class ApplicationService {
+  private final ApplicationRepository repository; private final AuthService auth;
+<span class="fc" id="L9">  ApplicationService(ApplicationRepository repository,AuthService auth){this.repository=repository;this.auth=auth;}</span>
+
+<span class="fc bfc" id="L11" title="All 8 branches covered.">   public Responses.Login login(Login x){if(x.account()==null||x.password()==null||x.account().length()&gt;100||x.password().length()&gt;200)throw ApiException.bad(&quot;账号和密码不能为空&quot;);return auth.login(x.account().trim(),x.password());}</span>
+<span class="fc" id="L12">   public void logout(String h){auth.logout(h);}</span>
+<span class="fc" id="L13">   public Responses.Me me(String h){var u=auth.require(h);long id=(long)u.get(&quot;id&quot;);return new Responses.Me(DtoMapper.list(auth.management().grants(id),Responses.Grant.class),auth.canManage(id),DtoMapper.one(u,Responses.Identity.class),DtoMapper.list(repository.rolesOfUser(id),Responses.Role.class),repository.permissionCount(id));}</span>
+   public List&lt;Responses.Permission&gt; myPermissions(String h,String app){
+<span class="fc" id="L15">    long id=(long)auth.require(h).get(&quot;id&quot;);</span>
+<span class="fc" id="L16">    return DtoMapper.list(repository.myPermissions(id,app),Responses.Permission.class);</span>
+  }
+<span class="fc bfc" id="L18" title="All 24 branches covered.">   public Responses.Decision check(String h,Check x){var u=auth.require(h);long id=(long)u.get(&quot;id&quot;);if(x.appCode()!=null&amp;&amp;x.appCode().length()&gt;191||x.permissionCode()!=null&amp;&amp;x.permissionCode().length()&gt;512||x.requestId()!=null&amp;&amp;x.requestId().length()&gt;191)throw ApiException.bad(&quot;鉴权字段过长&quot;);boolean ok=x.permissionCode()!=null&amp;&amp;x.appCode()!=null&amp;&amp;auth.has(id,x.permissionCode())&amp;&amp;repository.permissionInApplication(x.permissionCode(),x.appCode())==1;repository.recordDecision(id,u.get(&quot;username&quot;),Objects.toString(x.appCode(),&quot;&quot;),Objects.toString(x.permissionCode(),&quot;&quot;),ok?1:0,x.requestId(),ok?&quot;角色权限命中&quot;:&quot;未获任何角色授权&quot;);return new Responses.Decision(ok,Objects.toString(x.permissionCode(),&quot;&quot;),Objects.toString(x.requestId(),&quot;&quot;));}</span>
+   public Responses.Dashboard dashboard(String h){
+<span class="fc" id="L20">    long uid=(long)auth.require(h).get(&quot;id&quot;);var mg=auth.management();mg.require(uid,&quot;user.read&quot;);</span>
+<span class="fc" id="L21">    return new Responses.Dashboard(repository.countScopedUsers(mg.scope(uid,&quot;user.read&quot;,&quot;u.department_id&quot;)),</span>
+<span class="fc" id="L22">      repository.countScopedDepartments(mg.scope(uid,&quot;user.read&quot;,&quot;d.id&quot;)),</span>
+<span class="fc bfc" id="L23" title="All 4 branches covered.">      mg.has(uid,&quot;app.read&quot;)?scalar(&quot;applications&quot;):0,mg.has(uid,&quot;app.read&quot;)?scalar(&quot;permissions&quot;):0,</span>
+<span class="fc bfc" id="L24" title="All 4 branches covered.">      mg.has(uid,&quot;role.read&quot;)?scalar(&quot;roles&quot;):0,mg.global(uid,&quot;audit.read&quot;)?scalar(&quot;authorization_logs&quot;):0);</span>
+  }
+  
+  public List&lt;Responses.User&gt; users(String h,String q,
+      String company,Long departmentId,
+      int page,int size){
+<span class="fc" id="L30">    long uid=(long)auth.require(h).get(&quot;id&quot;);auth.management().require(uid,&quot;user.read&quot;);</span>
+<span class="fc" id="L31">    return userRows(uid,q,company,departmentId,Math.max(page,0),Math.min(Math.max(size,1),100));</span>
+  }
+  
+  public Responses.UserPage userPage(String h,String q,
+      String company,Long departmentId,
+      int page,int size){
+<span class="fc" id="L37">    long uid=(long)auth.require(h).get(&quot;id&quot;);auth.management().require(uid,&quot;user.read&quot;);</span>
+<span class="fc" id="L38">    page=Math.max(page,0);size=Math.min(Math.max(size,1),100);</span>
+<span class="fc" id="L39">    var args=new ArrayList&lt;Object&gt;();</span>
+<span class="fc" id="L40">    String where=repository.userWhere(q,company,departmentId,args,auth.management().scope(uid,&quot;user.read&quot;,&quot;u.department_id&quot;));</span>
+<span class="fc" id="L41">    long total=repository.countUsers(where,args.toArray());</span>
+<span class="fc" id="L42">    return new Responses.UserPage(userRows(uid,q,company,departmentId,page,size),total,page,size);</span>
+  }
+  
+  public Responses.Filters userFilters(String h,String company){
+<span class="fc" id="L46">    long uid=(long)auth.require(h).get(&quot;id&quot;);auth.management().require(uid,&quot;user.read&quot;);</span>
+<span class="fc" id="L47">    String scope=auth.management().scope(uid,&quot;user.read&quot;,&quot;u.department_id&quot;);</span>
+<span class="fc" id="L48">    return new Responses.Filters(DtoMapper.list(repository.companyOptions(scope),Responses.CompanyOption.class),DtoMapper.list(repository.departmentOptions(scope,company,company),Responses.DepartmentOption.class));</span>
+  }
+  private List&lt;Responses.User&gt; userRows(long uid,String q,String company,Long departmentId,int page,int size){
+<span class="fc" id="L51">    var args=new ArrayList&lt;Object&gt;();</span>
+<span class="fc" id="L52">    String where=repository.userWhere(q,company,departmentId,args,auth.management().scope(uid,&quot;user.read&quot;,&quot;u.department_id&quot;));</span>
+<span class="fc" id="L53">    args.add(size);args.add((long)page*size);</span>
+<span class="fc" id="L54">    var result=repository.findUsers(where,args.toArray());</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">    for(var user:result){long target=((Number)user.get(&quot;id&quot;)).longValue();var actions=new ArrayList&lt;String&gt;();</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">      for(String permission:List.of(&quot;user.roles&quot;,&quot;handover.start&quot;,&quot;handover.complete&quot;)){</span>
+<span class="fc" id="L57">        try{auth.management().protectTarget(uid,permission,target);actions.add(permission);}catch(ApiException ignored){}</span>
+<span class="fc" id="L58">      }</span>
+<span class="fc" id="L59">      user.put(&quot;managementActions&quot;,actions);</span>
+<span class="fc" id="L60">    }</span>
+<span class="fc" id="L61">    return DtoMapper.list(result,Responses.User.class);</span>
+  }
+<span class="fc" id="L63">   public List&lt;Responses.Role&gt; userRoles(String h,long id){auth.management().protectTarget((long)auth.require(h).get(&quot;id&quot;),&quot;user.roles&quot;,id);return DtoMapper.list(repository.roleOptions(id),Responses.Role.class);}</span>
+<span class="fc bfc" id="L64" title="All 6 branches covered.">   @Transactional(rollbackFor=Exception.class) public void setUserRoles(String h,long id,Ids body){var op=auth.require(h);auth.management().lock();long uid=(long)op.get(&quot;id&quot;);auth.management().protectTarget(uid,&quot;user.roles&quot;,id);if(body.ids()==null)throw ApiException.bad(&quot;角色列表不能为空&quot;);validateAssignableRoles(uid,id,body.ids());if(repository.lockUser(id).isEmpty())throw new ApiException(HttpStatus.NOT_FOUND,&quot;USER_NOT_FOUND&quot;,&quot;用户不存在&quot;);if(repository.departedCount(id)&gt;0)throw ApiException.bad(&quot;USER_DEPARTED&quot;,&quot;已离职员工不能再分配角色&quot;);auth.management().replaceRoles(id,body.ids(),uid);auth.management().retainPlatformAdmin();repository.recordChange(op.get(&quot;id&quot;),&quot;USER&quot;,id,&quot;SET_ROLES&quot;,body.ids().toString());}</span>
+<span class="fc" id="L65">   public List&lt;Responses.Role&gt; roles(String h){long uid=(long)auth.require(h).get(&quot;id&quot;);auth.management().require(uid,&quot;role.read&quot;);return DtoMapper.list(repository.findRoles(auth.management().scope(uid,&quot;role.read&quot;,&quot;ru.department_id&quot;)),Responses.Role.class);}</span>
+<span class="fc" id="L66">   public List&lt;Responses.Permission&gt; rolePermissions(String h,long id,String q){auth.management().require((long)auth.require(h).get(&quot;id&quot;),&quot;role.read&quot;);String like=&quot;%&quot;+q+&quot;%&quot;;return DtoMapper.list(repository.permissionOptions(id,like,like,like),Responses.Permission.class);}</span>
+<span class="fc bfc" id="L67" title="All 4 branches covered.">   @Transactional(rollbackFor=Exception.class) public void setRolePermissions(String h,long id,Ids body){var op=auth.require(h);auth.management().lock();auth.management().requireGlobal((long)op.get(&quot;id&quot;),&quot;role.permissions&quot;);if(body.ids()==null)throw ApiException.bad(&quot;权限列表不能为空&quot;);repository.deleteRolePermissions(id);for(Long pid:new LinkedHashSet&lt;&gt;(body.ids()))repository.insertRolePermission(id,pid);repository.recordRoleChange(op.get(&quot;id&quot;),&quot;ROLE&quot;,id,&quot;SET_PERMISSIONS&quot;,&quot;count=&quot;+body.ids().size());}</span>
+<span class="fc" id="L68">   public List&lt;Responses.Application&gt; apps(String h){auth.management().require((long)auth.require(h).get(&quot;id&quot;),&quot;app.read&quot;);return DtoMapper.list(repository.findApplications(),Responses.Application.class);}</span>
+  
+  public List&lt;Responses.Application&gt; myApplications(String h) {
+<span class="fc" id="L71">    long uid=(long)auth.require(h).get(&quot;id&quot;);</span>
+<span class="fc" id="L72">    return DtoMapper.list(repository.accessibleApplications(uid),Responses.Application.class);</span>
+  }
+  
+  public Responses.Entry enterApplication(String h,long id) {
+<span class="fc" id="L76">    var user=auth.require(h);var apps=repository.findApplication(id);</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">    if(apps.isEmpty())throw new ApiException(HttpStatus.NOT_FOUND,&quot;APPLICATION_NOT_FOUND&quot;,&quot;系统不存在&quot;);</span>
+<span class="fc" id="L78">    boolean allowed=auth.canEnter((long)user.get(&quot;id&quot;),id);</span>
+<span class="fc bfc" id="L79" title="All 6 branches covered.">    repository.recordApplicationEntry(user.get(&quot;id&quot;),user.get(&quot;username&quot;),apps.get(0).get(&quot;code&quot;),&quot;system:enter&quot;,allowed?1:0,allowed?&quot;系统准入通过&quot;:&quot;无权访问或授权已回收&quot;,RequestAuditFilter.requestId(),&quot;/api/me/applications/&quot;+id+&quot;/enter&quot;,allowed?200:403);</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">    if(!allowed)throw new ApiException(HttpStatus.FORBIDDEN,&quot;APPLICATION_ACCESS_DENIED&quot;,&quot;无权访问该系统或授权已被回收&quot;);</span>
+<span class="fc" id="L81">    return new Responses.Entry(true,DtoMapper.one(apps.get(0),Responses.Application.class),&quot;modules&quot;);</span>
+  }
+  
+  public Responses.Modules modules(String h,long id){
+<span class="fc" id="L85">    long uid=(long)auth.require(h).get(&quot;id&quot;);auth.requireApplication(uid,id);</span>
+<span class="fc" id="L86">    var modules=repository.findModules(uid,id);</span>
+<span class="fc" id="L87">    return new Responses.Modules(id,DtoMapper.list(modules,Responses.Module.class));</span>
+  }
+  
+  public Responses.Features features(String h,long id,long moduleId){
+<span class="fc" id="L91">    long uid=(long)auth.require(h).get(&quot;id&quot;);auth.requireApplication(uid,id);</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">    if(repository.moduleInApplication(moduleId,id)==0)</span>
+<span class="fc" id="L93">      throw new ApiException(HttpStatus.NOT_FOUND,&quot;MODULE_NOT_FOUND&quot;,&quot;模块不存在&quot;);</span>
+<span class="fc" id="L94">    var features=repository.findFeatures(moduleId);</span>
+<span class="fc" id="L95">    var operations=repository.findOperations(uid,moduleId);</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">    for(var feature:features){</span>
+<span class="fc" id="L97">      var list=new ArrayList&lt;Map&lt;String,Object&gt;&gt;();</span>
+<span class="fc bfc" id="L98" title="All 4 branches covered.">      for(var operation:operations)if(Objects.equals(feature.get(&quot;id&quot;),operation.get(&quot;featureId&quot;))){</span>
+<span class="fc" id="L99">        var item=new LinkedHashMap&lt;String,Object&gt;(operation);item.remove(&quot;featureId&quot;);</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        item.put(&quot;allowed&quot;,((Number)operation.get(&quot;allowed&quot;)).intValue()==1);list.add(item);</span>
+      }
+<span class="fc" id="L102">      feature.put(&quot;operations&quot;,list);</span>
+<span class="fc" id="L103">    }</span>
+<span class="fc" id="L104">    return new Responses.Features(id,moduleId,DtoMapper.list(features,Responses.Feature.class));</span>
+  }
+  
+  public Responses.Handover handover(String h,long id){
+<span class="fc" id="L108">    auth.management().user((long)auth.require(h).get(&quot;id&quot;),&quot;user.read&quot;,id);</span>
+<span class="fc" id="L109">    var user=repository.userIdentity(id);</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">    if(user.isEmpty())throw new ApiException(HttpStatus.NOT_FOUND,&quot;USER_NOT_FOUND&quot;,&quot;用户不存在&quot;);</span>
+<span class="fc" id="L111">    var records=repository.handoverDetail(id);</span>
+<span class="fc" id="L112">    long viewer=(long)auth.require(h).get(&quot;id&quot;);</span>
+<span class="fc bfc" id="L113" title="All 4 branches covered.">    if(!records.isEmpty())for(String person:List.of(&quot;receiver&quot;,&quot;owner&quot;)){</span>
+<span class="fc" id="L114">      try{auth.management().user(viewer,&quot;user.read&quot;,((Number)records.get(0).get(person+&quot;_id&quot;)).longValue());}</span>
+<span class="fc" id="L115">      catch(ApiException ignored){records.get(0).put(person+&quot;_name&quot;,&quot;范围外人员&quot;);records.get(0).put(person+&quot;_no&quot;,null);records.get(0).put(person+&quot;_id&quot;,null);}</span>
+<span class="fc" id="L116">    }</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">    return new Responses.Handover(DtoMapper.one(user.get(0),Responses.Identity.class),records.isEmpty()?null:DtoMapper.one(records.get(0),Responses.HandoverRecord.class),DtoMapper.list(repository.handoverRoles(id),Responses.Role.class),DtoMapper.list(repository.handoverSystems(id),Responses.SystemName.class),DtoMapper.list(repository.handoverHistory(id,auth.management().global(viewer,&quot;management.grant&quot;)),Responses.Change.class));</span>
+  }
+  
+  @Transactional(rollbackFor=Exception.class)
+  public void beginHandover(String h,long id,Handover body)throws Exception{
+<span class="fc" id="L122">    var input=body.fields();</span>
+<span class="fc" id="L123">    auth.management().lock();long operator=(long)auth.require(h).get(&quot;id&quot;);auth.management().protectTarget(operator,&quot;handover.start&quot;,id);</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">    if(id==operator)throw ApiException.bad(&quot;SELF_HANDOVER_DENIED&quot;,&quot;不能为当前登录账号办理离职，请由其他管理员办理&quot;);</span>
+<span class="fc" id="L125">    var user=repository.lockUserStatus(id);</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">    if(user.isEmpty())throw new ApiException(HttpStatus.NOT_FOUND,&quot;USER_NOT_FOUND&quot;,&quot;用户不存在&quot;);</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">    if(!&quot;ACTIVE&quot;.equals(user.get(0).get(&quot;status&quot;)))throw ApiException.bad(&quot;USER_INACTIVE&quot;,&quot;该账号已停用，请先核实人员状态&quot;);</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">    if(repository.handoverCount(id)&gt;0)throw ApiException.bad(&quot;HANDOVER_EXISTS&quot;,&quot;该员工已有离职交接记录，请勿重复发起&quot;);</span>
+<span class="fc" id="L129">    String reason=requiredText(input,&quot;reason&quot;,1000),date=requiredText(input,&quot;expectedDate&quot;,10);</span>
+<span class="fc" id="L130">    try{java.time.LocalDate.parse(date);}catch(java.time.format.DateTimeParseException e){throw ApiException.bad(&quot;预计完成日期格式应为 YYYY-MM-DD&quot;);}</span>
+<span class="fc" id="L131">    long receiver=handoverPerson(requiredText(input,&quot;receiverNo&quot;,100),id);</span>
+<span class="fc" id="L132">    long owner=handoverPerson(requiredText(input,&quot;ownerNo&quot;,100),id);</span>
+<span class="fc" id="L133">    auth.management().user(operator,&quot;handover.start&quot;,receiver);auth.management().user(operator,&quot;handover.start&quot;,owner);</span>
+<span class="fc bfc" id="L134" title="All 4 branches covered.">    String oa=input.getOrDefault(&quot;oaReference&quot;,&quot;&quot;);if(oa==null)oa=&quot;&quot;;if(oa.length()&gt;200)throw ApiException.bad(&quot;OA单号过长&quot;);</span>
+<span class="fc" id="L135">    repository.insertHandover(id,receiver,owner,date,reason,oa,operator);</span>
+<span class="fc" id="L136">    change(operator,id,&quot;BEGIN_HANDOVER&quot;,new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(input));</span>
+<span class="fc" id="L137">  }</span>
+  
+  @Transactional(rollbackFor=Exception.class)
+  public void completeHandover(String h,long id,Completion body)throws Exception{
+<span class="fc" id="L141">    var input=body.fields();</span>
+<span class="fc" id="L142">    auth.management().lock();long operator=(long)auth.require(h).get(&quot;id&quot;);auth.management().protectTarget(operator,&quot;handover.complete&quot;,id);</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">    if(id==operator)throw ApiException.bad(&quot;SELF_HANDOVER_DENIED&quot;,&quot;不能停用当前登录账号，请由其他管理员办理&quot;);</span>
+<span class="fc" id="L144">    repository.lockDepartingUser(id);</span>
+<span class="fc" id="L145">    var records=repository.lockHandover(id);</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">    if(records.isEmpty())throw ApiException.bad(&quot;HANDOVER_NOT_STARTED&quot;,&quot;请先发起离职交接&quot;);</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">    if(&quot;DEPARTED&quot;.equals(records.get(0).get(&quot;state&quot;)))return;</span>
+<span class="fc" id="L148">    String note=requiredText(input,&quot;note&quot;,1000);</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">    if(!&quot;true&quot;.equals(input.get(&quot;confirmed&quot;)))throw ApiException.bad(&quot;请确认交接已完成，并确认集中撤权及停用账号&quot;);</span>
+    // 一个事务同时完成撤权、停用、撤销会话、更新交接状态与留痕。
+<span class="fc" id="L151">    var before=repository.rolesBeforeDeparture(id);</span>
+<span class="fc" id="L152">    repository.removeUserRoles(id);</span>
+<span class="fc" id="L153">    auth.management().retainPlatformAdmin();</span>
+<span class="fc" id="L154">    repository.disableUser(id);</span>
+<span class="fc" id="L155">    repository.revokeSessions(id);</span>
+<span class="fc" id="L156">    repository.finishHandover(operator,note,id);</span>
+<span class="fc" id="L157">    change(operator,id,&quot;COMPLETE_HANDOVER&quot;,new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(Map.of(&quot;revokedRoles&quot;,before,&quot;note&quot;,note,&quot;status&quot;,&quot;DISABLED&quot;)));</span>
+<span class="fc" id="L158">  }</span>
+  private void validateAssignableRoles(long uid,long target,List&lt;Long&gt; ids){
+<span class="fc bfc" id="L160" title="All 2 branches covered.">    if(auth.management().global(uid,&quot;user.roles&quot;))return;</span>
+<span class="fc" id="L161">    var roles=new LinkedHashSet&lt;Long&gt;(ids);</span>
+<span class="fc" id="L162">    roles.addAll(repository.existingRoleIds(target));</span>
+<span class="fc bfc" id="L163" title="All 4 branches covered.">    for(Long role:roles)if(repository.permissionsOutsideActor(role,uid)&gt;0)throw ApiException.forbidden();</span>
+<span class="fc" id="L164">  }</span>
+  private String requiredText(Map&lt;String,String&gt; input,String field,int max){
+<span class="fc" id="L166">    String value=input.get(field);</span>
+<span class="fc bfc" id="L167" title="All 6 branches covered.">    if(value==null||value.isBlank()||value.length()&gt;max)throw ApiException.bad(&quot;请正确填写字段：&quot;+field);</span>
+<span class="fc" id="L168">    return value.trim();</span>
+  }
+  private long handoverPerson(String employeeNo,long departingId){
+<span class="fc" id="L171">    var people=repository.eligibleHandoverPerson(employeeNo);</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">    if(people.isEmpty())throw ApiException.bad(&quot;接收人或负责人必须是启用且未办理离职的员工：&quot;+employeeNo);</span>
+<span class="fc" id="L173">    long id=((Number)people.get(0).get(&quot;id&quot;)).longValue();</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">    if(id==departingId)throw ApiException.bad(&quot;交接人员不能是离职员工本人&quot;);</span>
+<span class="fc" id="L175">    return id;</span>
+  }
+  private void change(long operator,long id,String action,String detail){
+<span class="fc" id="L178">    repository.recordUserChange(operator,id,action,detail);</span>
+<span class="fc" id="L179">  }</span>
+<span class="fc" id="L180">  private int scalar(String table){return repository.scalar(table);}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

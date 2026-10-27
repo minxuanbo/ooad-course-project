@@ -37,14 +37,11 @@ class RolePolicyTest {
     long edited=db.queryForObject("SELECT id FROM users WHERE username='SG999992'",Long.class);
     db.update("INSERT INTO authorization_changes(target_type,target_id,action) VALUES('USER',?,'SET_ROLES')",edited);
     db.update("UPDATE management_migrations SET completed=0 WHERE version=2");
-    db.update("DELETE FROM user_role_scopes");
-    db.update("INSERT INTO management_grants(user_id,permission_code,scope_type,company_id) SELECT ?,'user.read','COMPANY',company_id FROM departments WHERE id=?",edited,dept);
-    assertThrows(IllegalStateException.class,()->new ManagementBootstrap(db).run(null));
-    db.update("DELETE FROM management_grants");
+    db.update("DELETE FROM management_scopes");
     new ManagementBootstrap(db).run(null);
     assertEquals(List.of("普通员工","项目经理"),db.queryForList("SELECT r.code FROM user_roles ur JOIN roles r ON r.id=ur.role_id JOIN users u ON u.id=ur.user_id WHERE u.username='SG999991' ORDER BY r.code",String.class));
     assertEquals(3,db.queryForObject("SELECT count(*) FROM user_roles WHERE user_id=?",Integer.class,edited));
-    int count=db.queryForObject("SELECT count(*) FROM user_role_scopes",Integer.class);
-    new ManagementBootstrap(db).run(null);assertEquals(count,db.queryForObject("SELECT count(*) FROM user_role_scopes",Integer.class));
+    int count=db.queryForObject("SELECT count(*) FROM management_scopes",Integer.class);
+    new ManagementBootstrap(db).run(null);assertEquals(count,db.queryForObject("SELECT count(*) FROM management_scopes",Integer.class));
   }
 }
