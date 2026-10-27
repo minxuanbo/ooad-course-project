@@ -11,7 +11,7 @@ A 已安装 Docker。代码位于 ~/ooad-course-project，三份课程 Excel 位
 
 ```bash
 cd ~/ooad-course-project
-git pull --ff-only gitee main
+git pull --ff-only origin main
 export RBAC_TEST_EXCEL_DIR=/root/ooad-course-project
 export RBAC_BUILD_IMAGE=rbac-build:exam-$(git rev-parse --short HEAD)
 docker build --target build --memory 1200m -t "$RBAC_BUILD_IMAGE" .
