@@ -1,21 +1,74 @@
 = 市政公司统一权限管理系统：详细设计文档
 :lang: zh-CN
-:toc:
+:toc: left
 :toclevels: 3
 :sectnums:
-:revnumber: 5.0
+:sectanchors:
+:source-highlighter: highlight.js
+:revnumber: 6.0
 :revdate: 2026-10-27
 
-== 目标与边界
+== 文档目的与阅读约定
+
+本文定义系统的组件职责、接口协议、数据传递、授权算法、状态转换、事务边界、界面协作和验证准则，作为开发、联调与设计评审的依据。阅读本文不要求另行阅读独立 API 说明。
+数据库实体、字段、键、索引及 SQL 定义由配套《数据库设计文档》规定；本文包含业务与数据访问规则，两份文档共同构成设计交付。
+文中的标识符、类名和路径属于设计契约；JSON 示例使用虚构值，只说明格式，客户端应使用查询接口提供的实体 ID。
+
+
+[cols="1,4",options="header"]
+|===
+|术语 |定义
+|业务权限 |外部业务系统的“功能点＋动作”访问许可，由用户角色与角色权限关系求并集。
+|管理操作 |本权限平台人员、组织、角色、审计和离职操作的能力码。
+|管理范围 |员工所持某一角色可管理的组织集合；与该角色的管理操作共同构成有效授权。
+|平台管理员 |启用的系统管理员角色持有者，且相关管理操作具有 GLOBAL 范围；不是仅凭岗位名判断。
+|鉴权与执行业务 |/authorize 只返回许可判断，业务系统负责其自身事务执行。
+|可空／可省略 |可空表示 JSON null 合法；可省略表示请求可不带该字段，两者不自动等价。
+|幂等 |重复请求的资源状态一致；不保证只产生一条审计事件。
+|===
+
+== 总体结构与组件协作
+
+系统采用前后端分离、单一后端应用和关系数据库。前端通过 JSON HTTP 接口调用后端；离线原型独立模拟交互。授权决策位于后端，界面状态不作为授权依据。
+
+[source,text]
+----
+Vue 页面 → API 客户端 → RequestAuditFilter
+                         ↓
+                Controller（HTTP 绑定）
+                         ↓
+       Service（业务规则、事务、DTO 组装）
+             ↔ AuthService / ManagementAccess
+                         ↓
+              Repository（参数化 SQL）
+                         ↓
+                  MySQL（约束与持久化）
+
+成功响应 → ApiResponseAdvice → {code,message,data,requestId}
+异常响应 → ApiExceptionHandler → HTTP 状态＋稳定业务错误码
+认证事件 → AuditRecorder（独立事务）→ authorization_logs
+----
+
+
+[cols="1,3,3",options="header"]
+|===
+|模块 |入口与主要协作 |读写边界
+|认证与个人门户 |ApiController → ApplicationService → AuthService／AuthRepository |会话建立和撤销；个人身份、角色、有效权限。
+|人员、业务角色和目录 |ApiController → ApplicationService／ApplicationRepository |人员范围查询、角色集合替换、角色业务权限、应用准入与操作判断。
+|组织与管理授权 |ManagementController → ManagementService／ManagementRepository |公司部门维护、角色管理操作、员工角色及范围原子替换。
+|审计 |AuditController → AuditService／AuditRepository；RequestAuditFilter → AuditRecorder |日志筛选、游标、批量归档与认证事件持久化。
+|初始化 |DatabaseConstraints → DataInitializer／ExcelXmlReader／RolePolicy |先建约束，再在空库事务导入默认数据。
+|===
+== 系统目标与功能边界
 
 设计统一登录、业务 RBAC0、细粒度后台管理、公司／部门范围、离职集中撤权及审计。
 业务系统以应用、模块、功能点、动作为权限目录，提供准入与功能鉴权演示，不代替真实业务系统执行操作。
 HR 增量同步、OA 流程联动、SSO、角色继承和互斥角色不在本阶段范围。
 
 管理策略由“角色的操作权限 + 员工该角色的组织范围”共同决定。
-沿用系统管理员、公司领导、部门经理、项目经理、普通员工五类角色。
+角色目录采用系统管理员、公司领导、部门经理、项目经理、普通员工五类角色。
 部长和副部长使用部门经理；项目经理、项目副经理、项目总工程师使用项目经理。
-不新增独立管理角色或审计员。公司范围覆盖所属全部部门，部门范围只覆盖选定部门／项目部。
+管理操作直接配置给上述角色。公司范围覆盖所属全部部门，部门范围只覆盖选定部门／项目部。
 
 == 分层与组件职责
 
@@ -66,7 +119,7 @@ Excel 只读导入。建表和约束建立先于导入事务，MySQL DDL 不具�
 
 == 认证与会话
 
-登录通过 login_identifiers.identifier 查询唯一用户；三种标识由数据库触发器在同一事务登记，不同用户跨字段冲突时整体回滚。
+登录通过 login_identifiers.identifier 查询唯一用户；三种标识由数据库触发器在用户写事务中登记，不同用户跨字段冲突时整体回滚。
 用户必须 ACTIVE 且 BCrypt 校验成功。服务生成 32 字节随机令牌并以 URL-safe Base64 返回，
 数据库只保存 SHA-256 摘要和到期时间，默认 12 小时。
 
@@ -85,7 +138,7 @@ POST /authorize 返回 allowed，不执行实际业务。系统准入和功能�
 == 管理鉴权算法
 
 管理权限包括人员查询、用户角色分配、角色查看、角色权限配置、组织查看、组织维护、系统目录查看、审计日志查看、
-离职发起、离职完成及管理授权配置。完整权限码与接口矩阵见 link:03-API设计文档.md[API 设计文档]。
+离职发起、离职完成及管理授权配置。完整权限码与接口矩阵见本文“接口契约”章节。
 
 对目标人员执行操作 P 时：
 
@@ -115,7 +168,7 @@ audit.read、role.permissions、management.grant 仅系统管理员角色可拥�
 每条范围必须绑定已选择的启用角色；GLOBAL 不带组织，COMPANY 仅带公司，DEPARTMENT 同时带公司和部门且归属一致。
 系统管理员只允许 GLOBAL，其他角色只允许 COMPANY 或 DEPARTMENT；完全相同范围去重。
 
-事务锁管理版本行后校验操作者、目标及全部输入；增量替换角色、重建范围、检查最后管理员、写 SET_ROLE_ASSIGNMENTS 后提交。
+事务锁定系统管理员角色行后校验操作者、目标及全部输入；增量替换角色、重建范围、检查最后管理员、写 SET_ROLE_ASSIGNMENTS 后提交。
 失败全部回滚；无范围时业务功能授权仍可生效，但该角色没有管理权限。
 最后管理员必须为 ACTIVE，拥有启用的系统管理员角色、该角色的 management.grant 及 GLOBAL 范围。
 
@@ -136,7 +189,7 @@ GET /organizations 返回 org.read 范围内公司及部门，部门 writable �
 
 角色权限替换检查 GLOBAL role.permissions，替换 role_permissions 并写 SET_PERMISSIONS。
 角色目录全平台共享，不能授权公司管理员局部修改共享角色定义，否则会影响其他公司。
-角色采用全平台共享模型，不提供公司私有角色，也没有编辑版本冲突提示；合法管理员顺序保存采用最后一次提交。
+角色采用全平台共享模型；编辑协议不设置版本条件头，合法管理员顺序保存采用最后一次提交。
 
 == 离职状态机
 
@@ -153,7 +206,7 @@ EMPLOYED 为无交接记录的派生状态；HANDOVER 表示交接中；DEPARTED
 写完成记录及 COMPLETE_HANDOVER 审计。保留人员及历史，不物理删除。
 
 交接详情需要 user.read。若关联接收人／负责人已在当前查看范围外，其姓名显示“范围外人员”，工号和 id 隐去。
-SET_ROLE_ASSIGNMENTS 及历史 SET_MANAGEMENT_GRANTS 明细仅向 GLOBAL management.grant 查看者开放，避免通过交接历史泄露其他管理范围。
+管理授权配置明细仅向 GLOBAL management.grant 查看者开放，避免通过交接历史泄露其他管理范围。
 
 == 并发与安全边界
 
@@ -164,7 +217,7 @@ SET_ROLE_ASSIGNMENTS 及历史 SET_MANAGEMENT_GRANTS 明细仅向 GLOBAL managem
 SQL 参数化、防越界校验、平台管理者保留约束及审计均由后端负责。
 前端隐藏菜单和禁用按钮只用于交互反馈，不构成安全边界。
 审计日志仅系统管理员读取全平台记录，包括无法关联当前用户的历史记录。
-此版本尚无通用用户新增、删除、密码重置和组织调动接口。
+通用用户新增、删除、密码重置和组织调动不属于系统接口范围。
 
 == 界面协作
 
@@ -180,38 +233,869 @@ Vue 登录后读取 /me。managementGrants 为角色操作与员工角色范围�
 管理授权变化后卸载旧视图并重新加载，无当前页面权限则返回我的应用；每三秒及窗口聚焦刷新身份状态。
 离线原型提供系统管理员、普通员工、公司领导、部长／副部长、项目经理／项目副经理／项目总工程师的虚构示例，均使用现有五种角色，不连接真实后端。
 
-== 验证设计
 
-采用独立 MySQL 测试库，避免操作业务数据。场景覆盖认证、目录停用、多角色并集、授权撤回、组织范围、
-跨公司拒绝、精确部门、多个范围、权限范围不交叉、局部提权拒绝、最后平台管理者保护、
-角色范围合法性、岗位映射、人工调整保留、初始化幂等性、组织维护边界、离职关联人员与撤权。
+[[interface-contract]]
+== 接口契约
 
-JaCoCo 在测试 JVM 中统计完整生产类的指令、分支、行、复杂度、方法和类覆盖率，
-以报告中的实际分子／分母为准。覆盖率是执行证据，不能替代业务正确性、安全审查、浏览器验证或并发压力测试。
-设计文档不记录部署地址、镜像版本或测试达成结果，这些信息另记实施文档。
+=== 公共协议
 
-== 审计查询与独立事务
+统一路径前缀为 `/api`。请求与响应使用 UTF-8 JSON；携带请求体时使用 `Content-Type: application/json`。路径 ID 为有符号 64 位整数，客户端以服务器返回的正 ID 发起业务操作，不推测连续编号。
+接口不提供 URL 版本段、ETag、If-Match、幂等键或 JSON Patch 指令数组。PATCH 使用普通字段对象，仅支持规定字段。
+所有正常操作返回 HTTP 200，包括新增、退出和无返回值的写操作；不使用 201 或 204。认证、参数、权限与资源错误按错误码表处理。
 
-AuditController 绑定 Query DTO；AuditService 要求系统管理员 GLOBAL audit.read，校验用户 ID、字段长度、UTC 时间和批量大小。
-规范化筛选条件及 limit 编码进不透明游标，同时保存首次最大 ID 与上一页最后 ID。后页先检查条件一致，再查询 id ≤ 首次最大 ID 且 id < 上页末 ID，取 limit+1 判断 hasMore。
-游标不作为授权凭证；每页仍核验当前认证与权限。最大 ID 是插入上界，不是冻结归档状态的事务快照。
-归档同样要求 GLOBAL audit.read，在管理写锁和事务内，按 before、snapshotId 及 batchSize 批量更新未归档记录并写 ARCHIVE_LOGS。多批调用可重复执行，已归档记录不重复计数。
-RequestAuditFilter 生成 UUID，响应 X-Request-Id 与外层 requestId 一致。AuthService 提供已识别身份；失败事件保留尝试账号，未解析请求允许主体为空。
-AuditRecorder 使用 REQUIRES_NEW，业务回滚不影响认证失败记录。事件不包含凭据和查询串；数据库中断的持久化保证需另行设计可靠消息机制。
+[source,json]
+----
+{"code":"OK","message":"成功","data":null,"requestId":"00000000-0000-4000-8000-000000000001"}
+----
 
-== 响应契约与错误处理
+`requestId` 是服务端生成的 UUID，与 `X-Request-Id` 响应头相同。客户端的 `/authorize` 请求体 `requestId` 是独立业务跟踪号，回显在 `data.requestId` 并写该鉴权事件；不得与外层服务端请求号混为一谈。
+认证与应用准入事件使用服务端请求号。通用鉴权事件的 HTTP 方法／路径可为空、状态可为 null；不能由这些字段推断所有事件均来自同一条采集路径。
+GET 无请求体。除登录和可无令牌的退出外，均要求 `Authorization: Bearer <token>`；Bearer 前缀大小写及空格按此格式匹配。
+SQL 日期时间按 UTC 解释。日志 occurredAt 使用不带时区后缀的本地日期时间字符串（语义为 UTC），archivedAt 和交接时间可能使用空格分隔；客户端不得假设所有时间字段具有相同字符串外观。查询时间参数使用带 Z 的 ISO-8601，预计交接日期为 YYYY-MM-DD。
+所有集合响应位于 data 内；空集合返回 []，无交接记录返回 handover=null；内部 DTO 中不适用于该查询投影的可选属性可返回 null。
 
-正常响应统一 code=OK、message=成功、data=具体 DTO 或 null、requestId=UUID。数组是 data 的值，不作为顶层响应。
-ApiException 使用稳定业务码，如 MANAGEMENT_SCOPE_DENIED、LAST_PLATFORM_ADMIN、LOGIN_FAILED；界面显示 message，逻辑依赖 code，定位使用 requestId。
-未知路径返回 ENDPOINT_NOT_FOUND/404，错误方法 METHOD_NOT_ALLOWED/405，数据库唯一或关联冲突 DATA_CONFLICT/409。
-未预期异常返回 INTERNAL_ERROR/500，不向调用方泄露堆栈、数据库语句或凭据。完整错误码表见 API 设计。
+=== 认证与授权规则
 
-== 验证设计
+登录使用用户名、工号或手机号及密码。密码采用 BCrypt；会话令牌只在登录响应返回，数据库保存 SHA-256 摘要。除登录、允许无令牌的退出外，接口要求 `Authorization: Bearer <token>`；会话有效期默认 12 小时。
 
-测试使用独立真实 MySQL，覆盖 HTTP 契约、权限与范围隔离、事务回滚、登录跨字段唯一性、分页不重复、UTC 半开区间、归档重复执行和认证失败审计。
-初始化测试验证空库约束、首次授权和非空库不重复赋权；故障注入验证数据库和运行时边界。JaCoCo 对全部生产类生成指令、分支、行、复杂度、方法和类指标，门槛为无遗漏，不通过时不得发布为已验证版本。
-前端用实际脚本逻辑测试分页条件锁定、异步卸载、归档失败提示与响应解包；原型模拟 DOM 验证菜单、授权、筛选与归档。真实视觉和端到端结果应单独说明。
+角色决定业务功能权限和管理操作权限；每名员工的角色分配另绑定公司／部门范围。管理鉴权必须通过同一个 roleId 连接角色管理操作与员工范围，不能把不同角色的操作和范围交叉组合。`canManage` 只表示存在有效管理授权，不能代替具体操作检查。
 
-== 组织局部更新
+角色目录定义五类角色：系统管理员、公司领导、部门经理、项目经理、普通员工。部长／副部长映射为部门经理；项目经理／项目副经理／项目总工程师映射为项目经理。岗位是初始化依据，之后由管理员显式修改；不另设审计员等角色。
 
-公司与部门使用 PATCH，输入只允许 code、name，至少提供一项；省略字段保持不变，显式 null、空白、超长和未知字段返回 INVALID_ORGANIZATION_PATCH。组织归属不能通过此接口改变。权限集合、角色集合及角色范围集合使用 PUT 原子替换。
+
+[cols="1,1,1",options="header"]
+|===
+|范围 |约束 |覆盖目标
+|GLOBAL |仅系统管理员角色；companyId、departmentId 均为空 |全平台，包括无部门人员
+|COMPANY |非系统管理员角色；companyId 必填，departmentId 为空 |所选公司全部部门及人员
+|DEPARTMENT |非系统管理员角色；公司、部门必填且归属一致 |精确指定部门／项目部，不递归扩展
+|===
+
+
+角色可绑定多个范围。没有范围时，该角色的业务功能权限仍生效，但不产生后台管理权。范围只约束本权限平台的管理操作，不代表外部业务系统内部数据权限。
+
+
+[cols="1,1,1",options="header"]
+|===
+|权限码 |管理操作 |范围语义
+|user.read |人员列表、筛选、工作台、交接详情 |人员的当前部门归属
+|user.roles |给人员分配业务角色 |目标人员的当前部门归属
+|role.read |查看共享角色及其权限 |角色目录共享，关联人数按此权限范围过滤
+|role.permissions |配置共享角色的业务及管理权限 |系统管理员 + GLOBAL
+|org.read |组织查看 |按授权范围返回公司及部门
+|org.write |组织维护 |部门改名按范围；新增部门要求公司或平台范围；公司维护仅 GLOBAL
+|app.read |系统目录查看 |共享目录；不包含人员数据
+|audit.read |鉴权日志查看 |系统管理员 + GLOBAL，查看全部日志
+|handover.start |发起离职交接 |离职人、接收人和负责人均须在操作范围内
+|handover.complete |完成离职处置 |离职人员在范围内
+|management.grant |配置人员角色与范围 |仅 GLOBAL
+|===
+
+
+人员查询权不包含修改权；组织查看权不包含维护权；离职发起与完成可以分离授予。使用界面进行人员操作时，应同时授予相同范围的 user.read；使用组织维护界面时应同时授予 org.read。平台配置管理授权的界面还需全平台 user.read、org.read，以选取全部人员和组织。
+
+局部管理员不能修改自己的业务角色，也不能调整任何持有管理授权人员的角色或为其办理离职。局部角色分配还要求目标已有角色及提交角色的全部权限均为操作者当前有效业务权限的子集；否则拒绝整次修改。全平台 user.roles 可处理这些目标，但不会因此获得管理授权配置权。
+
+所有管理写事务先锁定 roles 中 code=系统管理员的固定角色行，再重新校验授权和范围。授权替换、组织维护、角色变更及离职处理共用此锁，避免撤权与写入并发越权。最后一名启用且拥有 GLOBAL management.grant 的人员不得被撤销该权限或完成离职。
+
+=== 接口清单
+
+
+[cols="1,1,1",options="header"]
+|===
+|方法与路径 |所需权限 |返回／用途
+|POST /auth/login |无 |token、user、expiresIn
+|POST /auth/logout |可无令牌 |撤销当前令牌，200，data=null
+|GET /me |登录 |user、roles、permissionCount、canManage、managementGrants
+|GET /me/permissions?app= |登录 |当前有效业务权限列表
+|GET /me/applications |登录 |有有效业务权限的应用
+|POST /me/applications/{id}/enter |登录及应用准入 |allowed、application、next；拒绝 403 并留痕
+|GET /me/applications/{id}/modules |应用准入 |应用启用模块与权限计数
+|GET /me/applications/{id}/modules/{moduleId}/features |应用准入且模块归属正确 |功能、说明、各操作 allowed
+|POST /authorize |登录 |对当前用户执行功能权限判断并记录日志
+|GET /dashboard |user.read |范围内人员／部门统计；角色／目录无查看权时对应数值 0；仅 GLOBAL audit.read 统计全部日志
+|GET /users |user.read |人员数组列表接口
+|GET /users/page |user.read |items、total、page、size
+|GET /users/filters?company= |user.read |范围内且有人员的公司／部门筛选项
+|GET /users/{id}/roles |user.roles + 目标保护规则 |共享角色选项及 assigned
+|PUT /users/{id}/roles |user.roles + 目标保护规则 |替换目标业务角色并写变更记录
+|GET /roles |role.read |共享角色目录，userCount 受范围过滤
+|GET /roles/{id}/permissions?q= |role.read |共享权限选项及 assigned
+|PUT /roles/{id}/permissions |GLOBAL role.permissions |替换共享角色权限
+|GET /applications |app.read |共享应用目录及权限计数
+|GET /authorization-logs |GLOBAL audit.read |游标分页与筛选，返回 items、nextCursor、hasMore、snapshotId
+|POST /authorization-logs/archive |GLOBAL audit.read |按截止时间分批逻辑归档，返回 archived、hasMore、snapshotId
+|GET /users/{id}/handover |user.read + 目标范围 |交接详情、角色、系统、最近 50 条变更
+|POST /users/{id}/handover |handover.start + 目标保护规则 |开始交接
+|POST /users/{id}/handover/complete |handover.complete + 目标保护规则 |完成撤权、停用、撤会话
+|GET /management/permissions |GLOBAL role.permissions |管理权限码与中文名称映射
+|GET /roles/{id}/management-permissions |role.read |角色管理操作权限码列表
+|PUT /roles/{id}/management-permissions |GLOBAL role.permissions |替换角色管理操作权限
+|GET /users/{id}/role-assignments |GLOBAL management.grant |roles 选项及 scopes 范围
+|PUT /users/{id}/role-assignments |GLOBAL management.grant |原子替换员工角色和范围
+|GET /organizations |org.read |companies、departments；部门附 writable
+|POST /organizations/companies |GLOBAL org.write |新增公司
+|PATCH /organizations/companies/{id} |GLOBAL org.write |修改公司编码／名称
+|POST /organizations/departments |COMPANY 或 GLOBAL org.write |新增指定公司部门
+|PATCH /organizations/departments/{id} |org.write + 部门范围 |修改部门编码／名称
+|===
+
+
+=== 请求与响应契约
+
+==== 登录、自身信息与业务鉴权
+
+登录请求：`{"account":"账号","password":"密码"}`。账号或密码为 null、账号超过 100 字符或密码超过 200 字符返回 400；账号去除首尾空格后查询，空字符串按凭据不匹配处理；账号不存在、密码错误或停用账号返回 401/LOGIN_FAILED。用户名、工号、手机号在数据库统一命名空间中跨字段唯一；同人多个字段同值允许，不同人不允许占用同一值。
+
+`GET /me` 中 managementGrants 为数组，每项含 id、roleId、roleName、permission、scope、companyId、departmentId、company、department；由当前角色权限和员工角色范围联表计算。无组织字段为 null。permissionCount 是原始角色关联权限数，不代表有效可操作数量；有效业务权限请用 `/me/permissions`。
+
+`POST /authorize` 请求：`{"appCode":"系统码","permissionCode":"权限码","requestId":"跟踪号"}`。appCode/requestId 最多 191 字符，permissionCode 最多 512。返回 `allowed` 布尔值、permissionCode、requestId。没有权限时本接口仍为 200/allowed=false；这只是鉴权结果，不执行真实业务。
+
+目录路径中的应用及模块 id 都由后端验证；不可利用另一系统模块 id 读取其功能。用户可进入应用，并不代表拥有该应用的全部操作。
+
+==== 人员列表
+
+`GET /users/page?q=&company=&departmentId=&page=0&size=20`。
+
+* q 匹配姓名、登录名、电话、工号；company 是公司名称；departmentId 是部门 id。
+* 筛选条件只能缩小授权范围，不能扩大范围；越界筛选返回空列表及 total=0。
+* page 小于 0 时取 0；size 小于 1 时取 1，大于 100 时取 100；`/users` 默认 size=30。
+* 每项含 id、employeeNo、username、name、phone、company、departmentId、department、position、status、employmentStatus、roles、managementActions。
+* managementActions 给出目标可尝试的 user.roles／handover.start／handover.complete。角色权限子集、离职状态等业务前置条件仍在写入时检查。
+* 无部门人员只有 GLOBAL user.read 可以查看；分页 total 与 items 使用相同范围谓词。
+
+==== 业务角色与权限替换
+
+请求体统一为 `{"ids":[1,2]}`；null 列表为 400；空数组表示撤销全部。去重处理，不存在的角色／权限 id 不建立关联；界面应仅提交服务器返回选项。所有授权替换均写 authorization_changes。角色权限写入的目标角色 ID 必须来自角色目录；非法目标在实际建立关联时由外键约束拒绝，不约定所有目标错误都返回 404。
+
+角色替换采用增量更新：保留角色的范围不变；撤销角色级联删除其范围；新角色不会自动获得管理范围。范围由 role-assignments 专用接口调整。禁止已完成离职的人员重新分配角色；局部管理员对子集校验不通过的目标不能部分修改。
+
+==== 角色管理操作权限
+
+`PUT /roles/{id}/management-permissions` 请求 `{"permissions":["user.read","user.roles","org.read"]}`。空数组撤销此角色的管理操作，影响所有角色持有者；员工范围保持不变。未知权限或无效角色返回 400。
+`audit.read`、`role.permissions`、`management.grant` 仅允许配置给系统管理员角色，运行时还必须有 GLOBAL 范围。配置后必须保留至少一名有效平台授权管理员。
+
+==== 员工角色与范围
+
+`GET /users/{id}/role-assignments` 返回：roles 中包含 id、code、name、enabled、assigned、managementPermissionCount；scopes 每项包含 roleId、scope、companyId、departmentId。
+
+[source,json]
+----
+{
+  "roleIds": [3, 5],
+  "scopes": [
+    {"roleId":3,"scope":"COMPANY","companyId":10,"departmentId":null},
+    {"roleId":3,"scope":"DEPARTMENT","companyId":11,"departmentId":20}
+  ]
+}
+----
+
+示例 id 仅说明结构，应使用接口返回的真实选项。两数组必填，范围最多 200 条；范围必须绑定 roleIds 中的启用角色。公司／部门必须启用且归属正确，空值／多余组织字段必须符合范围表。相同范围去重，目标必须 ACTIVE。
+保存会原子替换角色与范围并写 SET_ROLE_ASSIGNMENTS；空数组可撤销全部，但不能撤销最后平台授权管理员。任何失败整体回滚。仅设置角色并不会自动授予管理范围。
+
+例如某人持有角色 A 的人员查询权限并绑定甲公司、角色 B 的人员修改权限并绑定乙公司，不能用 B 的修改权操作甲公司人员。
+`/me.managementGrants` 字段仅作为派生有效权限供前端消费。
+
+==== 组织维护
+
+新增公司（POST）：`{"code":"COMPANY_A","name":"A 公司"}`。
+新增部门：`{"code":"DEPT_A","name":"工程部","companyId":10}`。
+修改公司／部门（PATCH）允许 `{"code":"DEPT_A","name":"新名称"}` 或只提交其中一项，不得提交 companyId 或 parentId。编码 1–100 字符，名称 1–191 字符，不允许空白值。
+
+组织只包含公司及其部门，不设部门层级。组织维护不提供删除、移动或停用接口。拥有 org.write 的部门范围管理员可改名其已有部门，但不能新增部门；公司／平台管理员可在有权公司新增部门。parentId 非空属于无效输入；授权计算始终按精确部门。部门负责人字段不在此维护接口中调整。
+
+==== 离职与审计
+
+发起：`{"receiverNo":"工号","ownerNo":"工号","expectedDate":"2026-11-01","reason":"交接说明","oaReference":"可选单号"}`。
+
+接收人和负责人必须启用、未进入交接且不是离职本人，同时在 handover.start 的授权范围内。不能为当前登录账号办理离职。日期为 YYYY-MM-DD；reason 最长 1000，OA 单号最长 200。开始交接保留授权，不给接收人自动复制角色。
+
+完成：`{"note":"完成说明","confirmed":"true"}`。note 最长 1000。事务内删除用户角色并级联删除角色范围、停用用户、撤销会话、更新交接状态并记录变更；已完成交接重复请求直接返回成功，权限仍需校验。
+
+交接详情中的接收人／负责人如果已不在查看者 user.read 范围内，返回“范围外人员”，工号与 id 为 null。管理授权配置明细仅对 GLOBAL management.grant 查看者开放，其他人员的交接历史过滤该变更类型。
+
+鉴权日志仅系统管理员在 GLOBAL audit.read 生效时可读，返回全部范围日志，包括无法关联当前用户的历史记录。公司领导、部门经理、项目经理不能查看该全局日志。
+
+=== 日志查询与归档
+
+GET `/authorization-logs` 的可选参数：
+
+
+[cols="1,1",options="header"]
+|===
+|参数 |类型与语义
+|userId |正整数，精确匹配内部用户 ID；未识别身份的记录为空 ID
+|username |最长 100 字符，精确匹配记录中的账号快照；登录事件保留尝试的登录标识
+|appCode |最长 191 字符，精确匹配系统编码；认证事件为空系统码
+|allowed |true 或 false；成功／允许与失败／拒绝
+|from / to |UTC ISO-8601，含 from、不含 to；from 必须早于 to
+|event |最长 32 字符；AUTHORIZATION、APPLICATION_ENTRY、LOGIN_SUCCESS、LOGIN_FAILED、UNAUTHENTICATED、REQUEST_DENIED
+|storage |ALL（默认）、ACTIVE、ARCHIVED
+|limit |1–500，默认 100
+|cursor |后端返回的不透明游标；继续查询须保持所有筛选条件及 limit 不变
+|===
+
+
+[source,json]
+----
+{"code":"OK","message":"成功","data":{"items":[],"nextCursor":null,"hasMore":false,"snapshotId":0},"requestId":"服务端生成的 UUID"}
+----
+
+items 每项包含 id、occurredAt、userId、username、appCode、permissionCode、allowed、requestId、reason、eventType、httpMethod、requestPath、httpStatus、archivedAt、archivedBy。
+时间按 UTC 解释；归档字段为空表示未归档。按 id 倒序，首次记录最大 id 作为查询上界，后续按小于上一页末 id 查询，避免新日志插入导致重复；新记录在重新查询时出现。
+这不是数据库事务快照：若同时归档，ACTIVE/ARCHIVED 集合会变化，应重新查询；ALL 的事件集合保持可追溯。不提供按页码跳转。
+
+POST `/authorization-logs/archive` 请求 `{"before":"2026-10-01T00:00:00Z","batchSize":1000}`。
+截止时间必填且不能晚于当前时间；batchSize 1–5000，默认 1000。仅归档 occurred_at < before 且尚未归档的记录；一次固定最大 id 后按 id 升序更新至批量上限。
+返回 `{"archived":1000,"hasMore":true,"snapshotId":12345}`，hasMore=true 时可用同一条件继续。每批事务写 archived_at/archived_by 和 ARCHIVE_LOGS 变更审计；重复请求不会重复归档已完成记录。
+此操作针对截止时间前的全部记录，不受列表筛选影响。逻辑归档不删除、不搬离数据库、不减少表占用空间；本设计不提供自动清理或外部冷存储。
+
+认证审计在请求结束时记录登录成功、登录失败及 API 的 401/403；未提供令牌、过期、撤销、停用账号均留痕。无法识别身份时 userId 为空；JSON 无法解析时账号也可为空。
+不得记录密码、令牌、请求体或查询字符串。业务鉴权和应用准入记录操作结果；拒绝的应用准入还可能产生一条 REQUEST_DENIED 请求记录，通过请求标识关联。
+不存在的系统返回 404，属于资源错误，不伪装成鉴权判定。日志写入使用独立事务，使业务回滚不撤销认证失败留痕；数据库本身不可用时不能保证持久化成功。
+
+=== 统一响应与业务错误码
+
+[source,json]
+----
+{"code":"MANAGEMENT_SCOPE_DENIED","message":"目标不在允许的管理范围内","data":null,"requestId":"服务端生成的 UUID"}
+----
+
+客户端按 code 判断业务类型，message 用于显示，不依赖中文字符串判断。主要错误码：
+
+
+[cols="1,1,1",options="header"]
+|===
+|HTTP |code |含义
+|400 |INVALID_ARGUMENT / INVALID_CURSOR / INVALID_ORGANIZATION_PATCH |参数、格式或游标不合法
+|400 |ROLE_UNAVAILABLE / USER_INACTIVE / USER_DEPARTED |角色、用户状态不允许操作
+|400 |SCOPE_ROLE_REQUIRED / SCOPE_ROLE_MISMATCH / SCOPE_TYPE_INVALID / SCOPE_ORGANIZATION_INVALID |范围与角色或组织不匹配
+|400 |COMPANY_UNAVAILABLE / DEPARTMENT_UNAVAILABLE / COMPANY_NOT_FOUND |组织不存在、停用或不属于指定公司
+|400 |LAST_PLATFORM_ADMIN / PLATFORM_ROLE_REQUIRED |保护最后平台管理员或平台专属角色
+|400 |HANDOVER_EXISTS / HANDOVER_NOT_STARTED / SELF_HANDOVER_DENIED |离职流程前置条件不成立
+|401 |AUTHENTICATION_REQUIRED / SESSION_INVALID / LOGIN_FAILED |缺认证、会话失效或登录失败
+|403 |PERMISSION_DENIED / MANAGEMENT_SCOPE_DENIED / APPLICATION_ACCESS_DENIED |缺操作权、超出管理范围或无应用准入权
+|404 |USER_NOT_FOUND / APPLICATION_NOT_FOUND / MODULE_NOT_FOUND / ENDPOINT_NOT_FOUND |资源或接口不存在
+|405 |METHOD_NOT_ALLOWED |HTTP 方法错误
+|409 |DATA_CONFLICT |唯一性或关联完整性冲突
+|500 |INTERNAL_ERROR |未预期的内部错误，不暴露堆栈或 SQL
+|===
+
+
+局部管理员访问范围外或不存在的人员统一拒绝，避免用返回差异探测。GLOBAL 查询角色分配时，即使目标不存在也返回角色选项和空范围；写入必须校验目标状态。
+
+权限在每次请求中读取；撤权提交后新查询立即生效。Vue 定时和窗口聚焦刷新 `/me`，管理授权集合变化时卸载旧视图、重取范围内数据；无当前页面权限时回到我的应用。已经通过鉴权的外部在途业务操作不保证被中断。
+
+授权编辑不设置版本冲突提示；多个合法管理员顺序保存采用最后一次提交。所有管理写入串行化是小规模管理系统的串行一致性选择；规模扩展须评估锁粒度与竞争。
+
+==== PUT 与 PATCH 的字段语义
+
+角色、权限和角色范围使用 PUT 完整替换集合。公司、部门使用 PATCH 局部更新，Content-Type 为 application/json。
+
+例如 `PATCH /organizations/departments/12` 的请求 `{"name":"工程部"}` 只修改名称，编码、所属公司与负责人不变；`{"code":"DEPT_12"}` 只修改编码。
+code/name 至少提供一个；省略表示保留，显式 null、空白、code 超过 100 字符、name 超过 191 字符，以及 companyId/parentId/enabled 等其他字段均返回 HTTP 400、code=INVALID_ORGANIZATION_PATCH。重复同一合法 PATCH 保持相同资源状态。成功响应 data=null；组织资源不接受 PUT，返回 HTTP 405。
+
+=== 接口与请求／响应模型对应
+
+下表为所有 34 项方法与路径组合的输入、成功 data 类型及主要业务失败状态。共用错误还包括参数绑定 400、错误方法 405、不可预期异常 500；未列出的数据库完整性冲突由统一处理器映射为 409。GET 无请求体，表中查询参数通过 URL 编码传入。
+除鉴权 allowed=false 外，操作拒绝不能以 HTTP 200 伪装为成功。列表查询为空是合法结果；资源是否存在的判定按各接口定义，不将全部缺失 ID 统一描述为 404。
+
+[cols="4,3,3,4",options="header"]
+|===
+|方法与路径 |输入模型 |成功 data 类型 |主要失败状态／特殊规则
+|POST /auth/login |Requests.Login |Responses.Login |400 / 401
+|POST /auth/logout |无 |null |无令牌或未知令牌亦成功
+|GET /me |无 |Responses.Me |401
+|GET /me/permissions |app 查询参数 |Responses.Permission[] |401
+|GET /me/applications |无 |Responses.Application[] |401
+|POST /me/applications/{id}/enter |无 |Responses.Entry |401 / 403 / 404
+|GET /me/applications/{id}/modules |无 |Responses.Modules |401 / 403 / 404
+|GET /me/applications/{id}/modules/{moduleId}/features |无 |Responses.Features |401 / 403 / 404
+|POST /authorize |Requests.Check |Responses.Decision |400 / 401；业务拒绝为 200 且 allowed=false
+|GET /dashboard |无 |Responses.Dashboard |401 / 403
+|GET /users |人员查询参数 |Responses.User[] |400 / 401 / 403
+|GET /users/page |人员查询参数 |Responses.UserPage |400 / 401 / 403
+|GET /users/filters |company 查询参数 |Responses.Filters |400 / 401 / 403
+|GET /users/{id}/roles |无 |Responses.Role[] |401 / 403
+|PUT /users/{id}/roles |Requests.Ids |null |400 / 401 / 403 / 404 / 409
+|GET /roles |无 |Responses.Role[] |401 / 403
+|GET /roles/{id}/permissions |q 查询参数 |Responses.Permission[] |401 / 403
+|PUT /roles/{id}/permissions |Requests.Ids |null |400 / 401 / 403 / 409
+|GET /applications |无 |Responses.Application[] |401 / 403
+|GET /authorization-logs |AuditDtos.Query 查询参数 |AuditDtos.Page |400 / 401 / 403
+|POST /authorization-logs/archive |AuditDtos.Archive |AuditDtos.ArchiveResult |400 / 401 / 403
+|GET /users/{id}/handover |无 |Responses.Handover |401 / 403 / 404
+|POST /users/{id}/handover |Requests.Handover |null |400 / 401 / 403 / 404 / 409
+|POST /users/{id}/handover/complete |Requests.Completion |null |400 / 401 / 403
+|GET /management/permissions |无 |object<string,string>：权限码→名称 |401 / 403
+|GET /roles/{id}/management-permissions |无 |string[] |401 / 403
+|PUT /roles/{id}/management-permissions |Requests.Permissions |null |400 / 401 / 403 / 409
+|GET /users/{id}/role-assignments |无 |Responses.Assignments |401 / 403
+|PUT /users/{id}/role-assignments |Requests.Assignments |null |400 / 401 / 403 / 409
+|GET /organizations |无 |Responses.Organizations |401 / 403
+|POST /organizations/companies |Requests.Organization |null |400 / 401 / 403 / 409
+|PATCH /organizations/companies/{id} |Requests.OrganizationPatch |null |400（含 COMPANY_NOT_FOUND）/ 401 / 403 / 409
+|POST /organizations/departments |Requests.Organization |null |400 / 401 / 403 / 409
+|PATCH /organizations/departments/{id} |Requests.OrganizationPatch |null |400 / 401 / 403（含范围外或不存在的部门）/ 409
+|===
+
+=== 响应示例
+
+登录成功的令牌为示意值，不可用于真实请求；expiresIn 的单位是秒。
+
+[source,json]
+----
+{"code":"OK","message":"成功","data":{"token":"<opaque-token>","user":{"id":12,"username":"E000012","name":"示例员工","status":"ACTIVE"},"expiresIn":43200},"requestId":"00000000-0000-4000-8000-000000000001"}
+----
+
+人员筛选无结果时仍返回归一化后的页码及大小。
+
+[source,json]
+----
+{"code":"OK","message":"成功","data":{"items":[],"total":0,"page":0,"size":20},"requestId":"00000000-0000-4000-8000-000000000002"}
+----
+
+组织更新采用普通 JSON 字段对象；显式 null 不表示删除名称。
+
+[source,http]
+----
+PATCH /api/organizations/departments/12
+Authorization: Bearer <opaque-token>
+Content-Type: application/json
+
+{"name":"工程管理部"}
+----
+
+[source,json]
+----
+{"code":"OK","message":"成功","data":null,"requestId":"00000000-0000-4000-8000-000000000003"}
+----
+
+== 请求字段与输入边界
+
+正文中的字段对象就是 JSON 请求体，不额外嵌套 DTO 名称。OrganizationPatch 在 JSON 中直接使用 code/name，不带 fields 外壳。请求体无法解析、数字参数无法绑定等返回 INVALID_ARGUMENT。
+
+
+[cols="2,2,5",options="header"]
+|===
+|请求模型／使用接口 |字段 |输入规则
+|Login：POST /auth/login |account、password |均为字符串且不能为 null；长度上限 100／200；account 去首尾空格，password 保留原字符串。空凭据不匹配时按登录失败处理。
+|Check：POST /authorize |appCode、permissionCode、requestId |字符串上限分别 191／512／191；缺系统或权限码返回 allowed=false；跟踪号可省略。
+|Ids：两类业务集合 PUT |ids |整数数组，必填；空数组撤销全部，重复 ID 去重；缺失的引用 ID 不创建关联。
+|Permissions：角色管理操作 PUT |permissions |字符串数组，必填；元素来自 11 项管理权限码；空数组须通过最后管理员保护。
+|Assignments：员工角色范围 PUT |roleIds、scopes |两个数组均必填；scopes 最多 200 条；roleIds 必须为启用角色。
+|Scope：scopes 元素 |roleId、scope、companyId、departmentId |roleId 必须属于所选角色；按 GLOBAL／COMPANY／DEPARTMENT 校验组织字段；部门输入的公司只用于归属校验。
+|Organization：公司 POST |code、name |均必填且非空白，上限 100／191；公司新增不依赖组织父节点。
+|Organization：部门 POST |code、name、companyId |编码名称规则同上；companyId 必填且对应公司存在；parentId 非 null 拒绝，不提供部门层级。
+|OrganizationPatch：组织 PATCH |code 和／或 name |至少一项；每个出现字段不能为 null、空白或超长；其他字段一律拒绝。
+|Handover：发起 POST |receiverNo、ownerNo、expectedDate、reason、oaReference |前四项必填且非空白，长度上限 100／100／10／1000；日期可解析为 YYYY-MM-DD，不额外要求晚于当前日；OA 参考号可空，上限 200。
+|Completion：完成 POST |note、confirmed |note 必填且非空白，上限 1000；confirmed 的协议值为字符串 "true"；已完成时在权限校验后直接成功。
+|Archive：日志归档 POST |before、batchSize |before 为有效 UTC 截止时间且不晚于当前时刻；batchSize 省略取 1000，范围 1–5000。
+|===
+
+=== 查询参数及排序
+
+
+[cols="2,3,4",options="header"]
+|===
+|接口 |参数／默认值 |排序与边界
+|/me/permissions |app 可省略 |省略查询全部有效权限；显式空串按空应用码过滤。按应用码、权限码排序。
+|/users 与 /users/page |q=""，company=""，departmentId 可省略，page=0；size 分别 30／20 |按人员 id 升序；page/size 归一化。q 去首尾空格后 LIKE 匹配，% 和 _ 具有 SQL 模式字符语义；company 精确匹配名称。
+|/users/filters |company="" |公司名升序；部门名、id 升序。只返回范围内有人员的组织选项。
+|/roles/{id}/permissions |q="" |按功能、模块、系统名称 LIKE 筛选；按应用 id、权限 id 升序。
+|/authorization-logs |查询字段见接口契约；limit 默认 100 |按 id 降序，游标最多 4096 字符；event 按字符串精确过滤，不将未知事件码解释成权限。
+|/me/applications/{id}/modules |无查询参数 |按模块 sort_order、id 排序；操作按动作 sort_order、code、权限 id 排序。
+|===
+
+== 响应模型与字段字典
+
+本节类型统一使用 JSON 类型：整数对应 Java int/long，布尔值对应 boolean；Integer/Long 等包装类型允许投影缺省为 null。String 和嵌套对象的空值规则结合业务约束解释。数组不与逗号分隔的展示文本混用。
+Responses.Role 与 Responses.Permission 用于多个查询场景，未投影的可选字段为 null。例如 /me.roles 不包含目录计数，/me/permissions 不提供编辑选中态。assigned 是 0/1 数值，不是 JSON 布尔值；enabled 也是 0/1。
+User.roles 是使用“、”分隔的角色名展示文本，不可据此还原角色 ID；编辑必须读取相应角色选项接口。身份响应不包含密码摘要。
+
+
+=== Responses.Identity
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|id |integer |实体主键
+|username |string / null |登录名或记录时账号；审计事件可为尝试的登录标识
+|name |string / null |显示名称
+|status |string / null |账号状态 ACTIVE／DISABLED
+|===
+
+=== Responses.Role
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|id |integer |实体主键
+|code |string / null |业务编码
+|name |string / null |显示名称
+|description |string / null |说明文本
+|enabled |integer / null |启用标志 0／1
+|userCount |integer / null |授权范围内关联人数
+|permissionCount |integer / null |权限数量；具体统计口径由接口决定
+|assigned |integer / null |编辑选项是否选中，0／1
+|managementPermissionCount |integer / null |角色的管理操作数量
+|===
+
+=== Responses.Grant
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|id |integer |实体主键
+|roleId |integer |角色 ID
+|roleName |string / null |角色名称
+|permission |string / null |管理操作码
+|scope |string / null |GLOBAL／COMPANY／DEPARTMENT
+|companyId |integer / null |公司 ID；GLOBAL 为 null
+|departmentId |integer / null |部门 ID；GLOBAL／COMPANY 为 null（人员 DTO 为所属部门）
+|company |string / null |公司名称
+|department |string / null |部门名称
+|===
+
+=== Responses.User
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|id |integer |实体主键
+|employeeNo |string / null |工号
+|username |string / null |登录名或记录时账号；审计事件可为尝试的登录标识
+|name |string / null |显示名称
+|phone |string / null |手机号，缺失时 null
+|company |string / null |公司名称
+|departmentId |integer / null |部门 ID；GLOBAL／COMPANY 为 null（人员 DTO 为所属部门）
+|department |string / null |部门名称
+|position |string / null |岗位文本
+|status |string / null |账号状态 ACTIVE／DISABLED
+|employmentStatus |string / null |EMPLOYED／HANDOVER／DEPARTED
+|roles |string / null |角色集合；User.roles 特指展示文本
+|managementActions |array<String> |对该人员允许尝试的管理操作码数组
+|===
+
+=== Responses.Permission
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|id |integer / null |实体主键
+|appCode |string / null |应用编码
+|appName |string / null |应用名称
+|code |string / null |业务编码
+|module |string / null |模块名称
+|feature |string / null |功能点名称
+|action |string / null |动作名称；变更审计中为动作码
+|assigned |integer / null |编辑选项是否选中，0／1
+|===
+
+=== Responses.Application
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|id |integer |实体主键
+|code |string / null |业务编码
+|name |string / null |显示名称
+|enabled |integer / null |启用标志 0／1
+|permissionCount |integer / null |权限数量；具体统计口径由接口决定
+|===
+
+=== Responses.Module
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|id |integer |实体主键
+|name |string / null |显示名称
+|featureCount |integer |启用功能点数量
+|permissionCount |integer |权限数量；具体统计口径由接口决定
+|grantedPermissionCount |integer |当前用户获授权的有效权限数量
+|===
+
+=== Responses.Operation
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|permissionId |integer |权限 ID
+|permissionCode |string / null |权限编码
+|actionCode |string / null |动作码
+|label |string / null |操作显示名称
+|allowed |boolean |允许／成功为 true，拒绝／失败为 false
+|===
+
+=== Responses.Feature
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|id |integer |实体主键
+|name |string / null |显示名称
+|description |string / null |说明文本
+|operations |array<Operation> |该功能点的操作数组
+|===
+
+=== Responses.Company
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|id |integer |实体主键
+|code |string / null |业务编码
+|name |string / null |显示名称
+|enabled |integer |启用标志 0／1
+|===
+
+=== Responses.Department
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|id |integer |实体主键
+|code |string / null |业务编码
+|name |string / null |显示名称
+|companyId |integer |公司 ID；GLOBAL 为 null
+|enabled |integer |启用标志 0／1
+|writable |boolean |当前人员能否维护该部门
+|===
+
+=== Responses.CompanyOption
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|company |string / null |公司名称
+|===
+
+=== Responses.DepartmentOption
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|id |integer |实体主键
+|name |string / null |显示名称
+|===
+
+=== Responses.SystemName
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|name |string / null |显示名称
+|===
+
+=== Responses.Change
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|occurred_at |string / null |UTC 事件时间
+|operator_id |integer / null |操作者 ID，可为空
+|action |string / null |动作名称；变更审计中为动作码
+|detail |string / null |变更明细，不含凭据
+|===
+
+=== Responses.HandoverRecord
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|user_id |integer / null |离职主体 ID
+|receiver_id |integer / null |接收人 ID；范围遮蔽时 null
+|owner_id |integer / null |负责人 ID；范围遮蔽时 null
+|expected_date |string / null |预计完成日期
+|reason |string / null |原因／判定说明
+|oa_reference |string / null |可选 OA 参考号，非外部审批结果
+|state |string / null |HANDOVER／DEPARTED
+|started_by |integer / null |发起者 ID
+|started_at |string / null |UTC 发起时间
+|completed_by |integer / null |完成者 ID，未完成为 null
+|completed_at |string / null |UTC 完成时间，未完成为 null
+|completion_note |string / null |完成说明，未完成为 null
+|receiver_name |string / null |接收人显示名或“范围外人员”
+|receiver_no |string / null |接收人工号，范围遮蔽时 null
+|owner_name |string / null |负责人显示名或“范围外人员”
+|owner_no |string / null |负责人工号，范围遮蔽时 null
+|===
+
+=== Responses.Login
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|token |string / null |随机 Bearer 令牌，仅登录响应返回
+|user |Identity |当前用户或目标用户身份
+|expiresIn |integer |会话有效秒数，默认 43200
+|===
+
+=== Responses.Me
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|managementGrants |array<Grant> |派生有效管理授权数组
+|canManage |boolean |是否至少有一条有效管理授权
+|user |Identity |当前用户或目标用户身份
+|roles |array<Role> |角色集合；User.roles 特指展示文本
+|permissionCount |integer |权限数量；具体统计口径由接口决定
+|===
+
+=== Responses.Decision
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|allowed |boolean |允许／成功为 true，拒绝／失败为 false
+|permissionCode |string / null |权限编码
+|requestId |string / null |该模型对应的跟踪号；与外层请求号区分
+|===
+
+=== Responses.Dashboard
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|users |integer |范围内人员数量
+|departments |integer |部门集合；Dashboard 中为范围内部门数量
+|applications |integer |系统数量，缺 app.read 时为 0
+|permissions |integer |权限数量，缺 app.read 时为 0
+|roles |integer |角色总数，缺 role.read 时为 0
+|authLogs |integer |日志总数，仅 GLOBAL audit.read 可见，否则为 0
+|===
+
+=== Responses.UserPage
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|items |array<User> |当前页结果
+|total |integer |匹配人员总数
+|page |integer |从 0 起的页码
+|size |integer |归一化后的人员页大小
+|===
+
+=== Responses.Filters
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|companies |array<CompanyOption> |公司选项／公司实体数组
+|departments |array<DepartmentOption> |部门集合；Dashboard 中为范围内部门数量
+|===
+
+=== Responses.Entry
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|allowed |boolean |允许／成功为 true，拒绝／失败为 false
+|application |Application |准入目标应用
+|next |string / null |下一步名称，固定 modules
+|===
+
+=== Responses.Modules
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|applicationId |integer |应用 ID
+|modules |array<Module> |启用模块数组
+|===
+
+=== Responses.Features
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|applicationId |integer |应用 ID
+|moduleId |integer |模块 ID
+|features |array<Feature> |启用功能点数组
+|===
+
+=== Responses.Handover
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|user |Identity |当前用户或目标用户身份
+|handover |HandoverRecord |交接记录，没有记录时 null
+|roles |array<Role> |角色集合；User.roles 特指展示文本
+|systems |array<SystemName> |有效业务系统名称数组
+|history |array<Change> |最近最多 50 条可查看人员变更记录
+|===
+
+=== Responses.Assignments
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|roles |array<Role> |角色集合；User.roles 特指展示文本
+|scopes |array<Requests.Scope> |员工角色范围数组
+|===
+
+=== Responses.Organizations
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|companies |array<Company> |公司选项／公司实体数组
+|departments |array<Department> |部门集合；Dashboard 中为范围内部门数量
+|===
+
+=== AuditDtos.Entry
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|id |integer |实体主键
+|occurredAt |string / null |UTC 事件时间字符串
+|userId |integer / null |事件用户 ID，未识别时 null
+|username |string / null |登录名或记录时账号；审计事件可为尝试的登录标识
+|appCode |string / null |应用编码
+|permissionCode |string / null |权限编码
+|allowed |boolean |允许／成功为 true，拒绝／失败为 false
+|requestId |string / null |该模型对应的跟踪号；与外层请求号区分
+|reason |string / null |原因／判定说明
+|eventType |string / null |认证／准入／鉴权事件类型
+|httpMethod |string / null |请求方法，非请求型事件可为空
+|requestPath |string / null |请求路径，不含查询串
+|httpStatus |integer / null |HTTP 状态，非请求型事件可为 null
+|archivedAt |string / null |UTC 归档时间，未归档为 null
+|archivedBy |integer / null |归档操作者 ID，未归档为 null
+|===
+
+=== AuditDtos.Page
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|items |array<Entry> |当前页结果
+|nextCursor |string / null |下一页不透明游标，无后页为 null
+|hasMore |boolean |是否存在后续记录
+|snapshotId |integer |本次查询／归档的日志 ID 上界
+|===
+
+=== AuditDtos.ArchiveResult
+
+[cols="2,2,5",options="header"]
+|===
+|字段 |JSON 类型／元素模型 |含义
+|archived |integer |本批归档条数
+|hasMore |boolean |是否存在后续记录
+|snapshotId |integer |本次查询／归档的日志 ID 上界
+|===
+
+== 关键交互与状态设计
+
+=== 登录与带令牌访问
+
+
+[cols="1,3,5",options="header"]
+|===
+|顺序 |责任组件 |动作／失败分支
+|1 |RequestAuditFilter |生成服务端请求号，建立请求审计上下文。
+|2 |ApplicationService / AuthService |校验长度，规范化登录账号，通过唯一标识登记查询用户；账号停用、未知或密码不匹配统一 LOGIN_FAILED。
+|3 |AuthService / AuthRepository |生成随机令牌，将摘要与到期时间写入 sessions；登录事务提交后返回令牌。
+|4 |RequestAuditFilter / AuditRecorder |请求结束时记录 LOGIN_SUCCESS 或 LOGIN_FAILED；不记录密码或令牌。
+|5 |后续业务 Service |解析 Bearer，查询摘要、撤销标志、到期时间、账号状态，再按本次资源校验权限。
+|6 |ApiResponseAdvice / ApiExceptionHandler |返回统一响应；401 促使前端清理身份，403 促使前端刷新权限。
+|===
+
+=== 管理写事务顺序
+
+[source,text]
+----
+开始事务 → 锁系统管理员角色行 → 按当前授权核验操作与范围
+         → 校验全部输入与目标保护 → 按需锁目标人员／交接
+         → 执行业务更新 → 检查最后平台管理员 → 写变更审计 → 提交
+任何业务异常／SQL 异常 → 整体回滚 → 返回错误码
+----
+
+部分业务可在锁前验证会话，但管理操作与范围必须在取得公共锁后判断。公共锁只协调遵守该协议的应用写事务；直接 SQL 写入不受应用授权算法保护。读接口不持有该公共锁。
+
+
+[cols="2,4,4",options="header"]
+|===
+|操作 |事务内必须同时完成 |失败后不变量
+|角色分配 |增量修改 user_roles、级联范围、最后管理员检查、SET_ROLES |保留原角色及其范围。
+|角色范围保存 |校验角色与范围、修改角色、重建范围、最后管理员检查、SET_ROLE_ASSIGNMENTS |不能只保存角色而丢失范围，或相反。
+|角色管理权限 |替换 role_management_permissions、平台专属操作校验、最后管理员检查、审计 |不能使最后一名授权管理员失去管理授权能力。
+|组织 PATCH |授权校验、code/name 局部修改、变更审计 |唯一性冲突时原编码／名称保留。
+|离职完成 |删除角色、级联范围、停用用户、撤会话、完成记录、审计 |不能只停用一部分授权或先标记完成。
+|日志归档 |固定 ID 上界、批量归档元数据、ARCHIVE_LOGS |批次原子提交；不同批次之间不共享数据库事务快照。
+|===
+
+=== 离职状态转换
+
+
+[cols="2,4,2,4",options="header"]
+|===
+|起始状态 |事件／前置条件 |目标状态 |权限与数据影响
+|EMPLOYED（无记录） |发起；本人、接收人、负责人及范围校验通过 |HANDOVER |创建交接记录；保留本人权限，不自动授予接收人。
+|HANDOVER |明确确认完成，完成权限与最后管理员保护通过 |DEPARTED |账号 DISABLED，角色及范围撤销，会话撤销。
+|HANDOVER |再次发起 |保持 HANDOVER |HANDOVER_EXISTS，无重复记录。
+|DEPARTED |再次完成且操作者仍有权限 |保持 DEPARTED |成功返回，不重复执行业务撤权。
+|任意状态 |非法输入、无权或范围越界 |保持原状态 |返回对应错误；不产生半完成业务状态。
+|===
+
+系统不定义交接取消、回退或复职接口。账号 ACTIVE／DISABLED 与交接状态属于不同维度，不能仅由一个字段推导另一字段。
+
+=== 审计游标与归档算法
+
+首次查询读取最大日志 ID S，组合过滤条件，按 id DESC 查询 limit+1 条。后页解码 S、上页末 ID B 及条件指纹，使用 id≤S 且 id<B；返回超出 limit 的一条只用于判断 hasMore。
+游标绑定筛选条件和 limit，不绑定身份，也不是签名授权凭据；每次仍需重新认证和权限判断。客户端不能修改游标或依赖其编码结构。
+S 仅排除后续分配更大 ID 的事件，不提供跨页事务快照；归档状态变化、并发事务提交顺序都会影响可见集合。需要重新读取最新数据时必须从首屏重新查询。
+归档每批读取自己的 S，更新 occurred_at<before、未归档且 id≤S 的最早一批记录。hasMore 表示该上界内仍有匹配项，多批调用可能得到不同 snapshotId。归档不受当前列表的用户或系统筛选限制。
+
+
+== 安全、容量与异常设计
+
+* 身份与授权：令牌使用安全随机数；数据库仅存摘要；不把权限缓存到令牌。组织筛选附加于授权谓词，不替代授权谓词。
+* 输入与 SQL：动态排序和表名不得直接来自客户端；筛选值采用参数绑定。PATCH 白名单限制字段；登录错误不区分账号未知、停用或密码错误。
+* 并发与重试：角色公共锁串行化管理写事务。数据库死锁或瞬时故障不约定自动重试；客户端必须先检查响应及资源状态，不能盲目重放创建或交接发起请求。
+* 审计边界：认证失败事件独立事务保存，管理变更与业务写事务同时提交；独立审计不等于消息队列或持久化补偿，数据库不可用时不承诺必达。
+* 数据暴露：禁止返回密码摘要、会话摘要或 SQL 堆栈；人员联系方式按管理范围可见；交接关联人范围外标识遮蔽。日志的主体可能为空。
+* 会话与前端：会话令牌保存在浏览器 sessionStorage；会话过期后重新登录。该选择不能消除 XSS 风险，界面不得把非可信文本当 HTML 执行。
+* 容量控制：人员页最多 100 条、日志页最多 500 条、归档批次最多 5000 条、人员范围最多 200 条；共享角色和目录接口不提供分页，适用于受控目录规模。
+* 性能评审：公共锁吞吐、范围 EXISTS 查询、LIKE 前置通配符与日志组合筛选必须纳入容量评估；不以存在索引推导固定响应时延，不在设计中虚设 QPS 或 SLA 数值。
+* 功能边界：本设计不提供令牌刷新、MFA、登录限流／锁定、审计防篡改签名、自动日志清理、分布式缓存或外部业务事务中断协议。扩展这些能力需独立定义接口和一致性规则。
+
+== 界面与接口对应
+
+
+[cols="2,4,4",options="header"]
+|===
+|界面／交互 |主要接口 |权限与反馈规则
+|登录 |POST /auth/login；GET /me |登录成功后加载身份与授权；失败展示 message，不输出凭据。
+|我的应用 → 模块 → 功能 |GET /me/applications；POST enter；GET modules/features；POST /authorize |按 allowed 控制按钮；后端拒绝后刷新权限，不凭按钮状态执行。
+|工作台／人员筛选 |GET /dashboard；GET /users/page；GET /users/filters |页面、总数与选项保持同一范围；改变筛选回到第 0 页。
+|组织管理 |GET /organizations；POST/PATCH 组织接口 |列为公司—部门—操作；编辑提交 code/name，不能变更归属。
+|角色与权限 |GET /roles、权限选项；PUT 两类角色权限 |业务功能权限与管理操作权限分开编辑；保存为集合替换。
+|员工角色与范围 |GET/PUT /users/{id}/role-assignments |角色选择与范围草稿分区；公司／部门／GLOBAL 字段条件显示，保存整体提交。
+|离职交接 |GET handover；POST handover / complete |无记录视为在职；完成前明确确认撤权与停用，不自动把权限复制给接收人。
+|鉴权日志 |GET /authorization-logs；POST /archive |条件变更清空游标；后页沿用首屏条件；归档确认须说明作用于截止时间前全部匹配事件。
+|===
+
+== 设计验证与需求追踪
+
+验证以预期行为为判据，不以执行覆盖率代替正确性。单元验证负责规则与故障分支，独立 MySQL 集成验证负责 SQL、触发器和事务，接口验证负责 HTTP 契约，界面验证负责交互与权限变化反馈。
+
+
+[cols="1,3,6",options="header"]
+|===
+|设计标识 |设计目标 |验证场景与预期结果
+|AUTH-01 |统一登录与会话撤销 |三种标识定位同一用户；账号停用、到期或撤销后拒绝请求；响应不包含摘要。
+|RBAC-01 |有效业务权限并集 |多角色去重；目录任一节点停用后相应权限失效；应用准入不等于全部操作许可。
+|SCOPE-01 |同角色操作与范围关联 |角色 A 的查询权不得与角色 B 的范围组合为修改权；跨公司／精确部门访问受限。
+|ADMIN-01 |保留平台授权能力 |撤销最后 GLOBAL management.grant 或最后管理员离职时业务事务回滚。
+|ORG-01 |PATCH 局部更新 |只改名称保留编码；非法字段、null、空白、超长和重复编码被拒绝；PUT 组织路径返回 405。
+|INIT-01 |空库初始化一致性 |约束先建立，数据与默认授权同一事务导入；失败无部分业务数据；非空库重启不恢复撤权。
+|LEAVE-01 |离职原子处置 |完成后角色、范围、账号、会话和状态一致；失败全部回滚；重复完成不重复处置。
+|AUDIT-01 |审计查询与归档 |筛选条件准确，游标条件变更拒绝，UTC 半开区间有效，批次归档不删除事件。
+|API-01 |统一响应 |成功及错误均有 code/message/data/requestId，HTTP 状态正确，内部异常不泄漏 SQL。
+|UI-01 |界面反馈 |授权变化卸载旧视图并重新查询；403 不显示操作成功，分页与编辑草稿状态一致。
+|===

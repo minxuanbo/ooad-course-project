@@ -8,7 +8,7 @@
 
 角色决定业务功能权限和管理操作权限；每名员工的角色分配另绑定公司／部门范围。管理鉴权必须通过同一个 roleId 连接角色管理操作与员工范围，不能把不同角色的操作和范围交叉组合。`canManage` 只表示存在有效管理授权，不能代替具体操作检查。
 
-沿用五类角色：系统管理员、公司领导、部门经理、项目经理、普通员工。部长／副部长映射为部门经理；项目经理／项目副经理／项目总工程师映射为项目经理。岗位是初始化依据，之后由管理员显式修改；不另设审计员等角色。
+角色目录定义五类角色：系统管理员、公司领导、部门经理、项目经理、普通员工。部长／副部长映射为部门经理；项目经理／项目副经理／项目总工程师映射为项目经理。岗位是初始化依据，之后由管理员显式修改；不另设审计员等角色。
 
 | 范围 | 约束 | 覆盖目标 |
 | --- | --- | --- |
@@ -36,7 +36,7 @@
 
 局部管理员不能修改自己的业务角色，也不能调整任何持有管理授权人员的角色或为其办理离职。局部角色分配还要求目标已有角色及提交角色的全部权限均为操作者当前有效业务权限的子集；否则拒绝整次修改。全平台 user.roles 可处理这些目标，但不会因此获得管理授权配置权。
 
-所有管理写事务先锁定管理授权版本行，再重新校验授权和范围。授权替换、组织维护、角色变更及离职处理共用此锁，避免撤权与写入并发越权。最后一名启用且拥有 GLOBAL management.grant 的人员不得被撤销该权限或完成离职。
+所有管理写事务先锁定 roles 中 code=系统管理员的固定角色行，再重新校验授权和范围。授权替换、组织维护、角色变更及离职处理共用此锁，避免撤权与写入并发越权。最后一名启用且拥有 GLOBAL management.grant 的人员不得被撤销该权限或完成离职。
 
 ## 2. 接口清单
 
@@ -52,7 +52,7 @@
 | GET /me/applications/{id}/modules/{moduleId}/features | 应用准入且模块归属正确 | 功能、说明、各操作 allowed |
 | POST /authorize | 登录 | 对当前用户执行功能权限判断并记录日志 |
 | GET /dashboard | user.read | 范围内人员／部门统计；角色／目录无查看权时对应数值 0；仅 GLOBAL audit.read 统计全部日志 |
-| GET /users | user.read | 兼容列表接口 |
+| GET /users | user.read | 人员数组列表接口 |
 | GET /users/page | user.read | items、total、page、size |
 | GET /users/filters?company= | user.read | 范围内且有人员的公司／部门筛选项 |
 | GET /users/{id}/roles | user.roles + 目标保护规则 | 共享角色选项及 assigned |
@@ -81,7 +81,7 @@
 
 ### 登录、自身信息与业务鉴权
 
-登录请求：`{"account":"账号","password":"密码"}`。账号为空值或超过 100 字符、密码为空值或超过 200 字符返回 400；账号不存在、密码错误或停用账号返回 401/LOGIN_FAILED。用户名、工号、手机号在数据库统一命名空间中跨字段唯一；同人多个字段同值允许，不同人不允许占用同一值。
+登录请求：`{"account":"账号","password":"密码"}`。账号或密码为 null、账号超过 100 字符或密码超过 200 字符返回 400；账号去除首尾空格后查询，空字符串按凭据不匹配处理；账号不存在、密码错误或停用账号返回 401/LOGIN_FAILED。用户名、工号、手机号在数据库统一命名空间中跨字段唯一；同人多个字段同值允许，不同人不允许占用同一值。
 
 `GET /me` 中 managementGrants 为数组，每项含 id、roleId、roleName、permission、scope、companyId、departmentId、company、department；由当前角色权限和员工角色范围联表计算。无组织字段为 null。permissionCount 是原始角色关联权限数，不代表有效可操作数量；有效业务权限请用 `/me/permissions`。
 
@@ -95,14 +95,14 @@
 
 - q 匹配姓名、登录名、电话、工号；company 是公司名称；departmentId 是部门 id。
 - 筛选条件只能缩小授权范围，不能扩大范围；越界筛选返回空列表及 total=0。
-- page 最小 0；size 限制 1–100；兼容 `/users` 默认 size=30。
+- page 小于 0 时取 0；size 小于 1 时取 1，大于 100 时取 100；`/users` 默认 size=30。
 - 每项含 id、employeeNo、username、name、phone、company、departmentId、department、position、status、employmentStatus、roles、managementActions。
 - managementActions 给出目标可尝试的 user.roles／handover.start／handover.complete。角色权限子集、离职状态等业务前置条件仍在写入时检查。
 - 无部门人员只有 GLOBAL user.read 可以查看；分页 total 与 items 使用相同范围谓词。
 
 ### 业务角色与权限替换
 
-请求体统一为 `{"ids":[1,2]}`；null 列表为 400；空数组表示撤销全部。去重处理，不存在的角色／权限 id 不建立关联；界面应仅提交服务器返回选项。所有授权替换均写 authorization_changes。
+请求体统一为 `{"ids":[1,2]}`；null 列表为 400；空数组表示撤销全部。去重处理，不存在的角色／权限 id 不建立关联；界面应仅提交服务器返回选项。所有授权替换均写 authorization_changes。角色权限写入的目标角色 ID 必须来自角色目录；非法目标在实际建立关联时由外键约束拒绝，不约定所有目标错误都返回 404。
 
 角色替换采用增量更新：保留角色的范围不变；撤销角色级联删除其范围；新角色不会自动获得管理范围。范围由 role-assignments 专用接口调整。禁止已完成离职的人员重新分配角色；局部管理员对子集校验不通过的目标不能部分修改。
 
@@ -194,7 +194,7 @@ POST `/authorization-logs/archive` 请求 `{"before":"2026-10-01T00:00:00Z","bat
 
 | HTTP | code | 含义 |
 | --- | --- | --- |
-| 400 | INVALID_ARGUMENT / INVALID_CURSOR | 参数、格式或游标不合法 |
+| 400 | INVALID_ARGUMENT / INVALID_CURSOR / INVALID_ORGANIZATION_PATCH | 参数、格式或游标不合法 |
 | 400 | ROLE_UNAVAILABLE / USER_INACTIVE / USER_DEPARTED | 角色、用户状态不允许操作 |
 | 400 | SCOPE_ROLE_REQUIRED / SCOPE_ROLE_MISMATCH / SCOPE_TYPE_INVALID / SCOPE_ORGANIZATION_INVALID | 范围与角色或组织不匹配 |
 | 400 | COMPANY_UNAVAILABLE / DEPARTMENT_UNAVAILABLE / COMPANY_NOT_FOUND | 组织不存在、停用或不属于指定公司 |
@@ -211,7 +211,7 @@ POST `/authorization-logs/archive` 请求 `{"before":"2026-10-01T00:00:00Z","bat
 
 权限在每次请求中读取；撤权提交后新查询立即生效。Vue 定时和窗口聚焦刷新 `/me`，管理授权集合变化时卸载旧视图、重取范围内数据；无当前页面权限时回到我的应用。已经通过鉴权的外部在途业务操作不保证被中断。
 
-授权编辑目前没有版本冲突提示；多个合法管理员顺序保存采用最后一次提交。所有管理写入串行化是本课程规模的简化选择，大规模系统需进一步细化锁与压力测试。
+授权编辑不设置版本冲突提示；多个合法管理员顺序保存采用最后一次提交。所有管理写入串行化是本课程规模的简化选择，大规模系统需进一步细化锁与压力测试。
 
 ### PUT 与 PATCH 的字段语义
 
