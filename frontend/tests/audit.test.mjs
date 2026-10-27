@@ -36,3 +36,16 @@ test('handover DTO null represents an employed user before starting a handover',
   assert.equal(vm.runInContext('data.value={handover:null};state.value', context), 'EMPLOYED')
   assert.equal(vm.runInContext("data.value={handover:{state:'HANDOVER'}};state.value", context), 'HANDOVER')
 })
+
+test('organization edits use PATCH without changing company membership; creation uses POST', async () => {
+  const calls = []
+  const context = vm.createContext({ ref: value => ({ value }), onMounted() {}, notify() {}, session: {}, api: async (path, method, body) => { calls.push({path,method,body}); return {companies:[],departments:[]} } })
+  const source = readFileSync(new URL('../src/pages/Organizations.vue', import.meta.url), 'utf8').match(/<script setup>([\s\S]*?)<\/script>/)[1].replace(/^import .*$/gm, '')
+  vm.runInContext(source,context)
+  await vm.runInContext("edit('departments',{id:12,code:'D12',name:'原名'});form.value.name='新名称';save()",context)
+  assert.equal(calls[0].method,'PATCH'); assert.equal(calls[0].path,'/organizations/departments/12')
+  assert.deepEqual(JSON.parse(JSON.stringify(calls[0].body)),{code:'D12',name:'新名称'})
+  calls.length=0
+  await vm.runInContext("edit('departments',null);form.value={code:'NEW',name:'新部门',companyId:2};save()",context)
+  assert.equal(calls[0].method,'POST'); assert.equal(calls[0].body.companyId,2)
+})

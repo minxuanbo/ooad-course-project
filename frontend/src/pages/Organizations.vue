@@ -8,7 +8,7 @@ function edit(kind, item) { editing.value = { kind, id: item?.id }; form.value =
 function companyWritable(id) { return (session.me?.managementGrants || []).some(g => g.permission === 'org.write' && (g.scope === 'GLOBAL' || g.scope === 'COMPANY' && g.companyId === id)) }
 async function save() {
   busy.value = true; error.value = ''
-  try { const { kind, id } = editing.value; await api(`/organizations/${kind}${id ? '/' + id : ''}`, id ? 'PUT' : 'POST', form.value); editing.value = null; notify('组织已保存'); await load() }
+  try { const { kind, id } = editing.value; await api(`/organizations/${kind}${id ? '/' + id : ''}`, id ? 'PATCH' : 'POST', id ? { code: form.value.code, name: form.value.name } : form.value); editing.value = null; notify('组织已保存'); await load() }
   catch (e) { error.value = e.message } finally { busy.value = false }
 }
 function departmentsFor(companyId) { const items = data.value.departments.filter(d => d.companyId === companyId); return items.length ? items : [null] }

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ManagementController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rbac0</a> &gt; <a href="index.source.html" class="el_package">com.municipal.rbac</a> &gt; <span class="el_source">ManagementController.java</span></div><h1>ManagementController.java</h1><pre class="source lang-java linenums">package com.municipal.rbac;
+import java.util.*;
+import org.springframework.web.bind.annotation.*;
+import com.municipal.rbac.Requests.*;
+@RestController @RequestMapping(&quot;/api&quot;)
+class ManagementController {
+  private final ManagementService service;
+<span class="fc" id="L8">  ManagementController(ManagementService service){this.service=service;}</span>
+  @GetMapping(&quot;/management/permissions&quot;)
+<span class="fc" id="L10">  Map&lt;String,String&gt; catalog(@RequestHeader(&quot;Authorization&quot;)String h) { return service.catalog(h); }</span>
+  @GetMapping(&quot;/roles/{id}/management-permissions&quot;)
+<span class="fc" id="L12">  List&lt;String&gt; rolePermissions(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id) { return service.rolePermissions(h,id); }</span>
+  @PutMapping(&quot;/roles/{id}/management-permissions&quot;)
+<span class="fc" id="L14">  void rolePermissions(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id,@RequestBody Permissions body) { service.rolePermissions(h,id,body); }</span>
+  @GetMapping(&quot;/users/{id}/role-assignments&quot;)
+<span class="fc" id="L16">  Responses.Assignments assignments(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id) { return service.assignments(h,id); }</span>
+  @PutMapping(&quot;/users/{id}/role-assignments&quot;)
+<span class="fc" id="L18">  void assign(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id,@RequestBody Assignments body) { service.assign(h,id,body); }</span>
+  @GetMapping(&quot;/organizations&quot;)
+<span class="fc" id="L20">  Responses.Organizations organizations(@RequestHeader(&quot;Authorization&quot;)String h) { return service.organizations(h); }</span>
+  @PostMapping(&quot;/organizations/companies&quot;)
+<span class="fc" id="L22">  void createCompany(@RequestHeader(&quot;Authorization&quot;)String h,@RequestBody Organization body) { service.createCompany(h,body); }</span>
+  @PatchMapping(&quot;/organizations/companies/{id}&quot;)
+<span class="fc" id="L24">  void renameCompany(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id,@RequestBody OrganizationPatch body) { service.renameCompany(h,id,body); }</span>
+  @PostMapping(&quot;/organizations/departments&quot;)
+<span class="fc" id="L26">  void createDepartment(@RequestHeader(&quot;Authorization&quot;)String h,@RequestBody Organization body) { service.createDepartment(h,body); }</span>
+  @PatchMapping(&quot;/organizations/departments/{id}&quot;)
+<span class="fc" id="L28">  void renameDepartment(@RequestHeader(&quot;Authorization&quot;)String h,@PathVariable long id,@RequestBody OrganizationPatch body) { service.renameDepartment(h,id,body); }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

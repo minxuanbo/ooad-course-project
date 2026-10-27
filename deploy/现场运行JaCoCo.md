@@ -4,24 +4,6 @@
 报告来自 Maven 测试 JVM，包含真实 MySQL 集成测试与单元测试；不是公网线上实例的运行覆盖率。
 B/C/D 的业务服务不参与，不需要重启；已有业务库不会被清空或改动。
 
-## 本次已验证版本
-
-A 的独立目录 `/root/rbac-design-20261027` 保存本次送测源码。它独立于 Git 克隆，适合直接复现已验证报告。
-
-在 A 的 Termius 中执行：
-
-```bash
-cd /root/rbac-design-20261027
-export RBAC_BUILD_IMAGE=rbac-build:test-20261023
-export RBAC_TEST_EXCEL_DIR=/root/ooad-course-project
-export RBAC_TEST_MYSQL_IMAGE=swr.cn-north-4.myhuaweicloud.com/javaee_xmu/rbac-mysql@sha256:54ad54987c01f1d7af9e1343910fd0cf0d4c4526b552f13e712ddbeacf13dd02
-sh deploy/test-backend.sh
-```
-
-工具镜像只提供 JDK/Maven/依赖，实际测试复制本目录当前 pom.xml/src 重新编译；Excel 从原克隆目录读取，不进入镜像。本次 61 项测试通过，全部生产代码的六项覆盖率均为 100%（69 个有可执行代码的类，发布共 72 个 class 文件）。现场以实际输出为准。
-
-下节是更新 Git 克隆后测试当前源码的通用方法，不必与上节重复执行。
-
 ## 预约前准备
 
 A 已安装 Docker。代码位于 ~/ooad-course-project，三份课程 Excel 位于该目录。
@@ -29,14 +11,15 @@ A 已安装 Docker。代码位于 ~/ooad-course-project，三份课程 Excel 位
 
 ```bash
 cd ~/ooad-course-project
-git pull --ff-only
+git pull --ff-only gitee main
+export RBAC_TEST_EXCEL_DIR=/root/ooad-course-project
 export RBAC_BUILD_IMAGE=rbac-build:exam-$(git rev-parse --short HEAD)
 docker build --target build --memory 1200m -t "$RBAC_BUILD_IMAGE" .
 export RBAC_TEST_MYSQL_IMAGE=swr.cn-north-4.myhuaweicloud.com/javaee_xmu/rbac-mysql@sha256:54ad54987c01f1d7af9e1343910fd0cf0d4c4526b552f13e712ddbeacf13dd02
 ```
 
 构建阶段只编译，不运行测试；Excel 被 .dockerignore 排除，不进入镜像、不上传 SWR。
-若打开新终端，需重新设置以上两个 export；不必重复构建已经存在且工具版本匹配的镜像。
+若打开新终端，需重新设置以上三个 export；不必重复构建已经存在且工具版本匹配的镜像。
 脚本会从当前项目只读复制 pom.xml/src，在容器新目录重新编译，因此不会用工具镜像内的旧代码冒充当前代码。
 
 ## 现场执行

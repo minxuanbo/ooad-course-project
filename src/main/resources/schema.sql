@@ -175,11 +175,7 @@ CREATE TABLE IF NOT EXISTS handovers (
   CHECK (state IN ('HANDOVER','DEPARTED'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
 
--- Schema revision and role-bound management authorization.
-CREATE TABLE IF NOT EXISTS management_migrations (
-  version INT PRIMARY KEY,
-  completed TINYINT NOT NULL DEFAULT 0
-) ENGINE=InnoDB;
+-- Role-bound management authorization.
 CREATE TABLE IF NOT EXISTS role_management_permissions (
   role_id BIGINT NOT NULL,
   permission_code VARCHAR(64) NOT NULL,

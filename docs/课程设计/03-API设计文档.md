@@ -73,9 +73,9 @@
 | PUT /users/{id}/role-assignments | GLOBAL management.grant | 原子替换员工角色和范围 |
 | GET /organizations | org.read | companies、departments；部门附 writable |
 | POST /organizations/companies | GLOBAL org.write | 新增公司 |
-| PUT /organizations/companies/{id} | GLOBAL org.write | 修改公司编码／名称 |
+| PATCH /organizations/companies/{id} | GLOBAL org.write | 修改公司编码／名称 |
 | POST /organizations/departments | COMPANY 或 GLOBAL org.write | 新增指定公司部门 |
-| PUT /organizations/departments/{id} | org.write + 部门范围 | 修改部门编码／名称 |
+| PATCH /organizations/departments/{id} | org.write + 部门范围 | 修改部门编码／名称 |
 
 ## 3. 请求与响应契约
 
@@ -133,9 +133,9 @@
 
 ### 组织维护
 
-新增公司与修改公司：`{"code":"COMPANY_A","name":"A 公司"}`。
+新增公司（POST）：`{"code":"COMPANY_A","name":"A 公司"}`。
 新增部门：`{"code":"DEPT_A","name":"工程部","companyId":10}`。
-修改部门只允许 `{"code":"DEPT_A","name":"新名称"}`，不得提交 companyId 或 parentId。编码 1–100 字符，名称 1–191 字符，不允许空白值。
+修改公司／部门（PATCH）允许 `{"code":"DEPT_A","name":"新名称"}` 或只提交其中一项，不得提交 companyId 或 parentId。编码 1–100 字符，名称 1–191 字符，不允许空白值。
 
 组织只包含公司及其部门，不设部门层级。组织维护不提供删除、移动或停用接口。拥有 org.write 的部门范围管理员可改名其已有部门，但不能新增部门；公司／平台管理员可在有权公司新增部门。parentId 非空属于无效输入；授权计算始终按精确部门。部门负责人字段不在此维护接口中调整。
 
@@ -212,3 +212,10 @@ POST `/authorization-logs/archive` 请求 `{"before":"2026-10-01T00:00:00Z","bat
 权限在每次请求中读取；撤权提交后新查询立即生效。Vue 定时和窗口聚焦刷新 `/me`，管理授权集合变化时卸载旧视图、重取范围内数据；无当前页面权限时回到我的应用。已经通过鉴权的外部在途业务操作不保证被中断。
 
 授权编辑目前没有版本冲突提示；多个合法管理员顺序保存采用最后一次提交。所有管理写入串行化是本课程规模的简化选择，大规模系统需进一步细化锁与压力测试。
+
+### PUT 与 PATCH 的字段语义
+
+角色、权限和角色范围使用 PUT 完整替换集合。公司、部门使用 PATCH 局部更新，Content-Type 为 application/json。
+
+例如 `PATCH /organizations/departments/12` 的请求 `{"name":"工程部"}` 只修改名称，编码、所属公司与负责人不变；`{"code":"DEPT_12"}` 只修改编码。
+code/name 至少提供一个；省略表示保留，显式 null、空白、code 超过 100 字符、name 超过 191 字符，以及 companyId/parentId/enabled 等其他字段均返回 HTTP 400、code=INVALID_ORGANIZATION_PATCH。重复同一合法 PATCH 保持相同资源状态。成功响应 data=null；组织资源不接受 PUT，返回 HTTP 405。

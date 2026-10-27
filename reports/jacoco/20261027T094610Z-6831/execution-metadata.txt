@@ -1,0 +1,10 @@
+Execution start: 2026-10-27T09:46:10Z (Asia/Shanghai 2026-10-27 17:46:10)
+Build host: course-build; /root/rbac-fresh-20261027
+Command: deploy/test-backend.sh; Maven clean verify; Java 21; JaCoCo 0.8.14
+Database: disposable MySQL 8.4.11; rbac_test; no published port; production database not used by tests
+Tests: 59; failures=0; errors=0; skipped=0; test classes=13
+Release: 71 class files match class-sha256.txt; 68 executable classes included by JaCoCo
+Coverage: all production classes; no exclusions; six MISSEDCOUNT=0 checks passed
+JAR SHA256: cb113dbaea4705d22deac1ef9ae1295938648b9e694fad551cde89d117ac75af
+Image: swr.cn-north-4.myhuaweicloud.com/javaee_xmu/rbac-backend@sha256:ce54fee2bbcb69adae179dafa27866d56dfeea5555e3b822fbf127eab82741ed
+Report source: test JVM, real database integration tests plus dependency-mocked boundary tests; not live-server coverage

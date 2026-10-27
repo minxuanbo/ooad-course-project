@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ManagementRepository.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rbac0</a> &gt; <a href="index.source.html" class="el_package">com.municipal.rbac</a> &gt; <span class="el_source">ManagementRepository.java</span></div><h1>ManagementRepository.java</h1><pre class="source lang-java linenums">package com.municipal.rbac;
+import java.util.*;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
+@Repository
+class ManagementRepository {
+<span class="fc bfc" id="L7" title="All 2 branches covered.">  String companyScope(boolean global,String scope){return global?&quot;1=1&quot;:&quot;EXISTS(SELECT 1 FROM departments d WHERE d.company_id=c.id AND &quot;+scope+&quot;)&quot;;}</span>
+  private final JdbcTemplate db;
+<span class="fc" id="L9">  ManagementRepository(JdbcTemplate db){this.db=db;}</span>
+
+<span class="fc" id="L11">  List&lt;String&gt; managementPermissions(Object... args){return db.queryForList(&quot;SELECT permission_code FROM role_management_permissions WHERE role_id=? ORDER BY permission_code&quot;,String.class,args);}</span>
+<span class="fc" id="L12">  int deleteManagementPermissions(Object... args){return db.update(&quot;DELETE FROM role_management_permissions WHERE role_id=?&quot;,args);}</span>
+<span class="fc" id="L13">  int insertManagementPermission(Object... args){return db.update(&quot;INSERT INTO role_management_permissions(role_id,permission_code) VALUES(?,?)&quot;,args);}</span>
+<span class="fc" id="L14">  List&lt;Map&lt;String,Object&gt;&gt; assignmentRoles(Object... args){return db.queryForList(&quot;SELECT r.id,r.code,r.name,r.enabled,(ur.user_id IS NOT NULL) assigned,(SELECT count(*) FROM role_management_permissions mp WHERE mp.role_id=r.id) managementPermissionCount FROM roles r LEFT JOIN user_roles ur ON ur.role_id=r.id AND ur.user_id=? ORDER BY r.id&quot;,args);}</span>
+<span class="fc" id="L15">  List&lt;Map&lt;String,Object&gt;&gt; assignmentScopes(Object... args){return db.queryForList(&quot;SELECT role_id roleId,scope_type scope,COALESCE(company_id,(SELECT company_id FROM departments WHERE id=department_id)) companyId,department_id departmentId FROM management_scopes WHERE user_id=? ORDER BY id&quot;,args);}</span>
+<span class="fc" id="L16">  Integer activeUserCount(Object... args){return db.queryForObject(&quot;SELECT count(*) FROM users WHERE id=? AND status='ACTIVE'&quot;,Integer.class,args);}</span>
+<span class="fc" id="L17">  int deleteScopes(Object... args){return db.update(&quot;DELETE FROM management_scopes WHERE user_id=?&quot;,args);}</span>
+<span class="fc" id="L18">  int insertScope(Object... args){return db.update(&quot;INSERT INTO management_scopes(user_id,role_id,scope_type,company_id,department_id) VALUES(?,?,?,?,?)&quot;,args);}</span>
+<span class="fc" id="L19">  List&lt;String&gt; activeRoleCode(Object... args){return db.queryForList(&quot;SELECT code FROM roles WHERE id=? AND enabled=1&quot;,String.class,args);}</span>
+<span class="fc" id="L20">  Integer activeCompanyCount(Object... args){return db.queryForObject(&quot;SELECT count(*) FROM companies WHERE id=? AND enabled=1&quot;,Integer.class,args);}</span>
+<span class="fc" id="L21">  Integer activeDepartmentCount(Object... args){return db.queryForObject(&quot;SELECT count(*) FROM departments WHERE id=? AND company_id=? AND enabled=1&quot;,Integer.class,args);}</span>
+<span class="fc" id="L22">  List&lt;Map&lt;String,Object&gt;&gt; findCompanies(String fragment0,Object... args){return db.queryForList(&quot;SELECT c.id,c.code,c.name,c.enabled FROM companies c WHERE &quot;+fragment0+&quot; ORDER BY c.id&quot;,args);}</span>
+<span class="fc" id="L23">  List&lt;Map&lt;String,Object&gt;&gt; findDepartments(String fragment0,String fragment1,Object... args){return db.queryForList(&quot;SELECT d.id,d.code,d.name,d.company_id companyId,d.enabled,(&quot;+fragment0+&quot;) writable FROM departments d WHERE &quot;+fragment1+&quot; ORDER BY d.id&quot;,args);}</span>
+<span class="fc" id="L24">  int insertCompany(Object... args){return db.update(&quot;INSERT INTO companies(code,name) VALUES(?,?)&quot;,args);}</span>
+<span class="fc" id="L25">  Long companyId(Object... args){return db.queryForObject(&quot;SELECT id FROM companies WHERE code=?&quot;,Long.class,args);}</span>
+<span class="fc" id="L26">  int updateCompany(Object... args){return db.update(&quot;UPDATE companies SET code=COALESCE(?,code),name=COALESCE(?,name) WHERE id=?&quot;,args);}</span>
+<span class="fc" id="L27">  Integer companyCount(Object... args){return db.queryForObject(&quot;SELECT count(*) FROM companies WHERE id=?&quot;,Integer.class,args);}</span>
+<span class="fc" id="L28">  int insertDepartment(Object... args){return db.update(&quot;INSERT INTO departments(company_id,code,name) VALUES(?,?,?)&quot;,args);}</span>
+<span class="fc" id="L29">  Long departmentId(Object... args){return db.queryForObject(&quot;SELECT id FROM departments WHERE code=?&quot;,Long.class,args);}</span>
+<span class="fc" id="L30">  int updateDepartment(Object... args){return db.update(&quot;UPDATE departments SET code=COALESCE(?,code),name=COALESCE(?,name) WHERE id=?&quot;,args);}</span>
+<span class="fc" id="L31">  int recordChange(Object... args){return db.update(&quot;INSERT INTO authorization_changes(operator_id,target_type,target_id,action,detail) VALUES(?,?,?,?,?)&quot;,args);}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

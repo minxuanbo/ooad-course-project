@@ -23,10 +23,10 @@ class ManagementRepository {
   List<Map<String,Object>> findDepartments(String fragment0,String fragment1,Object... args){return db.queryForList("SELECT d.id,d.code,d.name,d.company_id companyId,d.enabled,("+fragment0+") writable FROM departments d WHERE "+fragment1+" ORDER BY d.id",args);}
   int insertCompany(Object... args){return db.update("INSERT INTO companies(code,name) VALUES(?,?)",args);}
   Long companyId(Object... args){return db.queryForObject("SELECT id FROM companies WHERE code=?",Long.class,args);}
-  int updateCompany(Object... args){return db.update("UPDATE companies SET code=?,name=? WHERE id=?",args);}
+  int updateCompany(Object... args){return db.update("UPDATE companies SET code=COALESCE(?,code),name=COALESCE(?,name) WHERE id=?",args);}
   Integer companyCount(Object... args){return db.queryForObject("SELECT count(*) FROM companies WHERE id=?",Integer.class,args);}
   int insertDepartment(Object... args){return db.update("INSERT INTO departments(company_id,code,name) VALUES(?,?,?)",args);}
   Long departmentId(Object... args){return db.queryForObject("SELECT id FROM departments WHERE code=?",Long.class,args);}
-  int updateDepartment(Object... args){return db.update("UPDATE departments SET code=?,name=? WHERE id=?",args);}
+  int updateDepartment(Object... args){return db.update("UPDATE departments SET code=COALESCE(?,code),name=COALESCE(?,name) WHERE id=?",args);}
   int recordChange(Object... args){return db.update("INSERT INTO authorization_changes(operator_id,target_type,target_id,action,detail) VALUES(?,?,?,?,?)",args);}
 }

@@ -8,7 +8,7 @@
 
 == 设计范围与存储约定
 
-系统采用 RBAC0，划分组织人员、业务目录、授权关系、会话、审计和初始化控制领域，共 19 张表。
+系统采用 RBAC0，划分组织人员、业务目录、授权关系、会话、审计领域，共 18 张表。
 MySQL 8.0.16+ / 8.4，InnoDB、utf8mb4_0900_bin。业务标识区分大小写；工号、手机号使用字符串，缺失手机号为 NULL。
 时间采用 UTC DATETIME(3)，预计交接日期采用 DATE；连接指定 UTC，会话隔离级别 READ COMMITTED。
 实体使用 BIGINT 主键，关联使用复合主键。密码使用 BCrypt，会话只存 SHA-256 摘要。
@@ -68,18 +68,18 @@ username、app_code、permission_code 是事件快照；不要求拒绝请求引
 
 == 事务与初始化
 
-schema.sql 创建缺失表。SchemaGuard 补充 departments.manager_user_id → users.id 的循环外键。
-DesignSchemaMigration 验证标识唯一性，维护数据库约束及版本；任何既有结构转换先复制、核对后删除冗余结构，未转换授权不得丢弃。DDL 不具备整体事务回滚能力。
+schema.sql 创建缺失表。DatabaseConstraints 补充 departments.manager_user_id → users.id 的循环外键。
+DatabaseConstraints 在导入前建立登录标识触发器，username、employee_no、phone 共享唯一命名空间；冲突使插入或更新回滚。
 DataInitializer 仅在 users 为空且初始化开关打开时，事务性读取三份 Excel，建立公司、部门、员工、角色和目录；部门表的源父名称仅做输入完整性校验，不建立部门树。
 岗位映射优先项目岗位，再公司领导，再部长／副部长及负责人；业务员工保留普通员工基础角色。
-ManagementBootstrap 用版本标记确保默认管理操作与范围只授予一次；人工调整后的角色不被重新覆盖。
-管理写操作先锁 management_migrations(version=1) 行，再核验当前权限、目标范围和最后平台管理员约束。
+默认管理操作和范围与员工导入在同一事务完成；非空库不重复导入或重新授予权限，保留人工调整。
+管理写操作先锁 roles 中 code=系统管理员的固定行，再核验当前权限、目标范围和最后平台管理员约束。
 角色范围整体替换、角色授权、离职撤权各自原子提交；离职完成同时删除角色、级联范围、停用账号、撤会话、更新交接状态和留痕。
 认证失败审计使用独立事务，避免业务回滚删除失败事件；数据库不可用时不能保证事件持久化。
 
 == 物理数据字典
 
-下列 DDL 是基础结构的完整定义。部门负责人循环外键由 SchemaGuard 补充，登录标识触发器见 link:../../deploy/install-login-constraints.sql[约束定义]。
+下列 DDL 是基础结构的完整定义。部门负责人循环外键由 DatabaseConstraints 补充，登录标识触发器见 link:../../deploy/install-login-constraints.sql[约束定义]。
 
 [source,sql]
 ----
@@ -260,11 +260,7 @@ CREATE TABLE IF NOT EXISTS handovers (
   CHECK (state IN ('HANDOVER','DEPARTED'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
 
--- Schema revision and role-bound management authorization.
-CREATE TABLE IF NOT EXISTS management_migrations (
-  version INT PRIMARY KEY,
-  completed TINYINT NOT NULL DEFAULT 0
-) ENGINE=InnoDB;
+-- Role-bound management authorization.
 CREATE TABLE IF NOT EXISTS role_management_permissions (
   role_id BIGINT NOT NULL,
   permission_code VARCHAR(64) NOT NULL,

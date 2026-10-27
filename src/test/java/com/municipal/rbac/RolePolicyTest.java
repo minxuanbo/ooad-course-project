@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest @ActiveProfiles("test") @Transactional
 class RolePolicyTest {
   @Autowired JdbcTemplate db;
+  @Autowired DataInitializer initializer;
   @Test void sourcePositionsMapWithoutKeywordOverlap(){
     for(String title:List.of("项目经理","项目副经理","项目总工程师"))assertEquals("项目经理",RolePolicy.primary(title,"第一项目部",true));
     for(String title:List.of("部长","副部长","主任","副主任"))assertEquals("部门经理",RolePolicy.primary(title,"办公室",false));
@@ -28,20 +29,12 @@ class RolePolicyTest {
     }
     assertEquals(0,db.queryForObject("SELECT count(*) FROM users u JOIN user_roles ur ON ur.user_id=u.id JOIN roles r ON r.id=ur.role_id WHERE u.position IN ('项目经理','项目副经理','项目总工程师') AND r.code IN ('公司领导','部门经理')",Integer.class));
   }
-  @Test void migrationCorrectsOnlyUneditedImportedRolesAndRunsOnce(){
-    long dept=db.queryForObject("SELECT MIN(id) FROM departments",Long.class);
-    for(String no:List.of("SG999991","SG999992")){
-      db.update("INSERT INTO users(employee_no,username,name,department_id,position,password_hash) VALUES(?,?,?,?,'项目总工程师','unused')",no,no,no,dept);
-      db.update("INSERT INTO user_roles(user_id,role_id) SELECT u.id,r.id FROM users u JOIN roles r WHERE u.username=? AND r.code IN ('普通员工','公司领导','部门经理')",no);
-    }
-    long edited=db.queryForObject("SELECT id FROM users WHERE username='SG999992'",Long.class);
-    db.update("INSERT INTO authorization_changes(target_type,target_id,action) VALUES('USER',?,'SET_ROLES')",edited);
-    db.update("UPDATE management_migrations SET completed=0 WHERE version=2");
+  @Test void existingDatabaseRestartPreservesRevokedPermissionsAndScopes()throws Exception{
     db.update("DELETE FROM management_scopes");
-    new ManagementBootstrap(db).run(null);
-    assertEquals(List.of("普通员工","项目经理"),db.queryForList("SELECT r.code FROM user_roles ur JOIN roles r ON r.id=ur.role_id JOIN users u ON u.id=ur.user_id WHERE u.username='SG999991' ORDER BY r.code",String.class));
-    assertEquals(3,db.queryForObject("SELECT count(*) FROM user_roles WHERE user_id=?",Integer.class,edited));
-    int count=db.queryForObject("SELECT count(*) FROM management_scopes",Integer.class);
-    new ManagementBootstrap(db).run(null);assertEquals(count,db.queryForObject("SELECT count(*) FROM management_scopes",Integer.class));
+    db.update("DELETE FROM role_management_permissions");
+    initializer.run(null);
+    assertEquals(0,db.queryForObject("SELECT count(*) FROM management_scopes",Integer.class));
+    assertEquals(0,db.queryForObject("SELECT count(*) FROM role_management_permissions",Integer.class));
+    assertEquals(0,db.queryForObject("SELECT count(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='management_migrations'",Integer.class));
   }
 }

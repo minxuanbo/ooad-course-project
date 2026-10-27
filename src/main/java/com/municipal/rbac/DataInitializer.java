@@ -14,7 +14,18 @@ class DataInitializer implements ApplicationRunner {
   @Transactional(rollbackFor=Exception.class) void seed() throws Exception {
     seedDepartments(); Map<String,Long> roles=seedRoles(); long admin=insertUser("ADMIN000","admin","系统管理员",null,"总公司",null,"系统管理员",encoder.encode("admin123"));
     db.update("INSERT INTO user_roles(user_id,role_id,granted_by) VALUES(?,?,?)",admin,roles.get("系统管理员"),admin);
-    seedEmployees(roles,admin); resolveManagers(); seedPermissions(roles); System.out.println("RBAC 初始化完成：员工="+count("users")+"，部门="+count("departments")+"，权限="+count("permissions"));
+    seedEmployees(roles,admin); resolveManagers(); seedPermissions(roles); seedManagement(roles); System.out.println("RBAC 初始化完成：员工="+count("users")+"，部门="+count("departments")+"，权限="+count("permissions"));
+  }
+  private void seedManagement(Map<String,Long> roleIds){
+    for(String role:List.of("系统管理员","公司领导","部门经理","项目经理")){
+      var permissions=new LinkedHashSet<>(List.of("user.read","user.roles","role.read","org.read","app.read","handover.start","handover.complete"));
+      if(role.equals("公司领导"))permissions.add("org.write");
+      if(role.equals("系统管理员"))permissions.addAll(ManagementAccess.PERMISSIONS.keySet());
+      for(String permission:permissions)db.update("INSERT IGNORE INTO role_management_permissions(role_id,permission_code) VALUES(?,?)",roleIds.get(role),permission);
+    }
+    db.update("INSERT INTO management_scopes(user_id,role_id,scope_type) SELECT ur.user_id,ur.role_id,'GLOBAL' FROM user_roles ur JOIN roles r ON r.id=ur.role_id JOIN users u ON u.id=ur.user_id WHERE r.code='系统管理员' AND r.enabled=1 AND u.status='ACTIVE'");
+    db.update("INSERT INTO management_scopes(user_id,role_id,scope_type,company_id,department_id) SELECT ur.user_id,ur.role_id,IF(r.code='公司领导','COMPANY','DEPARTMENT'),IF(r.code='公司领导',d.company_id,NULL),IF(r.code='公司领导',NULL,d.id) FROM user_roles ur JOIN roles r ON r.id=ur.role_id JOIN users u ON u.id=ur.user_id JOIN departments d ON d.id=u.department_id WHERE r.code IN ('公司领导','部门经理','项目经理') AND r.enabled=1 AND u.status='ACTIVE'");
+    new ManagementAccess(new ManagementAccessRepository(db)).retainPlatformAdmin();
   }
   private void seedDepartments()throws Exception {
     var employees=ExcelXmlReader.read(source.resolve("市政公司员工信息表.xlsx"));

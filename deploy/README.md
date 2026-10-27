@@ -1,6 +1,6 @@
 # 华为云后端部署
 
-当前 2026-10-27 版本仅更新后端，详见 [本次发布记录](deployment-2026-10-27.md)。现场测试可使用已验证的独立上传目录，见 [现场说明](现场运行JaCoCo.md)。
+当前 2026-10-27 版本仅更新后端，详见 [本次发布记录](deployment-2026-10-27.md)。现场测试使用 Git 克隆目录，见 [现场说明](现场运行JaCoCo.md)。
 
 此配置只新增 `rbac` Stack，不操作现有 `lab` 服务。A 构建和推送镜像，
 C 发布 Stack，B 保存独立 MySQL 数据卷，D 运行后端。
@@ -20,7 +20,7 @@ docker push "$RBAC_BACKEND_IMAGE"
 上下文之外，不进入镜像、不推送 SWR。部署前通过 SSH 将三份文件放入 D 的
 `/opt/course-rbac/source/`，目录与文件分别设为 750、640，属主为容器 UID
 10001。后端只读挂载到 `/app/source`，新库启动自动初始化；数据库已有
-用户时不会重复导入。ManagementBootstrap 另执行一次性角色模型迁移，记录版本完成后不重复赋权；迁移细则与恢复注意事项见本次发布记录。
+用户时不会重复导入。默认管理权限和范围随空库导入在同一事务建立；非空库保留现有授权。
 
 MySQL 使用官方 8.4 镜像，在 A 拉取后推送到组织内独立镜像仓库。
 发布使用镜像摘要，避免可变标签导致不同节点运行不同版本。
@@ -63,9 +63,8 @@ Swarm 不保证 MySQL 先启动。后端初次连接失败时会自动重试启�
 使用 MySQL 逻辑备份并保存到独立位置，禁止把数据库文件或密码提交 Git。
 不要执行全局 prune、删除 lab Stack、重启 Docker 或清理已有数据卷。
 
-## 登录唯一约束与结构迁移
+## 新库初始化约束
 
-首次建库由 DBA 执行 src/main/resources/schema.sql，再执行 deploy/install-login-constraints.sql，之后启动后端。现有库先备份并检查跨用户标识冲突；DBA 安装触发器，应用启动验证／回填统一标识，迁移范围并逐条核对后移除冗余结构。
-生产应用不授予 SUPER，也不修改生产 MySQL 的 log_bin_trust_function_creators。当前两条 users 触发器由 DBA 安装，维护 username、employee_no、phone 的统一唯一性；冲突时语句回滚。
-DesignSchemaMigration 的 DDL 不可整体事务回滚。结构转换失败应停止发布并检查备份与实际完成步骤；不能清数据后强行继续。
-健康检查使用无效令牌访问 /api/me，预期 401；此类请求也按规则形成 UNAUTHENTICATED 日志，可按事件、路径识别。
+首次建库由 DBA 执行 src/main/resources/schema.sql，再执行 deploy/install-login-constraints.sql，之后启动后端。DatabaseConstraints 建立缺失的部门负责人外键，并在触发器不存在时创建触发器；DataInitializer 仅在空库导入 Excel 与默认权限范围。
+生产应用不授予 SUPER，也不修改生产 MySQL 的 log_bin_trust_function_creators。生产两条 users 触发器预先由 DBA 安装，维护 username、employee_no、phone 的统一唯一性；冲突时语句回滚。独立测试数据库允许测试账号创建触发器。
+后端入口是 D 的 http://120.46.86.147:8081/api，C 不发布后端端口。无登录令牌访问 /api/me 预期返回 HTTP 401。

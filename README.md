@@ -9,7 +9,7 @@
 - 应用准入、功能鉴权、角色权限和员工范围配置、精确部门、多范围、最后平台管理员保护、离职交接撤权。
 - 用户／系统／结果／事件／时间过滤、日志游标分页、逻辑归档；记录登录失败、未认证及拒绝请求。
 - 统一 `{code,message,data,requestId}` 响应，稳定业务错误码；Controller、Service、Repository、DTO 分层。
-- 组织采用公司—部门，数据库部门范围仅存部门 ID；完整结构为 19 表、23 外键。
+- 组织采用公司—部门，数据库部门范围仅存部门 ID；完整结构为 18 表、23 外键。
 
 沿用系统管理员、公司领导、部门经理、项目经理、普通员工。部长／副部长使用部门经理，项目经理／项目副经理／项目总工程师使用项目经理，不增加独立审计员。只有系统管理员的 GLOBAL audit.read 可查看／归档全局日志。
 
@@ -41,7 +41,7 @@ npm run dev
 
 完整接口见 [API 设计](docs/课程设计/03-API设计文档.md)。GET /authorization-logs 返回游标页，POST /authorization-logs/archive 按截止时间逻辑归档；归档不会删除或移出数据库。
 
-[最新报告](reports/README.md)：61 项后端测试与六项 100% 结构覆盖率，12 项前端／原型逻辑测试通过。[口试现场操作](deploy/现场运行JaCoCo.md)会启动独立真实 MySQL，自动生成完整 HTML/XML/CSV/exec 报告，不能将测试连接指向业务库。
+[最新报告](reports/README.md)：59 项后端测试与六项 100% 结构覆盖率，13 项前端／原型逻辑测试通过。[口试现场操作](deploy/现场运行JaCoCo.md)会启动独立真实 MySQL，自动生成完整 HTML/XML/CSV/exec 报告，不能将测试连接指向业务库。
 测试包含故障模拟；100% 不代表所有输入、性能或安全无缺陷。历史未采集的认证事件不能事后补造。
 
 ## 交付与边界
@@ -51,4 +51,4 @@ npm run dev
 - [部署说明](deploy/README.md)、[最新上线与备份记录](deploy/deployment-2026-10-27.md)。Excel 只在服务器本地只读挂载，不进入镜像或 SWR。
 
 本平台演示权限判断，不执行业务系统真实 CRUD。HR 持续同步、OA 自动审批、用户全量 CRUD、组织移动、密码重置、外部冷存储、HTTPS 和性能专项验证不在已交付能力内。
-scripts 下历史 SQLite／旧 MySQL 转换工具只面向对应旧结构，不能直接对当前数据库执行；当前初始化与迁移由数据库约束脚本和 DesignSchemaMigration 管理。
+从空 MySQL 数据库启动：schema.sql 建立最终表结构，DatabaseConstraints 建立外键与登录标识约束，DataInitializer 在同一事务导入 Excel 和默认角色范围。非空库不会重新授予默认权限。

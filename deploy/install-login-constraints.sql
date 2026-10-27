@@ -27,6 +27,3 @@ CREATE TRIGGER IF NOT EXISTS users_identifier_update AFTER UPDATE ON users FOR E
   END IF;
 END$$
 DELIMITER ;
-INSERT INTO login_identifiers(identifier,user_id)
-SELECT username,id FROM users UNION SELECT employee_no,id FROM users UNION SELECT phone,id FROM users WHERE phone IS NOT NULL
-ON DUPLICATE KEY UPDATE user_id=IF(login_identifiers.user_id=VALUES(user_id),login_identifiers.user_id,NULL);

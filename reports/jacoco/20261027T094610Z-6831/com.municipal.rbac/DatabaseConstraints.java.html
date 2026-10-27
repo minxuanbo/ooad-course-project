@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DatabaseConstraints.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rbac0</a> &gt; <a href="index.source.html" class="el_package">com.municipal.rbac</a> &gt; <span class="el_source">DatabaseConstraints.java</span></div><h1>DatabaseConstraints.java</h1><pre class="source lang-java linenums">package com.municipal.rbac;
+import org.springframework.boot.*;
+import org.springframework.core.annotation.Order;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Component;
+
+/** Complete fresh-schema constraints before importing employees. */
+@Component @Order(0)
+class DatabaseConstraints implements ApplicationRunner {
+  private final JdbcTemplate db;
+<span class="fc" id="L11">  DatabaseConstraints(JdbcTemplate db){this.db=db;}</span>
+  public void run(ApplicationArguments args){
+<span class="fc bfc" id="L13" title="All 2 branches covered.">    if(db.queryForObject(&quot;SELECT count(*) FROM information_schema.key_column_usage WHERE table_schema=DATABASE() AND table_name='departments' AND column_name='manager_user_id' AND referenced_table_name='users'&quot;,Integer.class)==0)</span>
+<span class="fc" id="L14">      db.execute(&quot;ALTER TABLE departments ADD CONSTRAINT fk_department_manager FOREIGN KEY(manager_user_id) REFERENCES users(id)&quot;);</span>
+<span class="fc" id="L15">    String claims=&quot;INSERT INTO login_identifiers(identifier,user_id) VALUES(NEW.username,NEW.id),(NEW.employee_no,NEW.id) ON DUPLICATE KEY UPDATE user_id=IF(user_id=NEW.id,user_id,NULL); IF NEW.phone IS NOT NULL THEN INSERT INTO login_identifiers(identifier,user_id) VALUES(NEW.phone,NEW.id) ON DUPLICATE KEY UPDATE user_id=IF(user_id=NEW.id,user_id,NULL); END IF;&quot;;</span>
+<span class="fc bfc" id="L16" title="All 2 branches covered.">    if(!trigger(&quot;users_identifier_insert&quot;))db.execute(&quot;CREATE TRIGGER users_identifier_insert AFTER INSERT ON users FOR EACH ROW BEGIN &quot;+claims+&quot; END&quot;);</span>
+<span class="fc bfc" id="L17" title="All 2 branches covered.">    if(!trigger(&quot;users_identifier_update&quot;))db.execute(&quot;CREATE TRIGGER users_identifier_update AFTER UPDATE ON users FOR EACH ROW BEGIN IF NOT(OLD.username&lt;=&gt;NEW.username) OR NOT(OLD.employee_no&lt;=&gt;NEW.employee_no) OR NOT(OLD.phone&lt;=&gt;NEW.phone) THEN DELETE FROM login_identifiers WHERE user_id=NEW.id; &quot;+claims+&quot; END IF; END&quot;);</span>
+<span class="fc" id="L18">  }</span>
+<span class="fc bfc" id="L19" title="All 2 branches covered.">  private boolean trigger(String name){return db.queryForObject(&quot;SELECT count(*) FROM information_schema.triggers WHERE trigger_schema=DATABASE() AND trigger_name=?&quot;,Integer.class,name)&gt;0;}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

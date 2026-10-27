@@ -19,7 +19,7 @@ class ManagementAccessRepository {
   Integer companyPermissionCount(Object... args){return db.queryForObject("SELECT count(*) FROM "+SOURCE+" WHERE g.user_id=? AND mp.permission_code=? AND g.scope_type='COMPANY' AND g.company_id=? AND "+EFFECTIVE,Integer.class,args);}
   Integer scopedUserCount(String fragment0,Object... args){return db.queryForObject("SELECT count(*) FROM users u WHERE u.id=? AND "+fragment0,Integer.class,args);}
   Integer scopedDepartmentCount(String fragment0,Object... args){return db.queryForObject("SELECT count(*) FROM departments d WHERE d.id=? AND "+fragment0,Integer.class,args);}
-  Integer lockAuthorization(Object... args){return db.queryForObject("SELECT version FROM management_migrations WHERE version=1 FOR UPDATE",Integer.class,args);}
+  Integer lockAuthorization(Object... args){return db.queryForObject("SELECT id FROM roles WHERE code='系统管理员' FOR UPDATE",Integer.class,args);}
   List<Long> roleIds(Object... args){return db.queryForList("SELECT role_id FROM user_roles WHERE user_id=?",Long.class,args);}
   int deleteRole(Object... args){return db.update("DELETE FROM user_roles WHERE user_id=? AND role_id=?",args);}
   int insertRole(Object... args){return db.update("INSERT IGNORE INTO user_roles(user_id,role_id,granted_by) SELECT ?,id,? FROM roles WHERE id=?",args);}

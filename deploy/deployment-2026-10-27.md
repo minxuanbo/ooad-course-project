@@ -1,54 +1,49 @@
 # 2026-10-27 后端发布与验收记录
 
-本次仅更新 `rbac_backend`。Vue 与离线原型交付源码，未部署前端；其他 `lab_*` 服务配置逐项比对未变，MySQL 服务未替换或重启。
+仅部署后端；前端更新源码与组织 PATCH 调用，不部署。其他 lab_* 服务配置逐项比对一致，rbac_mysql 未更新或重启。
 
 ## 发布产物
 
-- SWR：`swr.cn-north-4.myhuaweicloud.com/javaee_xmu/rbac-backend:design-20261027`
-- 固定摘要：`sha256:249a69385b2838b797bdffad7ba8607264cb05f2fbee149ada7de30cd3c56493`
-- JAR SHA256：`4ec842f05e1c51071d65361e4a517d1c0a123f66341b4d3e2320a6112aed54a3`
-- 报告：`reports/jacoco/20261027T043315Z-21344/`，61 项测试、六项 100% 门槛通过。
-- 72 个发布 class 文件与报告字节码逐一一致；JaCoCo 统计其中 69 个有可执行代码的类。D 的 JAR 与构建产物一致。
-- Excel 未进入构建上下文、JAR 或 SWR，仍在 D `/opt/course-rbac/source` 只读挂载到 `/app/source`。
+- SWR 标签：`swr.cn-north-4.myhuaweicloud.com/javaee_xmu/rbac-backend:fresh-20261027`
+- 固定摘要：`sha256:ce54fee2bbcb69adae179dafa27866d56dfeea5555e3b822fbf127eab82741ed`
+- JAR SHA256：`cb113dbaea4705d22deac1ef9ae1295938648b9e694fad551cde89d117ac75af`
+- 报告：`reports/jacoco/20261027T094610Z-6831/`；59 项后端测试、13 个测试类，失败／错误／跳过为 0。
+- 六项 JaCoCo 100%，71 个发布 class 文件与报告一致，68 个有可执行代码的类计入覆盖率；D 实际 JAR 摘要与构建产物一致。
+- Excel 不在镜像中，D `/opt/course-rbac/source` 只读挂载到 `/app/source`。
 
-## 数据库执行
+## API 与初始化
 
-先完成数据库／服务配置备份并校验，再由 DBA 安装登录唯一性触发器。生产应用未获得 SUPER 权限，未开启生产 MySQL 的 log_bin_trust_function_creators。
-预检查确认用户名／工号／手机号跨员工冲突数为 0。旧 management_grants 的 11 条 GLOBAL 存档全部由当前角色操作与范围承接，逐条核对通过后移除旧表。
-启动迁移规范化角色范围、移除 parent_id、补齐日志列及索引，完成版本 3。DDL 不具备整体事务回滚能力；此前先备份的步骤不可省略。
+公司、部门局部更新使用 PATCH，code/name 至少提供一个，省略字段保持原值；显式 null、空白、超长或其他字段拒绝。角色、权限与范围集合保持 PUT 整体替换。
+空库创建最终结构，建立登录触发器和循环外键，然后在同一事务内导入 Excel、默认角色管理操作及员工范围。非空库不重复导入，也不恢复人工撤销的授权。
+历史转换代码和工具已删除，管理写事务锁定固定的系统管理员角色行。
 
-| 项目 | 部署前 | 验收后 |
+## 线上操作与核对
+
+更新前校验数据库及服务配置快照；发布成功后移除不再使用的 management_migrations 状态表（3 条基础设施记录），没有删除业务记录。新库本身不创建该表。
+
+| 项目 | 发布前 | 验收完成后 |
 | --- | ---: | ---: |
 | users | 10007 | 10007 |
 | user_roles | 10301 | 10301 |
 | role_permissions | 3916 | 3916 |
 | handovers | 2 | 2 |
 | role_management_permissions | 33 | 33 |
-| 角色范围 | 301 | 301（management_scopes） |
-| 登录标识登记 | 无 | 20008，核对无遗漏 |
-| 物理表／外键 | — | 19 表／23 外键，与 ER 图一致 |
+| management_scopes | 301 | 301 |
+| login_identifiers | 20008 | 20008 |
 
-范围 GLOBAL 1、COMPANY 64、DEPARTMENT 236；部门范围中冗余 company_id 数为 0。旧 user_role_scopes、management_grants 与 departments.parent_id 均已移除。
-既有日志不能补造当时没有采集的登录失败或未认证事件；历史记录的新增 event_type 默认值为 AUTHORIZATION，可结合原 permission_code 辨认旧准入记录，新请求使用明确事件类型。
+最终现用表 18 张、物理外键 23 个，与 ER 图一致；登录标识无遗漏。生产未授予 SUPER 或修改 log_bin_trust_function_creators。
 
-## 线上验收
+## 验收
 
-Swarm 后端 1/1，D 容器 healthy，公网 `http://120.46.86.147:8081/api` 提供统一 JSON API。
-验证响应结构及请求号、401／404／405、登录失败和未认证留痕、过滤查询、游标不重复、不包含查询后新增事件、无效游标拒绝。
-归档接口使用 `1970-01-01T00:00:00Z` 验证零命中请求；没有批量归档真实历史日志。有命中的批次、幂等及时间边界在独立测试库验证。
-既有专用演示账号验证公司范围、精确部门、多范围、跨公司空结果、局部提权拒绝、日志限制、同会话撤权，结束恢复原角色与范围并退出会话。未修改真实员工或共享角色定义。
+Swarm 后端 1/1，D 容器 healthy。入口为 `http://120.46.86.147:8081/api`，端口采用 host 发布；C 管理节点不是 API 入口。未携带令牌访问 /api/me 返回 HTTP 401，请先登录。
+公网验证公司／部门 PATCH（提交原名称，不改变真实资料）、省略字段保留、PUT 返回 405、非法字段返回 400；真实字段变更与失败回滚在隔离测试库验证。
+同时验证统一响应、401/404/405、失败登录与匿名审计、过滤游标、无效游标拒绝、零命中归档。归档使用 1970 年截止时间，不归档真实历史。
+专用演示账号验证公司／部门／多范围、跨范围拒绝、平台审计限制和同会话撤权，结束恢复原角色范围并退出测试会话。
+前端 13 项逻辑测试和 Vue 构建通过；原型模拟 DOM 验证通过，未宣称真实浏览器端到端验收。
 
-## 最新备份与恢复边界
+## 最新备份与复现
 
-验收后重新保存并核对当前状态，仅保留：
-
-- B：`/root/rbac-backups/current-20261027/`，含 `current.sql.gz`、`current.sha256`、数量与结构核对摘要。
-- C：`/root/rbac-backups/current-20261027/`，含后端／MySQL 服务配置、镜像环境文件、服务清单及 SHA256 清单。
-
-旧 `current-20261025` 和本次部署前临时备份已在最新快照验证后按要求清理。最新快照可恢复当前版本，不能据此回退旧数据库结构；不要单独回滚到依赖旧表或旧字段的后端镜像。
-备份为项目数据库逻辑备份及服务配置快照，仍依赖现有 Docker secrets、Excel 和镜像；不是全机灾备。本次执行 gzip／摘要／结构检查，未进行整机恢复演练。私有备份与凭据不提交 Git。
-
-## 复现与提交材料
-
-A 的 `/root/rbac-design-20261027` 保存本次实际送测源码；[现场说明](现场运行JaCoCo.md)提供可直接执行命令。构建工具镜像提供依赖，测试每次重新编译当前源码并创建独立 MySQL。
-本地仅保留最新完整 [JaCoCo 报告及 ZIP](../reports/README.md)，包含执行数据、源码页面、XML/CSV、资源、测试摘要、执行元数据与源码／字节码清单。
+B 与 C 最新快照均位于 `/root/rbac-backups/current-fresh-20261027/`，分别保存数据库压缩备份和服务配置／镜像环境文件，已检查 gzip 与 SHA256；未做完整恢复演练。旧快照在最新快照校验后清理。
+最新数据库不含历史状态表，不能单独回滚到依赖该表的旧应用；恢复需要匹配的数据库、镜像、现有 secrets 和 Excel。私有备份和凭据不提交 Git。
+现场统一进入 A 的 `/root/ooad-course-project`，拉取 Gitee 并使用[现场命令](现场运行JaCoCo.md)。本次实际送测目录为 `/root/rbac-fresh-20261027`。
+[最新完整报告与 ZIP](../reports/README.md)包含 HTML、源码页、资源、XML、CSV、exec、测试摘要、执行元数据和源码／字节码 SHA256 清单，仅保留这一版。

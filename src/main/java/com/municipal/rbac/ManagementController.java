@@ -20,10 +20,10 @@ class ManagementController {
   Responses.Organizations organizations(@RequestHeader("Authorization")String h) { return service.organizations(h); }
   @PostMapping("/organizations/companies")
   void createCompany(@RequestHeader("Authorization")String h,@RequestBody Organization body) { service.createCompany(h,body); }
-  @PutMapping("/organizations/companies/{id}")
-  void renameCompany(@RequestHeader("Authorization")String h,@PathVariable long id,@RequestBody Organization body) { service.renameCompany(h,id,body); }
+  @PatchMapping("/organizations/companies/{id}")
+  void renameCompany(@RequestHeader("Authorization")String h,@PathVariable long id,@RequestBody OrganizationPatch body) { service.renameCompany(h,id,body); }
   @PostMapping("/organizations/departments")
   void createDepartment(@RequestHeader("Authorization")String h,@RequestBody Organization body) { service.createDepartment(h,body); }
-  @PutMapping("/organizations/departments/{id}")
-  void renameDepartment(@RequestHeader("Authorization")String h,@PathVariable long id,@RequestBody Organization body) { service.renameDepartment(h,id,body); }
+  @PatchMapping("/organizations/departments/{id}")
+  void renameDepartment(@RequestHeader("Authorization")String h,@PathVariable long id,@RequestBody OrganizationPatch body) { service.renameDepartment(h,id,body); }
 }

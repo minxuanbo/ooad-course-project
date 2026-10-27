@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest @ActiveProfiles("test") @AutoConfigureMockMvc @Transactional
 class ManagementScopeTest {
+  @Autowired DataInitializer initializer;
   @Autowired JdbcTemplate db; @Autowired MockMvc mvc; @Autowired ObjectMapper json; @Autowired AuthService auth;
   String admin,local;long uid,c1,c2,d1,d2,child,other,a,b,nested;
   @BeforeEach void setup()throws Exception{
@@ -36,7 +37,25 @@ class ManagementScopeTest {
   Map<String,Object> assignment(List<Long> roles,List<?> scopes){return Map.of("roleIds",roles,"scopes",scopes);}
   JsonNode getJson(String path,String token)throws Exception{return json.readTree(mvc.perform(get("/api"+path).header("Authorization",token)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString()).get("data");}
   ResultActions putJson(String path,String token,Object body)throws Exception{return mvc.perform(put("/api"+path).header("Authorization",token).contentType("application/json").content(json.writeValueAsString(body)));}
+  ResultActions patchJson(String path,String token,Object body)throws Exception{return mvc.perform(patch("/api"+path).header("Authorization",token).contentType("application/json").content(json.writeValueAsString(body)));}
   ResultActions postJson(String path,String token,Object body)throws Exception{return mvc.perform(post("/api"+path).header("Authorization",token).contentType("application/json").content(json.writeValueAsString(body)));}
+  @Test void patchChangesOnlySuppliedFieldsAndRejectsInvalidFields()throws Exception{
+    for(String kind:List.of("companies","departments")){
+      long id=kind.equals("companies")?c1:d1;
+      String path="/organizations/"+kind+"/"+id;
+      String code=db.queryForObject("SELECT code FROM "+kind+" WHERE id=?",String.class,id);
+      patchJson(path,admin,Map.of("name","PATCH名称"+kind)).andExpect(status().isOk());
+      assertEquals(code,db.queryForObject("SELECT code FROM "+kind+" WHERE id=?",String.class,id));
+      patchJson(path,admin,Map.of("code","patch-"+kind)).andExpect(status().isOk());
+      assertEquals("PATCH名称"+kind,db.queryForObject("SELECT name FROM "+kind+" WHERE id=?",String.class,id));
+      patchJson(path,admin,Map.of("code","patch-"+kind)).andExpect(status().isOk());
+      putJson(path,admin,Map.of("code","ignored","name","ignored")).andExpect(status().isMethodNotAllowed());
+      for(var body:List.of(Map.of(),Map.of("name"," "),Map.of("code"," "),Map.of("code","x".repeat(101)),Map.of("name","x".repeat(192)),Map.of("companyId",c1),Map.of("enabled",0),Collections.singletonMap("name",null))){
+        patchJson(path,admin,body).andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_ORGANIZATION_PATCH"));
+      }
+      assertEquals("PATCH名称"+kind,db.queryForObject("SELECT name FROM "+kind+" WHERE id=?",String.class,id));
+    }
+  }
   @Test void rolePermissionAndScopeCannotCrossMultiply()throws Exception{
     permissions("部门经理","user.read","role.read");permissions("项目经理","user.roles");
     bind(uid,"部门经理","COMPANY",c1,null);bind(uid,"项目经理","COMPANY",c2,null);
@@ -110,7 +129,7 @@ class ManagementScopeTest {
     for(Object body:List.of(Map.of(),Map.of("roleIds",List.of()),Map.of("scopes",List.of()),assignment(List.of(deptRole),Collections.nCopies(201,scopes.get(0))),assignment(Arrays.asList((Long)null),List.of()),assignment(List.of(-1L),List.of())))putJson(path,admin,body).andExpect(status().isBadRequest());
     putJson("/users/0/role-assignments",admin,assignment(List.of(deptRole),scopes)).andExpect(status().isBadRequest());
     putJson(path,admin,assignment(List.of(deptRole),List.of(scopes.get(0),scopes.get(0)))).andExpect(status().isOk());assertEquals(1,getJson(path,admin).get("scopes").size());
-    new ManagementBootstrap(db).run(null);assertEquals(1,getJson(path,admin).get("scopes").size());
+    initializer.run(null);assertEquals(1,getJson(path,admin).get("scopes").size());
     putJson("/users/"+uid+"/roles",admin,Map.of("ids",List.of(deptRole,role("普通员工")))).andExpect(status().isOk());assertEquals(1,getJson(path,admin).get("scopes").size());
     putJson("/users/"+uid+"/roles",admin,Map.of("ids",List.of(role("普通员工")))).andExpect(status().isOk());assertEquals(0,getJson(path,admin).get("scopes").size());
     putJson(path,admin,assignment(List.of(system),List.of(g(system,"GLOBAL",null,null)))).andExpect(status().isOk());assertTrue(auth.management().global(uid,"management.grant"));
@@ -119,20 +138,20 @@ class ManagementScopeTest {
   @Test void organizationsAreScopedAndCompanyCanCreateDepartments()throws Exception{
     permissions("部门经理","org.read","org.write");bind(uid,"部门经理","DEPARTMENT",c1,d1);
     assertEquals(1,getJson("/organizations",local).get("companies").size());assertEquals(1,getJson("/organizations",local).get("departments").size());
-    putJson("/organizations/departments/"+d1,local,Map.of("code","scope-renamed","name","改名")).andExpect(status().isOk());
-    putJson("/organizations/departments/"+child,local,Map.of("code","x","name","x")).andExpect(status().isForbidden());
-    for(String key:List.of("parentId","companyId"))putJson("/organizations/departments/"+d1,local,Map.of("code","x","name","x",key,c1)).andExpect(status().isBadRequest());
+    patchJson("/organizations/departments/"+d1,local,Map.of("code","scope-renamed","name","改名")).andExpect(status().isOk());
+    patchJson("/organizations/departments/"+child,local,Map.of("code","x","name","x")).andExpect(status().isForbidden());
+    for(String key:List.of("parentId","companyId"))patchJson("/organizations/departments/"+d1,local,Map.of("code","x","name","x",key,c1)).andExpect(status().isBadRequest());
     postJson("/organizations/departments",local,Map.of("code","scope-new","name","新增", "companyId",c1)).andExpect(status().isForbidden());
     bind(uid,"部门经理","COMPANY",c1,null);
     postJson("/organizations/departments",local,Map.of("code","scope-new","name","新增", "companyId",c1)).andExpect(status().isOk());
     postJson("/organizations/departments",local,Map.of("code","scope-new-root","name","新增根", "companyId",c1)).andExpect(status().isOk());
     postJson("/organizations/departments",local,Map.of("code","x","name","x", "companyId",c2)).andExpect(status().isForbidden());
     postJson("/organizations/companies",local,Map.of("code","x","name","x")).andExpect(status().isForbidden());
-    putJson("/organizations/companies/"+c1,local,Map.of("code","x","name","x")).andExpect(status().isForbidden());
+    patchJson("/organizations/companies/"+c1,local,Map.of("code","x","name","x")).andExpect(status().isForbidden());
     assertTrue(getJson("/organizations",admin).get("companies").size()>1);
     postJson("/organizations/companies",admin,Map.of("code","scope-new-co","name","新公司")).andExpect(status().isOk());
-    putJson("/organizations/companies/"+c2,admin,Map.of("code","scope-updated","name","改名公司")).andExpect(status().isOk());
-    putJson("/organizations/companies/0",admin,Map.of("code","missing","name","missing")).andExpect(status().isBadRequest());
+    patchJson("/organizations/companies/"+c2,admin,Map.of("code","scope-updated","name","改名公司")).andExpect(status().isOk());
+    patchJson("/organizations/companies/0",admin,Map.of("code","missing","name","missing")).andExpect(status().isBadRequest());
     postJson("/organizations/departments",admin,Map.of("code","x","name","x", "companyId",c2,"parentId",d1)).andExpect(status().isBadRequest());
     postJson("/organizations/departments",admin,Map.of("code","x","name","x")).andExpect(status().isBadRequest());
     postJson("/organizations/departments",admin,Map.of("code","x","name","x","companyId",-1)).andExpect(status().isBadRequest());

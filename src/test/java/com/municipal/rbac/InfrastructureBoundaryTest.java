@@ -12,15 +12,18 @@ import static org.mockito.Mockito.*;
 
 class InfrastructureBoundaryTest {
   @TempDir Path dir;
-  @Test void schemaGuardRejectsLegacyAndOnlyAddsMissingForeignKey(){
+  @Test void constraintsAreCreatedOnlyWhenMissing(){
     JdbcTemplate db=mock(JdbcTemplate.class);
+    when(db.queryForObject(anyString(),eq(Integer.class))).thenReturn(0);
+    when(db.queryForObject(anyString(),eq(Integer.class),anyString())).thenReturn(0);
+    new DatabaseConstraints(db).run(null);
+    verify(db).execute(contains("fk_department_manager"));
+    verify(db).execute(startsWith("CREATE TRIGGER users_identifier_insert"));
+    verify(db).execute(startsWith("CREATE TRIGGER users_identifier_update"));
+    reset(db);
     when(db.queryForObject(anyString(),eq(Integer.class))).thenReturn(1);
-    assertThrows(IllegalStateException.class,()->new SchemaGuard(db).run(null));
-    verify(db,never()).execute(anyString());
-    reset(db);when(db.queryForObject(anyString(),eq(Integer.class))).thenReturn(0,1);
-    new SchemaGuard(db).run(null);verify(db,never()).execute(anyString());
-    reset(db);when(db.queryForObject(anyString(),eq(Integer.class))).thenReturn(0,0);
-    new SchemaGuard(db).run(null);verify(db).execute(contains("fk_department_manager"));
+    when(db.queryForObject(anyString(),eq(Integer.class),anyString())).thenReturn(1);
+    new DatabaseConstraints(db).run(null);verify(db,never()).execute(anyString());
   }
   @Test void initializationDisabledOrExistingUsersNeverReadFiles()throws Exception{
     JdbcTemplate db=mock(JdbcTemplate.class);

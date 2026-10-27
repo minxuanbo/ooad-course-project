@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ManagementAccessRepository.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rbac0</a> &gt; <a href="index.source.html" class="el_package">com.municipal.rbac</a> &gt; <span class="el_source">ManagementAccessRepository.java</span></div><h1>ManagementAccessRepository.java</h1><pre class="source lang-java linenums">package com.municipal.rbac;
+import java.util.*;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
+@Repository
+class ManagementAccessRepository {
+  private final JdbcTemplate db;
+<span class="fc" id="L8">  ManagementAccessRepository(JdbcTemplate db){this.db=db;}</span>
+  static final String SOURCE=&quot;management_scopes g JOIN user_roles ur ON ur.user_id=g.user_id AND ur.role_id=g.role_id JOIN users actor ON actor.id=g.user_id JOIN roles r ON r.id=g.role_id JOIN role_management_permissions mp ON mp.role_id=r.id&quot;;
+  static final String EFFECTIVE=&quot;actor.status='ACTIVE' AND r.enabled=1 AND (mp.permission_code NOT IN ('audit.read','role.permissions','management.grant') OR (r.code='系统管理员' AND g.scope_type='GLOBAL'))&quot;;
+  String scope(long uid,String permission,String department){
+<span class="fc" id="L12">    return &quot;EXISTS(SELECT 1 FROM &quot;+SOURCE+&quot; WHERE g.user_id=&quot;+uid+&quot; AND &quot;+EFFECTIVE+</span>
+      &quot; AND mp.permission_code='&quot;+permission+&quot;' AND (g.scope_type='GLOBAL' OR (g.scope_type='COMPANY' AND g.company_id=(SELECT sd.company_id FROM departments sd WHERE sd.id=&quot;+department+&quot;)) OR (g.scope_type='DEPARTMENT' AND g.department_id=&quot;+department+&quot;)))&quot;;
+  }
+
+<span class="fc" id="L16">  List&lt;Map&lt;String,Object&gt;&gt; effectiveGrants(Object... args){return db.queryForList(&quot;SELECT g.id,g.role_id roleId,r.name roleName,mp.permission_code permission,g.scope_type scope,COALESCE(g.company_id,d.company_id) companyId,g.department_id departmentId,c.name company,d.name department FROM &quot;+SOURCE+&quot; LEFT JOIN departments d ON d.id=g.department_id LEFT JOIN companies c ON c.id=COALESCE(g.company_id,d.company_id) WHERE g.user_id=? AND &quot;+EFFECTIVE+&quot; ORDER BY g.id,mp.permission_code&quot;,args);}</span>
+<span class="fc" id="L17">  Integer permissionCount(Object... args){return db.queryForObject(&quot;SELECT count(*) FROM &quot;+SOURCE+&quot; WHERE g.user_id=? AND mp.permission_code=? AND &quot;+EFFECTIVE,Integer.class,args);}</span>
+<span class="fc" id="L18">  Integer globalPermissionCount(Object... args){return db.queryForObject(&quot;SELECT count(*) FROM &quot;+SOURCE+&quot; WHERE g.user_id=? AND mp.permission_code=? AND g.scope_type='GLOBAL' AND &quot;+EFFECTIVE,Integer.class,args);}</span>
+<span class="fc" id="L19">  Integer companyPermissionCount(Object... args){return db.queryForObject(&quot;SELECT count(*) FROM &quot;+SOURCE+&quot; WHERE g.user_id=? AND mp.permission_code=? AND g.scope_type='COMPANY' AND g.company_id=? AND &quot;+EFFECTIVE,Integer.class,args);}</span>
+<span class="fc" id="L20">  Integer scopedUserCount(String fragment0,Object... args){return db.queryForObject(&quot;SELECT count(*) FROM users u WHERE u.id=? AND &quot;+fragment0,Integer.class,args);}</span>
+<span class="fc" id="L21">  Integer scopedDepartmentCount(String fragment0,Object... args){return db.queryForObject(&quot;SELECT count(*) FROM departments d WHERE d.id=? AND &quot;+fragment0,Integer.class,args);}</span>
+<span class="fc" id="L22">  Integer lockAuthorization(Object... args){return db.queryForObject(&quot;SELECT id FROM roles WHERE code='系统管理员' FOR UPDATE&quot;,Integer.class,args);}</span>
+<span class="fc" id="L23">  List&lt;Long&gt; roleIds(Object... args){return db.queryForList(&quot;SELECT role_id FROM user_roles WHERE user_id=?&quot;,Long.class,args);}</span>
+<span class="fc" id="L24">  int deleteRole(Object... args){return db.update(&quot;DELETE FROM user_roles WHERE user_id=? AND role_id=?&quot;,args);}</span>
+<span class="fc" id="L25">  int insertRole(Object... args){return db.update(&quot;INSERT IGNORE INTO user_roles(user_id,role_id,granted_by) SELECT ?,id,? FROM roles WHERE id=?&quot;,args);}</span>
+<span class="fc" id="L26">  Integer platformAdminCount(Object... args){return db.queryForObject(&quot;SELECT count(*) FROM &quot;+SOURCE+&quot; WHERE mp.permission_code='management.grant' AND g.scope_type='GLOBAL' AND &quot;+EFFECTIVE,Integer.class,args);}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

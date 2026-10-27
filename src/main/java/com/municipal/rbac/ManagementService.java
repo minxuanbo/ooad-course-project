@@ -79,10 +79,10 @@ class ManagementService {
     audit(actor,"COMPANY",repository.companyId(body.code()),"CREATE_COMPANY",body.name());
   }
    @Transactional
-  public void renameCompany(String h,long id,Organization body){
-    access.lock();long actor=operator(h);access.requireGlobal(actor,"org.write");validateOrganization(body);
+  public void renameCompany(String h,long id,OrganizationPatch patch){
+    access.lock();long actor=operator(h);access.requireGlobal(actor,"org.write");var body=validatePatch(patch);
     if(repository.updateCompany(body.code(),body.name(),id)==0)throw ApiException.bad("COMPANY_NOT_FOUND","公司不存在");
-    audit(actor,"COMPANY",id,"UPDATE_COMPANY",body.name());
+    audit(actor,"COMPANY",id,"UPDATE_COMPANY",patch.fields().toString());
   }
    @Transactional
   public void createDepartment(String h,Organization body){
@@ -95,11 +95,20 @@ class ManagementService {
     audit(actor,"DEPARTMENT",repository.departmentId(body.code()),"CREATE_DEPARTMENT",body.name());
   }
    @Transactional
-  public void renameDepartment(String h,long id,Organization body){
-    access.lock();long actor=operator(h);access.department(actor,"org.write",id);validateOrganization(body);
-    if(body.companyId()!=null || body.parentId()!=null)throw ApiException.bad("此接口仅修改名称与编码，不允许移动组织");
+  public void renameDepartment(String h,long id,OrganizationPatch patch){
+    access.lock();long actor=operator(h);access.department(actor,"org.write",id);var body=validatePatch(patch);
     repository.updateDepartment(body.code(),body.name(),id);
-    audit(actor,"DEPARTMENT",id,"UPDATE_DEPARTMENT",body.name());
+    audit(actor,"DEPARTMENT",id,"UPDATE_DEPARTMENT",patch.fields().toString());
+  }
+  private Organization validatePatch(OrganizationPatch patch){
+    var fields=patch.fields();
+    if(fields.isEmpty())throw ApiException.bad("INVALID_ORGANIZATION_PATCH","请提供编码或名称");
+    for(var entry:fields.entrySet()){
+      String key=entry.getKey(),value=entry.getValue();
+      if(!Set.of("code","name").contains(key))throw ApiException.bad("INVALID_ORGANIZATION_PATCH","仅允许修改编码和名称");
+      if(value==null || value.isBlank() || value.length()>(key.equals("code")?100:191))throw ApiException.bad("INVALID_ORGANIZATION_PATCH","编码或名称无效");
+    }
+    return new Organization(fields.get("code"),fields.get("name"),null,null);
   }
   private void validateOrganization(Organization body){
     if(body.code()==null || body.code().isBlank() || body.code().length()>100 || body.name()==null || body.name().isBlank() || body.name().length()>191)throw ApiException.bad("请填写有效的组织编码与名称");

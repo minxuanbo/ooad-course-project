@@ -13,5 +13,9 @@ public interface Requests {
   public record Scope(Long roleId,String scope,Long companyId,Long departmentId){}
   public record Assignments(List<Long> roleIds,List<Scope> scopes){}
   public record Permissions(List<String> permissions){}
+  public record OrganizationPatch(Map<String,String> fields){
+    @com.fasterxml.jackson.annotation.JsonCreator(mode=com.fasterxml.jackson.annotation.JsonCreator.Mode.DELEGATING)
+    public OrganizationPatch {}
+  }
   public record Organization(String code,String name,Long companyId,Long parentId){}
 }
