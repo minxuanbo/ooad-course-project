@@ -1,6 +1,6 @@
 import fs from 'node:fs'; import vm from 'node:vm'; import assert from 'node:assert/strict'; import { fileURLToPath } from 'node:url'; import test from 'node:test';
 test('offline prototype uses one shell and enforces management views and scopes',()=>{
-const dir=fileURLToPath(new URL('../../docs/原型/',import.meta.url));
+const dir=fileURLToPath(new URL('../../docs/legacy/原型/',import.meta.url));
 const html=fs.readFileSync(dir+'06-界面原型.html','utf8');
 const nodes=new Map();
 function node(id){if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',className:'',open:false,close(){this.open=false},showModal(){this.open=true}});return nodes.get(id)}

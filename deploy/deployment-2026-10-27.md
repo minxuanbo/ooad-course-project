@@ -46,4 +46,4 @@ Swarm 后端 1/1，D 容器 healthy。入口为 `http://120.46.86.147:8081/api`�
 B 与 C 最新快照均位于 `/root/rbac-backups/current-fresh-20261027/`，分别保存数据库压缩备份和服务配置／镜像环境文件，已检查 gzip 与 SHA256；未做完整恢复演练。旧快照在最新快照校验后清理。
 最新数据库不含历史状态表，不能单独回滚到依赖该表的旧应用；恢复需要匹配的数据库、镜像、现有 secrets 和 Excel。私有备份和凭据不提交 Git。
 现场统一进入 A 的 `/root/ooad-course-project`，拉取 Gitee 并使用[现场命令](现场运行JaCoCo.md)。本次实际送测目录为 `/root/rbac-fresh-20261027`。
-[最新完整报告与 ZIP](../reports/README.md)包含 HTML、源码页、资源、XML、CSV、exec、测试摘要、执行元数据和源码／字节码 SHA256 清单，仅保留这一版。
+历史报告的 HTML、源码页、XML、CSV、exec、摘要和 ZIP 已移出源码目录；[差异参考入口](../docs/legacy/README.md)说明追溯和重跑方法。
