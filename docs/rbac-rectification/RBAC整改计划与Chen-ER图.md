@@ -156,6 +156,24 @@ flowchart LR
 - 不增加 is_admin、角色父节点、直接用户授权或独立管理范围表。
 - Java 中系统实体命名为 ApplicationSystem，避免与 System 混淆。
 
+### 2.5 T01 模型核对与 T02 映射提案
+
+本节及下文 T01 核对以代码基线 `e737579` 为依据，由 T01 子 agent 编制；小组确认状态见 [5.3](#53-t01-评审记录与未决项)。这里明确落库约束，不增加正式 API 或第七个核心实体。
+
+| 对象 | T02 需要实现并验证的约束 | 依据归属 |
+| --- | --- | --- |
+| 用户、角色、权限 | 用户可无角色或多角色；角色可无用户或无权限；用户不直接获权，部门不直接授予角色/权限 | 用户—角色、角色—权限及管理员来源是纪要要求；无角色等参与约束沿用方案 |
+| 部门 | `parent_id` 可空，其他父引用必须存在；禁止自指、循环；用户 `department_id` 非空。公司改为部门节点，不保留 `company_id` 和部门负责人授权规则 | 层级部门是纪要要求；每人一个部门是方案建议 |
+| 应用系统 | `ApplicationSystem` 对应 `systems`；权限和 API 各有一个非空 `system_id`。系统停用使该系统授权失效，不使有效账号丧失登录资格 | 双系统方向是纪要要求；具体表名与有效性规则是方案建议 |
+| 权限树 | `type` 限定 MENU/BUTTON；父节点可空，父子必须同系统；禁止自指、循环，BUTTON 不得有子节点；`(system_id, code)` 唯一 | 菜单/按钮树是纪要要求；约束细节是方案建议 |
+| API 与映射 | `(system_id, http_method, path_template)` 唯一；`permission_apis` 两端必须同系统；同 API 可被多个权限引用。父菜单或补出的导航祖先不隐含子 API 授权 | API 独立且与权限关联是纪要要求；M:N 与匹配方案是方案建议 |
+| 三组 M:N | `user_roles`、`role_permissions`、`permission_apis` 使用双外键联合主键，重复关联不能产生第二条记录；必要外键必须真实存在 | 前两组 M:N 是纪要要求；第三组及物理结构是方案建议 |
+| 员工与登录支撑 | 保留 `employee_no`、`username`、`password_hash`，工号和用户名分别唯一；电话、岗位作为资料。明确 `ACTIVE→enabled=true`、`DISABLED→false`；未知状态不默认启用 | 必要字段沿用原工程；有效账号规则来自用户；转换在 T03 核对 |
+
+六个实体使用 `id` 主键；`roles.code`、`departments.code`、`systems.code` 各自唯一。外键和联合唯一性在 MySQL 验证；树循环、BUTTON 子节点和同系统关系在领域写入入口验证，并验证拒绝后无部分写入。不要把 Java 集合去重当作数据库唯一约束，也不要只依靠数据库自引用外键防循环。
+
+部门模型允许表达多个根，不在 T02 擅自加入“全系统只能一个根”的约束。根部门成员的跨根维护范围另见未决项 G2；T02 的样例树不构成这项授权决策。登录别名、具体管理能力编码和路由仍由相应原型/契约票确认，不妨碍先核对上述实体映射。
+
 ## 3. 授权规则与接口讨论基线
 
 ### 3.1 授权规则
@@ -199,6 +217,26 @@ flowchart LR
 - 人员以原始数据导入为主，不增加注册、找回密码流程。角色、权限、系统和 API 默认通过停用处理，不增加批量物理删除流程。
 - 移除独立管理权限、管理范围、交接、业务目录演示和审计模块的旧接口及契约。基础认证入口只作运行支撑，不列为 RBAC 新功能。
 
+### 3.3 T01 有效全局管理员与保护边界提案
+
+以下把 3.1 的防护补为可讨论规则，仍是方案建议，不是纪要逐项规定。**有效全局管理员必须是同一个有效用户，位于已确认维护域的根部门，且经启用角色、启用权限、启用 API 及启用系统，实际拥有必要维护能力集合 K。**可汇总本人多个角色的有效能力，不能把不同用户的零散权限拼成一名管理员；计数按不同用户，不能按角色或关联记录计数。
+
+K 的候选能力是：角色定义维护、角色权限配置、人员角色分配、菜单/按钮及 API 映射维护；各操作所需查询能力应随契约核对。系统维护仅在原型确认确有该操作时加入。这里只确定保护目标，不预先发明路由、权限编码或要求实现每个实体的完整 CRUD。T06/T08/T10 应把候选能力落实为经评审的实际操作与映射，三票交叉核对后由 T07/T09/T11 共用同一判定。K 的最终选择见未决项 G1。
+
+拥有某项管理权限可执行该项允许范围内的操作，不要求所有管理人员都拥有整个 K。K 专用于“至少保留一名能继续维护授权的有效用户”防护，不是登录资格，不增加管理员字段或特殊角色名。
+
+| 会改变有效管理员集合的变更 | 必须检查的后果 | 对应票 |
+| --- | --- | --- |
+| 用户停用、用户移出根部门、用户角色替换/解除 | 用户是否仍有效、仍处于允许维护域，并仍拥有 K | T11 |
+| 角色停用、角色权限替换/解除 | 不能只检查用户状态；保留角色名或空角色不等于保留能力 | T09 |
+| 权限停用、API 停用、映射解除或改到其他 API | 必须确认实际维护接口仍可访问；有权限节点但无有效映射不算能力 | T07 |
+| 系统停用或改变所属系统、权限树/部门树调整 | 系统有效性、同系统关系或根部门身份可能变化，相关写入也必须遵守同一保护 | T07；若其他契约纳入树维护则由该切片承担 |
+| 同时撤权、停用或移动不同管理员 | 以事务修改后的完整状态重新判定；并发写入共用稳定的锁定顺序/保护点，失败整体回滚 | T07/T09/T11 |
+
+旧实现 [`ManagementAccessRepository.java`](../../src/main/java/com/municipal/rbac/ManagementAccessRepository.java) 第 10、22、26 行仍依赖“系统管理员”、GLOBAL 和 `management.grant` 计数/锁定；这只能作为重写防护的差异依据，不能直接保留判定。锁不能继续依赖某个可被改名或停用的角色代码。具体锁实现由写切片共同决定并做并发验证，不在 T01 宣称已完成。
+
+部门管理员不得修改有效全局管理员，也不得修改自身授权或所属部门；移动其他人员时原部门和目标部门均须处于本人部门及后代范围。分配角色要比较目标角色的有效权限与操作者本人的有效权限，而不是比较角色名。根部门成员也须有相应实际权限；跨根范围尚未确认时拒绝越界，不能因 `parent_id` 为空而默认放行所有组织。
+
 ## 4. 实施顺序、架构与数据
 
 | 阶段 | 工作 | 完成条件 |
@@ -224,6 +262,37 @@ flowchart LR
 - RBAC 的 API 按评审后实际实现登记，未知课程接口不编造。只登记两个系统名称或保留 system_id，不代表已经满足下一阶段双系统要求；须有明确课程侧受控场景和可复核的授权结果。
 - 旧角色分配、管理权限和范围逐项转换；移除按“系统管理员”等角色名绑定 GLOBAL/COMPANY/DEPARTMENT 范围的旧规则，改为实际管理权限加部门树。不能明确对应的授权先不启用并记录差异，防止扩大权限。
 - 变更权限编码或接口时同步更新初始化和测试。旧前端后续适配经原型确认的新契约；HTTP 验证须在相应接口实现后执行，不能把本次文档复核或旧报告当作验证结果。
+
+### 4.1 T01 工程复用、替换与删除对照
+
+下表均为源码静态核对后的迁移边界，尚未执行删除；行号对应 `e737579`，源码变化后须重新查找。每个切片迁移本次调用和测试，T12 再完成全仓残留检查，不能把仍被其他切片使用的共享实现提前删掉。
+
+| 处理 | 源码证据与现状 | 需要到达的调用、初始化、测试、配置和文档范围 |
+| --- | --- | --- |
+| 复用工程骨架，加入 JPA/AOP | [`pom.xml`](../../pom.xml) 第 4、6、11—15 行为 Java 21、Spring Boot、Web、JDBC、MySQL；[`RbacApplication.java`](../../src/main/java/com/municipal/rbac/RbacApplication.java) 第 6—9 行是既有启动入口 | T02 继续同一 Maven 工程并保留 MySQL；JDBC 在旧调用迁完前保留。AOP 随真实接口切片接入，不为模型测试另建产品工程 |
+| 复用响应与异常处理，拆除审计依赖 | [`ApiResponse.java`](../../src/main/java/com/municipal/rbac/ApiResponse.java) 第 4 行；[`ApiResponseAdvice.java`](../../src/main/java/com/municipal/rbac/ApiResponseAdvice.java) 第 15 行和 [`ApiExceptionHandler.java`](../../src/main/java/com/municipal/rbac/ApiExceptionHandler.java) 第 24—25 行调用 `RequestAuditFilter` | 保留统一外壳、HTTP 状态和安全错误；T12 删除业务审计前把 `requestId`/错误上下文衔接成不落审计库的基础请求上下文，避免响应链随 Filter 删除而断裂 |
+| 复用 Excel 读取，替换初始化策略 | [`ExcelXmlReader.java`](../../src/main/java/com/municipal/rbac/ExcelXmlReader.java) 第 13、30 行处理工作簿及禁用外部实体；[`DataInitializer.java`](../../src/main/java/com/municipal/rbac/DataInitializer.java) 第 14—28、38—53、62—64 行导入旧五类角色/范围/目录，仅核对上级而不保存树关系 | T03 仅导组织人员并核对来源与异常；T05 建最小已评审授权基线；T12 移除旧角色名授予、旧整包目录、默认初始化路径及相关测试假设。三份 Excel 原位保留，权限清单不整包迁入 |
+| 替换组织及用户持久化 | [`schema.sql`](../../src/main/resources/schema.sql) 第 2、9、20 行为 companies、无 parent 的 departments、可空用户部门；[`ManagementService.java`](../../src/main/java/com/municipal/rbac/ManagementService.java) 第 88—95 行拒绝 parentId | T02 建树模型，T03 迁人员；T05/T11 迁查询和受限变更；T12 处理旧公司 CRUD、Requests/Responses 组织字段、`Organizations.vue`、`main.js` 路由、初始化及测试。旧公司/部门 ID 不直接混作新 ID，来源对应由 T03 核对 |
+| 替换双轨授权及旧范围 | [`ManagementAccessRepository.java`](../../src/main/java/com/municipal/rbac/ManagementAccessRepository.java) 第 9—14 行把独立管理权限、GLOBAL/COMPANY/DEPARTMENT 与角色名绑定；[`ManagementController.java`](../../src/main/java/com/municipal/rbac/ManagementController.java) 第 9—18 行提供旧管理权限/范围接口 | T05 统一用户—角色—权限—API 和部门范围；T09/T11 迁角色配置与人员分配。T12 删除 `role_management_permissions`、`management_scopes`、Scope/Assignments DTO、`ManagementGrants.vue`、`RoleManagementEditor.vue` 及其前端调用和测试；不把旧范围静默翻译成更大授权 |
+| 复用分页/搜索行为，替换 SQL 和重复列表 | [`ApplicationService.java`](../../src/main/java/com/municipal/rbac/ApplicationService.java) 第 27—52 行已有两个列表入口；[`ApplicationRepository.java`](../../src/main/java/com/municipal/rbac/ApplicationRepository.java) 第 9—16、29—34 行已有筛选、计数、分页，但依赖旧公司/范围/交接 | T04 先确认唯一列表场景与分页契约，T05 以 JPA 在部门范围内检索、计数和分页；迁同切片 DTO 和测试。`Users.vue`、旧调用和说明由 T12 收口，正式新页面仍暂缓 |
+| 替换业务功能目录和模拟鉴权 | [`schema.sql`](../../src/main/resources/schema.sql) 第 36—86 行为 applications/modules/features/actions/permissions；[`ApiController.java`](../../src/main/java/com/municipal/rbac/ApiController.java) 第 17、43—50 行及 [`ApplicationService.java`](../../src/main/java/com/municipal/rbac/ApplicationService.java) 第 18 行仍靠前端传权限名返回模拟结果 | T06/T08 先做原型/契约；T07/T09 迁菜单/按钮—API 映射及角色授权，T05 起由 AOP 拦真实接口。T12 移除旧目录结构、`Portal.vue`/`System.vue` 调用、旧鉴权演示及测试，不把目录展示判为真实授权完成 |
+| 删除会话表与统一登录标识依赖 | [`AuthRepository.java`](../../src/main/java/com/municipal/rbac/AuthRepository.java) 第 14—17 行读写 `login_identifiers`/`sessions`；[`DatabaseConstraints.java`](../../src/main/java/com/municipal/rbac/DatabaseConstraints.java) 第 12—17 行建旧外键/标识触发器；[`AuthService.java`](../../src/main/java/com/municipal/rbac/AuthService.java) 第 8—23 行依赖数据库会话 | T04/T05 按 4.2 衔接；T12 检查 schema、触发器、`deploy/install-login-constraints.sql`、会话配置、测试及登录说明。新链路就绪前旧调用不提前删；整改库不能启动这些旧组件 |
+| 删除交接与业务审计模块 | [`ApiController.java`](../../src/main/java/com/municipal/rbac/ApiController.java) 第 51—56 行；[`AuditController.java`](../../src/main/java/com/municipal/rbac/AuditController.java) 第 4—8 行；[`RequestAuditFilter.java`](../../src/main/java/com/municipal/rbac/RequestAuditFilter.java) 第 24—28 行写审计；[`ApplicationRepository.java`](../../src/main/java/com/municipal/rbac/ApplicationRepository.java) 第 28、34、38、65 行夹带日志/交接/会话 | T12 删除 handovers、authorization_logs、authorization_changes 的读写、Audit* 类、Handover/Completion/Change DTO、前端 Handover/AuditLogs 及路由/菜单；先处理 4.2 与基础响应的调用，再删除对应测试和部署/旧文档引用 |
+| 清理测试、配置和历史说明 | [`AccessBoundaryTest.java`](../../src/test/java/com/municipal/rbac/AccessBoundaryTest.java) 第 25—81 行绑定会话/交接；[`IdentifierConstraintTest.java`](../../src/test/java/com/municipal/rbac/IdentifierConstraintTest.java) 第 16—42 行绑定标识触发器；[`application.yml`](../../src/main/resources/application.yml) 第 2、14、18—20 行开启旧本地配置/SQL/初始化/会话设置 | 各票保留越权、回滚、分页、数据异常等有效测试意图并改成新模型；T12 清除旧审计、范围、标识/会话及旧原型断言，检查 `frontend/tests`、部署脚本、README、docs。`docs/legacy` 保留差异参考，标记失效契约，不恢复为当前执行依据 |
+
+当前 schema 中没有独立角色版本表或角色版本字段；按纪要将“角色版本”排除于新模型，不能为凑删除清单新增对象，也不能宣称已删除不存在的表。T12 仍须核对文档中残留的版本/交接约定。
+
+### 4.2 T01 最小身份衔接与隔离边界
+
+基础登录可复用现有 `BCryptPasswordEncoder.matches` 及有效性检查（`AuthService.java` 第 12 行），有效账号是否有角色不影响登录。新身份以 `users.id` 唯一标识，之后每次受控请求由后端读取最新启用状态、角色、权限和部门；客户端不得提供可直接信任的用户 ID、权限集合或管理员标记。
+
+当前代码把 Bearer 解析、数据库会话和当前用户查询绑在一起；库中不存在可直接复用的无会话实现。T05 必须把可信当前身份与新用户读取衔接后，才可宣称真实 HTTP 链可用；测试注入身份只能用于模型/规则测试，不能代替基础身份验收。T01/T02 不设计令牌格式、有效期、刷新或退出机制，也不恢复会话实体；基础运行衔接不扩成独立认证功能票。
+
+用户名作为最小登录匹配提案，保留原口令哈希；旧页面还承诺工号/手机号，是否继续支持这两个别名由 T04 原型和契约明确（G3）。即使保留别名，也不得恢复统一登录标识实体、免口令入口或注册/找回密码功能。T03 导入未知账号状态或不明确部门归属时记录异常，不默认启用或赋权。
+
+T02 建议在同一 Maven 工程使用旧启动包 `com.municipal.rbac` 扫描范围之外的兄弟包（如 `com.municipal.rbaccore`）放新模型；测试显式选择实体、JPA Repository 和必要自动配置，不新增替代产品 `SpringBootApplication`。只接独立整改 MySQL 测试库，关闭旧 SQL 初始化（`spring.sql.init.mode=never`），不扫描旧 `DataInitializer` 和 `DatabaseConstraints`，不继承旧库连接或旧本地配置导入。仅关闭 `rbac.initialize` 不足以隔离：`DatabaseConstraints` 仍会运行，且原配置 `sql.init.mode=always` 仍会建旧表。测试前核对实际数据源和加载组件，验证没有旧表/触发器及原库写入。
+
+T02 保留原启动和旧调用；新模型暂不接产品 Controller。T05/T07/T09/T11 逐块集成，T12 才切换正式启动/配置并收掉旧实现。隔离测试通过只证明新持久化模型，不证明新产品已启动、原型/契约已评审或界面已验收。课程受控场景仍由 T14/T15 单独落实。
 
 ## 5. 组员讨论与验证清单
 
@@ -260,14 +329,21 @@ flowchart LR
 | 迁移核对 | 员工、组织和保留授权可追溯到来源，旧业务目录没有整包复活 |
 | 下一阶段双系统（待落实） | 权限系统和课程系统均有受控场景，并能复核授权前后结果；只有系统目录记录不能判定通过 |
 
-### 5.3 评审记录
+### 5.3 T01 评审记录与未决项
 
-组员可直接在下表补充意见，形成可追踪的讨论结果。
+| 角色 | 人员/状态 | 结论 |
+| --- | --- | --- |
+| 编制 | T01 子 agent，2026-11-02 | 已对照纪要、用户补充、计划和 `e737579` 源码形成模型及迁移提案 |
+| 交叉核查 | T02 子 agent 提供隔离风险；主 agent 完成源码及约束静态复核 | 结构核对无新增实体；不代表小组验收 |
+| 小组评审 | 待指定评审人并记录结论 | 尚未通过；不自动解除 Issue 的 Blocked by 或勾选完成 |
 
-| 序号 | 问题或建议 | 对应章节 | 讨论结论 | 负责人 |
-|---|---|---|---|---|
-| 1 |  |  |  |  |
-| 2 |  |  |  |  |
-| 3 |  |  |  |  |
+| 编号 | 待确认内容与建议 | 影响范围 |
+| --- | --- | --- |
+| M1 | 确认 2.3—2.5 的六实体、九表、三组 M:N、单部门归属及持久化约束，采用 4.2 的独立整改库/测试隔离边界 | T02 的直接前置；未确认前不把新映射作为已批准模型 |
+| G1 | 确认 3.3 的“同一有效根部门用户拥有全部必要维护能力 K”保护提案；具体能力、编码及 API 映射由 T06/T08/T10 交叉评审后回写 | 影响 T07/T09/T11 的写操作及并发保护；具体路由未定不妨碍 M1 的模型核对 |
+| G2 | 角色和资源定义全局共享，根 A 修改它们也会影响根 B，不能承诺每个根维护同一全局定义却只影响本树。多根如何并入共同组织根，或由谁获得全局维护资格，须经 T03 源数据核对及相应原型确认；确认前不因 parent_id 为空开放跨树共享定义修改 | 影响 T03 的源组织核对及 T06/T08/T10 的全局维护契约；T02 仅存储森林结构，不强加唯一根，不实施跨根授权 |
+| G3 | 默认只按唯一 username 验证基础登录；T04 明确是否保留旧工号/手机号别名，并同步提示、错误及身份衔接 | 影响 T04/T05，不增加模型实体，不恢复 login_identifiers |
 
-本稿仅说明拟议结构与整改步骤。未执行数据库迁移、后端重构或 Java/MySQL/HTTP 验收；旧报告不能作为新结构已通过测试的证明。
+以上未决项按受影响部分保持前置条件；模型确认不能替代原型/API 契约评审，后续完成的具体结论须回写本文并进入共同基线。T01 的静态核对不代表老师或小组已经认可方案；T02 也不能以本次文档或旧报告冒充 MySQL/JPA 验证。
+
+未执行数据库迁移、业务重构或 Java/MySQL/HTTP/并发验收；三段 Mermaid 和 Chen 图片保持完整。
