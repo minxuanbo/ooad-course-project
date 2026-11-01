@@ -3,7 +3,7 @@
 **类型：**必要模型准备\
 **范围：**当前 RBAC 后端整改\
 **Status:** awaiting-manual-claim\
-**平台发布：**待发布；暂无 GitHub Issue 编号。\
+**平台发布：**已发布：[Issue #3](https://github.com/minxuanbo/ooad-course-project/issues/3)。\
 **负责人：**待组员认领；本文件不会触发自动领取或实现。
 
 ## What to build
@@ -12,7 +12,7 @@
 
 ## Blocked by
 
-- [T01](./01-t01-model-review.md)
+- [T01 / #2](https://github.com/minxuanbo/ooad-course-project/issues/2)（[本地镜像](./01-t01-model-review.md)）
 
 **阻塞原因：**需要已确认的实体、关联和新旧数据边界；尚不需要正式接口契约。
 

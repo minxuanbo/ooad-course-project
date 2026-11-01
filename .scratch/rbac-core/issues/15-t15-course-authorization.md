@@ -3,7 +3,7 @@
 **类型：**后续任务：业务闭环\
 **范围：**课程系统后续，须小组另行确认启动\
 **Status:** awaiting-manual-claim\
-**平台发布：**待发布；暂无 GitHub Issue 编号。\
+**平台发布：**已发布：[Issue #16](https://github.com/minxuanbo/ooad-course-project/issues/16)。\
 **负责人：**待组员认领；本文件不会触发自动领取或实现。
 
 ## What to build
@@ -12,9 +12,9 @@
 
 ## Blocked by
 
-- [T09](./09-t09-role-permission-change.md)
-- [T11](./11-t11-scoped-user-roles.md)
-- [T14](./14-t14-course-scenario-review.md)
+- [T09 / #10](https://github.com/minxuanbo/ooad-course-project/issues/10)（[本地镜像](./09-t09-role-permission-change.md)）
+- [T11 / #12](https://github.com/minxuanbo/ooad-course-project/issues/12)（[本地镜像](./11-t11-scoped-user-roles.md)）
+- [T14 / #15](https://github.com/minxuanbo/ooad-course-project/issues/15)（[本地镜像](./14-t14-course-scenario-review.md)）
 
 **阻塞原因：**需要可实际修改的角色权限、人员角色及课程侧已批准契约；真实授权链路由 T09/T11 传递包含。
 

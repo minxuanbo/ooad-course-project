@@ -3,7 +3,7 @@
 **类型：**后续任务：设计评审\
 **范围：**课程系统后续，须小组另行确认启动\
 **Status:** awaiting-manual-claim\
-**平台发布：**待发布；暂无 GitHub Issue 编号。\
+**平台发布：**已发布：[Issue #15](https://github.com/minxuanbo/ooad-course-project/issues/15)。\
 **负责人：**待组员认领；本文件不会触发自动领取或实现。
 
 ## What to build
@@ -12,7 +12,7 @@
 
 ## Blocked by
 
-- [T01](./01-t01-model-review.md)
+- [T01 / #2](https://github.com/minxuanbo/ooad-course-project/issues/2)（[本地镜像](./01-t01-model-review.md)）
 
 **阻塞原因：**模型规则是直接前置；不必等待无关的人员功能收尾，但课程场景本身尚待落实。
 

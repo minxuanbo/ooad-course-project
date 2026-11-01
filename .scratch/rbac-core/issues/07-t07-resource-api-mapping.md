@@ -3,7 +3,7 @@
 **类型：**后端业务闭环\
 **范围：**当前 RBAC 后端整改\
 **Status:** awaiting-manual-claim\
-**平台发布：**待发布；暂无 GitHub Issue 编号。\
+**平台发布：**已发布：[Issue #8](https://github.com/minxuanbo/ooad-course-project/issues/8)。\
 **负责人：**待组员认领；本文件不会触发自动领取或实现。
 
 ## What to build
@@ -12,8 +12,8 @@
 
 ## Blocked by
 
-- [T05](./05-t05-identity-query-authorization.md)
-- [T06](./06-t06-resource-api-review.md)
+- [T05 / #6](https://github.com/minxuanbo/ooad-course-project/issues/6)（[本地镜像](./05-t05-identity-query-authorization.md)）
+- [T06 / #7](https://github.com/minxuanbo/ooad-course-project/issues/7)（[本地镜像](./06-t06-resource-api-review.md)）
 
 **阻塞原因：**复用首个真实鉴权链路，并严格依赖资源配置对应契约评审。
 

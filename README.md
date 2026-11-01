@@ -7,7 +7,7 @@
 | 文档 | 用途 |
 | --- | --- |
 | [整改执行入口](docs/rbac-rectification/RBAC整改执行入口.md) | 其他对话的开工规则、整改基线、单票入口与可复制指令 |
-| [已确认任务清单](docs/rbac-rectification/RBAC整改任务清单.md) | 15 张票、22 条依赖；平台发布尚未完成，组员人工认领 |
+| [已确认任务清单](docs/rbac-rectification/RBAC整改任务清单.md) | 15 张 Issues、22 条原生依赖；组员人工认领 |
 | [原版整改计划与 Chen ER 图](docs/rbac-rectification/RBAC整改计划与Chen-ER图.md) | v0.6，执行依据；包含模型、规则、实施顺序与验收清单 |
 | [组内讨论版](docs/rbac-rectification/RBAC整改方案-组内讨论版.md) | 阅读、讨论和核对；讨论结论先回写原版再实施 |
 | [检查记录复核说明](docs/rbac-rectification/RBAC检查记录复核说明.md) | 检查要求、旧问题、方案建议及未完成事项 |

@@ -3,7 +3,7 @@
 **类型：**原型与契约前置\
 **范围：**当前 RBAC 后端整改\
 **Status:** awaiting-manual-claim\
-**平台发布：**待发布；暂无 GitHub Issue 编号。\
+**平台发布：**已发布：[Issue #7](https://github.com/minxuanbo/ooad-course-project/issues/7)。\
 **负责人：**待组员认领；本文件不会触发自动领取或实现。
 
 ## What to build
@@ -12,7 +12,7 @@
 
 ## Blocked by
 
-- [T01](./01-t01-model-review.md)
+- [T01 / #2](https://github.com/minxuanbo/ooad-course-project/issues/2)（[本地镜像](./01-t01-model-review.md)）
 
 **阻塞原因：**需要核心资源模型与全局维护规则，不依赖人员查询接口完成。
 

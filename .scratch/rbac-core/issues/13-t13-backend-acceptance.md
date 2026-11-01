@@ -3,7 +3,7 @@
 **类型：**集成验收\
 **范围：**当前 RBAC 后端整改\
 **Status:** awaiting-manual-claim\
-**平台发布：**待发布；暂无 GitHub Issue 编号。\
+**平台发布：**已发布：[Issue #14](https://github.com/minxuanbo/ooad-course-project/issues/14)。\
 **负责人：**待组员认领；本文件不会触发自动领取或实现。
 
 ## What to build
@@ -12,7 +12,7 @@
 
 ## Blocked by
 
-- [T12](./12-t12-legacy-cleanup.md)
+- [T12 / #13](https://github.com/minxuanbo/ooad-course-project/issues/13)（[本地镜像](./12-t12-legacy-cleanup.md)）
 
 **阻塞原因：**要验证的是清理并切换后的当前后端，不能以旧功能尚在的中间状态替代完成。
 

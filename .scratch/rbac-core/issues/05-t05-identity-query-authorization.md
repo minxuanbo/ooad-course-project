@@ -3,7 +3,7 @@
 **类型：**首个后端业务闭环\
 **范围：**当前 RBAC 后端整改\
 **Status:** awaiting-manual-claim\
-**平台发布：**待发布；暂无 GitHub Issue 编号。\
+**平台发布：**已发布：[Issue #6](https://github.com/minxuanbo/ooad-course-project/issues/6)。\
 **负责人：**待组员认领；本文件不会触发自动领取或实现。
 
 ## What to build
@@ -12,8 +12,8 @@
 
 ## Blocked by
 
-- [T03](./03-t03-organization-import.md)
-- [T04](./04-t04-identity-query-review.md)
+- [T03 / #4](https://github.com/minxuanbo/ooad-course-project/issues/4)（[本地镜像](./03-t03-organization-import.md)）
+- [T04 / #5](https://github.com/minxuanbo/ooad-course-project/issues/5)（[本地镜像](./04-t04-identity-query-review.md)）
 
 **阻塞原因：**同时需要可核对的组织人员数据和已批准的对应原型/API 契约；T02 由 T03 传递包含。
 

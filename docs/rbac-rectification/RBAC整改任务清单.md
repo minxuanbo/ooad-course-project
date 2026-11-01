@@ -1,7 +1,7 @@
 # RBAC 整改任务清单
 
-> v1.1｜2026-11-02｜已确认；本地执行资料已准备，平台尚未发布
-> 全部任务均未发布、未认领；本文件不授权自动实现，也不作为界面或系统验收结论。
+> v1.2｜2026-11-02｜已确认并发布 15 张 Issues，22 条原生依赖已核对
+> 全部任务已发布、未认领；本文件不授权自动实现，也不作为界面或系统验收结论。
 
 ## 1. 依据与交付边界
 
@@ -138,7 +138,7 @@ flowchart LR
 
 ### T01 确认核心模型、授权规则与逐块替换边界
 
-**类型：**评审前置。**状态：**拆分已确认，未发布，未认领。
+**类型：**评审前置。**状态：**拆分已确认，已发布，未认领。
 
 **Blocked by:** 无（技术上可立即开始）。先明确需要保留和替换的规则，避免把旧模型继续带入新实现。
 
@@ -157,7 +157,7 @@ flowchart LR
 
 ### T02 在原工程建立可独立验证的 JPA 核心模型
 
-**类型：**必要模型准备。**状态：**拆分已确认，未发布，未认领。
+**类型：**必要模型准备。**状态：**拆分已确认，已发布，未认领。
 
 **Blocked by:** T01。需要已确认的实体、关联和新旧数据边界；尚不需要正式接口契约。
 
@@ -175,7 +175,7 @@ flowchart LR
 
 ### T03 把原始组织与人员导入层级部门并核对
 
-**类型：**数据闭环。**状态：**拆分已确认，未发布，未认领。
+**类型：**数据闭环。**状态：**拆分已确认，已发布，未认领。
 
 **Blocked by:** T02。导入必须写入已经验证的新部门与人员模型。
 
@@ -194,7 +194,7 @@ flowchart LR
 
 ### T04 评审登录后状态与人员检索的原型/API 契约
 
-**类型：**原型与契约前置。**状态：**拆分已确认，未发布，未认领。
+**类型：**原型与契约前置。**状态：**拆分已确认，已发布，未认领。
 
 **Blocked by:** T01。需要稳定的身份、管理范围和用户模型；不必等待数据库导入完成。
 
@@ -212,7 +212,7 @@ flowchart LR
 
 ### T05 跑通有效账号与分部门人员查询的真实授权闭环
 
-**类型：**首个后端业务闭环。**状态：**拆分已确认，未发布，未认领。
+**类型：**首个后端业务闭环。**状态：**拆分已确认，已发布，未认领。
 
 **Blocked by:** T03、T04。同时需要可核对的组织人员数据和已批准的对应原型/API 契约；T02 由 T03 传递包含。
 
@@ -231,7 +231,7 @@ flowchart LR
 
 ### T06 评审本权限系统资源目录与 API 映射契约
 
-**类型：**原型与契约前置。**状态：**拆分已确认，未发布，未认领。
+**类型：**原型与契约前置。**状态：**拆分已确认，已发布，未认领。
 
 **Blocked by:** T01。需要核心资源模型与全局维护规则，不依赖人员查询接口完成。
 
@@ -249,7 +249,7 @@ flowchart LR
 
 ### T07 让本权限系统资源目录与 API 映射真实生效
 
-**类型：**后端业务闭环。**状态：**拆分已确认，未发布，未认领。
+**类型：**后端业务闭环。**状态：**拆分已确认，已发布，未认领。
 
 **Blocked by:** T05、T06。复用首个真实鉴权链路，并严格依赖资源配置对应契约评审。
 
@@ -268,7 +268,7 @@ flowchart LR
 
 ### T08 评审角色定义与角色权限配置契约
 
-**类型：**原型与契约前置。**状态：**拆分已确认，未发布，未认领。
+**类型：**原型与契约前置。**状态：**拆分已确认，已发布，未认领。
 
 **Blocked by:** T01。角色与权限模型是前置；不必等待资源维护页面或其接口完成。
 
@@ -286,7 +286,7 @@ flowchart LR
 
 ### T09 让角色权限配置改变真实 API 访问结果
 
-**类型：**后端业务闭环。**状态：**拆分已确认，未发布，未认领。
+**类型：**后端业务闭环。**状态：**拆分已确认，已发布，未认领。
 
 **Blocked by:** T05、T08。需要通用的真实接口鉴权和相应契约；可使用已确认的初始化权限，不必等待 T07 的资源维护接口。
 
@@ -305,7 +305,7 @@ flowchart LR
 
 ### T10 评审人员角色分配与受限人员变更契约
 
-**类型：**原型与契约前置。**状态：**拆分已确认，未发布，未认领。
+**类型：**原型与契约前置。**状态：**拆分已确认，已发布，未认领。
 
 **Blocked by:** T01。需要人员归属、可授予角色及管理范围规则；原型可与人员检索和角色配置评审并行。
 
@@ -323,7 +323,7 @@ flowchart LR
 
 ### T11 在部门范围内分配人员角色并拒绝越权
 
-**类型：**后端业务闭环。**状态：**拆分已确认，未发布，未认领。
+**类型：**后端业务闭环。**状态：**拆分已确认，已发布，未认领。
 
 **Blocked by:** T05、T10。需要真实鉴权/人员范围和对应契约；可分配已确认的初始化角色，不必等待 T09 的角色编辑接口。
 
@@ -342,7 +342,7 @@ flowchart LR
 
 ### T12 收掉旧模型与旧功能并切换到整改数据链路
 
-**类型：**逐块替换的最终收敛。**状态：**拆分已确认，未发布，未认领。
+**类型：**逐块替换的最终收敛。**状态：**拆分已确认，已发布，未认领。
 
 **Blocked by:** T07、T09、T11。这些现有业务路径完成迁移后，才能删除它们仍共享的旧授权、目录与数据实现；T05 和数据准备已传递包含。
 
@@ -361,7 +361,7 @@ flowchart LR
 
 ### T13 验收当前 RBAC 后端并提交可复核证据
 
-**类型：**集成验收。**状态：**拆分已确认，未发布，未认领。
+**类型：**集成验收。**状态：**拆分已确认，已发布，未认领。
 
 **Blocked by:** T12。要验证的是清理并切换后的当前后端，不能以旧功能尚在的中间状态替代完成。
 
@@ -380,7 +380,7 @@ flowchart LR
 
 ### T14 确认课程系统受控场景及原型/API 契约
 
-**类型：**后续任务：设计评审。**状态：**拆分已确认，未发布，未认领。
+**类型：**后续任务：设计评审。**状态：**拆分已确认，已发布，未认领。
 
 **Blocked by:** T01。模型规则是直接前置；不必等待无关的人员功能收尾，但课程场景本身尚待落实。
 
@@ -399,7 +399,7 @@ flowchart LR
 
 ### T15 接入已评审课程操作并演示双系统授权
 
-**类型：**后续任务：业务闭环。**状态：**拆分已确认，未发布，未认领。
+**类型：**后续任务：业务闭环。**状态：**拆分已确认，已发布，未认领。
 
 **Blocked by:** T09、T11、T14。需要可实际修改的角色权限、人员角色及课程侧已批准契约；真实授权链路由 T09/T11 传递包含。
 
@@ -450,7 +450,7 @@ flowchart LR
 
 这次确认仅针对拆票方案。T01 的模型及规则评审、各原型/API 契约评审、后端验证和课程受控场景仍须按各票完成；不能把任务拆分确认当成设计或验收通过。所有验收复选框保持未勾选。
 
-用户已要求准备发布和执行入口。本清单、单票镜像及执行指南已同步到项目，尚未创建平台 Issues，也未认领或启动业务实现。其他对话须由用户指定单票后，按执行入口核对阻塞并开始。原版执行计划 v0.6 仍为执行依据，讨论版只用于阅读讨论。
+15 张平台 Issues 和执行资料已发布，22 条原生依赖已核对；所有任务均未认领，也未启动业务实现。其他对话须由用户指定单票后，按执行入口核对阻塞并开始。原版执行计划 v0.6 仍为执行依据，讨论版只用于阅读讨论。
 
 ## 9. 建议的小组协作方式
 
@@ -475,4 +475,28 @@ Ticket 是任务的统称。对于当前 GitHub 仓库，建议一张票对应�
 
 PR 的自动关票规则也需要和分支流程一致：Closes #实际编号 等关键词通常在 PR 合入仓库默认分支时生效。若先合入共同整改分支，可先用 Refs #实际编号 关联，由评审者按本票验收结果维护状态，不能假定 PR 合入任意分支都会自动关闭 Issue。
 
-平台目标已明确为原 GitHub 仓库，按一票一个 Issue 发布；标签沿用人工认领约定，不应用 ready-for-agent。当前插件仍停在待提交的建票表单，平台编号及原生依赖尚未建立。可执行入口见[整改执行入口](RBAC整改执行入口.md)；正式开工以用户指定票及前置证据为条件。
+已在原 GitHub 仓库按一票一个 Issue 发布，并设置 rbac-rectification、rbac-current、rbac-later 范围标签及 22 条原生 Blocked by。不应用 ready-for-agent，不自动分配。真实编号见下一节；执行步骤见[整改执行入口](RBAC整改执行入口.md)。旧的 T01 建票表单无需再次提交。
+
+## 10. 已发布编号与执行入口
+
+2026-11-02 按确认的 15 票方案发布到原 GitHub 仓库，逐票核对 83 条未勾选验收标准及 22 条原生阻塞关系。所有票未分配；当前范围 13 张、课程后续 2 张。平台状态以实际 Issue 及评审证据为准。
+
+| 任务 | GitHub Issue | Blocked by |
+| --- | --- | --- |
+| T01 确认核心模型、授权规则与逐块替换边界 | [#2](https://github.com/minxuanbo/ooad-course-project/issues/2) | 无 |
+| T02 在原工程建立可独立验证的 JPA 核心模型 | [#3](https://github.com/minxuanbo/ooad-course-project/issues/3) | [T01/#2](https://github.com/minxuanbo/ooad-course-project/issues/2) |
+| T03 把原始组织与人员导入层级部门并核对 | [#4](https://github.com/minxuanbo/ooad-course-project/issues/4) | [T02/#3](https://github.com/minxuanbo/ooad-course-project/issues/3) |
+| T04 评审登录后状态与人员检索的原型/API 契约 | [#5](https://github.com/minxuanbo/ooad-course-project/issues/5) | [T01/#2](https://github.com/minxuanbo/ooad-course-project/issues/2) |
+| T05 跑通有效账号与分部门人员查询的真实授权闭环 | [#6](https://github.com/minxuanbo/ooad-course-project/issues/6) | [T03/#4](https://github.com/minxuanbo/ooad-course-project/issues/4)、[T04/#5](https://github.com/minxuanbo/ooad-course-project/issues/5) |
+| T06 评审本权限系统资源目录与 API 映射契约 | [#7](https://github.com/minxuanbo/ooad-course-project/issues/7) | [T01/#2](https://github.com/minxuanbo/ooad-course-project/issues/2) |
+| T07 让本权限系统资源目录与 API 映射真实生效 | [#8](https://github.com/minxuanbo/ooad-course-project/issues/8) | [T05/#6](https://github.com/minxuanbo/ooad-course-project/issues/6)、[T06/#7](https://github.com/minxuanbo/ooad-course-project/issues/7) |
+| T08 评审角色定义与角色权限配置契约 | [#9](https://github.com/minxuanbo/ooad-course-project/issues/9) | [T01/#2](https://github.com/minxuanbo/ooad-course-project/issues/2) |
+| T09 让角色权限配置改变真实 API 访问结果 | [#10](https://github.com/minxuanbo/ooad-course-project/issues/10) | [T05/#6](https://github.com/minxuanbo/ooad-course-project/issues/6)、[T08/#9](https://github.com/minxuanbo/ooad-course-project/issues/9) |
+| T10 评审人员角色分配与受限人员变更契约 | [#11](https://github.com/minxuanbo/ooad-course-project/issues/11) | [T01/#2](https://github.com/minxuanbo/ooad-course-project/issues/2) |
+| T11 在部门范围内分配人员角色并拒绝越权 | [#12](https://github.com/minxuanbo/ooad-course-project/issues/12) | [T05/#6](https://github.com/minxuanbo/ooad-course-project/issues/6)、[T10/#11](https://github.com/minxuanbo/ooad-course-project/issues/11) |
+| T12 收掉旧模型与旧功能并切换到整改数据链路 | [#13](https://github.com/minxuanbo/ooad-course-project/issues/13) | [T07/#8](https://github.com/minxuanbo/ooad-course-project/issues/8)、[T09/#10](https://github.com/minxuanbo/ooad-course-project/issues/10)、[T11/#12](https://github.com/minxuanbo/ooad-course-project/issues/12) |
+| T13 验收当前 RBAC 后端并提交可复核证据 | [#14](https://github.com/minxuanbo/ooad-course-project/issues/14) | [T12/#13](https://github.com/minxuanbo/ooad-course-project/issues/13) |
+| T14 确认课程系统受控场景及原型/API 契约 | [#15](https://github.com/minxuanbo/ooad-course-project/issues/15) | [T01/#2](https://github.com/minxuanbo/ooad-course-project/issues/2) |
+| T15 接入已评审课程操作并演示双系统授权 | [#16](https://github.com/minxuanbo/ooad-course-project/issues/16) | [T09/#10](https://github.com/minxuanbo/ooad-course-project/issues/10)、[T11/#12](https://github.com/minxuanbo/ooad-course-project/issues/12)、[T14/#15](https://github.com/minxuanbo/ooad-course-project/issues/15) |
+
+执行步骤及可复制给新对话的 T01 指令见[整改执行入口](RBAC整改执行入口.md)。原版 v0.6 继续作为执行依据；平台发布不代表任务已实现或已验收。

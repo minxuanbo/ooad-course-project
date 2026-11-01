@@ -3,7 +3,7 @@
 **类型：**逐块替换的最终收敛\
 **范围：**当前 RBAC 后端整改\
 **Status:** awaiting-manual-claim\
-**平台发布：**待发布；暂无 GitHub Issue 编号。\
+**平台发布：**已发布：[Issue #13](https://github.com/minxuanbo/ooad-course-project/issues/13)。\
 **负责人：**待组员认领；本文件不会触发自动领取或实现。
 
 ## What to build
@@ -12,9 +12,9 @@
 
 ## Blocked by
 
-- [T07](./07-t07-resource-api-mapping.md)
-- [T09](./09-t09-role-permission-change.md)
-- [T11](./11-t11-scoped-user-roles.md)
+- [T07 / #8](https://github.com/minxuanbo/ooad-course-project/issues/8)（[本地镜像](./07-t07-resource-api-mapping.md)）
+- [T09 / #10](https://github.com/minxuanbo/ooad-course-project/issues/10)（[本地镜像](./09-t09-role-permission-change.md)）
+- [T11 / #12](https://github.com/minxuanbo/ooad-course-project/issues/12)（[本地镜像](./11-t11-scoped-user-roles.md)）
 
 **阻塞原因：**这些现有业务路径完成迁移后，才能删除它们仍共享的旧授权、目录与数据实现；T05 和数据准备已传递包含。
 

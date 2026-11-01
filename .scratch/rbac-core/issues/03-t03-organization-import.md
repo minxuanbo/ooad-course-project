@@ -3,7 +3,7 @@
 **类型：**数据闭环\
 **范围：**当前 RBAC 后端整改\
 **Status:** awaiting-manual-claim\
-**平台发布：**待发布；暂无 GitHub Issue 编号。\
+**平台发布：**已发布：[Issue #4](https://github.com/minxuanbo/ooad-course-project/issues/4)。\
 **负责人：**待组员认领；本文件不会触发自动领取或实现。
 
 ## What to build
@@ -12,7 +12,7 @@
 
 ## Blocked by
 
-- [T02](./02-t02-jpa-core.md)
+- [T02 / #3](https://github.com/minxuanbo/ooad-course-project/issues/3)（[本地镜像](./02-t02-jpa-core.md)）
 
 **阻塞原因：**导入必须写入已经验证的新部门与人员模型。
 
