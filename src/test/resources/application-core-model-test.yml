@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    url: ${RBAC_CORE_TEST_DB_URL}
+    username: ${RBAC_CORE_TEST_DB_USER}
+    password: ${RBAC_CORE_TEST_DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 4
+      transaction-isolation: TRANSACTION_READ_COMMITTED
+  sql.init.mode: never
+  jpa:
+    open-in-view: false
+    hibernate.ddl-auto: create-drop
+rbac.initialize: false
