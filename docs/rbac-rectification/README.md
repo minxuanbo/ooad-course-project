@@ -1,6 +1,6 @@
 # RBAC 整改
 
-以检查记录及用户补充确定需求，以原版执行计划指导实施。T01 模型、规则与迁移边界已通过用户授权的代理评审；业务实现、原型/API 契约及运行验收仍须按票完成。
+以检查记录及用户补充确定需求，以原版执行计划指导实施。T01 模型、规则与迁移边界和 T02 独立 JPA 模型已通过用户授权的代理评审；业务实现、原型/API 契约及运行验收仍须按票完成。
 
 | 文档 | 用途 |
 | --- | --- |
@@ -16,23 +16,24 @@ GitHub Issues #2—#16 是认领、讨论与状态入口，共 22 条原生阻�
 
 [T01 / Issue #2](https://github.com/minxuanbo/ooad-course-project/issues/2) 的核查和代理评审已完成，证据直接保存在原版计划的 [2.5 模型映射](RBAC整改计划与Chen-ER图.md#25-t01-模型核对与-t02-映射基线)、[3.3 管理员保护](RBAC整改计划与Chen-ER图.md#33-t01-有效全局管理员与保护边界)、[4.1—4.2 替换及隔离边界](RBAC整改计划与Chen-ER图.md#41-t01-工程复用替换与删除对照)和 [5.3 评审记录](RBAC整改计划与Chen-ER图.md#53-t01-评审记录与未决项)。评审由主 agent 按用户明确授权完成，不代表老师或真人组员验收。
 
-T01 已通过 PR #17 合入共同基线且 Issue #2 已关闭；[T02 / Issue #3](https://github.com/minxuanbo/ooad-course-project/issues/3) 与 T04/T06/T08/T10 可分别开展。T02 独立模型、52 项测试及打包完成，实现提交待评审合入，复现见[原版计划 4.3](RBAC整改计划与Chen-ER图.md#43-t02-独立模型与验证)；T03 等待 T02 合入，原型评审不必等待它；T14/T15 仍须另行确认后续范围。
+T01 已通过 PR #17 合入共同基线且 Issue #2 已关闭；[T02 / Issue #3](https://github.com/minxuanbo/ooad-course-project/issues/3) 五项验收已通过主 agent 评审，52 项测试及打包证据见[原版计划 4.3](RBAC整改计划与Chen-ER图.md#43-t02-独立模型与验证)。确认 [PR #18](https://github.com/minxuanbo/ooad-course-project/pull/18) 已合入共同基线后，[T03 / Issue #4](https://github.com/minxuanbo/ooad-course-project/issues/4) 可开始；T04/T06/T08/T10 原型评审可分别开展；各票仍由用户或组员认领，T14/T15 须另行确认启动。
 
-## T02 开工指令
+## T03 开工指令
 
-T02 已有实现提交，先查看 Issue #3 对应 PR，避免重复启动。以下用于接续评审、修正或复现；按[协作步骤](../../CONTRIBUTING.md)核对现有分支与共同基线后发送：
+先按[协作步骤](../../CONTRIBUTING.md)人工认领，确认 PR #18 已合入并获取最新共同基线；核对目标分支及已有工作后发送：
 
 ```text
-接续 https://github.com/minxuanbo/ooad-course-project/issues/3（T02）的现有 PR，先核对分支与评审意见。
+执行 https://github.com/minxuanbo/ooad-course-project/issues/4（T03），只做组织与人员导入闭环。
 先读 AGENTS.md、CONTRIBUTING.md、整改入口、原版计划 2.3—2.5、
-4.2 和 5.3、复核说明及任务清单 T02，确认 T01 评审和合并证据。
-复用原 Maven 工程，在独立整改库建立六实体和三组关联，加入所需 JPA；
-验证外键、联合唯一性、同系统与树约束、多角色/无角色及共享 API。
-隔离旧 SQL、DataInitializer、DatabaseConstraints 和原数据库配置；
-保留旧调用、原始 Excel 及本地资料，不新增正式 Controller 或页面。
-记录可复现的 MySQL/JPA 结果、共存边界及未验证项。
+3.3、4.1—4.3 和 5.3、复核说明及任务清单 T03，确认 T02 的评审及合入证据。
+从最新 origin/refactor/rbac-core-backend 建立独立任务分支/工作树。
+复用 Excel 读取和 T02 JPA 模型，在独立整改库核对共同根、组织无环连通、
+全量人员数量与部门归属，保留来源映射、原口令哈希和必要基础字段。
+明确状态转换；未知状态或归属记录异常，不默认启用或赋权，不导入旧业务目录。
+验证重复导入、失败回滚或安全重试，不覆盖已调整授权；保留原库、原始 Excel 与本地资料。
+交付可复现的 MySQL/JPA 导入结果和小样本核对，不新增正式 Controller 或页面。
 提交本票必要文件并推送，创建 base=refactor/rbac-core-backend 的草稿 PR，
-正文 Refs #3，不自行合并、关闭票或启动其他下游任务。
+正文 Refs #4，不自行合并、关闭票或启动其他下游任务。
 ```
 
 ## 范围和资料维护
