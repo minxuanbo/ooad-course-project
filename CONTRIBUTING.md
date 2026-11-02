@@ -12,13 +12,13 @@ git status --short
 git fetch origin
 ```
 
-3. 每票使用独立任务分支；多人或多对话写入时使用独立工作树。T01 示例：
+3. 每票使用独立任务分支；多人或多对话写入时使用独立工作树。T02 示例：
 
 ```bash
-git worktree add -b task/t01-model-review ../ooad-t01 origin/refactor/rbac-core-backend
+git worktree add -b task/t02-jpa-core ../ooad-t02 origin/refactor/rbac-core-backend
 ```
 
-分支或目录已存在时，先核对所属任务后复用，不覆盖。打开新工作树后阅读 AGENTS.md 和对应 Issue；T01 可直接使用[开工指令](docs/rbac-rectification/README.md#t01-开工指令)。
+分支或目录已存在时，先核对所属任务后复用，不覆盖。打开新工作树后阅读 AGENTS.md 和对应 Issue；当前可开工范围及 [T02 指令](docs/rbac-rectification/README.md#t02-开工指令)见整改入口；前置票需有评审与合并证据。
 
 ## 提交与评审
 
