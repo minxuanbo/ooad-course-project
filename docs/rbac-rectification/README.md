@@ -16,14 +16,14 @@ GitHub Issues #2—#16 是认领、讨论与状态入口，共 22 条原生阻�
 
 [T01 / Issue #2](https://github.com/minxuanbo/ooad-course-project/issues/2) 的核查和代理评审已完成，证据直接保存在原版计划的 [2.5 模型映射](RBAC整改计划与Chen-ER图.md#25-t01-模型核对与-t02-映射基线)、[3.3 管理员保护](RBAC整改计划与Chen-ER图.md#33-t01-有效全局管理员与保护边界)、[4.1—4.2 替换及隔离边界](RBAC整改计划与Chen-ER图.md#41-t01-工程复用替换与删除对照)和 [5.3 评审记录](RBAC整改计划与Chen-ER图.md#53-t01-评审记录与未决项)。评审由主 agent 按用户明确授权完成，不代表老师或真人组员验收。
 
-T01 产物合入共同基线并更新平台状态后，[T02 / Issue #3](https://github.com/minxuanbo/ooad-course-project/issues/3) 与 T04/T06/T08/T10 可分别开展。T02 仅建模与独立 MySQL/JPA 验证，原型评审不必等待它；T14/T15 仍须另行确认后续范围。
+T01 已通过 PR #17 合入共同基线且 Issue #2 已关闭；[T02 / Issue #3](https://github.com/minxuanbo/ooad-course-project/issues/3) 与 T04/T06/T08/T10 可分别开展。T02 独立模型、52 项测试及打包完成，实现提交待评审合入，复现见[原版计划 4.3](RBAC整改计划与Chen-ER图.md#43-t02-独立模型与验证)；T03 等待 T02 合入，原型评审不必等待它；T14/T15 仍须另行确认后续范围。
 
 ## T02 开工指令
 
-按[协作步骤](../../CONTRIBUTING.md)核对 T01 的合并证据，从最新 origin/refactor/rbac-core-backend 建立 T02 独立工作树后发送：
+T02 已有实现提交，先查看 Issue #3 对应 PR，避免重复启动。以下用于接续评审、修正或复现；按[协作步骤](../../CONTRIBUTING.md)核对现有分支与共同基线后发送：
 
 ```text
-执行 https://github.com/minxuanbo/ooad-course-project/issues/3（T02）。
+接续 https://github.com/minxuanbo/ooad-course-project/issues/3（T02）的现有 PR，先核对分支与评审意见。
 先读 AGENTS.md、CONTRIBUTING.md、整改入口、原版计划 2.3—2.5、
 4.2 和 5.3、复核说明及任务清单 T02，确认 T01 评审和合并证据。
 复用原 Maven 工程，在独立整改库建立六实体和三组关联，加入所需 JPA；

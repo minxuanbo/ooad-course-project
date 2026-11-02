@@ -22,7 +22,7 @@
 | 后端技术 | 使用课程明确要求的 Spring Data JPA、AOP 和清晰的模块分层；沿用 Java 21、Spring Boot、MySQL |
 | 前端与课程系统 | 当前按用户安排暂缓开发；下一阶段“权限系统＋课程系统”的要求仍待落实，仅有多系统字段不算完成 |
 
-当前源码已有 Controller、Service、Repository 类及分页、搜索方法，但这不等于满足老师对模块职责和实际使用场景的要求。已确认部门创建仍拒绝上级部门参数，持久化仍使用 JDBC；须补部门树、统一列表场景并切换到 JPA，不能只改类名或文档。
+当前源码已有 Controller、Service、Repository 类及分页、搜索方法，但这不等于满足老师对模块职责和实际使用场景的要求。产品业务仍使用旧部门模型和 JDBC，T02 新 JPA 模型仅在独立测试上下文验证；须补部门树、统一列表场景并切换到 JPA，不能只改类名或文档。
 
 ## 2. ER 图与九张表
 
@@ -296,6 +296,23 @@ T02 在同一 Maven 工程使用旧启动包 `com.municipal.rbac` 扫描范围�
 
 T02 保留原启动和旧调用；新模型暂不接产品 Controller。T05/T07/T09/T11 逐块集成，T12 才切换正式启动/配置并收掉旧实现。隔离测试通过只证明新持久化模型，不证明新产品已启动、原型/契约已评审或界面已验收。课程受控场景仍由 T14/T15 单独落实。
 
+### 4.3 T02 独立模型与验证
+
+同一 Maven 工程加入 Spring Data JPA；新六实体及六个 JpaRepository 位于旧启动扫描范围之外的 `com.municipal.rbaccore`。六实体映射九张表，三组关联使用双外键联合主键。树移动、权限类型及 API 映射由领域入口先验证再变更；关联集合只读，事务由调用方管理。产品入口与旧 JDBC 调用保留，新模型没有正式 Controller、页面、认证或导入功能。
+
+CoreModelJpaTest 使用显式测试配置和独立配置名 `application-core-model-test`，不加载旧 application.yml/本地导入，不扫描 DataInitializer、DatabaseConstraints，SQL 初始化为 never。数据源实例化前校验 URL，只允许本机显式端口的 `rbac_core_t02_test`；须使用仅有该一次性库权限的账号。测试使用 create-drop，会创建和删除该库中的模型表；连接配置缺失时失败，不跳过测试。
+
+复现时准备 MySQL 8 及 Java 21，在本机设置 RBAC_CORE_TEST_DB_URL、RBAC_CORE_TEST_DB_USER、RBAC_CORE_TEST_DB_PASSWORD，口令不写入仓库。URL 示例：`jdbc:mysql://127.0.0.1:3317/rbac_core_t02_test?connectionTimeZone=UTC`。从仓库根目录执行，Maven 不在 PATH 时使用本机绝对路径：
+
+```powershell
+mvn -B -ntp '-Dtest=CoreModelRulesTest,CoreModelJpaTest,ExcelXmlReaderTest,InfrastructureBoundaryTest,InitializerValidationTest,RuntimeBoundaryTest,RequestAuditBoundaryTest' test
+mvn -B -ntp -DskipTests package
+```
+
+2026-11-02，子 agent 在独立 MySQL 8.4.13 上验证：52 项通过（新模型 37 项、既有无库单测 15 项），失败/错误/跳过均为 0；Spring Boot 打包成功。实查九表、11 个外键、三组联合主键，七类唯一性、11 类缺失引用和三类非空拒绝；清空 JPA 上下文后读回多角色/无角色、共享 API 和父子关系，并验证树移动、跨系统拒绝与领域失败事务回滚。上下文没有旧表、触发器、初始化器或正式 Controller；账号仅能写独立测试库。
+
+实现提交待小组评审合入，不勾选 T02 尚未验收项。未运行全量 mvn verify、旧库集成、真实 HTTP、并发授权或界面验收，JaCoCo 门槛未改。T03 负责真实数据导入；T05/T07/T09/T11 集成时须重新核对扫描、事务及初始化，T12 做最终切换。原型/API 契约仍是正式接口前置，正式前端暂缓，课程 T14/T15 为后续；原库、Excel、本地资料保留。
+
 ## 5. 组员讨论与验证清单
 
 本方案默认：**角色全局共享；每人一个部门；管理范围为本部门及后代；不支持跨部门临时委托；不引入角色继承。**根部门全局维护、API 多对多映射、停用替代删除和分页参数也是为简化实现选定的建议，并非检查记录逐项指定；不据此声称课程已正式要求 RBAC0。修改默认值时同步更新图、表、原型、接口和测试。管理员始终由实际管理权限决定，组织位置只限定范围。
@@ -349,4 +366,4 @@ T02 保留原启动和旧调用；新模型暂不接产品 Controller。T05/T07/
 
 T01 六项验收的证据分别是：2.3—2.5 的模型与需求归属、3.1 的账号规则、3.3 的管理员及根部门判定、4.1 的复用/替换/删除对照、4.2 的最小身份衔接与清理边界，以及本节评审记录。T01 无剩余模型或业务规则阻塞；上述具体接口、数据导入和验证仍由原有下游票承担，不代表它们已经完成。
 
-本 PR 合入共同基线后，T02 及 T04/T06/T08/T10 可按各自范围开展；正式接口仍依赖对应原型/API 契约评审，T14/T15 仍须另行确认启动。本轮未执行数据库迁移、业务重构或 Java/MySQL/HTTP/并发验收，三段 Mermaid 和 Chen 图片保持完整。
+T01 已经 PR #17 合入共同基线且 Issue #2 已关闭；T04/T06/T08/T10 可按各自范围开展，T02 证据见 4.3；正式接口仍依赖对应原型/API 契约评审，T14/T15 仍须另行确认启动。T01 仅完成文档评审；T02 独立模型测试不代表业务接口验收，三段 Mermaid 和 Chen 图片保持完整。
