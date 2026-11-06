@@ -1,243 +1,32 @@
-# 小组合作代码贡献步骤
+# 小组协作
 
-> 本仓库为**小组合作项目**
+共同整改基线为 refactor/rbac-core-backend；现有文档 PR 尚未合入 main。整改任务从远端共同基线建立分支，不从旧 main 开工。任务范围与验收见[完整任务清单](docs/rbac-rectification/RBAC整改任务清单.md)。
 
-> **请严格按下面步骤操作**
+## 认领与开工
 
----
-
-## 一、开始之前（只做一次）
-
-### 1️⃣ 确认你已经被加为 Collaborator
-
-* 能看到这个仓库
-* 能点开 Issues / Pull Requests
-
-如果你：
-
-* push 报错
-* 提示 403
-
-  👉 立刻联系仓库 owner
-
----
-
-### 2️⃣ 把仓库克隆到本地
+1. 打开目标 GitHub Issue，确认负责人，人工认领。核对全部 Blocked by，以及前置结论和所需产物是否进入共同基线；关闭 Issue 本身不替代证据。课程 T14/T15 另须小组确认启动。
+2. 新组员先克隆仓库；已有仓库先检查本地改动，再获取远端更新：
 
 ```bash
-git clone https://github.com/minxuanbo/ooad-course-project.git
-cd ooad-course-project
+git status --short
+git fetch origin
 ```
 
----
-
-## 二、每次改代码前（非常重要）
-
-### 3️⃣ 切换到 main 并更新代码
+3. 每票使用独立任务分支；多人或多对话写入时使用独立工作树。T03 示例：
 
 ```bash
-git checkout main
-git pull
+git worktree add -b task/t03-org-import ../ooad-t03 origin/refactor/rbac-core-backend
 ```
 
----
+分支或目录已存在时，先核对所属任务后复用，不覆盖。打开新工作树后阅读 AGENTS.md 和对应 Issue；当前可开工范围及 [T03 指令](docs/rbac-rectification/README.md#t03-开工指令)见整改入口；前置票需有评审与合并证据。
 
-### 4️⃣ 新建一个分支（必须）
+## 提交与评审
 
-```bash
-git checkout -b 分支名
-```
+- 只提交本票需要的改动；改动共享授权、AOP、事务、初始化和 DTO 前，与相关票负责人协调。
+- 原型/契约评审票交付具体产物、评审结论和未决项。正式接口实现先核对对应评审已完成；正式前端继续暂缓。
+- 保留原始 Excel、数据库及本地资料。本地小组文档放在已忽略的 .local/group-documents/；临时材料、报告和构建产物不提交。
+- 检查 git diff，按实际文件路径 git add，再提交和推送本票分支。不要批量添加未知文件。
+- 创建草稿 PR，base 指向 refactor/rbac-core-backend，正文使用 Refs #实际编号，列交付行为、验收证据、未验证项及共享模块影响。
+- 小组解决未决项、回写执行计划并评审合入共同基线后，由评审者更新/关闭 Issue。代理不自行合并、关闭票或领取下游。
 
-示例：
-
-```bash
-git checkout -b feat/你的功能名
-git checkout -b fix/eval-bug
-git checkout -b exp/qwen-baseline
-```
-还有更多分支命名规范，AI查一下就行
-
-⚠️ **不要在 main 分支直接改代码**
-
----
-
-## 三、写代码 & 本地检查
-
-### 5️⃣ 修改代码
-
-* 正常写代码
-* 改完后：
-
-  * 至少能跑
-  * 不要留下明显报错
-
----
-
-### 6️⃣ 查看你改了什么
-```bash
-git status
-git diff
-```
-
-如果你看到：
-
-* 一堆不认识的文件
-* 不知道为什么被改了
-
-👉 **先停下来检查**
-
----
-
-## 四、提交代码到你的分支
-
-### 7️⃣ 添加改动
-
-```bash
-git add .
-```
-
-（如果你只想提交部分文件，可以单独 `git add 文件名`）
-
----
-
-### 8️⃣ 提交 commit
-
-```bash
-git commit -m "改动部分"
-```
-
-示例：
-
-```bash
-git commit -m "[Fix] Fix map not rendering issue"
-git commit -m "[Feat] Add AI-based map recommendation feature"
-```
-更多命名规范，AI一下就行
-
-❌ 不要用以下模糊的描述（不方面溯源）：
-
-```text
-update
-test
-final
-```
-
----
-
-### 9️⃣ 推送到远程仓库（不是 main）
-
-```bash
-git push origin 你的分支名
-```
-
-例如：
-
-```bash
-git push origin fix/eval-bug
-```
-
----
-
-## 五、发起 Pull Request（PR）
-
-### 🔟 在 GitHub 网页上操作
-
-1. 打开仓库页面
-2. 会看到 **“Compare & pull request”** 按钮
-3. 点击它
-4. 填写 PR 描述（不用写太多）
-
----
-
-### PR 描述最简模板（照填）
-
-```markdown
-做了什么：
-- 修复 / 新增 / 实验 …
-
-是否影响结果：
-- 是 / 否（不确定就写不确定）
-
-是否本地跑过：
-- 是 / 否
-```
-
-👉 **不会写也没关系，但一定要写点东西**
-
----
-
-## 六、等待合并（不要自己 merge）
-
-### 1️⃣ 提交 PR 后：
-
-* 不要继续改 main
-* 等 owner / 同学 review
-
----
-
-### 2️⃣ 如果被要求修改
-
-```bash
-# 在同一个分支继续改
-git add .
-git commit -m "[Fix] 根据 PR 意见修改"
-git push
-```
-
-👉 PR 会自动更新，不用新建 PR
-
----
-
-## 七、PR 合并后你要做的事
-
-### 1️⃣ 切回 main 并同步
-
-```bash
-git checkout main
-git pull
-```
-
-### 2️⃣ 删除本地旧分支（可选但推荐）
-
-```bash
-git branch -d 你的分支名
-```
-
----
-
-## 八、⚠️ 严禁行为（请务必看）
-
-❌ 直接 push main（一定不要这么做！有可能会覆盖掉其他同学修改后的代码）
-
-❌ 不拉最新代码就开始改
-
-❌ 一次 commit 改一堆不相关东西，描述还不写清楚
-
-❌ PR 什么都不写
-
-👉 **出现以上情况，后果是：代码冲突 + 结果不可信**
-
----
-
-## 九、遇到问题怎么办？
-
-如果你遇到：
-
-* 冲突
-* 不知道该怎么合并
-* 不确定改法对不对
-
-👉 **立刻在群里问 / GitHub 留言**
-
----
-
-## 十、一句话记住就够了
-
-> **main 不动 → 分支改 → 提交 → PR → 合并**
-
----
-## 附录：一些好用的vscode插件（但本人也用的不是很熟）
-1. GitLen
-![GitLen](docs/images/GitLen.png)
-2. Github PR
-![Github_PR](docs/images/Github_PR.png)
+GitHub 负责认领、评论及实时验收状态；任务清单保留批准的交付与依赖。调整范围或验收标准时，同步执行计划、任务清单和受影响 Issues，不新建重复票。

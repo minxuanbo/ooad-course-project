@@ -11,7 +11,7 @@
 - JAR SHA256：`516efbe268cba1e5b8da6b3ff7f8ee07e6feb7f06e503222fc7f0991da894e8f`
 - A 送测源码：`/root/rbac-role-scope-20261025`，覆盖率报告：`reports/jacoco/20261024T172153Z-3859`。
 - 48 项测试及六项 100% 覆盖率，所有 19 个发布生产类与报告字节码一致，源码清单与本地文件一致。
-- [本地报告入口](../reports/README.md)和[现场测试说明](现场运行JaCoCo.md)。
+- [本地报告入口](../docs/legacy/README.md)和[现场测试说明](现场运行JaCoCo.md)。
 
 ## 部署拓扑及保留内容
 
