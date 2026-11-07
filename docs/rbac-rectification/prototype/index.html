@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RBAC 整改原型 · 四组契约评审</title>
+<link rel="stylesheet" href="prototype.css">
+<script defer src="shared.js"></script>
+<script defer src="t04.js"></script><script defer src="t06.js"></script><script defer src="t08.js"></script><script defer src="t10.js"></script>
+</head>
+<body>
+<header><div><strong>市政 RBAC · 整改原型</strong><p class="muted">全部为虚构模拟数据，仅存内存；刷新清空。用于原型与 API 契约评审。</p></div><div class="identity"><span id="identity">尚未登录</span><button id="logout" type="button">退出模拟登录</button></div></header>
+<div class="shell">
+<aside><nav aria-label="原型业务"><button data-page="t04" type="button">T04 · 准入与人员检索</button><button data-page="t06" type="button">T06 · 资源与 API 映射</button><button data-page="t08" type="button">T08 · 角色与权限配置</button><button data-page="t10" type="button">T10 · 人员角色与调动</button></nav><div class="review-tools"><strong>评审工具</strong><label class="check"><input type="checkbox" id="fail-next">下一请求模拟失败</label><button type="button" id="reset">重置全部模拟数据</button><p class="muted">错误、越界和保护反馈均是内存模拟。正式后端、并发和双系统尚未验收。</p><a href="https://github.com/minxuanbo/ooad-course-project/blob/codex/rbac-prototype-contracts/docs/rbac-rectification/RBAC%E5%8E%9F%E5%9E%8B%E4%B8%8EAPI%E5%A5%91%E7%BA%A6.md">统一 API 契约（仓库）</a></div></aside>
+<main><div id="feedback" class="feedback" role="status" aria-live="polite">请选择模拟账号登录，或切换业务查看无权反馈。</div><div id="view"></div></main>
+</div>
+</body></html>
