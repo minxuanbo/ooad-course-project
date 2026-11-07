@@ -1,7 +1,8 @@
 /* T04 review prototype. All identities and requests are simulated in memory. */
 (() => {
   const R = window.R, e = R.escape;
-  let owner, tab = 'people', busy = '';
+  let owner, tab = 'people', busy = '', loginAccount = 'demo.root';
+  document.querySelector('#reset')?.addEventListener('click', () => { loginAccount = 'demo.root'; });
   let filters = {q:'', departmentId:'', enabled:'', page:0, size:5};
   const emptyLogFilters = () => ({userId:'', username:'', appCode:'', allowed:'', from:'', to:'', event:'', cursor:'', limit:100});
   let logFilters = emptyLogFilters(), people, logs, identity, logRows = [];
@@ -18,6 +19,7 @@
     return response;
   }
   function login(account, password) {
+    loginAccount = account;
     const user = R.state.users.find(u => u.username === account.trim());
     R.actorId = null;
     const response = request(() => {
@@ -123,7 +125,7 @@
     return departments?.status >= 400 ? `<p role="alert">${e(departments.code)}：${e(departments.message)}</p>` : `<nav aria-label="可查询部门"><ul class="stack">${branch(null)}</ul></nav>`;
   }
   function loginView() {
-    return `<h1>管理端登录</h1><p class="muted">RBAC 整改评审原型 · 全部为模拟账号，统一演示口令 demo。</p><div class="split"><section class="panel"><h2>使用用户名登录</h2><form id="t04-login" class="stack"><label>用户名<input name="account" autocomplete="username" maxlength="100" value="demo.root" required></label><label>口令<input name="password" type="password" autocomplete="current-password" maxlength="200" value="demo" required></label><button class="primary">登录</button></form><p class="hint">账号或口令错误、停用账号统一提示“账号或密码错误”；无管理权限单独拒绝。</p></section><section class="panel"><h2>可复核账号</h2><dl><dt>demo.root</dt><dd>共同根维护者，完整维护能力。</dd><dt>demo.logs</dt><dd>共同根日志查询者；无需完整维护能力 K。</dd><dt>demo.department</dt><dd>工程部及下级人员管理；日志和同级部门拒绝。</dd><dt>demo.employee / demo.foreign</dt><dd>普通员工 / 仅外系统权限；均拒绝本管理端登录。</dd><dt>demo.person10</dt><dd>停用账号；与口令错误使用相同提示。</dd></dl></section></div>`;
+    return `<h1>管理端登录</h1><p class="muted">RBAC 整改评审原型 · 全部为模拟账号，统一演示口令 demo。</p><div class="split"><section class="panel"><h2>使用用户名登录</h2><form id="t04-login" class="stack"><label>用户名<input name="account" autocomplete="username" maxlength="100" value="${e(loginAccount)}" required></label><label>口令<input name="password" type="password" autocomplete="current-password" maxlength="200" value="demo" required></label><button class="primary">登录</button></form><p class="hint">账号或口令错误、停用账号统一提示“账号或密码错误”；无管理权限单独拒绝。</p></section><section class="panel"><h2>可复核账号</h2><dl><dt>demo.root</dt><dd>共同根维护者，完整维护能力。</dd><dt>demo.logs</dt><dd>共同根日志查询者；无需完整维护能力 K。</dd><dt>demo.department</dt><dd>工程部及下级人员管理；日志和同级部门拒绝。</dd><dt>demo.employee / demo.foreign</dt><dd>普通员工 / 仅外系统权限；均拒绝本管理端登录。</dd><dt>demo.person10</dt><dd>停用账号；与口令错误使用相同提示。</dd></dl></section></div>`;
   }
   function peopleView() {
     const data = people?.data;
