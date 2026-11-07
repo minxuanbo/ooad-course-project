@@ -68,11 +68,11 @@
     has(code,user=R.user(),state=R.state){return (operations[code]||[]).length>0&&operations[code].every(([m,p])=>R.apiAllowed(user,m,p,state));},
     canEnter(user,state=R.state){return Object.values(operations).flat().some(([m,p])=>R.apiAllowed(user,m,p,state));},
     isAdmin(user,state=R.state){return !!user?.enabled&&R.isRoot(user)&&kCodes.every(c=>R.has(c,user,state));},
-    guard(code,{global=false,departmentId,targetId,blockSelf=false}={}){
+    guard(code,{global=false,departmentId,targetId,blockSelf=false,method,path}={}){
       const actor=R.user();
       if(!actor)R.fail(401,'AUTHENTICATION_REQUIRED','请先用模拟账号登录');
       if(!actor.enabled)R.fail(401,'SESSION_INVALID','当前账号已停用');
-      if(!R.has(code,actor))R.fail(403,'PERMISSION_DENIED','没有执行该操作的有效权限');
+      if(!(method&&path?R.apiAllowed(actor,method,path):R.has(code,actor)))R.fail(403,'PERMISSION_DENIED','没有执行该操作的有效权限');
       if(global&&!R.isRoot(actor))R.fail(403,'MANAGEMENT_SCOPE_DENIED','此操作仅限共同根范围');
       if(departmentId!==undefined&&!R.inScope(departmentId,actor))R.fail(403,'MANAGEMENT_SCOPE_DENIED','目标部门不在本人及下级范围');
       if(targetId!==undefined){
@@ -131,4 +131,5 @@
     R.render();
   });
 })();
+
 
