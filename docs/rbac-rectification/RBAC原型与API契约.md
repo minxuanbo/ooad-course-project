@@ -1,6 +1,6 @@
 # RBAC 四组原型与 API 契约
 
-> 2026-11-07；Refs #5、Refs #7、Refs #9、Refs #11。交付原型与契约供小组评审，不是正式前端、后端、数据库或双系统验收。
+> 2026-11-07；Refs #5、Refs #7、Refs #9、Refs #11。本轮原型与契约准备已获用户确认完成，见第8节；不代表正式前端、后端、数据库或双系统验收。
 
 ## 1. 入口、依据与前置核对
 
@@ -40,7 +40,7 @@
 
 ### 2.2 权限、系统与范围
 
-目录只选择本轮实际场景，系统 code 为候选 `rbac`。真实 systemId、departmentId、roleId、permissionId、apiId 由数据库产生，不承诺原型中的数值。`/mock/foreign-resource` 仅是跨系统拒绝的测试夹具，不是课程或正式 API，后续不得登记到初始化。匿名登录及本人查询不纳入管理能力 K。
+目录只选择本轮实际场景，系统 code 本轮采用 `rbac`。真实 systemId、departmentId、roleId、permissionId、apiId 由数据库产生，不承诺原型中的数值。`/mock/foreign-resource` 仅是跨系统拒绝的测试夹具，不是课程或正式 API，后续不得登记到初始化。匿名登录及本人查询不纳入管理能力 K。
 
 统一有效性沿启用用户→启用角色→启用权限→同系统启用 API→启用系统计算，以服务端识别的方法和 Spring 路径模板匹配。任意有效权限映射到实际 API 即可放行，不要求特定角色名；权限编码只标识资源，不由前端传值决定放行。父菜单不自动授予子按钮；导航补祖先不加到授权 ids。权限树父节点停用不自动停用子节点，各节点按自身有效性判断；若要撤销子 API 必须明确改变对应授权、映射或状态。
 
@@ -50,7 +50,7 @@
 
 ### 2.3 精确目录与管理员保护 K
 
-下表是本轮候选登记，不代表端点已经实现。T05 只初始化自己需要的查询、最小日志及 K 恢复基线；后续票按已通过契约接实际 API，不批量生成未评审 Controller。
+下表是本轮已确认的契约目录，不代表端点已经实现。T05 只初始化自己需要的查询、最小日志及 K 恢复基线；后续票按已通过契约接实际 API，不批量生成未评审 Controller。
 
 | 权限 code（系统 rbac） | 场景/API 模板 | 范围 | K |
 | --- | --- | --- | --- |
@@ -71,7 +71,7 @@ K 是上表标为“是”的**所有方法＋路径模板**组成的集合，�
 
 所有会影响 K 的写操作在同一写事务中按修改后状态重算；至少保留一名有效完整维护者。T07/T09/T11 共用稳定保护点和锁定顺序，不能各锁自己的角色后分别计数。需要并发验收的案例是两个管理员同时撤权/停用/移出根，只允许其中不会造成清零的一次提交成功；失败事务保留原用户归属、状态及全部关联。本轮 `R.atomic` 只是单线程内存模拟，未验证数据库锁、并发或真实 HTTP。
 
-本轮目录为后续初始化提供经评审的候选清单，不证明尚未实现的 API 可调用。T05 负责真实账号、授权基线及第一个真实链路；后续写票分别实现自己的已评审操作。T03 提供账号与根部门来源，不能为满足 K 编造账号或移动原人员，也不因此给四张原型票新增硬依赖。
+本轮目录为后续初始化提供经用户确认的契约清单，不证明尚未实现的 API 可调用。T05 负责真实账号、授权基线及第一个真实链路；后续写票分别实现自己的已评审操作。T03 提供账号与根部门来源，不能为满足 K 编造账号或移动原人员，也不因此给四张原型票新增硬依赖。
 
 <a id="shared-modules"></a>
 
@@ -93,20 +93,20 @@ K 是上表标为“是”的**所有方法＋路径模板**组成的集合，�
 
 ## 3. T04 / #5：准入、人员与最小日志
 
-原型源码 [t04.js](prototype/t04.js)。从登录页选择模拟账号，进入部门人员、本人信息或鉴权日志；每次查询显示模拟响应，可直接复核状态、字段和分页。先完成这些交互，再形成下表的逐项技术候选。
+原型源码 [t04.js](prototype/t04.js)。从登录页选择模拟账号，进入部门人员、本人信息或鉴权日志；每次查询显示模拟响应，可直接复核状态、字段和分页。先完成这些交互，再形成下表的逐项契约；本轮确认见第8节。
 
 ### 3.1 逐项契约
 
 | 交互与资源 | HTTP / 参数 / data | 权限与范围 | 技术结论 |
 |---|---|---|---|
-| 登录 | `POST /api/auth/login`，JSON `{account,password}`；account 非空、trim 后唯一 username，最多100；password 非空最多200，不 trim。沿既有 `Responses.Login` 的 `{token,user,expiresIn}` 外形，原型只模拟 `{user:{id,username,name,departmentId,enabled}}` 子集。 | 匿名；既有有效性/BCrypt 口令通过后，复用统一有效权限计算，至少命中一项本系统实际管理 API 才成功。仅父菜单、空角色、普通员工、仅外系统权限均不足；不要求完整 K 或根部门。 | 方法/路径/参数通过静态技术核对；工号/手机号别名本轮不支持，明确只保留 username。保留旧认证运行支撑外形，不定义 token 格式、期限、签发/刷新/退出机制。身份运行衔接交 T05；小组待确认。 |
-| 登录失败 | 账号未知、口令错、停用统一 `401 LOGIN_FAILED` / “账号或密码错误”；账号/口令已正确但无有效管理权限 `403 MANAGEMENT_ACCESS_DENIED` / “该账号没有本权限系统的有效管理权限”。必填/长度错误400。 | 任何失败均无成功登录状态；不能通过不同401提示枚举未知/停用账号。仅在已正确身份校验后区分无管理权限。 | 复用旧 `AuthService` 实际 `LOGIN_FAILED`，不新增 INVALID_CREDENTIALS。不新增 is_admin、资格表、凭证模型、认证接口。原型实际演示两种拒绝与成功；待小组确认。 |
-| 本人身份 | `GET /api/me`；data 候选收敛为 `{user:{id,username,name,departmentId,enabled}}`。 | 仅有效身份，无 `users.read` 前置，不接受客户端指定另一个 userId。角色已撤销时本人查询仍可用，管理请求及再次登录另行拒绝。 | 保留路径；移除旧 managementGrants/canManage 的双轨管理模型，部门/启用字段与新模型对应。字段收敛为技术候选，待确认。 |
-| 本人权限 | `GET /api/me/permissions`；data 为本人本系统有效权限数组，元素 `{id,systemId,parentId,type,code,name}`，按 system.code=rbac 对应的真实 systemId 过滤；id=1 仅为原型模拟值，本轮不扩成跨系统业务查询。 | 仅有效身份；用统一有效计算。为导航补出的祖先不得混入实际授予 IDs，不隐含子按钮或 API。 | 保留路径；不要求人员管理权限。旧 `?app=` 业务目录含义本轮收口为本系统，不另加资格接口；待确认。 |
-| 部门导航 | `GET /api/departments/tree`；data 扁平树节点数组 `{id,parentId,name}`，客户端依据 parentId 呈现。响应中的可见范围根 parentId 投影为 null，不暴露范围外父节点ID；实体实际归属不变，不返回范围外节点、名字或兄弟列表。 | `rbac.users.read` 映射该 GET；只本人部门及后代。共同根仅示例 id=1，真实根必须来自 T03 核对，不能按名称或任意空 parent 判断。 | 读资源且无业务写入；部门树不扩成组织 CRUD。原型工程部只显示工程部、道路组、项目组，兄弟财务部不出现；待确认。 |
-| 唯一人员列表 | `GET /api/users?q=&departmentId=&enabled=&page=0&size=20`；q 姓名或用户名包含搜索、trim、忽略大小写，最多100；enabled 可省略或 true/false；departmentId 可省略（本人部门及后代）或正 ID（所选部门及后代）；size 1—100。data `{items,total,page,size}`，item `{id,username,name,departmentId,departmentName,enabled}`。 | `rbac.users.read` 映射该 GET；服务端先限制本人范围，再部门+q+enabled，使用相同谓词计数和分页。姓名不是唯一标识，行操作用用户id；不把电话/口令哈希等无场景字段整包返回。 | 固定id升序；越末页 `items:[]` 保留 total/page/size；0结果total=0。原型显式size=5，正式默认20。负页/非法size/非法状态400，具体范围外部门403，root范围内未知部门404；待确认。 |
+| 登录 | `POST /api/auth/login`，JSON `{account,password}`；account 非空、trim 后唯一 username，最多100；password 非空最多200，不 trim。沿既有 `Responses.Login` 的 `{token,user,expiresIn}` 外形，原型只模拟 `{user:{id,username,name,departmentId,enabled}}` 子集。 | 匿名；既有有效性/BCrypt 口令通过后，复用统一有效权限计算，至少命中一项本系统实际管理 API 才成功。仅父菜单、空角色、普通员工、仅外系统权限均不足；不要求完整 K 或根部门。 | 方法/路径/参数通过静态技术核对；工号/手机号别名本轮不支持，明确只保留 username。保留旧认证运行支撑外形，不定义 token 格式、期限、签发/刷新/退出机制。身份运行衔接交 T05；本轮用户确认采用。 |
+| 登录失败 | 账号未知、口令错、停用统一 `401 LOGIN_FAILED` / “账号或密码错误”；账号/口令已正确但无有效管理权限 `403 MANAGEMENT_ACCESS_DENIED` / “该账号没有本权限系统的有效管理权限”。必填/长度错误400。 | 任何失败均无成功登录状态；不能通过不同401提示枚举未知/停用账号。仅在已正确身份校验后区分无管理权限。 | 复用旧 `AuthService` 实际 `LOGIN_FAILED`，不新增 INVALID_CREDENTIALS。不新增 is_admin、资格表、凭证模型、认证接口。原型实际演示两种拒绝与成功；本轮用户确认采用。 |
+| 本人身份 | `GET /api/me`；data 收敛为 `{user:{id,username,name,departmentId,enabled}}`。 | 仅有效身份，无 `users.read` 前置，不接受客户端指定另一个 userId。角色已撤销时本人查询仍可用，管理请求及再次登录另行拒绝。 | 保留路径；移除旧 managementGrants/canManage 的双轨管理模型，部门/启用字段与新模型对应。字段收敛方案本轮由用户确认采用。 |
+| 本人权限 | `GET /api/me/permissions`；data 为本人本系统有效权限数组，元素 `{id,systemId,parentId,type,code,name}`，按 system.code=rbac 对应的真实 systemId 过滤；id=1 仅为原型模拟值，本轮不扩成跨系统业务查询。 | 仅有效身份；用统一有效计算。为导航补出的祖先不得混入实际授予 IDs，不隐含子按钮或 API。 | 保留路径；不要求人员管理权限。旧 `?app=` 业务目录含义本轮收口为本系统，不另加资格接口；本轮用户确认采用。 |
+| 部门导航 | `GET /api/departments/tree`；data 扁平树节点数组 `{id,parentId,name}`，客户端依据 parentId 呈现。响应中的可见范围根 parentId 投影为 null，不暴露范围外父节点ID；实体实际归属不变，不返回范围外节点、名字或兄弟列表。 | `rbac.users.read` 映射该 GET；只本人部门及后代。共同根仅示例 id=1，真实根必须来自 T03 核对，不能按名称或任意空 parent 判断。 | 读资源且无业务写入；部门树不扩成组织 CRUD。原型工程部只显示工程部、道路组、项目组，兄弟财务部不出现；本轮用户确认采用。 |
+| 唯一人员列表 | `GET /api/users?q=&departmentId=&enabled=&page=0&size=20`；q 姓名或用户名包含搜索、trim、忽略大小写，最多100；enabled 可省略或 true/false；departmentId 可省略（本人部门及后代）或正 ID（所选部门及后代）；size 1—100。data `{items,total,page,size}`，item `{id,username,name,departmentId,departmentName,enabled}`。 | `rbac.users.read` 映射该 GET；服务端先限制本人范围，再部门+q+enabled，使用相同谓词计数和分页。姓名不是唯一标识，行操作用用户id；不把电话/口令哈希等无场景字段整包返回。 | 固定id升序；越末页 `items:[]` 保留 total/page/size；0结果total=0。原型显式size=5，正式默认20。负页/非法size/非法状态400，具体范围外部门403，root范围内未知部门404；本轮用户确认采用。 |
 | 人员后续动作 | 行按钮把已选 userId 交 T10 原型；`GET /api/users/{id}/roles` 等契约由 T10 编制，T04不重复创建。 | 可管理范围与实际角色查询/写入权限继续逐请求检查。 | 只接入口，不实现下游业务。 |
-| 最小日志查询 | `GET /api/authorization-logs`；沿旧 `userId,username,appCode,allowed,from,to,event,cursor,limit`。username 精确≤100；appCode精确≤191；event精确≤32；userId正安全整数；allowed true/false；from/to有效UTC ISO-8601，from含/to不含，from<to；cursor≤4096；limit默认100、1—500。 | `rbac.logs.read` 映射该 GET，且共同根范围；完整K不是前置。部门管理员即使有该API映射也因范围403；根用户没有日志API则具体权限403。 | 复用原 `AuditService` 游标，不改offset，不恢复 storage/archive/export；新增同一snapshot筛选集合total，待确认。 |
+| 最小日志查询 | `GET /api/authorization-logs`；沿旧 `userId,username,appCode,allowed,from,to,event,cursor,limit`。username 精确≤100；appCode精确≤191；event精确≤32；userId正安全整数；allowed true/false；from/to有效UTC ISO-8601，from含/to不含，from<to；cursor≤4096；limit默认100、1—500。 | `rbac.logs.read` 映射该 GET，且共同根范围；完整K不是前置。部门管理员即使有该API映射也因范围403；根用户没有日志API则具体权限403。 | 复用原 `AuditService` 游标，不改offset，不恢复 storage/archive/export；新增同一snapshot筛选集合total，本轮用户确认采用。 |
 | 日志响应与记录 | data `{items,nextCursor,hasMore,snapshotId,total}`；items保留 `{id,occurredAt,userId,username,appCode,permissionCode?,allowed,requestId,reason,eventType,httpMethod,requestPath,httpStatus}`。未知身份的userId可null；原型匿名username为空。删除 `archivedAt/archivedBy` 对外字段。 | 服务端ID降序，首次快照为当前最大ID，只查询 id≤snapshotId；继续页 id<上页末条id。筛选/limit绑定游标，变化后清cursor从首批查询；伪造/损坏/筛选不一致 `400 INVALID_CURSOR`。每页重新校验权限/根范围。 | total为snapshot内同一筛选集合总数，并非当前页条数，也不因读取日志的后续技术记录增长；到底nextCursor=null/hasMore=false。UI支持逐批累计和刷新快照。 |
 
 ### 3.2 复用与旧入口收口
@@ -319,7 +319,7 @@ K 与 T06/T08 共享，按同一有效用户的实际方法/路径能力判定�
 
 ## 8. 技术评审证据与范围
 
-2026-11-07 先制作各票原型，再逐项核对上述REST契约；主代理统一检查共享目录、字段、错误、候选及K。本轮准备产物仍待小组逐项接受，技术评审不能代替真实数据、正式界面或老师验收。
+2026-11-07 先制作各票原型，再逐项核对上述REST契约；主代理统一检查共享目录、字段、错误、候选及K。技术评审不能代替真实数据、正式界面或老师验收；本轮准备产物随后获用户确认，记录如下。
 
 各票处理函数自检：T04 120项、T06 27项、T08 17项、T10 66项及修复回归7项；共享模型12项及独立endpoint/OR覆盖检查通过。最终集成b6fad59上再次执行均通过；五个JS文件语法、全部变更diff空白检查通过。自检脚本和临时报告保留在Git外，不引入仓库测试框架。
 
@@ -343,19 +343,21 @@ K 与 T06/T08 共享，按同一有效用户的实际方法/路径能力判定�
 
 另检查部门账号访问日志/资源/角色的无权反馈；具备实际API但缺root的独立范围拒绝由处理函数自检覆盖，未将其冒称为额外浏览器步骤。1440/768/390像素浏览器视口抽查四页，文档宽度未超过视口；窄屏表格折行显示。Tab可从查询文本框移至状态选择，Enter可提交查询；本次未做完整无障碍审计或真实手机验收。最终浏览器控制台未见error/warn。截图已在工具回显核对；只读沙箱阻止文件落盘，未提供持久化截图文件。临时预览已停止，视口已恢复。
 
-以上均为模拟原型与静态契约证据；未运行真实HTTP、JPA、AOP、数据库事务/锁并发、正式前端或双系统验收。小组仍须先走原型、再逐项接受契约；Issue验收不因代理技术复核自动勾选。
+以上均为模拟原型与静态契约证据；未运行真实HTTP、JPA、AOP、数据库事务/锁并发、正式前端或双系统验收。Issue验收不因代理技术复核自动勾选；本轮由以下用户确认授权勾选并标为完成。
+
+**用户确认（2026-11-07）：**用户要求查看实际效果及验收方法后，已打开本机可操作原型，并提供T04/T06/T08/T10的操作与预期反馈路线。用户随后明确表示“应该可以了，更新推送，对应的标为完成”。据此接受本轮四组原型/API契约准备产物及当前方案选择，更新任务清单与四张Issue为完成。记录不声称用户逐项亲手运行了全部案例，也不冒充老师或其他组员签字。用户确认的原型代码为ba0251d；本次收尾仅更新文档和票状态。PR #19继续保持草稿、未合共同基线；真实账号与课程技术等后续缺项仍保留。
 
 <a id="decisions"></a>
 
-## 9. 待小组确认与后续开工条件
+## 9. 已确认选择、后续缺项与开工条件
 
-| 未决/候选 | 本轮具体选择 | 责任与边界 |
+| 确认项/后续缺项 | 本轮具体选择 | 责任与边界 |
 | --- | --- | --- |
-| 登录账号和本人DTO | 只支持唯一username，不保留工号/手机号别名；沿account/password与既有Login外形；本人DTO按3.1收敛 | 小组确认G3取舍；T05落实可信身份运行衔接，不设计新令牌机制 |
-| 日志查询 | 沿旧cursor/limit快照、增加同快照total、去对外归档字段；root+日志API | 小组确认；T05验证最小记录/JPA与一次去重；旧历史用户ID不能误接新用户 |
-| 维护范围/DTO | T06只改必要parentId/type/enabled与映射；T08空权限新建/改名/启停/整体选权；T10候选子集、旧超权角色须移除、无人员恢复 | 小组逐项接受路由、字段与失败语义；不扩CRUD；反向引用正式摘要可由T07在既有DTO内确认 |
-| 完整K、共享角色与保护 | 2.3精确API集合、同用户多角色汇总、distinct根用户、写后至少一人 | 是方案选择，不是老师逐项规定；变更须统一原版计划及T07/T09/T11 |
+| 登录账号和本人DTO | 只支持唯一username，不保留工号/手机号别名；沿account/password与既有Login外形；本人DTO按3.1收敛 | 本轮用户确认G3取舍；T05落实可信身份运行衔接，不设计新令牌机制 |
+| 日志查询 | 沿旧cursor/limit快照、增加同快照total、去对外归档字段；root+日志API | 本轮用户确认；T05验证最小记录/JPA与一次去重；旧历史用户ID不能误接新用户 |
+| 维护范围/DTO | T06只改必要parentId/type/enabled与映射；T08空权限新建/改名/启停/整体选权；T10候选子集、旧超权角色须移除、无人员恢复 | 本轮用户接受现有路由、字段与失败语义；不扩CRUD；反向引用正式摘要可由T07在既有DTO内确认 |
+| 完整K、共享角色与保护 | 2.3精确API集合、同用户多角色汇总、distinct根用户、写后至少一人 | 本轮用户确认的方案选择，不是老师逐项规定；变更须统一原版计划及T07/T09/T11 |
 | 数据与初始化 | 真实用户名/工号/哈希/状态来源、共同根、维护账号及归属仍缺 | T03/T05落实，不使用模拟demo.root作为默认管理员或从岗位推权；不为原型新增T03硬依赖 |
 | 课程技术/多系统 | CloneFactory指定来源仍缺；真实跨系统角色与课程API未评审；MySQL编码collation待核对 | T05核实课程映射用法，T09核对判重；T14/T15需另行确认，不把非法fixture当课程接口 |
 
-T05仍需要T03完成及T04原型/契约评审通过；T07/T09/T11仍分别需要T05与T06/T08/T10对应评审。四份准备产物不等于全部实现票可直接开工。小组解决未决项、回写原版计划并评审合入共同基线后，再维护Issue验收状态。正式前端、真实后端及双系统验收继续暂缓或由相应票落实；本轮不合共同基线、不关票、不ready、不执行下游。
+四票的原型/契约评审条件已由用户确认完成。T05仍需要T03完成并取得已评审T04产物；T07/T09/T11仍分别需要T05与T06/T08/T10对应契约。产物仍在草稿PR #19，后续从共同基线开工前须先确认其已合入或经协作取得，关闭Issue本身不能代替证据；不能宣称全部实现票可直接开工。真实数据与课程技术等缺项按表交后续票核实。正式前端、真实后端及双系统验收继续暂缓或由相应票落实；本轮仅依用户最新授权完成四票状态，不合共同基线、不ready、不执行下游。
