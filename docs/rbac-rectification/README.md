@@ -1,12 +1,13 @@
 # RBAC 整改
 
-以检查记录及用户补充确定需求，以原版执行计划指导实施。T01 模型、规则与迁移边界和 T02 独立 JPA 模型已通过用户授权的代理评审；业务实现、原型/API 契约及运行验收仍须按票完成。
+以检查记录及用户补充确定需求，以原版执行计划指导实施。T01 模型、规则与迁移边界和 T02 独立 JPA 模型已通过用户授权的代理评审；四组原型/API 契约已准备并进入技术评审，仍待小组逐项接受；业务实现及运行验收须按票完成。
 
 | 文档 | 用途 |
 | --- | --- |
 | [原版执行计划与 Chen ER 图](RBAC整改计划与Chen-ER图.md) | 核心模型、授权规则、技术边界及验收依据；保留三段 Mermaid 源码 |
 | [检查记录复核说明](RBAC检查记录复核说明.md) | 第一轮技术纪要摘录、补充图片、三份原始数据核对及需求归属 |
 | [完整任务清单](RBAC整改任务清单.md) | 15 张任务的交付、验收、直接阻塞及共享模块 |
+| [四组原型与 API 契约](RBAC原型与API契约.md) / [交互原型](prototype/index.html) | T04/T06/T08/T10 的实际交互、公共 API 目录、验收案例及未决项 |
 | Chen ER：[PNG](RBAC-ER图-预览.png) / [SVG](RBAC-ER图.svg) | 标准符号预览与矢量原图 |
 | [小组协作](../../CONTRIBUTING.md) | 认领、共同基线、任务工作树和草稿 PR |
 
@@ -16,7 +17,13 @@ GitHub Issues #2—#16 是认领、讨论与状态入口，共 22 条原生阻�
 
 [T01 / Issue #2](https://github.com/minxuanbo/ooad-course-project/issues/2) 的核查和代理评审已完成，证据直接保存在原版计划的 [2.5 模型映射](RBAC整改计划与Chen-ER图.md#25-t01-模型核对与-t02-映射基线)、[3.3 管理员保护](RBAC整改计划与Chen-ER图.md#33-t01-有效全局管理员与保护边界)、[4.1—4.2 替换及隔离边界](RBAC整改计划与Chen-ER图.md#41-t01-工程复用替换与删除对照)和 [5.3 评审记录](RBAC整改计划与Chen-ER图.md#53-t01-评审记录与未决项)。评审由主 agent 按用户明确授权完成，不代表老师或真人组员验收。
 
-T01 已经 PR #17 合入且 Issue #2 已关闭；[T02 / Issue #3](https://github.com/minxuanbo/ooad-course-project/issues/3) 已经 [PR #18](https://github.com/minxuanbo/ooad-course-project/pull/18) 合入并关闭，52 项测试及打包证据见[原版计划 4.3](RBAC整改计划与Chen-ER图.md#43-t02-独立模型与验证)。[T03 / Issue #4](https://github.com/minxuanbo/ooad-course-project/issues/4) 票级前置已满足，可人工认领并先落实字段/初始账号缺项；T04/T06/T08/T10 原型评审可分别开展。2026-11-07 补充要求未因此验收，T14/T15 仍须另行确认启动。
+T01 已经 PR #17 合入且 Issue #2 已关闭；[T02 / Issue #3](https://github.com/minxuanbo/ooad-course-project/issues/3) 已经 [PR #18](https://github.com/minxuanbo/ooad-course-project/pull/18) 合入并关闭，52 项测试及打包证据见[原版计划 4.3](RBAC整改计划与Chen-ER图.md#43-t02-独立模型与验证)。[T03 / Issue #4](https://github.com/minxuanbo/ooad-course-project/issues/4) 票级前置已满足，可人工认领并先落实字段/初始账号缺项；T04/T06/T08/T10 已有[统一原型/契约](RBAC原型与API契约.md)，小组须先检查实际原型再逐项接受契约。2026-11-07 补充要求未因此验收，T14/T15 仍须另行确认启动。
+
+## 四组原型与契约的查看方法
+
+下载本分支完整目录，使用 Edge/Chrome 直接打开 [prototype/index.html](prototype/index.html)，无需构建或后端。所有数据都是虚构、仅存内存；模拟账号和口令在登录页列明。仓库网页的 HTML 源码不是运行效果。统一契约按 [T04](RBAC原型与API契约.md#t04)、[T06](RBAC原型与API契约.md#t06)、[T08](RBAC原型与API契约.md#t08)、[T10](RBAC原型与API契约.md#t10) 分节，另有[公共约定](RBAC原型与API契约.md#common)、[后续验收案例](RBAC原型与API契约.md#acceptance)和[待确认项](RBAC原型与API契约.md#decisions)。
+
+准备产物不等于小组验收或正式界面。T05还需T03完成及T04评审通过；T07/T09/T11还各需T05和对应T06/T08/T10评审。原有依赖保持不变，本轮不启动下游。
 
 ## T03 开工指令
 
