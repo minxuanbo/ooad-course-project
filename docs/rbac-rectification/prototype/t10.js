@@ -16,18 +16,6 @@
     const own=R.effective(R.user());
     return R.state.roles.filter(role=>role.enabled&&[...R.effective({enabled:true,roleIds:[role.id]})].every(id=>own.has(id)));
   }
-  function users({q='',page=0,size=20}={}) {
-    R.guard('rbac.users.read',{method:'GET',path:'/api/users'});
-    if(typeof q!=='string'||q.length>100)R.fail(400,'INVALID_ARGUMENT','搜索文本最多 100 字符');
-    const data=R.pageItems(R.state.users.filter(user=>R.inScope(user.departmentId)&&`${user.name} ${user.username}`.toLocaleLowerCase().includes(q.trim().toLocaleLowerCase())),page,size);
-    R.queryFailure();
-    return {...data,items:data.items.map(dto)};
-  }
-  function departments() {
-    R.guard('rbac.users.read',{method:'GET',path:'/api/departments/tree'});
-    R.queryFailure();
-    return R.state.departments.filter(department=>R.inScope(department.id)).map(department=>({...department}));
-  }
   function currentRoles(id) {
     const user=target('rbac.users.read','GET','/api/users/{id}/roles',id);
     R.queryFailure();
@@ -68,7 +56,7 @@
     const status=!user.enabled?401:!R.apiAllowed(user,'GET','/api/users')||!R.inScope(departmentId,user)?403:200;
     return {loginAllowed:R.canEnter(user),status,code:status===200?'OK':status===401?'SESSION_INVALID':R.apiAllowed(user,'GET','/api/users')?'MANAGEMENT_SCOPE_DENIED':'PERMISSION_DENIED'};
   }
-  R.t10={users,departments,currentRoles,assignableRoles,replaceRoles,disable,transfer,nextAccess};
+  R.t10={currentRoles,assignableRoles,replaceRoles,disable,transfer,nextAccess};
   function select(id) {
     const result=currentRoles(id);
     Object.assign(ui,{id,ids:[...result.user.roleIds],departmentId:result.user.departmentId,pending:null,query:'',error:null});
