@@ -1,14 +1,21 @@
 /* T04 review prototype. All identities and requests are simulated in memory. */
 (() => {
   const R = window.R, e = R.escape;
-  let owner, tab = 'people', busy = '', loginAccount = 'demo.root';
-  document.querySelector('#reset')?.addEventListener('click', () => { loginAccount = 'demo.root'; });
+  let owner, tab = 'people', busy = '', loginAccount = 'demo.root', loginCase = 'normal', loginResponse;
+  const loginCases = [
+    ['normal', '正常双入口', '工号和手机号定位同一账号，使用相同口令和权限判断。'],
+    ['no-phone', '无手机号', '仅将演示工程管理员的手机号置空；仍可使用工号 demo.department。'],
+    ['same-value', '同一用户两字段同值', '演示工程管理员的工号和手机号均为 19900000003，只匹配一个用户。'],
+    ['ambiguous', '跨用户匹配歧义', '演示工程管理员的工号临时改为维护者手机号 19900000001；两个用户都命中，登录统一拒绝。'],
+    ['leading-zero', '工号含前导零', '演示工程管理员的工号临时改为 0003；保持字符串，不转成数字。']
+  ];
+  document.querySelector('#reset')?.addEventListener('click', () => { loginAccount = 'demo.root'; loginCase = 'normal'; loginResponse = null; });
   let filters = {q:'', departmentId:'', enabled:'', page:0, size:5};
   const emptyLogFilters = () => ({userId:'', username:'', appCode:'', allowed:'', from:'', to:'', event:'', cursor:'', limit:100});
   let logFilters = emptyLogFilters(), people, logs, identity, logRows = [];
   const selected = (value, expected) => String(value) === String(expected) ? ' selected' : '';
   const departmentName = id => R.state.departments.find(d => d.id === id)?.name || '—';
-  const json = value => `<details><summary>本次模拟响应（含 HTTP 状态）</summary><pre>${e(JSON.stringify(value, null, 2))}</pre></details>`;
+  const json = (value, label = '本次模拟响应（含 HTTP 状态）') => `<details><summary>${e(label)}</summary><pre>${e(JSON.stringify(value, null, 2))}</pre></details>`;
   const error = response => `<div class="empty" role="alert"><strong>${e(response.status)} · ${e(response.code)}</strong><p>${e(response.message)}</p><button data-retry>重试查询</button></div>`;
   function request(action, path, method = 'GET', loginUser) {
     let response;
@@ -19,19 +26,20 @@
     return response;
   }
   function login(account, password) {
-    loginAccount = account;
-    const key = account.trim();
-    const matches = R.state.users.filter(u => u.username === key || u.phone === key);
+    loginAccount = typeof account === 'string' ? account : '';
+    const key = loginAccount.trim();
+    const matches = key ? R.state.users.filter(u => u.username === key || u.phone === key) : [];
     const user = matches.length === 1 ? matches[0] : undefined;
     R.actorId = null;
     const response = request(() => {
-      if (!key || !password || key.length > 100 || password.length > 200) R.fail(400, 'INVALID_ARGUMENT', '请输入工号或手机号和口令');
+      if (typeof account !== 'string' || typeof password !== 'string' || !key || !password || key.length > 100 || password.length > 200) R.fail(400, 'INVALID_ARGUMENT', '工号或手机号、口令须为字符串且非空；账号最多 100 字，口令最多 200 字');
       if (!user?.enabled || password !== 'demo') R.fail(401, 'LOGIN_FAILED', '账号或密码错误');
       if (!R.canEnter(user)) R.fail(403, 'MANAGEMENT_ACCESS_DENIED', '该账号没有本权限系统的有效管理权限');
       R.queryFailure();
       return {user:{id:user.id, username:user.username, name:user.name, departmentId:user.departmentId, enabled:user.enabled}};
     }, '/api/auth/login', 'POST', user);
     if (response.status === 200) R.actorId = user.id;
+    loginResponse = response;
     return response;
   }
   function currentUser() {
@@ -126,8 +134,26 @@
     const branch = parentId => visible.filter(d => d.parentId === parentId || parentId === null && !visible.some(p => p.id === d.parentId)).map(d => `<li><button data-department="${d.id}" aria-pressed="${Number(filters.departmentId || R.user().departmentId) === d.id}">${e(d.name)}</button>${visible.some(c => c.parentId === d.id) ? `<ul>${branch(d.id)}</ul>` : ''}</li>`).join('');
     return departments?.status >= 400 ? `<p role="alert">${e(departments.code)}：${e(departments.message)}</p>` : `<nav aria-label="可查询部门"><ul class="stack">${branch(null)}</ul></nav>`;
   }
+  function prepareLoginCase(value) {
+    if (!loginCases.some(([key]) => key === value)) R.fail(400, 'INVALID_ARGUMENT', '未知模拟场景');
+    const user = R.state.users.find(u => u.id === 3);
+    user.username = 'demo.department'; user.phone = '19900000003';
+    if (value === 'no-phone') user.phone = null;
+    if (value === 'same-value') user.username = user.phone;
+    if (value === 'ambiguous') user.username = R.state.users.find(u => u.id === 1).phone;
+    if (value === 'leading-zero') user.username = '0003';
+    loginAccount = value === 'normal' ? 'demo.root' : user.username;
+    loginCase = value; loginResponse = null; R.actorId = null;
+  }
   function loginView() {
-    return `<h1>管理端登录</h1><p class="muted">RBAC 整改评审原型 · 用户名就是工号；以下工号与手机号均为虚构，统一演示口令 demo。</p><div class="split"><section class="panel"><h2>使用工号或手机号登录</h2><form id="t04-login" class="stack"><label>工号或手机号<input name="account" autocomplete="username" maxlength="100" value="${e(loginAccount)}" required></label><label>口令<input name="password" type="password" autocomplete="current-password" maxlength="200" value="demo" required></label><button class="primary">登录</button></form><p class="hint">账号或口令错误、停用账号统一提示“账号或密码错误”；无管理权限单独拒绝。</p></section><section class="panel"><h2>可复核账号</h2><dl><dt>demo.root / 19900000001</dt><dd>同一维护者的工号 / 手机号；共同根，完整维护能力。</dd><dt>demo.logs / 19900000002</dt><dd>同一日志查询者的工号 / 手机号；无需完整维护能力 K。</dd><dt>demo.department / 19900000003</dt><dd>同一工程管理员的工号 / 手机号；只管理本部门及下级，日志和同级部门拒绝。</dd><dt>demo.employee / 19900000004</dt><dd>普通员工，两种入口均拒绝。</dd><dt>demo.foreign / 19900000005</dt><dd>仅外系统权限，两种入口均拒绝。</dd><dt>demo.person10 / 19900000015</dt><dd>同一停用账号的工号 / 手机号；与口令错误使用相同提示。</dd></dl></section></div>`;
+    const examples = [[1,'共同根维护者，完整维护能力'],[2,'共同根日志查询者，无需完整 K'],[3,'工程管理员，仅本部门及下级'],[4,'普通员工，两种入口均拒绝'],[5,'仅外系统权限，两种入口均拒绝'],[15,'停用账号，两种入口均拒绝']];
+    return `<h1>管理端登录</h1><p class="muted">RBAC 整改评审原型 · 用户名就是工号；以下工号与手机号均为虚构，统一演示口令 demo。</p>
+      <div class="split"><section class="panel"><h2>使用工号或手机号登录</h2>
+      <label>登录边界场景（仅模拟）<select id="t04-login-case">${loginCases.map(([key,label]) => `<option value="${key}"${selected(loginCase,key)}>${e(label)}</option>`).join('')}</select></label>
+      <p class="hint">${e(loginCases.find(([key]) => key === loginCase)[2])} 切换场景恢复该演示账号的工号和手机号；重置全部模拟数据恢复所有改动。</p>
+      <form id="t04-login" class="stack"><label>工号或手机号<input name="account" autocomplete="username" maxlength="100" value="${e(loginAccount)}" required></label><label>口令<input name="password" type="password" autocomplete="current-password" maxlength="200" value="demo" required></label><button class="primary">登录</button></form>
+      <p class="hint">账号或口令错误、停用、跨用户歧义统一提示“账号或密码错误”；正确口令但无管理权限单独拒绝。失败不会保留登录身份。</p>${loginResponse ? json(loginResponse, '本次登录响应（模拟）') : ''}</section>
+      <section class="panel"><h2>可复核账号</h2><dl>${examples.map(([id,label]) => { const user = R.state.users.find(u => u.id === id); return `<dt>${e(user.username)} / ${e(user.phone || '无手机号')}</dt><dd>${e(label)}</dd>`; }).join('')}</dl><p class="hint">每行均为同一账号的工号 / 手机号；没有独立 employeeNo 字段。</p></section></div>`;
   }
   function peopleView() {
     const data = people?.data;
@@ -143,7 +169,7 @@
       owner = R.actorId; model = R.state; tab = 'people'; filters = {q:'',departmentId:'',enabled:'',page:0,size:5};
       departments = queryDepartments(); people = queryUsers(filters); logs = null; identity = null; logRows = []; logFilters = emptyLogFilters();
     }
-    return `<h1>人员与鉴权</h1><p class="muted">模拟数据 · ${e(departmentName(R.user().departmentId))}及下级范围</p><div class="toolbar" role="group" aria-label="工作区"><button data-tab="people" aria-pressed="${tab === 'people'}">部门人员</button><button data-tab="logs" aria-pressed="${tab === 'logs'}">鉴权日志</button><button data-tab="identity" aria-pressed="${tab === 'identity'}">本人身份与权限</button></div>${tab === 'people' ? peopleView() : tab === 'logs' ? logsView() : `<section class="panel"><h2>本人身份</h2><p class="muted">本人查询仅要求有效身份；管理操作仍逐次校验具体权限及部门范围。</p><button id="t04-identity">刷新本人信息</button>${identity ? json(identity) : ''}</section>`}`;
+    return `<h1>人员与鉴权</h1>${loginResponse?.status === 200 && loginResponse.data.user.id === R.actorId ? json(loginResponse, '本次登录响应（模拟）') : ''}<p class="muted">模拟数据 · ${e(departmentName(R.user().departmentId))}及下级范围</p><div class="toolbar" role="group" aria-label="工作区"><button data-tab="people" aria-pressed="${tab === 'people'}">部门人员</button><button data-tab="logs" aria-pressed="${tab === 'logs'}">鉴权日志</button><button data-tab="identity" aria-pressed="${tab === 'identity'}">本人身份与权限</button></div>${tab === 'people' ? peopleView() : tab === 'logs' ? logsView() : `<section class="panel"><h2>本人身份</h2><p class="muted">本人查询仅要求有效身份；管理操作仍逐次校验具体权限及部门范围。</p><button id="t04-identity">刷新本人信息</button>${identity ? json(identity) : ''}</section>`}`;
   };
   function show(response) { R.notify(response.message, response.code, response.status); }
   function load(kind, append = false) {
@@ -160,6 +186,9 @@
     }, 120);
   }
   R.bindings.t04 = () => {
+    document.querySelector('#t04-login-case')?.addEventListener('change', event => R.run(() => {
+      prepareLoginCase(event.target.value); R.render(); R.notify('已准备模拟登录场景，尚未登录');
+    }));
     document.querySelector('#t04-login')?.addEventListener('submit', event => {
       event.preventDefault(); const form = new FormData(event.currentTarget);
       const response = login(String(form.get('account')), String(form.get('password')));
