@@ -17,8 +17,8 @@ GitHub Issues #2—#16 共 15 票：当前范围 13 票、课程后续 2 票，2
 
 - **T01/T02 已合入**：PR #17/#18，Issue #2/#3 已关闭。模型与规则评审见[计划 5.3](RBAC整改计划与Chen-ER图.md#53-t01-评审记录与未决项)，T02 的 52 项独立模型测试及打包证据见[计划 4.3](RBAC整改计划与Chen-ER图.md#43-t02-独立模型与验证)。这些记录属于代理技术评审。
 - **T03 可人工认领**：前置 T02 已满足；本票先修正单工号模型，再落实数据导入、哈希、状态及初始维护账号缺项。
-- **T04 待补充复核**：2026-11-07 四组原型/API 契约经用户确认并随 [PR #19](https://github.com/minxuanbo/ooad-course-project/pull/19) 合入；2026-11-08 工号/手机号登录修正已重开 Issue #5，新增部分待评审。
-- **T05 等待 T03 和修正后的 T04**；T07/T09/T11 分别依赖 T05 及对应 T06/T08/T10 契约。开工时获取最新共同基线。
+- **T04 补充准备已确认**：2026-11-07 四组原型/API 契约随 [PR #19](https://github.com/minxuanbo/ooad-course-project/pull/19) 合入；2026-11-08 双入口登录原型/契约经技术复核后，用户要求“推送合并完结”。[补充证据](RBAC原型与API契约.md#login-review)及[Issue #5](https://github.com/minxuanbo/ooad-course-project/issues/5)记录本次合入与完成状态。
+- **T05 仍等待 T03**，开工还须取得本次 T04 修订合入后的共同基线；T07/T09/T11 分别依赖 T05 及对应 T06/T08/T10 契约。开工时获取最新共同基线。
 - **T14/T15 待小组确认启动**：课程受控场景与双系统授权演示仍待落实。
 
 ## 四组原型与契约的查看方法
@@ -26,6 +26,8 @@ GitHub Issues #2—#16 共 15 票：当前范围 13 票、课程后续 2 票，2
 下载本分支完整目录，用 Edge/Chrome 打开 [prototype/index.html](prototype/index.html)，无需构建或后端。账号、口令和数据均为内存模拟，登录页列有使用方法；请在浏览器运行 HTML 查看交互。
 
 契约按 [T04](RBAC原型与API契约.md#t04)、[T06](RBAC原型与API契约.md#t06)、[T08](RBAC原型与API契约.md#t08)、[T10](RBAC原型与API契约.md#t10) 分节，另有[公共约定](RBAC原型与API契约.md#common)、[验收案例](RBAC原型与API契约.md#acceptance)、[评审记录](RBAC原型与API契约.md#review)及[已确认选择与缺项](RBAC原型与API契约.md#decisions)。原型确认覆盖交互与契约准备；正式界面和真实后端按各自任务验收。
+
+T04 登录页可切换“登录边界场景（仅模拟）”，复核无手机号、同值、跨用户歧义和前导零；成功或失败后展开“本次登录响应（模拟）”。步骤见[契约 3.3](RBAC原型与API契约.md#login-scenarios)，证据见[8.1](RBAC原型与API契约.md#login-review)。
 
 ## T03 开工指令
 
