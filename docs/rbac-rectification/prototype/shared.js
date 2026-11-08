@@ -41,6 +41,7 @@
       {id:5,username:'demo.foreign',name:'演示外系统用户',departmentId:2,enabled:true,roleIds:[6]}
     ];
     ['林桥','陈路','许城','周明','吴河','赵建','郑岩','李景','王川','张岸'].forEach((name,i)=>users.push({id:i+6,username:`demo.person${i+1}`,name:`${name}（模拟）`,departmentId:[2,3,4,5][i%4],enabled:i!==9,roleIds:i%2?[3]:[5]}));
+    users.forEach(user => { user.phone = `199000${String(user.id).padStart(5,'0')}`; });
     return {systems:[{id:1,code:'rbac',name:'本权限系统',enabled:true},{id:2,code:'mock',name:'外系统模拟项',enabled:true}],departments,roles,users,permissions,apis,logs:[]};
   }
   const R = window.R = {
