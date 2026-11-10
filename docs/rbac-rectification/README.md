@@ -19,6 +19,7 @@ GitHub Issues #2—#16 共 15 票：当前范围 13 票、课程后续 2 票，2
 - **T03 实现及代理评审通过**：独立分支`codex/t03-org-import`按用户确认的新项目规则导入110个目标部门和10001个账号，交付[PR #21](https://github.com/minxuanbo/ooad-course-project/pull/21)。112项测试报告失败/错误/跳过为0，Spring Boot打包通过；两路新上下文代理重试后Standards、Spec均0项发现。用户明确JaCoCo本次不作阻塞，原规则保留且不宣称全覆盖。规则、复现与证据见[计划4.4—4.5](RBAC整改计划与Chen-ER图.md#44-原始数据复核与导入前置)，合入/关票实时状态见Issue #4及PR。
 - **T04 补充准备已确认**：2026-11-07 四组原型/API 契约随 [PR #19](https://github.com/minxuanbo/ooad-course-project/pull/19) 合入；2026-11-08 双入口登录原型/契约经技术复核后，用户要求“推送合并完结”。[补充证据](RBAC原型与API契约.md#login-review)及[Issue #5](https://github.com/minxuanbo/ooad-course-project/issues/5)记录本次合入与完成状态。
 - **T05已取得前置基线**：包含T03 PR #21和T04修订的70c3bef，独立分支`codex/t05-management-loop`实现及两轴代理复核通过，完整回归128项失败/错误/跳过均0，打包/入口验证通过；初审2项修复后剩余0项。JaCoCo本票不阻塞，合入及关票以GitHub为准；五角色规则、RBAC/业务后台边界及复现见[计划4.6](RBAC整改计划与Chen-ER图.md#46-t05-五角色首次授权与实际管理链路)。T07/T09/T11 分别依赖 T05 及对应 T06/T08/T10 契约。开工时获取最新共同基线。
+- **T07实现及代理复核通过**：用户指示继续，本票前置T05 [PR #22](https://github.com/minxuanbo/ooad-course-project/pull/22)已合入、Issue #6已完成，T06契约亦已合入。从`8afac13`建立独立分支`codex/t07-resource-mapping`，实现7项必要资源操作，范围/事务及复现见[计划4.7](RBAC整改计划与Chen-ER图.md#47-t07-本系统资源目录与映射维护)。最终完整回归144项失败/错误/跳过均0，打包/实际入口验证通过；Spec初审2项P2修复后两轴剩余均0。合入/关票以Issue #8及PR为准，JaCoCo按用户要求本次不作阻塞。
 - **T14/T15 待小组确认启动**：课程受控场景与双系统授权演示仍待落实。
 
 ## 四组原型与契约的查看方法

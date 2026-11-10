@@ -18,7 +18,8 @@ public class ApiExceptionHandler {
     org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,
     org.springframework.http.converter.HttpMessageNotReadableException.class,
     org.springframework.web.bind.MissingServletRequestParameterException.class,
-    org.springframework.validation.BindException.class
+    org.springframework.validation.BindException.class,
+    org.springframework.web.method.annotation.HandlerMethodValidationException.class
   })
   ResponseEntity<ApiResponse<Object>> invalid(Exception e) {
     return error(HttpStatus.BAD_REQUEST, "INVALID_ARGUMENT", "请求参数或 JSON 格式错误");

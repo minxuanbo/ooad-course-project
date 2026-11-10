@@ -44,7 +44,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @Import({ApiResponseAdvice.class, ApiExceptionHandler.class, RequestAuditFilter.class})
 public class CoreRuntimeConfiguration {
 
-  /** 生产只接明确的整改库；测试建表仅允许特定profile下的本机T05专库。 */
+  /** 生产只接明确的整改库；测试建表仅允许对应profile下的本机专用测试库。 */
   @Bean
   static BeanFactoryPostProcessor databaseGuard(Environment environment) {
     String url = environment.getProperty("spring.datasource.url", "");
@@ -52,13 +52,19 @@ public class CoreRuntimeConfiguration {
         environment.acceptsProfiles(Profiles.of("core-http-test"))
             && url.matches(
                 "jdbc:mysql://(?:127\\.0\\.0\\.1|localhost):[0-9]{1,5}/rbac_core_t05_test(?:\\?.*)?");
+    isolatedTest =
+        isolatedTest
+            || (environment.acceptsProfiles(Profiles.of("core-resource-test"))
+                && url.matches(
+                    "jdbc:mysql://(?:127\\.0\\.0\\.1|localhost):[0-9]{1,5}/rbac_core_t07_test(?:\\?.*)?"));
     boolean production =
-        url.matches("jdbc:mysql://[^/?#\\s]+/rbac_core(?:\\?[^#]*)?")
+        !environment.acceptsProfiles(Profiles.of("core-http-test", "core-resource-test"))
+            && url.matches("jdbc:mysql://[^/?#\\s]+/rbac_core(?:\\?[^#]*)?")
             && "never".equals(environment.getProperty("spring.sql.init.mode"));
     if ((!isolatedTest && !production)
         || !"validate".equals(environment.getProperty("spring.jpa.hibernate.ddl-auto"))
         || !"false".equals(environment.getProperty("rbac.initialize"))) {
-      throw new ImportException("IMPORT_DATABASE_UNSAFE", "T05只允许显式整改库及隔离配置，不加载旧初始化");
+      throw new ImportException("IMPORT_DATABASE_UNSAFE", "只允许显式整改库及匹配的隔离配置，不加载旧初始化");
     }
     return beanFactory -> {};
   }
@@ -73,22 +79,40 @@ public class CoreRuntimeConfiguration {
   @Bean
   PasswordEncoder passwordEncoder(Environment environment) {
     return new BCryptPasswordEncoder(
-        environment.acceptsProfiles(Profiles.of("core-http-test")) ? 4 : 10);
+        environment.acceptsProfiles(Profiles.of("core-http-test", "core-resource-test")) ? 4 : 10);
   }
 
-  /** account/password必须是真实JSON字符串，不将数值或布尔值悄悄转成账号。 */
+  /** JSON遵守契约字段类型，拒绝账号、ID、布尔值和枚举的隐式类型转换。 */
   @Bean
-  Jackson2ObjectMapperBuilderCustomizer strictStrings() {
+  Jackson2ObjectMapperBuilderCustomizer strictJsonInput() {
     return builder ->
         builder.postConfigurer(
             mapper -> {
               mapper.enable(
                   com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+              mapper.enable(
+                  com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES);
+              mapper.enable(
+                  com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_NUMBERS_FOR_ENUMS);
               mapper
                   .coercionConfigFor(LogicalType.Textual)
                   .setCoercion(CoercionInputShape.Integer, CoercionAction.Fail)
                   .setCoercion(CoercionInputShape.Float, CoercionAction.Fail)
                   .setCoercion(CoercionInputShape.Boolean, CoercionAction.Fail);
+              mapper
+                  .coercionConfigFor(LogicalType.Integer)
+                  .setCoercion(CoercionInputShape.Float, CoercionAction.Fail)
+                  .setCoercion(CoercionInputShape.String, CoercionAction.Fail)
+                  .setCoercion(CoercionInputShape.EmptyString, CoercionAction.Fail)
+                  .setCoercion(CoercionInputShape.Boolean, CoercionAction.Fail);
+              mapper
+                  .coercionConfigFor(LogicalType.Boolean)
+                  .setCoercion(CoercionInputShape.String, CoercionAction.Fail)
+                  .setCoercion(CoercionInputShape.EmptyString, CoercionAction.Fail)
+                  .setCoercion(CoercionInputShape.Integer, CoercionAction.Fail);
+              mapper
+                  .coercionConfigFor(LogicalType.Enum)
+                  .setCoercion(CoercionInputShape.EmptyString, CoercionAction.Fail);
             });
   }
 }

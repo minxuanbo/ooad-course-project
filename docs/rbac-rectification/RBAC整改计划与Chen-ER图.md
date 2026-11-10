@@ -466,6 +466,32 @@ CSV默认拒绝覆盖；预检不写授权。HTTP默认8081，可配置PORT。�
 
 验证须显式配置本机独立的RBAC_CORE_HTTP_TEST_DB_URL（rbac_core_t05_test）及共用测试凭据；其他T02/T03/旧链路变量按各测试原说明配置，测试库均可清空且不得指向业务库。`mvn clean test-compile test '-DtestJvmArgs=-Xmx512m -Duser.timezone=UTC'`包含旧链路回归。JaCoCo按用户要求暂不作本票阻塞，保留原规则，不把test/package成功写成verify全覆盖通过。2026-11-10本地完整回归128项，失败/错误/跳过均0；另补齐手机号停用/错口令、双入口权限与导航一致、退出撤销后重跑T05共16项通过。Spring Boot打包成功，使用隔离T05库验证打包入口输出10001行预检清单、重复初始化成功且不重授，真实HTTP匿名401、admin登录200、人员total=10001。原三Excel及ER资源保持不变。两路新上下文代理按用户提供的code-review审核，固定基线70c3bef，初审HEAD1e1626a：Standards发现集中日志缺开始记录/失败耗时1项P3，Spec发现最大合法页码返回500而非空页1项P2；均在0a0f6d0修复。分页先见证HTTP expected200实际500的RED，再修复并跑完整128项0失败/错误/跳过；两原代理只读增量复核后Standards明文违规/有效smell均0，Spec缺失/范围扩展/实现错误均0。此为代理技术评审，不冒充老师或真人验收；合入和Issue完成以GitHub记录为准。
 
+
+### 4.7 T07 本系统资源目录与映射维护
+
+从T05合并提交`8afac1357f89902d8c96e6ac49e8486f784f487d`建立独立分支`codex/t07-resource-mapping`，对应Issue #8。前置T05 PR #22及T06原型/契约PR #19均已进入共同基线；历史T06中的账号/CloneFactory缺项已由T03/T05解决，本票不以其旧未决项重复阻塞。
+
+按T06第4节接入7个操作：GET systems、permissions/tree、api-resources、permissions/{id}/apis；PUT permissions/{id}/apis；PATCH permissions/{id}及api-resources/{id}。所有端点复用T05实际AOP、统一有效授权链、共同根范围、最小日志与DTO映射，保持既有响应及method/path命名。目录只返回code=rbac；业务后台仍是另一个系统，不能把Excel业务矩阵整包导入或按角色名放行。
+
+权限树仅维护parentId/type/enabled；API仅维护enabled；不增加系统CRUD、权限新增/删除、API注册或方法/路径编辑。树保留停用项，父节点停用不隐含子按钮撤权。已保存映射独立完整读取，按API ID排序，保留停用关联；API候选按相同系统/搜索谓词计数、ID升序分页，极大越末页返回空items及total。VO保持既定字段；API反向引用可由权限树及各节点完整映射构造，本票不增加反向查询或未经评审的摘要字段。
+
+资源MVC预检在参数解析前复用统一授权/全局守卫，合法直接目标先核对系统边界，提前拒绝只记一次鉴权日志；原Controller AOP及根锁后重新鉴权保留。请求DTO对搜索词先trim再验长度，并验证正安全整数、唯一数组、必填、非空PATCH及字段存在性；Jackson拒绝数字枚举、字符串布尔、小数/字符串ID及未知/内部字段。parentId省略保持原值，显式null清除父级；type/enabled的null拒绝。业务树和同系统关联在Service校验，未知关联/跨系统关联400；直接外系统目标或目录403，已许可范围未知目标404。映射先整组校验再替换，不静默去重或部分提交；重复相同PUT不重复建关系。
+
+所有资源写操作在Service事务内先取得T05同一可信共同根的悲观写锁，再重新检查当前身份/实际HTTP模板权限及全局范围，然后修改、在保存边界捕获DB冲突，最后重算同一用户完整K；清零返回409 LAST_ADMIN_REQUIRED并回滚字段/全部映射。权限、API停用及映射清空/改到别的API都走同一保护。拿锁后再次鉴权防止排队期间被撤权的旧请求继续执行；后续T09/T11共用同一根锁及完整K，不按角色名或人数粗略计数。
+
+数据库结构复用T02/T03/T05，核心ER、原件及初始化目录均不改。T05已登记20个已评审API，本票接入其中7个，不修改五角色首次规则。后续角色/人员写操作仍由T09/T11实现，默认产品入口切换由T12处理，旧JDBC及模拟产品路径继续隔离在整改上下文之外。本票真实资源调用不依赖旧目录/模拟鉴权。
+
+复现沿4.6的CloneFactory安装、T03导入、T05首次授权和CoreRuntimeCommand启动步骤；本票不新增部署口令或初始化入口。测试新增本机专库rbac_core_t07_test，配置RBAC_CORE_RESOURCE_TEST_DB_URL及既有RBAC_CORE_TEST_DB_USER/PASSWORD，profile=core-resource-test仅允许该库，测试执行原有两个建表脚本并由JPA validate核对，禁止指向业务库。
+
+```powershell
+mvn clean test-compile test '-DtestJvmArgs=-Xmx512m -Duser.timezone=UTC'
+mvn -DskipTests package
+```
+
+CoreResourcesHttpT07Test的小型真实JPA夹具仅位于隔离测试库，不替代T03/T05万人来源验收。覆盖真实读写、范围/系统/输入、OR及实时失效、树约束、保存失败回滚、最后K，以及两名完整维护者并发失去各自必要能力仅一次成功；另用同步观察点验证请求经过AOP后等待数据库根锁，期间被撤权则拿锁后拒绝，无固定睡眠、模拟仓储或模拟鉴权。2026-11-10最终clean test-compile test共144项，失败/错误/跳过均0；首次7项缺失接口HTTP404的RED、数字枚举非法输入被接受、测试profile误接部署库的RED均已见证后修复。最终Spring Boot打包及jar实测通过：系统/树/API页读取、映射保存、权限停用后真实日志请求立即403、恢复200、数字枚举400；原始三Excel与ER资源哈希不变。
+
+两路新上下文代理按用户code-review固定基线8afac13审核代码222697a：Standards明文违规/需修改smell均0；Spec发现2项P2（搜索词应trim后检查长度、输入非法与无权组合请求应先返回401/403）。两项均见证真实HTTP RED后在6b28de6修复；原代理只读增量复核后Standards及Spec各0项剩余发现。新增组合测试还验证外系统目标携带非法字段先403及恰一条AUTHORIZATION记录。以上为代理技术评审，不冒充老师或真人验收；合入/关票以Issue #8及PR为准。JaCoCo沿用户确认不作本次阻塞，原规则保留，不声称verify全覆盖。
+
 ## 5. 组员讨论与验证清单
 
 方案默认：**角色全局共享、每人一个部门、管理范围为本部门及后代；跨部门临时委托与角色继承留在范围之外。** 根部门全局维护、API 多对多、停用替代删除及分页参数也属于实现建议，课程尚未正式指定 RBAC0。变更时同步图、表、原型、契约和测试；实际管理权限决定可做什么，组织位置决定管理范围。

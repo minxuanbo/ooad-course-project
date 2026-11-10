@@ -177,7 +177,7 @@ T03 提供真实账号与共同根来源，T05 据经评审数据建立授权基
 | PATCH /api/permissions/{id} | 非空body仅{parentId?:id或null,type?:MENU或BUTTON,enabled?:boolean}；data=更新后PermissionDTO | 对应实际 API 的资源写权限 + 共同根，目标rbac | 部分更新必要字段；显式null表示根；拒绝系统迁移、name/code等未评审字段；树、类型及K检查后整体保存 |
 | PATCH /api/api-resources/{id} | body仅{enabled:boolean}，必填；data=更新后ApiDTO | 对应实际 API 的资源写权限 + 共同根，目标rbac | 停用/恢复均保留关联；method/path/systemId只读；影响所有引用，原子检查K |
 
-GET映射以ids为关联真值，items供展示状态/模板。API反向引用可从本系统权限映射构造，正式DTO是否带反向权限摘要交T07实现评审确认；不得为此另加通用查询端点。T07应统一DTO字段命名与T05的实际映射约定；本稿沿原型method/path。
+GET映射以ids为关联真值，items供展示状态/模板。API反向引用可从本系统权限映射构造，T07保持API DTO既定字段，不额外带反向摘要；可由本系统权限树和各节点完整映射构造，不另加通用查询端点。T07应统一DTO字段命名与T05的实际映射约定；本稿沿原型method/path。
 
 ### 4.3 关联、树约束与失败
 
