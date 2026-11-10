@@ -1,14 +1,27 @@
 package com.municipal.rbac;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.*;
 
+/** 旧链路的JDBC记录适配器，保留至T12清理旧产品入口。 */
 @Service
-class AuditRecorder {
+@RequiredArgsConstructor
+class AuditRecorder implements AuditWriter {
   private final AuditRepository repository;
-  AuditRecorder(AuditRepository repository){this.repository=repository;}
-  @Transactional(propagation=Propagation.REQUIRES_NEW)
-  public void record(Long user,String account,String event,boolean allowed,String request,String reason,String method,String path,int status){
-    repository.record(user,account,event,allowed,request,reason,method,path,status);
+
+  /** 独立提交旧登录与拒绝事件，统一入口接收安全值对象。 */
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public void record(AuditEvent event) {
+    repository.record(
+        event.userId(),
+        event.username(),
+        event.eventType(),
+        event.allowed(),
+        event.requestId(),
+        event.reason(),
+        event.httpMethod(),
+        event.requestPath(),
+        event.httpStatus());
   }
 }

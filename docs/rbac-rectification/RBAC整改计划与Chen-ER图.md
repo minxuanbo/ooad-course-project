@@ -276,7 +276,7 @@ K 固定为角色定义维护、角色权限配置、人员角色分配、菜单
 
 Service 明确声明式事务边界：查询采用只读事务，写操作整体成功或回滚。T05 验证首个查询链，T07/T09/T11 验证各自写入，T13 复核跨入口行为；管理员保护共用 3.3 的判定与锁策略，以实际调用、回滚及并发证据验收。
 
-CloneFactory 来自补充检查图片，当前缺少课程示例。T05 核实指定来源、用法及最小 DTO 映射，并在首个真实业务调用中验证；T07/T09/T11 复用，T12 清理旧映射，T13 核对证据。现有 `DtoMapper` 的 `ObjectMapper.convertValue` 尚未满足此项；依赖与用法待来源核实后确定，缺项记录为未决。沿用现有核心模型与任务拆分。
+CloneFactory按用户指定的老师项目核对：`cn.edu.xmu:clonefactory:0.0.1-SNAPSHOT`，provided依赖及显式注解处理器。T05真实DTO调用使用课程生成的`CloneFactory.copy`；固定来源、构建步骤及兼容性见4.6。T07/T09/T11复用，旧`DtoMapper`留给T12清理，不以其`ObjectMapper.convertValue`充当课程映射器。
 
 ### 3.5 复用最小鉴权日志
 
@@ -385,7 +385,7 @@ mvn -B -ntp -DskipTests package
 
 T03只建组织、账号和来源，不分配任何角色。启用及已有口令不代表可以登录管理端；T05须建立实际授权及准入校验后才能验收可登录账号。保留原有“本人部门及后代”的范围规则，根归属本身不授予任何管理权限。
 
-用户同时确认首次批量授权不能依赖逐人操作：T05须提供经过确认的“工号—角色”初始化规则/清单、预检数量及冲突报告，在同一事务内批量建立关联；管理员配置完整维护角色，员工基础角色及各级管理角色按确认清单批量配置，不从岗位自动猜授管理权限、不整包迁移旧五类角色/范围。普通员工不得因此获得本系统管理权限。重复初始化不重置已调整授权、不恢复已撤销关联，失败整体回滚；T11负责后续日常人员授权维护。具体角色及员工映射由T05落实，不在T03预建空角色或默认授权。
+用户同时确认首次批量授权不能依赖逐人操作：T05须提供经过确认的“工号—角色”初始化规则/清单、预检数量及冲突报告，在同一事务内批量建立关联；管理员配置完整维护角色，员工基础角色及各级管理角色按确认清单批量配置，不从岗位自动猜授管理权限、不整包迁移旧五类角色/范围。普通员工不得因此获得本系统管理权限。重复初始化不重置已调整授权、不恢复已撤销关联，失败整体回滚；T11负责后续日常人员授权维护。具体角色及员工映射按用户随后确认的4.6首次规则落实，不在T03预建空角色或默认授权。
 
 ### 4.5 T03离线导入与交接
 
@@ -414,6 +414,57 @@ T03只建组织、账号和来源，不分配任何角色。启用及已有口�
 独立代理技术评审：依据用户提供的`code-review`，两路代理首次受用量限制未返回结论；用户确认恢复后重新启动两路新上下文审核。固定基线`0d1270251ece3588abdbaab3c9926ea37065ef91`，代码及测试HEAD为`2320332c15d77825f382bf8ae273546e6e85896e`。Standards明文违规0、有实际影响的possible smells 0；Spec缺失/部分0、范围扩展0、实现错误0。结论按当前新项目初始化规则形成，不以旧迁移方案或未实现的下游功能评判T03。之后只作评审记录及状态文档收尾，无业务代码变更。
 
 交付[PR #21](https://github.com/minxuanbo/ooad-course-project/pull/21)，base为`refactor/rbac-core-backend`。主代理按用户授权维护合入及Issue #4状态；不以代理技术评审冒充老师或真人组员验收。本地报告及秘密留在Git之外，最终合入/关票以GitHub记录为准。T05接入本票数据并按确认清单首次批量授权，T03本票不提前授予角色或实现下游接口。
+
+
+### 4.6 T05 五角色首次授权与实际管理链路
+
+2026-11-10按用户补充确认：Excel中的“系统管理后台”是业务系统，和当前RBAC权限管理系统分开。Excel五角色业务矩阵不能直接当作RBAC自身管理准入；权限和API始终按所属system_id隔离，运行时不按岗位或角色名称鉴权。本票从共同基线`70c3bef823a909bb2873185f029daad56b51d424`接续T03/T04，不修改原始Excel或核心ER。
+
+首次初始化仅应用下列已确认规则，按工号输出可核对清单，不再采用早期三角色/119负责人候选方案：
+
+| 初始角色 | 明确分类条件（顺序匹配） | 账号数 | RBAC自身权限 |
+| --- | --- | ---: | --- |
+| 系统管理员 | T03单独创建的维护账号，默认admin | 1 | 完整维护、人员管理及日志查询 |
+| 公司领导 | 原员工分公司=总公司且部门=公司领导，或分公司=部门 | 64 | 查询、分配人员角色、停用、调动，限本人部门及后代 |
+| 部门经理 | 其余人员岗位精确为部长/副部长 | 106 | 同上 |
+| 项目经理 | 其余人员岗位精确为项目经理/项目副经理 | 72 | 同上 |
+| 普通员工 | 其余人员；不以主任、负责人或项目总工程师猜测提升 | 9758 | 无RBAC管理操作权限，不能登录管理端 |
+
+共10001人，每人首次一个角色。三个管理角色均不配置角色定义维护、资源配置或日志查询。10名原公司领导随T03归入总公司，因而人员管理范围覆盖总公司及全部分公司；分公司直属领导范围仅覆盖其分公司及后代。后续调岗不自动按岗位改角色，T11维护角色分配；上述“按确认岗位建立初始清单”取代旧文中“不得按岗位猜授”的泛化表述，运行时仍完全依据有效授权链。
+
+初始化核对原件SHA、来源行/六列、工号、初始部门及110部门；预检冲突返回BOOTSTRAP_CONFLICT，不覆盖现存无回执授权。首次在同一Service事务中建立rbac系统、1个导航菜单、10个按钮权限、20个已评审API、5角色及10001条人员关联；以共同根行锁串行化，与完整K检查同一事务。bootstrap_receipts仅记录本次初始化摘要及完成时间，不是管理员资格/凭证表。失败整批回滚；相同回执重复执行不恢复撤权、不启用已停资源、不重置后续角色调整，规则或原件改变时拒绝重新授予。工号清单只由离线preview-file输出新的CSV，不提交万人资料。
+
+正式HTTP切片为登录/退出、本人及本人权限、部门树、唯一人员分页列表和最小日志查询。Controller用DTO校验/VO响应，Service只读事务，真实AOP读取Spring的HTTP方法及服务端模板，JPA按用户→角色→权限→同系统API完整启用链计算；多角色/多权限按OR，父菜单不隐含子按钮权限。人员SQL先约束部门再筛选、计数和分页，可见范围根parentId投影为null，不修改实际组织关系。后续T07/T09/T11复用同一权限计算、根锁、完整K和映射；本票目录中的后续API只作授权基线，不提供未实现的写接口。
+
+可信身份沿旧32随机字节Base64URL Bearer及12小时外形，以进程内临时索引接新users.id，无会话表或新令牌协议；退出撤销、重启失效，每请求重新检查账号及授权。日志复用共享requestId/过滤器事件端口，整改适配为JPA独立事务，登录/真实鉴权一次记录且不存口令、令牌、请求体、手机号登录输入或查询串；允许/拒绝均记录，匿名拒绝由过滤器补记。写日志失败只发异常类型运维事件，保持原授权结论；查询存储故障仍返回安全错误。查询同时要求日志API及共同根，完整K用于至少一名维护者保护，不额外限制每位查询者；无归档/导出接口。快照total与筛选绑定、keyset分页，游标签名防篡改且重启后需重新查询。
+
+**课程CloneFactory来源及复现：**用户指定老师的[course-project-mgt](https://gitee.com/mingqcn/course-project-mgt)，核对提交`fde08d5dd417abc543145aff33ca8378deb9ca36`的backend/pom.xml及docs/backend-design.md。实际处理器来自老师[spring-fundamentals](https://gitee.com/mingqcn/spring-fundamentals)提交`237f49c52bdc72da30383571bb2f985ac54a514a`的clonefactory模块，仓库Apache-2.0许可；不复制源码或jar进本项目。版本与老师一致，保留本项目Java21、Boot3.5.6、Lombok1.18.42，避免无关框架升级。
+
+在新的临时目录克隆并固定源码后安装依赖（Maven须在PATH，或替换为实际mvn路径）：
+
+```powershell
+git clone https://gitee.com/mingqcn/spring-fundamentals .local/course-clonefactory
+git -C .local/course-clonefactory checkout --detach 237f49c52bdc72da30383571bb2f985ac54a514a
+Push-Location .local/course-clonefactory/clonefactory
+mvn -Dmaven.compiler.proc=full clean org.apache.maven.plugins:maven-compiler-plugin:3.14.0:compile jar:jar install:install
+Pop-Location
+mvn clean test-compile
+```
+
+显式proc=full兼容本机JDK25默认关闭隐式注解处理，避免缺少AutoService注册导致不生成映射类。处理器忽略final字段且按getX读取：映射Result采用普通字段/Lombok，实体primitive布尔字段显式排除后补值，再由课程映射器转VO；关系、集合元素类型和时间格式转换显式处理。真实HTTP断言token、expiresIn、身份、分页total和日志字段，不能只验证生成类存在。
+
+**新项目运行次序：**先按4.4执行T03原始组织/人员导入，再对显式rbac_core执行`deploy/rbac-core-runtime.sql`（仅新增最小日志及初始化回执）。必须配置RBAC_CORE_DB_URL/USER/PASSWORD及RBAC_CORE_SOURCE_DIR；禁旧初始化，ddl-auto=validate，脚本不删除或覆盖现有表。打包后从仓库根执行：
+
+```powershell
+mvn -DskipTests package
+java -Dloader.main=com.municipal.rbaccore.runtime.CoreBootstrapCommand -cp target/rbac0-0.1.0.jar org.springframework.boot.loader.launch.PropertiesLauncher --rbac.core.preview-file=.local/initial-role-preview.csv
+java -Dloader.main=com.municipal.rbaccore.runtime.CoreBootstrapCommand -cp target/rbac0-0.1.0.jar org.springframework.boot.loader.launch.PropertiesLauncher
+java -Dloader.main=com.municipal.rbaccore.runtime.CoreRuntimeCommand -cp target/rbac0-0.1.0.jar org.springframework.boot.loader.launch.PropertiesLauncher
+```
+
+CSV默认拒绝覆盖；预检不写授权。HTTP默认8081，可配置PORT。默认java -jar仍是旧产品入口，最终切换归T12；本票通过独立上下文隔离旧Controller/JDBC/初始化器。当前只初始化RBAC自身资源，不整包导入18个业务系统，也不在本票扩展课程业务。
+
+验证须显式配置本机独立的RBAC_CORE_HTTP_TEST_DB_URL（rbac_core_t05_test）及共用测试凭据；其他T02/T03/旧链路变量按各测试原说明配置，测试库均可清空且不得指向业务库。`mvn clean test-compile test '-DtestJvmArgs=-Xmx512m -Duser.timezone=UTC'`包含旧链路回归。JaCoCo按用户要求暂不作本票阻塞，保留原规则，不把test/package成功写成verify全覆盖通过。2026-11-10本地完整回归128项，失败/错误/跳过均0；另补齐手机号停用/错口令、双入口权限与导航一致、退出撤销后重跑T05共16项通过。Spring Boot打包成功，使用隔离T05库验证打包入口输出10001行预检清单、重复初始化成功且不重授，真实HTTP匿名401、admin登录200、人员total=10001。原三Excel及ER资源保持不变。两路新上下文代理评审另行记录，不以本节描述代替结论。
 
 ## 5. 组员讨论与验证清单
 
@@ -485,8 +536,8 @@ T01 文档评审经 PR #17 合入，Issue #2 已关闭；T02 独立模型证据�
 
 产物为[交互原型](prototype/index.html)及[统一契约](RBAC原型与API契约.md)。先原型，后核对 REST、DTO、错误、分页/total、权限/系统/范围、整体替换及 K 保护；技术证据见[契约第 8 节](RBAC原型与API契约.md#review)。全局目录要求共同根及实际权限，人员候选要求权限子集，调动检查双范围，日志要求共同根及日志 API。
 
-[契约第 9 节](RBAC原型与API契约.md#decisions)记录本人 DTO、日志 total/归档字段、维护路由、候选及完整 K 等已确认方案。旧 username 单入口已由 1.2 取代；账号/哈希/状态、根及初始维护者来源交 T03/T05，CloneFactory 指定来源待核实。T10 用模拟下一请求说明角色变更，独立权限来源页留在范围之外。
+[契约第 9 节](RBAC原型与API契约.md#decisions)记录本人 DTO、日志 total/归档字段、维护路由、候选及完整 K 等已确认方案。旧 username 单入口已由 1.2 取代；账号/哈希/状态、根及初始维护者来源交 T03/T05，CloneFactory指定来源与版本已在4.6核实。T10 用模拟下一请求说明角色变更，独立权限来源页留在范围之外。
 
 2026-11-07，用户查看原型及验收路线后表示“应该可以了，更新推送，对应的标为完成”，据此确认四组准备产物并关闭 #5/#7/#9/#11。技术评审与用户确认分别记录；真实 HTTP/JPA/AOP、事务/锁并发、正式前端及双系统由后续任务验收。
 
-产物经用户授权随 PR #19 合入共同基线。2026-11-08 T04 登录补充产物已获用户确认，合入证据见 Issue #5；T05 仍须等待 T03 完成，并取得本次修订后的共同基线；T07/T09/T11 各自等待 T05 与对应契约。后续从最新共同基线开工，原依赖保持不变。
+产物经用户授权随 PR #19 合入共同基线。2026-11-08 T04 登录补充产物已获用户确认，合入证据见 Issue #5；T05已取得包含T03 PR #21及T04修订的共同基线70c3bef；T07/T09/T11 各自等待 T05 与对应契约。后续从最新共同基线开工，原依赖保持不变。
