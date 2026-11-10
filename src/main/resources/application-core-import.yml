@@ -1,0 +1,23 @@
+spring:
+  main:
+    web-application-type: none
+  datasource:
+    url: ${RBAC_CORE_DB_URL:}
+    username: ${RBAC_CORE_DB_USER:}
+    password: ${RBAC_CORE_DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 4
+      transaction-isolation: TRANSACTION_READ_COMMITTED
+  sql.init.mode: never
+  jpa:
+    open-in-view: false
+    hibernate.ddl-auto: validate
+rbac:
+  initialize: false
+  core:
+    import:
+      source-dir: ${RBAC_CORE_SOURCE_DIR:.}
+      employee-password: ${RBAC_CORE_EMPLOYEE_PASSWORD:}
+      admin-password: ${RBAC_CORE_ADMIN_PASSWORD:}
+      admin-username: ${RBAC_CORE_ADMIN_USERNAME:admin}

@@ -95,13 +95,13 @@ class CoreModelJpaTest {
     secondRole.grantPermission(other);
     roles.saveAndFlush(secondRole);
     roles.saveAndFlush(new Role("empty-role", "暂未授予权限"));
-    var user = new User("employee-1", "user-1", "unchanged-hash", "样例人员", child, true);
+    User user = new User("user-1", "unchanged-hash", "样例人员", child, true);
     user.updateProfile("100000001", "样例岗位");
     user.assignRole(firstRole);
     user.assignRole(secondRole);
     users.saveAndFlush(user);
-    var noRole = users.saveAndFlush(new User(
-        "employee-2", "user-2", "other-hash", "无角色人员", root, false));
+    User noRole = users.saveAndFlush(new User(
+        "user-2", "other-hash", "无角色人员", root, false));
     return new Sample(system, root, child, menu, read, other, api, firstRole, secondRole, user, noRole);
   }
 
@@ -109,7 +109,6 @@ class CoreModelJpaTest {
     var sample = sample();
     em.clear();
     var user = users.findById(sample.user().getId()).orElseThrow();
-    assertEquals("employee-1", user.getEmployeeNo());
     assertEquals("user-1", user.getUsername());
     assertEquals("unchanged-hash", user.getPasswordHash());
     assertEquals("样例人员", user.getName());
@@ -195,10 +194,10 @@ class CoreModelJpaTest {
         "INSERT INTO departments(code,name) VALUES('root','重复编码')",
         "INSERT INTO roles(code,name,enabled) VALUES('role-a','重复编码',1)",
         "INSERT INTO systems(code,name,enabled) VALUES('rbac-core','重复编码',1)",
-        "INSERT INTO users(employee_no,username,password_hash,name,department_id,enabled)"
-            + " VALUES('employee-1','different-user','hash','重复工号'," + department + ",1)",
-        "INSERT INTO users(employee_no,username,password_hash,name,department_id,enabled)"
-            + " VALUES('different-employee','user-1','hash','重复用户名'," + department + ",1)",
+        "INSERT INTO users(username,password_hash,name,department_id,enabled)"
+            + " VALUES('user-1','hash','重复工号'," + department + ",1)",
+        "INSERT INTO users(username,phone,password_hash,name,department_id,enabled)"
+            + " VALUES('different-user','100000001','hash','重复手机号'," + department + ",1)",
         "INSERT INTO permissions(system_id,code,name,type,enabled)"
             + " VALUES(" + system + ",'menu','重复系统权限','MENU',1)",
         "INSERT INTO api_resources(system_id,http_method,path_template,enabled)"
@@ -220,8 +219,8 @@ class CoreModelJpaTest {
     String api = "(SELECT id FROM api_resources LIMIT 1)";
     return Stream.of(
         "INSERT INTO departments(code,name,parent_id) VALUES('bad-parent','无效上级',-1)",
-        "INSERT INTO users(employee_no,username,password_hash,name,department_id,enabled)"
-            + " VALUES('bad-dept','bad-dept','hash','无效部门',-1,1)",
+        "INSERT INTO users(username,password_hash,name,department_id,enabled)"
+            + " VALUES('bad-dept','hash','无效部门',-1,1)",
         "INSERT INTO permissions(system_id,code,name,type,enabled) VALUES(-1,'bad-system','无效系统','MENU',1)",
         "INSERT INTO permissions(system_id,parent_id,code,name,type,enabled)"
             + " VALUES(" + system + ",-1,'bad-parent','无效上级','MENU',1)",
@@ -243,7 +242,7 @@ class CoreModelJpaTest {
 
   @ParameterizedTest
   @ValueSource(strings = {
-      "INSERT INTO users(employee_no,username,password_hash,name,department_id,enabled) VALUES('missing','missing','hash','无部门',NULL,1)",
+      "INSERT INTO users(username,password_hash,name,department_id,enabled) VALUES('missing','hash','无部门',NULL,1)",
       "INSERT INTO permissions(system_id,code,name,type,enabled) VALUES(NULL,'missing','无系统','MENU',1)",
       "INSERT INTO api_resources(system_id,http_method,path_template,enabled) VALUES(NULL,'GET','/missing',1)"})
   void mandatoryDepartmentAndSystemCannotBeNull(String sql) {
