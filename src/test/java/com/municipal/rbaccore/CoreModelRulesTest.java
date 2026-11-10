@@ -80,7 +80,7 @@ class CoreModelRulesTest {
 
   @Test void associationCollectionsCannotBypassDomainWriteMethods() {
     var department = new Department("d", "部门");
-    var user = new User("e", "u", "existing-hash", "用户", department, true);
+    User user = new User("u", "existing-hash", "用户", department, true);
     var role = new Role("r", "角色");
     var permission = permission("p", MENU);
     var api = new ApiResource(system, "GET", "/__t02__/sample");
@@ -109,9 +109,9 @@ class CoreModelRulesTest {
     assertThrows(IllegalArgumentException.class, () -> permission("p", null));
     assertThrows(IllegalArgumentException.class, () -> new ApiResource(null, "GET", "/sample"));
     assertThrows(IllegalArgumentException.class, () -> new ApiResource(system, " ", "/sample"));
-    assertThrows(IllegalArgumentException.class, () -> new User("e", "u", "", "用户", department, true));
-    assertThrows(IllegalArgumentException.class, () -> new User("e", "u", "hash", "用户", null, true));
-    var user = new User("e", "u", "hash", "用户", department, true);
+    assertThrows(IllegalArgumentException.class, () -> new User("u", "", "用户", department, true));
+    assertThrows(IllegalArgumentException.class, () -> new User("u", "hash", "用户", null, true));
+    User user = new User("u", "hash", "用户", department, true);
     assertThrows(IllegalArgumentException.class, () -> user.moveTo(null));
     assertThrows(IllegalArgumentException.class, () -> user.assignRole(null));
     assertThrows(IllegalArgumentException.class, () -> new Role("r", "角色").grantPermission(null));

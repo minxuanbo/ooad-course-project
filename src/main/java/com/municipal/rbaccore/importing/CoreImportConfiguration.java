@@ -1,0 +1,56 @@
+package com.municipal.rbaccore.importing;
+
+import com.municipal.rbaccore.model.Department;
+import com.municipal.rbaccore.repository.DepartmentRepository;
+import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.core.env.Environment;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+/** 离线导入使用的独立上下文，不扫描旧业务组件，不开放HTTP服务。 */
+@Configuration(proxyBeanMethods = false)
+@EnableAutoConfiguration
+@EntityScan(basePackageClasses = {Department.class, ImportSource.class})
+@EnableJpaRepositories(basePackageClasses = {DepartmentRepository.class, ImportSourceRepository.class})
+@Import(CoreImportService.class)
+public class CoreImportConfiguration {
+
+  /** 在数据源实例化前检查明确的整改库和初始化隔离配置。 */
+  @Bean
+  static BeanFactoryPostProcessor databaseGuard(Environment environment) {
+    requireIsolatedDatabase(environment.getProperty("spring.datasource.url"),
+        environment.getProperty("spring.sql.init.mode"),
+        environment.getProperty("spring.jpa.hibernate.ddl-auto"),
+        environment.getProperty("rbac.initialize"));
+    BootstrapCredentials.from(environment);
+    return beanFactory -> { };
+  }
+
+  /** 只接显式指定的rbac_core库，DDL仅校验，不自动建旧表或重建数据。 */
+  static void requireIsolatedDatabase(String url, String sqlMode, String ddlMode, String oldInitialize) {
+    if (url == null || !url.matches("jdbc:mysql://[^/?#\\s]+/rbac_core(?:\\?[^#]*)?")
+        || !"never".equals(sqlMode) || !"validate".equals(ddlMode)
+        || !"false".equals(oldInitialize)) {
+      throw new ImportException("IMPORT_DATABASE_UNSAFE",
+          "离线导入只允许显式MySQL整改库rbac_core，sql.init=never、ddl=validate且关闭旧初始化");
+    }
+  }
+
+  /** 生产口令采用BCrypt默认强度，每个账号独立生成盐。 */
+  @Bean
+  PasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder();
+  }
+
+  /** 只读取原始组织人员工作簿，不读取旧业务权限目录。 */
+  @Bean
+  WorkbookImportPlanner planner() {
+    return new WorkbookImportPlanner();
+  }
+}
