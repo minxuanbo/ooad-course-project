@@ -66,7 +66,7 @@ public class CoreResourceService {
   public ResourceModels.ApiPageResult apis(String header, ResourceModels.ApiSearch query) {
     access.require(header);
     ApplicationSystem system = selectSystem(query.getSystemId());
-    String search = query.getQ() == null ? "" : query.getQ().trim().toLowerCase(Locale.ROOT);
+    String search = query.getQ() == null ? "" : query.getQ().toLowerCase(Locale.ROOT);
     String pattern =
         "%" + search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
     Specification<ApiResource> filter =
@@ -93,6 +93,24 @@ public class CoreResourceService {
   public ResourceModels.MappingResult mapping(String header, Long permissionId) {
     access.require(header);
     return mappingResult(permission(permissionId));
+  }
+
+  /** MVC解析输入前先检查合法目标的系统范围；实际写事务拿锁后仍完整复核。 */
+  public void checkPermissionTarget(String header, Long id) {
+    access.require(header);
+    permission(id);
+  }
+
+  /** 直接API目标的全局及系统范围先于请求体校验，不接受前端授权结论。 */
+  public void checkApiTarget(String header, Long id) {
+    access.require(header);
+    api(id);
+  }
+
+  /** 系统目录范围检查不泄漏外系统存在性，后续参数校验仍留在API层。 */
+  public void checkSystemTarget(String header, Long id) {
+    access.require(header);
+    selectSystem(id);
   }
 
   /** 先校验整组关联，再整体替换；无变化不重复插入，停用API允许保存但不贡献授权。 */
@@ -159,9 +177,7 @@ public class CoreResourceService {
     return write(
         header,
         () -> {
-          ApiResource api = apis.findById(id).orElseThrow(CoreResourceService::notFound);
-          if (!api.getSystem().getId().equals(currentSystem().getId()))
-            throw ApiException.scopeDenied();
+          ApiResource api = api(id);
           api.setEnabled(command.getEnabled());
           apis.saveAndFlush(api);
           maintenance.retainOne();
@@ -198,6 +214,13 @@ public class CoreResourceService {
     if (!permission.getSystem().getId().equals(currentSystem().getId()))
       throw ApiException.scopeDenied();
     return permission;
+  }
+
+  /** API直接目标与权限目标共用同一系统范围语义。 */
+  private ApiResource api(Long id) {
+    ApiResource api = apis.findById(id).orElseThrow(CoreResourceService::notFound);
+    if (!api.getSystem().getId().equals(currentSystem().getId())) throw ApiException.scopeDenied();
+    return api;
   }
 
   /** 同名字段由课程映射器复制，关系及primitive布尔值显式转换。 */

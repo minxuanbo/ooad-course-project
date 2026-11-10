@@ -196,6 +196,12 @@ class CoreResourcesHttpT07Test {
     assertEquals(
         apiIds.keySet().stream().filter(route -> route.method().equals("GET")).count(),
         data(request("GET", APIS + "?q=gEt", token, null)).get("total").asLong());
+    assertEquals(
+        apiIds.keySet().stream().filter(route -> route.method().equals("GET")).count(),
+        data(request(
+                "GET", APIS + "?q=" + "%20".repeat(60) + "gEt" + "%20".repeat(60), token, null))
+            .get("total")
+            .asLong());
     assertEquals(0, data(request("GET", APIS + "?q=%25", token, null)).get("total").asLong());
     long target = permissionIds.get("rbac.resources.read");
     JsonNode mapping = data(request("GET", mapping(target), token, null));
@@ -457,6 +463,62 @@ class CoreResourcesHttpT07Test {
         request("PUT", mapping(id), token, Map.of("ids", Arrays.asList(1L, null))),
         400,
         "INVALID_ARGUMENT");
+  }
+
+  /** 拒绝顺序必须先校验可信身份、实际权限及全局范围，再解析业务输入。 */
+  @Test
+  @DisplayName("T07 无权及越界请求不能因非法输入先获得400")
+  void t07ChecksAccessBeforeInvalidInput() throws Exception {
+    long target = permissionIds.get("rbac.logs.read");
+    assertError(
+        request("PATCH", PERMISSIONS + "/" + target, null, Map.of()),
+        401,
+        "AUTHENTICATION_REQUIRED");
+    account("t07-no-resources", rootId, List.of(permissionIds.get("rbac.users.read")));
+    String noAccess = token("t07-no-resources");
+    assertError(
+        request("PUT", mapping(target), noAccess, Map.of("ids", List.of(1L, 1L))),
+        403,
+        "PERMISSION_DENIED");
+    assertError(
+        request("PATCH", PERMISSIONS + "/0", noAccess, Map.of("name", "readonly")),
+        403,
+        "PERMISSION_DENIED");
+    account("t07-local-invalid", childId, List.of(permissionIds.get("rbac.resources.write")));
+    assertError(
+        request("PATCH", PERMISSIONS + "/" + target, token("t07-local-invalid"), Map.of()),
+        403,
+        "MANAGEMENT_SCOPE_DENIED");
+    long[] foreign =
+        new TransactionTemplate(transactions)
+            .execute(
+                status -> {
+                  ApplicationSystem system =
+                      systems.save(new ApplicationSystem("t07-invalid-target", "外系统"));
+                  Permission permission =
+                      permissions.save(
+                          new Permission(system, "foreign", "外系统权限", Permission.Type.MENU));
+                  ApiResource api = apis.save(new ApiResource(system, "GET", USERS));
+                  return new long[] {permission.getId(), api.getId()};
+                });
+    String admin = token("t07-admin");
+    ResponseEntity<String> denied =
+        request("PATCH", PERMISSIONS + "/" + foreign[0], admin, Map.of("name", "readonly"));
+    assertError(denied, 403, "MANAGEMENT_SCOPE_DENIED");
+    assertEquals(
+        1,
+        jdbc.queryForObject(
+            "SELECT count(*) FROM authorization_logs WHERE request_id=?",
+            Integer.class,
+            denied.getHeaders().getFirst("X-Request-Id")));
+    assertEquals(
+        "AUTHORIZATION",
+        jdbc.queryForObject(
+            "SELECT event_type FROM authorization_logs WHERE request_id=?",
+            String.class,
+            denied.getHeaders().getFirst("X-Request-Id")));
+    assertError(
+        request("PATCH", APIS + "/" + foreign[1], admin, Map.of()), 403, "MANAGEMENT_SCOPE_DENIED");
   }
 
   /** 目录、直接目标和关联输入的系统边界使用不同的已评审错误语义。 */
