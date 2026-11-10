@@ -464,7 +464,7 @@ java -Dloader.main=com.municipal.rbaccore.runtime.CoreRuntimeCommand -cp target/
 
 CSV默认拒绝覆盖；预检不写授权。HTTP默认8081，可配置PORT。默认java -jar仍是旧产品入口，最终切换归T12；本票通过独立上下文隔离旧Controller/JDBC/初始化器。当前只初始化RBAC自身资源，不整包导入18个业务系统，也不在本票扩展课程业务。
 
-验证须显式配置本机独立的RBAC_CORE_HTTP_TEST_DB_URL（rbac_core_t05_test）及共用测试凭据；其他T02/T03/旧链路变量按各测试原说明配置，测试库均可清空且不得指向业务库。`mvn clean test-compile test '-DtestJvmArgs=-Xmx512m -Duser.timezone=UTC'`包含旧链路回归。JaCoCo按用户要求暂不作本票阻塞，保留原规则，不把test/package成功写成verify全覆盖通过。2026-11-10本地完整回归128项，失败/错误/跳过均0；另补齐手机号停用/错口令、双入口权限与导航一致、退出撤销后重跑T05共16项通过。Spring Boot打包成功，使用隔离T05库验证打包入口输出10001行预检清单、重复初始化成功且不重授，真实HTTP匿名401、admin登录200、人员total=10001。原三Excel及ER资源保持不变。两路新上下文代理评审另行记录，不以本节描述代替结论。
+验证须显式配置本机独立的RBAC_CORE_HTTP_TEST_DB_URL（rbac_core_t05_test）及共用测试凭据；其他T02/T03/旧链路变量按各测试原说明配置，测试库均可清空且不得指向业务库。`mvn clean test-compile test '-DtestJvmArgs=-Xmx512m -Duser.timezone=UTC'`包含旧链路回归。JaCoCo按用户要求暂不作本票阻塞，保留原规则，不把test/package成功写成verify全覆盖通过。2026-11-10本地完整回归128项，失败/错误/跳过均0；另补齐手机号停用/错口令、双入口权限与导航一致、退出撤销后重跑T05共16项通过。Spring Boot打包成功，使用隔离T05库验证打包入口输出10001行预检清单、重复初始化成功且不重授，真实HTTP匿名401、admin登录200、人员total=10001。原三Excel及ER资源保持不变。两路新上下文代理按用户提供的code-review审核，固定基线70c3bef，初审HEAD1e1626a：Standards发现集中日志缺开始记录/失败耗时1项P3，Spec发现最大合法页码返回500而非空页1项P2；均在0a0f6d0修复。分页先见证HTTP expected200实际500的RED，再修复并跑完整128项0失败/错误/跳过；两原代理只读增量复核后Standards明文违规/有效smell均0，Spec缺失/范围扩展/实现错误均0。此为代理技术评审，不冒充老师或真人验收；合入和Issue完成以GitHub记录为准。
 
 ## 5. 组员讨论与验证清单
 
