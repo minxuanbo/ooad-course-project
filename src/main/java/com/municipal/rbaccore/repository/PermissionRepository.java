@@ -2,11 +2,15 @@ package com.municipal.rbaccore.repository;
 
 import com.municipal.rbaccore.model.Permission;
 import java.util.List;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 /** 本人有效权限只沿角色及同系统有效API计算，不补入导航祖先。 */
 public interface PermissionRepository extends JpaRepository<Permission, Long> {
+  /** 受限系统的小型权限树一次读取，按ID稳定组装且保留停用节点。 */
+  @EntityGraph(attributePaths = {"system", "parent"})
+  List<Permission> findBySystemIdOrderByIdAsc(Long systemId);
 
   /** 每项返回权限至少关联一个同系统有效API；父菜单不隐式授予子按钮。 */
   @Query(
