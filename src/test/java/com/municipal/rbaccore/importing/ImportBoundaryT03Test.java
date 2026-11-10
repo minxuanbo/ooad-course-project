@@ -1,14 +1,25 @@
 package com.municipal.rbaccore.importing;
 
 import java.util.List;
+import java.nio.file.Path;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.springframework.mock.env.MockEnvironment;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /** T03 登录标识、部署秘密及独立库守卫的业务边界。 */
 class ImportBoundaryT03Test {
+  @TempDir Path directory;
+
+  /** 文件缺失时不能返回空的可执行计划。 */
+  @Test
+  @DisplayName("T03 源文件缺失报告稳定读取错误，不返回部分导入计划")
+  void t03RejectsMissingSourceFiles() {
+    assertEquals("SOURCE_READ_FAILED", assertThrows(ImportException.class,
+        () -> new WorkbookImportPlanner().read(directory)).getCode());
+  }
 
   /** 两列各自唯一仍可能跨列碰撞，必须按同一账号集合检查。 */
   @Test

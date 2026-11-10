@@ -112,6 +112,35 @@ class CoreImportJpaT03Test {
     }
   }
 
+  /** 不能把没有原始来源映射的已有数据自动认领成原始员工。 */
+  @Test
+  @DisplayName("T03 首次初始化拒绝混入无来源的已有目标数据")
+  void t03RejectsUnmappedExistingData() {
+    departments.save(new Department("unmapped", "无来源部门"));
+    assertEquals("TARGET_NOT_EMPTY", assertThrows(ImportException.class,
+        () -> service.importDirectory(Path.of("."), CREDENTIALS)).getCode());
+    assertEquals(1, departments.count());
+    assertEquals(0, users.count());
+    assertEquals(0, sources.count());
+  }
+
+  /** 非唯一性数据库错误同样在Service处翻译并回滚已写入的部门。 */
+  @Test
+  @DisplayName("T03 非唯一约束数据库失败也整体回滚并返回稳定错误码")
+  void t03TranslatesDatabaseFailureAndRollsBack() {
+    jdbc.execute("CREATE TRIGGER t03_unavailable BEFORE INSERT ON users FOR EACH ROW "
+        + "SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='T03 test database failure'");
+    try {
+      assertEquals("IMPORT_DATABASE_ERROR", assertThrows(ImportException.class,
+          () -> service.importDirectory(Path.of("."), CREDENTIALS)).getCode());
+      assertEquals(0, users.count());
+      assertEquals(0, departments.count());
+      assertEquals(0, sources.count());
+    } finally {
+      jdbc.execute("DROP TRIGGER t03_unavailable");
+    }
+  }
+
   /** 数据库中应建立110个目标部门和10001个无角色账号。 */
   @Test
   @DisplayName("T03 MySQL全量导入110个目标部门、10000名员工和独立管理员")
@@ -171,6 +200,15 @@ class CoreImportJpaT03Test {
     assertEquals("总公司", jdbc.queryForObject("SELECT d.name FROM departments d JOIN users u ON u.department_id=d.id "
         + "WHERE u.username='SG000211'", String.class));
 
+    assertRejectedMutation("UPDATE import_sources SET source_json='[]' WHERE source_type='EMPLOYEE' "
+        + "AND source_key='SG000001'", "SOURCE_CHANGED");
+    assertRejectedMutation("DELETE FROM import_sources WHERE source_type='EMPLOYEE' "
+        + "AND source_key='SG000001'", "SOURCE_MAPPING_INCOMPLETE");
+    assertRejectedMutation("UPDATE departments SET code='t03-changed-code' WHERE name='总公司'", "TARGET_TREE_CHANGED");
+    assertEquals("SOURCE_MAPPING_INCOMPLETE", assertThrows(ImportException.class,
+        () -> service.importDirectory(Path.of("."),
+            new BootstrapCredentials("test-employee-password", "test-admin-password", "different-admin"))).getCode());
+
     // 跨用户标识冲突不受单列唯一索引覆盖，重复导入必须再次拒绝。
     new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
       User conflicting = new User("t03-conflicting-user", encoder.encode("test-only"), "冲突夹具",
@@ -182,6 +220,16 @@ class CoreImportJpaT03Test {
         () -> service.importDirectory(Path.of("."), CREDENTIALS)).getCode());
     assertEquals(10002, users.count());
     assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM user_roles", Integer.class));
+  }
+
+  /** 模拟损坏后调用真实导入Service，检查拒绝并回滚样例损坏，保持后续断言独立。 */
+  private void assertRejectedMutation(String sql, String expectedCode) {
+    new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+      jdbc.update(sql);
+      assertEquals(expectedCode, assertThrows(ImportException.class,
+          () -> service.importDirectory(Path.of("."), CREDENTIALS)).getCode());
+      status.setRollbackOnly();
+    });
   }
 
   /** 对全部人员、组织来源逐条读回，而非只信任导入返回的计数。 */

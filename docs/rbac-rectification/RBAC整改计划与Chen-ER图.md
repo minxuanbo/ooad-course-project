@@ -396,7 +396,7 @@ T03只建组织、账号和来源，不分配任何角色。启用及已有口�
 1. 在MySQL 8中单独创建`rbac_core`库及仅有该库权限的账号，字符集`utf8mb4`、排序规则`utf8mb4_0900_bin`。原库保持原状。
 2. 显式选择该库执行[建表脚本](../../deploy/rbac-core-schema.sql)。脚本只含`CREATE TABLE IF NOT EXISTS`，不清空或重建已有表；导入上下文仅`ddl-auto=validate`，结构不符时拒绝。
 3. 部署环境设置`RBAC_CORE_DB_URL`（例如`jdbc:mysql://127.0.0.1:3307/rbac_core?connectionTimeZone=UTC`）、`RBAC_CORE_DB_USER`、`RBAC_CORE_DB_PASSWORD`、`RBAC_CORE_EMPLOYEE_PASSWORD`和`RBAC_CORE_ADMIN_PASSWORD`。后两项必须分别显式提供，无旧口令默认值，不通过命令行参数或Git传递。可选`RBAC_CORE_SOURCE_DIR`指定原件目录，`RBAC_CORE_ADMIN_USERNAME`默认`admin`；实际部署秘密由部署环境提供。
-4. 在仓库根运行`mvn -Dexec.mainClass=com.municipal.rbaccore.importing.CoreImportCommand org.codehaus.mojo:exec-maven-plugin:3.5.0:java`。首次执行前先`mvn test-compile`或`mvn package`编译；命令使用[独立配置](../../src/main/resources/application-core-import.yml)，不加载旧本地配置。预期报告为来源组织111、目标部门110、员工10000、新建账号10001；输出不含个人明细或秘密。
+4. 先在仓库根执行`mvn package`，再运行`java "-Dloader.main=com.municipal.rbaccore.importing.CoreImportCommand" -cp target/rbac0-0.1.0.jar org.springframework.boot.loader.launch.PropertiesLauncher`。通过现有Spring Boot包的加载器选择离线入口，不改变产品默认主程序；命令使用[独立配置](../../src/main/resources/application-core-import.yml)，不加载旧本地配置。预期报告为来源组织111、目标部门110、员工10000、新建账号10001；输出不含个人明细或秘密。
 5. 相同原件重复执行只核对来源与组织，不重置密码、状态、已调整岗位/手机号/人员调动或授权。重复执行仍核对现有账号的跨字段歧义。源文件、源行、来源映射或组织结构不一致时报告错误，不自动覆盖；首次遇到无来源的已有人员/部门拒绝合并。保留完整事务以支持失败回滚后安全重试。
 
 部门编码为原名UTF-8的SHA-256加`org-`前缀，与行序及自增值无关；已合并的两个来源使用相同目标编码。账号工号/手机号使用显式`utf8mb4_0900_bin`列，按trim后的字符串精确比较、保留前导零；同用户双字段同值允许，跨用户任意字段碰撞拒绝，错误只定位来源记录，不输出标识值。T05查询及后续账号写入口须沿用相同比较规则。
@@ -404,6 +404,12 @@ T03只建组织、账号和来源，不分配任何角色。启用及已有口�
 错误码包括`SOURCE_READ_FAILED`、`SOURCE_HEADER_INVALID`、`SOURCE_COUNT_MISMATCH`、`SOURCE_FIELD_INVALID`、`ORGANIZATION_INVALID`、`DEPARTMENT_UNRESOLVED`、`IDENTIFIER_CONFLICT`、`BOOTSTRAP_CONFIG_INVALID`、`IMPORT_DATABASE_UNSAFE`、`TARGET_NOT_EMPTY`、`SOURCE_MAPPING_INCOMPLETE`、`SOURCE_CHANGED`、`TARGET_TREE_CHANGED`、`DATA_CONFLICT`及`IMPORT_DATABASE_ERROR`。数据库约束冲突在导入Service事务边界内翻译，不输出驱动异常、SQL或口令。
 
 验证使用本机独立`rbac_core_t02_test`及`rbac_core_t03_test`库，后者执行同一建表脚本并由JPA校验；旧链路回归另接隔离`rbac_test`，不连接原业务库。测试口令及降低成本的BCrypt强度仅存在于测试夹具；生产使用默认强度。T03验证完整导入、来源读回、领导节点合并、密码分离、失败回滚、重复执行及既有授权保留，不构成正式登录、HTTP、页面或T05批量授权验收。
+
+2026-11-10本地验证记录：先见证单工号/手机号归一两项行为失败、全量导入行为失败及错误collation未被拦截，再实现修复。以MySQL 8.4、JDK25编译至Java21目标版本执行109项完整回归；新增3项边界测试后对相关8项再验证，当前20份Surefire报告合计112项，失败/错误/跳过均0。旧日志UTC边界夹具依赖UTC JVM，完整回归使用`-DtestJvmArgs="-Xmx384m -Duser.timezone=UTC"`，未改旧业务或删除断言。Spring Boot打包通过，打包后的离线入口实际验证会在数据源初始化前拒绝旧库URL。
+
+全量来源逐条读回核对：111组织来源、110目标部门、10000员工、独立管理员及10112条支撑来源记录；根直属11人、初始角色及用户角色关联为0。强制唯一约束和非唯一性数据库错误均回滚至空库，重试成功；重复执行保留密码哈希、停用、岗位/手机号、人员调动和已授角色。缺失来源、来源内容改变、组织编码改变、管理员配置改变、无来源已有数据、实际列collation不符及跨用户标识碰撞均验证拒绝。三份原件SHA-256保持1.2复核值，ER的PNG/SVG和核心关系结构未改。
+
+未决验证：执行`mvn jacoco:report jacoco:check@coverage-check`后，原有六项MISSEDCOUNT=0门槛未通过（指令727、分支91、行80、复杂度97、方法16、类1未覆盖），规则保持不变，不宣称`mvn verify`通过。用户提供的`code-review`要求两路新上下文子代理独立审核；两路均因代理用量限制未返回审查结论，主代理自查不能代替独立审核。当前只提交草稿PR，Issue保持打开，不执行合并或启动T05；本地报告留在Git之外，合入状态以GitHub为准。
 
 ## 5. 组员讨论与验证清单
 
