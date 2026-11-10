@@ -540,6 +540,12 @@ class CoreRuntimeHttpT05Test {
         body(request("GET", USERS + "?page=100000&size=100", token, null)).get("data");
     assertEquals(0, beyond.get("items").size());
     assertEquals(expected, beyond.get("total").asLong());
+    ResponseEntity<String> largestResponse =
+        request("GET", USERS + "?page=2147483647&size=100", token, null);
+    assertEquals(200, largestResponse.getStatusCode().value());
+    JsonNode largest = body(largestResponse).get("data");
+    assertEquals(0, largest.get("items").size());
+    assertEquals(expected, largest.get("total").asLong());
     assertEquals(
         0,
         body(request("GET", USERS + "?q=not-a-person-t05", token, null))

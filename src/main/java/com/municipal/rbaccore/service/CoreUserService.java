@@ -68,6 +68,12 @@ public class CoreUserService {
           }
           return builder.and(predicates.toArray(Predicate[]::new));
         };
+    // 先用同一受限谓词判断越末页，避免JPA将极大合法页码转换为int偏移时失败。
+    long total = users.count(specification);
+    long offset = (long) query.getPage() * query.getSize();
+    if (offset >= total) {
+      return new CoreResults.UserPageResult(List.of(), total, query.getPage(), query.getSize());
+    }
     Page<User> page =
         users.findAll(
             specification,
@@ -84,7 +90,6 @@ public class CoreUserService {
                   return result;
                 })
             .toList();
-    return new CoreResults.UserPageResult(
-        items, page.getTotalElements(), query.getPage(), query.getSize());
+    return new CoreResults.UserPageResult(items, total, query.getPage(), query.getSize());
   }
 }

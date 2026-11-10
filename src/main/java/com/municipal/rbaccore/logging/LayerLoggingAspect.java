@@ -24,12 +24,17 @@ public class LayerLoggingAspect {
     long start = System.nanoTime();
     String method =
         point.getSignature().getDeclaringTypeName() + "." + point.getSignature().getName();
+    LOG.debug("开始 {}", method);
     try {
       Object result = point.proceed();
       LOG.debug("完成 {} 耗时{}微秒", method, (System.nanoTime() - start) / 1000);
       return result;
     } catch (Throwable exception) {
-      LOG.debug("失败 {} 异常类型{}", method, exception.getClass().getSimpleName());
+      LOG.debug(
+          "失败 {} 耗时{}微秒 异常类型{}",
+          method,
+          (System.nanoTime() - start) / 1000,
+          exception.getClass().getSimpleName());
       throw exception;
     }
   }
