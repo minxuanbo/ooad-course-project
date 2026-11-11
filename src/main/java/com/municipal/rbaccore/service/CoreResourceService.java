@@ -27,7 +27,6 @@ public class CoreResourceService {
   private final PermissionRepository permissions;
   private final ApiResourceRepository apis;
   private final GlobalManagementAccess access;
-  private final MaintenanceGuard maintenance;
 
   /** 仅选择本权限系统；目录查询本身也必须满足实际API和共同根。 */
   public List<ResourceModels.SystemResult> systems(String header) {
@@ -134,7 +133,6 @@ public class CoreResourceService {
           }
           for (ApiResource api : selected) permission.mapApi(api);
           permissions.saveAndFlush(permission);
-          maintenance.retainOne();
           return mappingResult(permission);
         });
   }
@@ -165,7 +163,6 @@ public class CoreResourceService {
           }
           if (command.getEnabled() != null) permission.setEnabled(command.getEnabled());
           permissions.saveAndFlush(permission);
-          maintenance.retainOne();
           return permissionResult(permission);
         });
   }
@@ -180,7 +177,6 @@ public class CoreResourceService {
           ApiResource api = api(id);
           api.setEnabled(command.getEnabled());
           apis.saveAndFlush(api);
-          maintenance.retainOne();
           return apiResult(api);
         });
   }
@@ -188,9 +184,7 @@ public class CoreResourceService {
   /** 所有资源写入共用根锁；拿锁后再读身份/授权，数据库错误在实际保存边界翻译。 */
   private <T> T write(String header, Supplier<T> change) {
     try {
-      maintenance.lock();
-      access.require(header);
-      return change.get();
+      return access.write(header, change);
     } catch (DataAccessException | TransactionException exception) {
       throw new ApiException(HttpStatus.CONFLICT, "DATA_CONFLICT", "资源保存冲突，请刷新后重试");
     }

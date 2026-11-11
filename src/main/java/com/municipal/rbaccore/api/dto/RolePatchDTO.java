@@ -26,7 +26,7 @@ public class RolePatchDTO {
   /** Jackson先拒绝显式null，再按归一后的名称长度校验。 */
   @JsonSetter(nulls = Nulls.FAIL)
   public void setName(String name) {
-    this.name = name.trim();
+    this.name = RoleText.strip(name);
   }
 
   /** 至少包含一项可更新字段；校验结果不是可接受的JSON属性。 */

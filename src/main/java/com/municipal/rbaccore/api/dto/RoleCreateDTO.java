@@ -25,11 +25,11 @@ public class RoleCreateDTO {
 
   /** 归一后的编码同时用于数据库判重和保存，不另做大小写转换。 */
   public void setCode(String code) {
-    this.code = code == null ? null : code.trim();
+    this.code = RoleText.strip(code);
   }
 
   /** 角色名称去首尾空白，不接受空白名称。 */
   public void setName(String name) {
-    this.name = name == null ? null : name.trim();
+    this.name = RoleText.strip(name);
   }
 }

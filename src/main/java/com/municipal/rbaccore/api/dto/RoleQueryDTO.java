@@ -29,6 +29,6 @@ public class RoleQueryDTO {
 
   /** 先去首尾空白，再限制实际搜索词长度。 */
   public void setQ(String q) {
-    this.q = q == null ? null : q.trim();
+    this.q = RoleText.strip(q);
   }
 }

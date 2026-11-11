@@ -21,6 +21,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 /** T09角色定义和直接权限维护，复用统一授权、共同根锁及完整K保护。 */
@@ -31,9 +32,9 @@ public class CoreRoleService {
   private final RoleRepository roles;
   private final PermissionRepository permissions;
   private final GlobalManagementAccess access;
-  private final MaintenanceGuard maintenance;
 
-  /** 名称/编码与状态以AND组合，固定ID升序；越末页保留同条件总数。 */
+  /** 计数和取页共用快照，避免并发写入造成条目与总数不一致。 */
+  @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
   public RoleModels.PageResult list(String header, RoleModels.Search query) {
     access.require(header);
     String search = query.getQ() == null ? "" : query.getQ().toLowerCase(Locale.ROOT);
@@ -132,11 +133,7 @@ public class CoreRoleService {
   /** 和T07共用同一锁，拿锁后重新鉴权；保存错误就地翻译且整个事务回滚。 */
   private <T> T write(String header, Supplier<T> change) {
     try {
-      maintenance.lock();
-      access.require(header);
-      T result = change.get();
-      maintenance.retainOne();
-      return result;
+      return access.write(header, change);
     } catch (DataIntegrityViolationException | ConcurrencyFailureException exception) {
       throw new ApiException(HttpStatus.CONFLICT, "DATA_CONFLICT", "角色保存冲突，请刷新后重试");
     } catch (DataAccessException exception) {

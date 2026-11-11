@@ -13,6 +13,8 @@ import java.net.URI;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
+import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,6 +61,7 @@ class CoreRolesHttpT09Test {
   @Autowired PlatformTransactionManager transactions;
   @Autowired EffectivePermissionService effective;
   @Autowired LockObservation observedLock;
+  @Autowired RoleCountObservation observedCount;
   private long systemId;
   private long rootId;
   private long childId;
@@ -72,6 +75,12 @@ class CoreRolesHttpT09Test {
     @Bean
     LockObservation lockObservation() {
       return new LockObservation();
+    }
+
+    /** 提供计数后、查询页之前的确定同步点。 */
+    @Bean
+    RoleCountObservation roleCountObservation() {
+      return new RoleCountObservation();
     }
   }
 
@@ -87,6 +96,27 @@ class CoreRolesHttpT09Test {
       if (latch != null && RequestAuditFilter.current() != null) latch.countDown();
     }
   }
+
+  /** 计数完成后暂停读请求，让写请求在两次查询之间提交。 */
+  @Aspect
+  static class RoleCountObservation {
+    private final AtomicReference<PagePause> pause = new AtomicReference<>();
+
+    /** 只暂停由测试标记的角色分页计数。 */
+    @AfterReturning(
+        "execution(* org.springframework.data.jpa.repository.JpaSpecificationExecutor+.count(..))"
+            + " && this(com.municipal.rbaccore.repository.RoleRepository)")
+    public void afterCount() throws InterruptedException {
+      PagePause current = pause.getAndSet(null);
+      if (current != null) {
+        current.counted().countDown();
+        assertTrue(current.resume().await(10, TimeUnit.SECONDS));
+      }
+    }
+  }
+
+  /** 读线程通知计数完成，写入提交后再放行读线程。 */
+  record PagePause(CountDownLatch counted, CountDownLatch resume) {}
 
   /** 每例从可丢弃专库重建少量真实关联，不使用生产初始化或旧业务数据。 */
   @BeforeEach
@@ -218,6 +248,34 @@ class CoreRolesHttpT09Test {
         0, success(request("GET", ROLES + "?q=absent", admin, null), 200).get("total").asInt());
   }
 
+  /** 计数后提交新角色，已有分页请求仍看到一致快照。 */
+  @Test
+  @DisplayName("T09 并发创建时角色页和总数保持同一快照")
+  void t09KeepsPageSnapshot() throws Exception {
+    String admin = token("t09-admin");
+    create(admin, "snapshot-first", "快照角色一");
+    PagePause pause = new PagePause(new CountDownLatch(1), new CountDownLatch(1));
+    observedCount.pause.set(pause);
+    ExecutorService executor = Executors.newSingleThreadExecutor();
+    try {
+      Future<ResponseEntity<String>> read =
+          executor.submit(() -> request("GET", ROLES + "?q=snapshot-", admin, null));
+      assertTrue(pause.counted().await(10, TimeUnit.SECONDS));
+      create(admin, "snapshot-second", "快照角色二");
+      pause.resume().countDown();
+      JsonNode page = success(read.get(10, TimeUnit.SECONDS), 200);
+      assertEquals(1, page.get("total").asInt());
+      assertEquals(1, page.get("items").size());
+      JsonNode next = success(request("GET", ROLES + "?q=snapshot-", admin, null), 200);
+      assertEquals(2, next.get("total").asInt());
+      assertEquals(2, next.get("items").size());
+    } finally {
+      pause.resume().countDown();
+      observedCount.pause.set(null);
+      executor.shutdownNow();
+    }
+  }
+
   /** 实际MySQL二进制排序规则和唯一索引共同决定编码相等。 */
   @Test
   @DisplayName("T09 编码trim判重与MySQL大小写重音语义一致")
@@ -293,6 +351,79 @@ class CoreRolesHttpT09Test {
               : method.equals("PUT") ? Map.of("ids", List.of()) : Map.of("name", "new");
       assertError(request(method, path, admin, body), 404, "RESOURCE_NOT_FOUND");
     }
+  }
+
+  /** 角色文本的全角及不换行空白与原型的首尾清理一致。 */
+  @Test
+  @DisplayName("T09 角色编码、名称及搜索统一清理首尾Unicode空白")
+  void t09NormalizesRoleText() throws Exception {
+    String admin = token("t09-admin");
+    long target = create(admin, "unicode-target", "初始名称");
+    assertError(
+        request("PATCH", role(target), admin, Map.of("name", "\u3000")), 400, "INVALID_ARGUMENT");
+    assertError(
+        request("POST", ROLES, admin, Map.of("code", "\u00a0", "name", "空白编码")),
+        400,
+        "INVALID_ARGUMENT");
+    JsonNode created =
+        success(
+            request(
+                "POST",
+                ROLES,
+                admin,
+                Map.of("code", "\u3000unicode-role\u00a0", "name", "\u00a0旧名称\u3000")),
+            201);
+    assertEquals("unicode-role", created.get("code").asText());
+    assertEquals("旧名称", created.get("name").asText());
+    JsonNode renamed =
+        success(request("PATCH", role(target), admin, Map.of("name", "\u3000新名称\u00a0")), 200);
+    assertEquals("新名称", renamed.get("name").asText());
+    assertEquals(
+        1,
+        success(request("GET", ROLES + "?q=%E3%80%80unicode-role%C2%A0", admin, null), 200)
+            .get("total")
+            .asInt());
+  }
+
+  /** 格式错误的路径不可写入宽松转换后的目标。 */
+  @Test
+  @DisplayName("T09 拒绝路径ID和分页整数中的空白及其他进制")
+  void t09RejectsMalformedDecimalParameters() throws Exception {
+    String admin = token("t09-admin");
+    long target = create(admin, "decimal-target", "原角色");
+    String malformedRole = ROLES + "/0%20" + target;
+    assertError(
+        request("PATCH", malformedRole, admin, Map.of("name", "错误目标")), 400, "INVALID_ARGUMENT");
+    assertError(
+        request("GET", malformedRole + "/permissions", admin, null), 400, "INVALID_ARGUMENT");
+    assertError(
+        request("PUT", malformedRole + "/permissions", admin, Map.of("ids", List.of())),
+        400,
+        "INVALID_ARGUMENT");
+    for (String query : List.of("page=0%201", "size=1%202", "page=0x0")) {
+      assertError(request("GET", ROLES + "?" + query, admin, null), 400, "INVALID_ARGUMENT");
+    }
+    assertEquals(
+        "原角色", jdbc.queryForObject("SELECT name FROM roles WHERE id=?", String.class, target));
+  }
+
+  /** 一个请求体只接受一个合法JSON值，失败保留角色及授权。 */
+  @Test
+  @DisplayName("T09 拒绝JSON对象后的多余内容且保留原授权")
+  void t09RejectsTrailingJson() throws Exception {
+    String admin = token("t09-admin");
+    long permissionId = permissionIds.get("rbac.roles.read");
+    long target = account("t09-trailing", rootId, List.of(permissionId));
+    assertError(
+        rawRequest("PUT", selected(target), admin, "{\"ids\":[]} {\"ids\":[12]}"),
+        400,
+        "INVALID_ARGUMENT");
+    assertError(
+        rawRequest("PATCH", role(target), admin, "{\"enabled\":false} trailing"),
+        400,
+        "INVALID_ARGUMENT");
+    assertEquals(List.of(permissionId), savedIds(target));
+    assertTrue(jdbc.queryForObject("SELECT enabled FROM roles WHERE id=?", Boolean.class, target));
   }
 
   /** 关联数组先完整验证，已停用项可读可移除但不能重新授予。 */
@@ -561,6 +692,21 @@ class CoreRolesHttpT09Test {
     success(request("GET", ROLES, admin, null), 200);
   }
 
+  /** A08-4：同组接口中只授予列表路由，详情仍单独拒绝。 */
+  @Test
+  @DisplayName("T09 单端点授权不会放行同组角色权限详情")
+  void t09RequiresPermissionForEachEndpoint() throws Exception {
+    long listOnly =
+        alternativePermission(
+            "t09-role-list-only",
+            "rbac.roles.read",
+            api -> "GET".equals(api.getHttpMethod()) && ROLES.equals(api.getPathTemplate()));
+    account("t09-list-reader", rootId, List.of(listOnly));
+    String reader = token("t09-list-reader");
+    success(request("GET", ROLES, reader, null), 200);
+    assertError(request("GET", selected(adminRoleId), reader, null), 403, "PERMISSION_DENIED");
+  }
+
   /** 父节点启停不级联直接按钮授权，其他启用角色仍可提供相同API。 */
   @Test
   @DisplayName("T09 父菜单不隐含授权、多角色OR及无角色准入")
@@ -766,6 +912,12 @@ class CoreRolesHttpT09Test {
 
   /** 复制实际API映射构造OR测试夹具，不依赖目录权限编码放行。 */
   private long alternativePermission(String code, String sourceCode) {
+    return alternativePermission(code, sourceCode, api -> true);
+  }
+
+  /** 选取具体API，允许构造只拥有同组一个端点的账号。 */
+  private long alternativePermission(
+      String code, String sourceCode, Predicate<ApiResource> allowed) {
     return new TransactionTemplate(transactions)
         .execute(
             status -> {
@@ -773,7 +925,7 @@ class CoreRolesHttpT09Test {
               Permission alternative =
                   new Permission(
                       systems.findById(systemId).orElseThrow(), code, code, Permission.Type.BUTTON);
-              for (ApiResource api : source.getApis()) alternative.mapApi(api);
+              source.getApis().stream().filter(allowed).forEach(alternative::mapApi);
               return permissions.save(alternative).getId();
             });
   }
@@ -875,13 +1027,19 @@ class CoreRolesHttpT09Test {
   /** 请求使用真实随机端口，保留原始编码查询且发送严格JSON。 */
   private ResponseEntity<String> request(String method, String path, String token, Object payload)
       throws Exception {
+    return rawRequest(
+        method, path, token, payload == null ? null : json.writeValueAsString(payload));
+  }
+
+  /** 原样发送请求体以覆盖服务端的格式校验。 */
+  private ResponseEntity<String> rawRequest(String method, String path, String token, String body) {
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
     if (token != null) headers.set("Authorization", token);
     return http.exchange(
         URI.create(http.getRootUri() + path),
         HttpMethod.valueOf(method),
-        new HttpEntity<>(payload == null ? null : json.writeValueAsString(payload), headers),
+        new HttpEntity<>(body, headers),
         String.class);
   }
 
