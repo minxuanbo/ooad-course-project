@@ -57,8 +57,14 @@ public class CoreRuntimeConfiguration {
             || (environment.acceptsProfiles(Profiles.of("core-resource-test"))
                 && url.matches(
                     "jdbc:mysql://(?:127\\.0\\.0\\.1|localhost):[0-9]{1,5}/rbac_core_t07_test(?:\\?.*)?"));
+    isolatedTest =
+        isolatedTest
+            || (environment.acceptsProfiles(Profiles.of("core-role-test"))
+                && url.matches(
+                    "jdbc:mysql://(?:127\\.0\\.0\\.1|localhost):[0-9]{1,5}/rbac_core_t09_test(?:\\?.*)?"));
     boolean production =
-        !environment.acceptsProfiles(Profiles.of("core-http-test", "core-resource-test"))
+        !environment.acceptsProfiles(
+                Profiles.of("core-http-test", "core-resource-test", "core-role-test"))
             && url.matches("jdbc:mysql://[^/?#\\s]+/rbac_core(?:\\?[^#]*)?")
             && "never".equals(environment.getProperty("spring.sql.init.mode"));
     if ((!isolatedTest && !production)
@@ -79,7 +85,10 @@ public class CoreRuntimeConfiguration {
   @Bean
   PasswordEncoder passwordEncoder(Environment environment) {
     return new BCryptPasswordEncoder(
-        environment.acceptsProfiles(Profiles.of("core-http-test", "core-resource-test")) ? 4 : 10);
+        environment.acceptsProfiles(
+                Profiles.of("core-http-test", "core-resource-test", "core-role-test"))
+            ? 4
+            : 10);
   }
 
   /** JSON遵守契约字段类型，拒绝账号、ID、布尔值和枚举的隐式类型转换。 */

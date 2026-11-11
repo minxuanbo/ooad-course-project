@@ -12,6 +12,7 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerMapping;
 
@@ -43,7 +44,11 @@ public class CoreManagedAspect {
       if (!permissions.allows(actor.id(), request.getMethod(), template)) {
         throw ApiException.forbidden();
       }
-      return point.proceed();
+      Object result = point.proceed();
+      if (result instanceof ResponseEntity<?> response) {
+        status = response.getStatusCode().value();
+      }
+      return result;
     } catch (ApiException exception) {
       status = exception.getStatus().value();
       reason = exception.getCode();
