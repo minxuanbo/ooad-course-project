@@ -15,20 +15,21 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.HandlerMapping;
 
-/** 资源接口在MVC解析参数前先拒绝匿名、无权及越界请求，真实AOP仍负责执行期鉴权。 */
+/** 全局资源及角色接口在MVC解析参数前先拒绝匿名、无权及越界请求，真实AOP仍负责执行期鉴权。 */
 @Component
 @RequiredArgsConstructor
-public class CoreResourcePreflight implements HandlerInterceptor {
+public class CoreGlobalManagementPreflight implements HandlerInterceptor {
   private final GlobalManagementAccess access;
   private final CoreResourceService resources;
   private final AuditWriter audit;
 
-  /** 只处理T06资源控制器，业务输入校验仍由DTO及MVC负责。 */
+  /** 只处理已评审的全局控制器，业务输入校验仍由DTO及MVC负责。 */
   @Override
   public boolean preHandle(
       HttpServletRequest request, HttpServletResponse response, Object handler) {
     if (!(handler instanceof HandlerMethod method)
-        || !CoreResourceController.class.isAssignableFrom(method.getBeanType())) {
+        || (!CoreResourceController.class.isAssignableFrom(method.getBeanType())
+            && !CoreRoleController.class.isAssignableFrom(method.getBeanType()))) {
       return true;
     }
     String template =

@@ -8,6 +8,7 @@ import com.municipal.rbac.ApiResponseAdvice;
 import com.municipal.rbac.RequestAuditFilter;
 import com.municipal.rbaccore.importing.ImportException;
 import java.time.Clock;
+import java.util.Map;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -17,7 +18,6 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.env.Environment;
-import org.springframework.core.env.Profiles;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -43,22 +43,27 @@ import org.springframework.security.crypto.password.PasswordEncoder;
     })
 @Import({ApiResponseAdvice.class, ApiExceptionHandler.class, RequestAuditFilter.class})
 public class CoreRuntimeConfiguration {
+  private static final Map<String, String> TEST_DATABASES =
+      Map.of(
+          "core-http-test", "rbac_core_t05_test",
+          "core-resource-test", "rbac_core_t07_test",
+          "core-role-test", "rbac_core_t09_test");
 
   /** 生产只接明确的整改库；测试建表仅允许对应profile下的本机专用测试库。 */
   @Bean
   static BeanFactoryPostProcessor databaseGuard(Environment environment) {
     String url = environment.getProperty("spring.datasource.url", "");
     boolean isolatedTest =
-        environment.acceptsProfiles(Profiles.of("core-http-test"))
-            && url.matches(
-                "jdbc:mysql://(?:127\\.0\\.0\\.1|localhost):[0-9]{1,5}/rbac_core_t05_test(?:\\?.*)?");
-    isolatedTest =
-        isolatedTest
-            || (environment.acceptsProfiles(Profiles.of("core-resource-test"))
-                && url.matches(
-                    "jdbc:mysql://(?:127\\.0\\.0\\.1|localhost):[0-9]{1,5}/rbac_core_t07_test(?:\\?.*)?"));
+        TEST_DATABASES.entrySet().stream()
+            .anyMatch(
+                entry ->
+                    environment.matchesProfiles(entry.getKey())
+                        && url.matches(
+                            "jdbc:mysql://(?:127\\.0\\.0\\.1|localhost):[0-9]{1,5}/"
+                                + entry.getValue()
+                                + "(?:\\?.*)?"));
     boolean production =
-        !environment.acceptsProfiles(Profiles.of("core-http-test", "core-resource-test"))
+        !usesTestProfile(environment)
             && url.matches("jdbc:mysql://[^/?#\\s]+/rbac_core(?:\\?[^#]*)?")
             && "never".equals(environment.getProperty("spring.sql.init.mode"));
     if ((!isolatedTest && !production)
@@ -78,8 +83,12 @@ public class CoreRuntimeConfiguration {
   /** 生产沿用BCrypt默认强度，专用测试profile仅降低夹具计算成本。 */
   @Bean
   PasswordEncoder passwordEncoder(Environment environment) {
-    return new BCryptPasswordEncoder(
-        environment.acceptsProfiles(Profiles.of("core-http-test", "core-resource-test")) ? 4 : 10);
+    return new BCryptPasswordEncoder(usesTestProfile(environment) ? 4 : 10);
+  }
+
+  /** 数据库隔离和测试密码强度共用同一组测试profile。 */
+  private static boolean usesTestProfile(Environment environment) {
+    return environment.matchesProfiles(TEST_DATABASES.keySet().toArray(String[]::new));
   }
 
   /** JSON遵守契约字段类型，拒绝账号、ID、布尔值和枚举的隐式类型转换。 */
@@ -94,6 +103,8 @@ public class CoreRuntimeConfiguration {
                   com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES);
               mapper.enable(
                   com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_NUMBERS_FOR_ENUMS);
+              mapper.enable(
+                  com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
               mapper
                   .coercionConfigFor(LogicalType.Textual)
                   .setCoercion(CoercionInputShape.Integer, CoercionAction.Fail)
