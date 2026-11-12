@@ -26,6 +26,7 @@ SOURCES = {
     '市政公司应用软件功能权限清单.xlsx': '13c18de30710cc2867588aa99843c6c388c0a8ee85029f3420f7b4c4c9fad655',
 }
 ENV = dict(os.environ)
+JAVA_ENV = {}
 WINDOW_FLAGS = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
 MYSQL = []
 JAVA = ''
@@ -56,10 +57,26 @@ def literal(value):
 
 def prepare():
     """确认非默认本机端口、工作区私有datadir及空库后，才允许创建验收数据。"""
-    global MYSQL, JAVA
+    global MYSQL, JAVA, JAVA_ENV
     required = ('RBAC_CORE_DB_URL', 'RBAC_CORE_DB_USER', 'RBAC_CORE_DB_PASSWORD',
                 'RBAC_CORE_EMPLOYEE_PASSWORD', 'RBAC_CORE_ADMIN_PASSWORD', 'RBAC_ACCEPTANCE_DATADIR')
     require(all(ENV.get(key) for key in required), '缺少T13必填环境配置，见验收说明')
+    # Spring环境可覆盖YAML中的RBAC占位符；JVM环境还可注入-D/agent，必须先拒绝。
+    overrides = []
+    for key in ENV:
+        normalized = key.upper().replace('.', '_').replace('-', '_')
+        if normalized.startswith(('SPRING_', 'LOADER_')) or normalized in (
+                'JAVA_TOOL_OPTIONS', 'JDK_JAVA_OPTIONS', '_JAVA_OPTIONS'):
+            overrides.append(key)
+    require(not overrides, 'T13不允许额外Spring/JVM配置；请使用干净环境再运行')
+    operating_system = {'PATH', 'SYSTEMROOT', 'WINDIR', 'COMSPEC', 'PATHEXT', 'TEMP', 'TMP',
+                        'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'PROGRAMDATA', 'HOME',
+                        'LANG', 'LC_ALL', 'TZ'}
+    JAVA_ENV = {key: value for key, value in ENV.items() if key.upper() in operating_system}
+    for key in ('JAVA_HOME', 'RBAC_CORE_DB_URL', 'RBAC_CORE_DB_USER', 'RBAC_CORE_DB_PASSWORD',
+                'RBAC_CORE_EMPLOYEE_PASSWORD', 'RBAC_CORE_ADMIN_PASSWORD', 'RBAC_CORE_ADMIN_USERNAME'):
+        if key in ENV:
+            JAVA_ENV[key] = ENV[key]
     url = urllib.parse.urlsplit(ENV['RBAC_CORE_DB_URL'].removeprefix('jdbc:'))
     require(url.scheme == 'mysql' and url.hostname in ('127.0.0.1', 'localhost')
             and url.port is not None and 1024 <= url.port <= 65535 and url.port != 3306
@@ -78,7 +95,7 @@ def prepare():
     java_home = ENV.get('JAVA_HOME')
     JAVA = str(Path(java_home) / 'bin' / ('java.exe' if os.name == 'nt' else 'java')) if java_home else shutil.which('java')
     require(JAVA is not None, '未找到Java')
-    version = subprocess.run([JAVA, '-version'], capture_output=True, text=True, check=True)
+    version = subprocess.run([JAVA, '-version'], capture_output=True, text=True, check=True, env=JAVA_ENV)
     require('version "21.' in version.stderr, 'T13正式复现要求实际JDK21，不以release编译参数代替运行环境')
     require((ROOT / 'target/rbac0-0.1.0.jar').is_file(), '请先构建实际Spring Boot jar')
     REPORT.mkdir(parents=True)
@@ -88,6 +105,7 @@ def prepare():
         'sourceSha256': SOURCES,
     }, ensure_ascii=False, indent=2), encoding='utf-8')
     ENV['RBAC_CORE_SOURCE_DIR'] = str(ROOT)
+    JAVA_ENV['RBAC_CORE_SOURCE_DIR'] = str(ROOT)
     for filename in ('rbac-core-schema.sql', 'rbac-core-runtime.sql'):
         sql((ROOT / 'deploy' / filename).read_text(encoding='utf-8'))
 
@@ -97,7 +115,7 @@ def offline(main, name, extra=()):
     with (REPORT / name).open('wb') as log:
         result = subprocess.run([JAVA, '-Xmx512m', '-Dloader.main=' + main, '-cp',
                                  'target/rbac0-0.1.0.jar', 'org.springframework.boot.loader.launch.PropertiesLauncher',
-                                 *extra], cwd=ROOT, env=ENV, stdout=log, stderr=subprocess.STDOUT,
+                                 *extra], cwd=ROOT, env=JAVA_ENV, stdout=log, stderr=subprocess.STDOUT,
                                 timeout=1500, creationflags=WINDOW_FLAGS)
     require(result.returncode == 0, '离线步骤失败，检查被忽略的本地日志：' + name)
 
@@ -143,7 +161,7 @@ def runtime(round_number):
     with socket.socket() as probe:
         probe.bind(('127.0.0.1', 0))
         PORT = probe.getsockname()[1]
-    environment = dict(ENV, PORT=str(PORT))
+    environment = dict(JAVA_ENV, PORT=str(PORT))
     with (REPORT / ('default-' + str(round_number) + '.log')).open('wb') as log:
         process = subprocess.Popen([JAVA, '-Xmx512m', '-jar', 'target/rbac0-0.1.0.jar'],
                                    cwd=ROOT, env=environment, stdout=log,
