@@ -1,4 +1,4 @@
-import { createApp } from 'vue'
+import { createApp, h } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
 import Login from './pages/Login.vue'
@@ -8,7 +8,7 @@ import './style.css'
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/', redirect: '/login' },
+    { path: '/', component: { render: () => h('p', { class: 'card panel' }, '登录成功。可用入口按当前授权显示。') }, meta: { title: '权限管理' } },
     { path: '/login', component: Login },
     { path: '/logs', component: AuditLogs, meta: { admin: true, title: '鉴权日志' } },
     { path: '/:pathMatch(.*)*', redirect: '/login' }
@@ -21,7 +21,7 @@ router.beforeEach(async function(to) {
     await refreshSession()
     if (to.meta.admin && !can('rbac.logs.read')) {
       notify('当前账号没有该页面的访问权限。')
-      return '/login'
+      return '/'
     }
   } catch (error) { notify(error.message); return '/login' }
   return true

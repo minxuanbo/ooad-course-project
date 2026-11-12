@@ -1,5 +1,5 @@
 import { reactive } from 'vue'
-export const session = reactive({ token: sessionStorage.getItem('rbacToken') || '', me: null, permissions: [], notice: '' })
+export const session = reactive({ token: sessionStorage.getItem('rbacToken') || '', me: null, permissions: [], logAccess: false, notice: '' })
 let noticeTimer
 export function notify(message) {
   session.notice = message
@@ -10,7 +10,7 @@ function clearNotice() { session.notice = '' }
 export function setToken(token) {
   session.token = token
   if (token) sessionStorage.setItem('rbacToken', token)
-  else { sessionStorage.removeItem('rbacToken'); session.me = null; session.permissions = [] }
+  else { sessionStorage.removeItem('rbacToken'); session.me = null; session.permissions = []; session.logAccess = false }
 }
 export async function api(path, method = 'GET', body) {
   const requestToken = session.token
@@ -47,9 +47,18 @@ export async function refreshSession() {
   const token = session.token
   const me = await api('/me')
   const permissions = await api('/me/permissions')
+  const codes = (permissions || []).map(item => item.code)
+  let logAccess = false
+  try { await api('/authorization-logs?limit=1'); logAccess = true }
+  catch (error) { if (error.status !== 403) throw error }
   if (session.token === token) {
     session.me = me
-    session.permissions = (permissions || []).map(item => item.code)
+    session.permissions = codes
+    session.logAccess = logAccess
   }
   return me
+}
+// 日志还要求共同根范围，入口使用服务端实际查询结果，不按角色名推断。
+export function can(permission) {
+  return permission === 'rbac.logs.read' ? session.logAccess : session.permissions.includes(permission)
 }

@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { api, setToken, refreshSession } from '../api.js'
+import { api, setToken, refreshSession, can } from '../api.js'
 const router = useRouter()
 const account = ref(''), password = ref(''), reveal = ref(false), busy = ref(false), error = ref('')
 async function login() {
@@ -10,7 +10,7 @@ async function login() {
     const result = await api('/auth/login', 'POST', { account: account.value.trim(), password: password.value })
     setToken(result.token)
     await refreshSession()
-    await router.replace('/logs')
+    await router.replace(can('rbac.logs.read') ? '/logs' : '/')
   } catch (e) { error.value = e.message }
   finally { busy.value = false }
 }

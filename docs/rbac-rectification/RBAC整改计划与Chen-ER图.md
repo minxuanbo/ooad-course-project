@@ -558,16 +558,20 @@ CloneFactory和实际整改启动入口沿4.6；本票不增加初始化入口�
 
 T12在T07/T09/T11合入后的共同基线（PR #25合并提交`fbb4f3d`）上执行，分支`feat/issue-13`。删除旧链路22个类（`ApiController`、`Management*`、`AuthService/AuthRepository`、`Audit*`含归档与变更历史、`DataInitializer`、`DatabaseConstraints`含login_identifiers触发器、`DtoMapper/Requests/Responses/RolePolicy`、旧入口`RbacApplication`），`com.municipal.rbac`仅保留新旧共享骨架8类（统一响应/requestId/异常处理、`RequestAuditFilter`、`AuditEvent/AuditWriter`端口、`ExcelXmlReader`）；保留的最小鉴权日志读写全部走rbaccore的JPA实现（`CoreAuditWriter`/`CoreAuditController`），不整删authorization_logs。同时删除旧库`schema.sql`、旧默认`application.yml`、`deploy/install-login-constraints.sql`及16个绑定旧物的测试类，保留`ExcelXmlReaderTest`、`ExcelImportT03Test`并适配`RequestAuditBoundaryTest`。
 
-构建与部署切换：`pom.xml`默认Start-Class改为`CoreRuntimeCommand`并移除`spring-boot-starter-jdbc`（MySQL驱动与CloneFactory保留）；`deploy/stack.yml`改用`RBAC_CORE_DB_URL`等整改变量、删除`RBAC_INITIALIZE`与Excel挂载，健康检查仍为匿名`/api/me`预期401；`deploy/test-backend.sh`摘要清单改覆盖全源码并移除触发器权限开关；`deploy/README.md`与根`README.md`初始化说明改为`rbac_core`脚本加T03导入、CoreBootstrapCommand两步离线命令，应用启动不建表、不导入。
+构建与部署切换：`pom.xml`默认Start-Class改为`CoreRuntimeCommand`并移除`spring-boot-starter-jdbc`（MySQL驱动与CloneFactory保留）；`deploy/stack.yml`改用整改变量、删除旧初始化与Excel挂载，健康检查仍为匿名`/api/me`预期401。Docker构建阶段按4.6固定老师源码提交安装真实CloneFactory，不依赖宿主缓存。现场脚本改六个本机专库及临时MySQL网络命名空间，复制src/deploy及前端边界文件；临时实例禁binlog以支持仍有效的故障注入触发器，不恢复产品旧登录触发器。部署步骤区分T03导入、只读预览与实际五角色授权，并列必填员工/管理员独立口令；产品启动不建表、不导入。
 
-前端仅保留登录与鉴权日志查询兼容入口：删除Portal/System/Organizations/Users/Management及Handover/ManagementGrants/RoleManagementEditor/RoleEditor组件、归档按钮与请求、3秒管理范围同步及“普通员工登录后提示”路由假设；导航按`/me/permissions`有效权限码显示，部门管理员无日志权限时入口不显示且后端拒绝。工号/手机号双入口保留，未删除手机号登录。
+前端保留登录、鉴权日志兼容入口及最小登录成功外壳：删除旧页面/组件、归档请求、3秒管理范围同步及普通员工登录后的旧路由假设。补修缺失的can导出，日志入口依据实际GET预检的权限及范围结果显示，支持其他有效权限映射同一API；部门账号即使误授日志权限也不显示入口且后端403。获准登录的部门管理者进入外壳，不强跳无权日志页。工号/手机号双入口保留；未扩展整套正式界面或宣称界面验收。
 
-验证采用新增`T12LegacyRemovalBoundaryTest`6项纯源码边界测试（旧标识残留、旧包文件清单、旧脚本缺失、构建/部署入口、前端入口、双入口保留），并以真实RED（`style.css`交接样式残留）先行见证后清理。本机无MySQL环境下通过：无数据库依赖测试37项失败/错误/跳过均0（含T02规则、T03导入边界、T07/T09/T11边界及T12六项），前端保留测试4项通过，`mvn -DskipTests package`成功且Boot jar Manifest核对`Start-Class: com.municipal.rbaccore.runtime.CoreRuntimeCommand`。依赖真实MySQL的回归（T05/T07/T09/T11 HTTP及T02/T03 JPA，6个类）与干净整改库两轮启动、打包jar实测未在本机执行，需按既有各票说明配置隔离测试库后补跑；本记录不把上述未执行项写成已通过。
+PR #26初稿完成37项无数据库测试及4项前端测试，注明未跑MySQL/干净初始化。2026-11-12按用户要求使用两个skill复核，修复前端缺导出、实际API导航与部门落点、部署初始化说明和现场脚本，并恢复被误删的Excel共享字符串富文本、跨Z稀疏列、数值、文件优先/回退及坏ZIP有效检查。前端行为先RED后修复，生产构建及6项测试通过。按现场脚本文件范围准备干净暂存目录，最终真实MySQL全量`clean test`142项，失败/错误/跳过均0；原T02—T11整改测试全部保留，T12六项边界和恢复的两项Excel检查均通过。
+
+独立本机MySQL的空`rbac_core`按两份正式SQL建表，以生产BCrypt10逐账号盐完成110部门、10001启用账号导入且未授角色；预览不写授权，实际授权人数为1/64/106/72/9758。默认`java -jar`两轮实测通过管理员、工号/手机号登录、本人/权限/部门/人员/角色/系统/最小日志接口；部门日志403，已删除应用/模拟鉴权/管理权限/归档/交接入口返回403/404/405，不能执行业务。停用一名普通员工、撤空其角色并更换口令后，重复导入/授权及再次启动保留全部调整。原始Excel及ER资源SHA-256不变，旧隔离库保留，未连接业务实例或迁移旧日志/ID。
+
+老师固定提交已重新从Gitee获取，并以Dockerfile同一Maven安装命令成功构建CloneFactory。最终重新打包成功，默认Start-Class与旧main/schema缺失核对通过，并以部署同名configtree密码文件连接MySQL启动、验证匿名`/api/me`的401及requestId。Shell语法检查与按脚本范围的暂存回归通过；本机没有Docker引擎，未实际构建/发布镜像或执行Swarm及完整容器脚本，不将这些写成通过。两个独立新上下文审核代理最终Standards、Spec剩余发现各0；这属于代理技术审核，不代替老师或真人验收。JaCoCo按用户要求本轮不阻塞，原配置保留，不宣称verify全覆盖。用户授权无剩余问题后合入及清理完成分支，实际合入/关票状态见[PR #26](https://github.com/minxuanbo/ooad-course-project/pull/26)与[Issue #13](https://github.com/minxuanbo/ooad-course-project/issues/13)。
 
 ```powershell
 mvn clean test-compile test '-DtestJvmArgs=-Xmx512m -Duser.timezone=UTC'
 mvn -DskipTests package
-# 打包jar默认入口即整改HTTP产品；干净整改库初始化沿部署README两步离线命令后再启动验证
+# 按部署README依次导入、预览、实际授权，再以java -jar默认入口启动
 ```
 
 ## 5. 组员讨论与验证清单

@@ -16,9 +16,11 @@ T09角色定义与权限配置已在独立分支实现并完成本地验证：�
 
 ## 工程与运行
 
+T12的[PR #26](https://github.com/minxuanbo/ooad-course-project/pull/26)已完成复核补修：旧链路收敛、默认入口切换，真实MySQL回归142项、前端6项及生产构建通过；干净万人初始化、五角色授权、两轮默认JAR及重复初始化保留调整均已验证。Standards、Spec最终剩余各0，详细证据及Docker/Swarm未实测边界见[计划4.10](docs/rbac-rectification/RBAC整改计划与Chen-ER图.md#410-t12-收掉旧模型与旧功能并切换到整改数据链路)。
+
 后端为 Java 21、Spring Boot、MySQL，持久化统一为 JPA；前端为 Vue/Vite，仅保留登录与鉴权日志查询兼容入口。代码在 src/ 和 frontend/，运行配置见 src/main/resources/application-core-runtime.yml，默认入口为 `com.municipal.rbaccore.runtime.CoreRuntimeCommand`。
 
-根目录三份 Excel 与老师原件的 SHA-256 一致：10,000 人、111 个组织节点。“用户名”提供工号，“电话号码”提供手机号；口令哈希、有效状态和初始维护账号方案待核对，详见[数据复核](docs/rbac-rectification/RBAC检查记录复核说明.md#12-原始数据复核)。原件保留，原库备份后使用独立整改库；权限目录按已评审场景建立。
+根目录三份 Excel 与老师原件的 SHA-256 一致：10,000 人、111 个组织来源节点。“用户名”提供工号，“电话号码”提供手机号；按用户确认将公司领导并入总公司，目标110部门，员工全部启用，另建独立admin。员工和管理员初始口令分别由部署配置提供，不复用旧哈希/状态/授权；首次五角色批量授权沿已确认规则，详见[计划4.4—4.6](docs/rbac-rectification/RBAC整改计划与Chen-ER图.md)。原件和旧库保留，运行使用独立整改库。
 
 设置 RBAC_CORE_DB_URL、RBAC_CORE_DB_USER、RBAC_CORE_DB_PASSWORD 后，在仓库根目录启动整改后端：
 

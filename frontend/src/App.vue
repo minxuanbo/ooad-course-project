@@ -1,8 +1,10 @@
 <script setup>
+import { watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { session, api, setToken, notify, can } from './api.js'
 const route = useRoute(), router = useRouter()
 const nav = [['logs', '鉴权日志', 'rbac.logs.read']]
+watch(() => session.token, token => { if (!token) router.replace('/login') })
 async function logout() {
   try { await api('/auth/logout', 'POST'); setToken(''); await router.replace('/login') }
   catch (error) { notify(error.message); setToken(''); await router.replace('/login') }

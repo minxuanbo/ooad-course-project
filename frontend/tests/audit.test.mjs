@@ -29,3 +29,42 @@ test('archive requests and archived filters are removed from the log page', () =
   assert(!source.includes('/authorization-logs/archive'))
   assert(!source.includes('storage'))
 })
+
+test('T12 navigation uses effective permissions and server-confirmed log scope', async () => {
+  let denied = false
+  let alternatePermission = false
+  const calls = []
+  const context = vm.createContext({ reactive: x => x, sessionStorage: { getItem: () => '', setItem() {}, removeItem() {} }, AbortSignal,
+    fetch: async path => {
+      calls.push(path)
+      const status = path.includes('/authorization-logs') && denied ? 403 : 200
+      const data = path === '/api/me' ? { user: { id: 1 } } : path === '/api/me/permissions' ? (alternatePermission ? [{ code: 'custom.logs' }] : [{ code: 'rbac.logs.read' }, { code: 'rbac.users.read' }]) : { items: [] }
+      return { ok: status === 200, status, text: async () => JSON.stringify({ code: status === 200 ? 'OK' : 'MANAGEMENT_SCOPE_DENIED', data }) }
+    } })
+  vm.runInContext(readFileSync(new URL('../src/api.js', import.meta.url), 'utf8').replace(/^import .*$/gm, '').replace(/export /g, ''), context)
+  const run = source => vm.runInContext(source, context)
+  await run('refreshSession()')
+  assert.equal(run("can('rbac.logs.read')"), true)
+  assert.equal(run("can('rbac.users.read')"), true)
+  assert.equal(run("can('rbac.roles.write')"), false)
+  denied = true
+  await run('refreshSession()')
+  assert.equal(run("can('rbac.logs.read')"), false)
+  assert.equal(run("can('rbac.users.read')"), true)
+  denied = false; alternatePermission = true
+  await run('refreshSession()')
+  assert.equal(run("can('rbac.logs.read')"), true)
+  run("setToken('')")
+  assert.equal(run("can('rbac.users.read')"), false)
+  assert(calls.includes('/api/authorization-logs?limit=1'))
+})
+
+test('T12 permitted department login reaches the shell without entering logs', async () => {
+  const routes = []
+  const context = vm.createContext({ ref: value => ({ value }), useRouter: () => ({ replace: async path => routes.push(path) }),
+    api: async () => ({ token: 'manager-token' }), setToken() {}, refreshSession: async () => {}, can: () => false })
+  const source = readFileSync(new URL('../src/pages/Login.vue', import.meta.url), 'utf8').match(/<script setup>([\s\S]*?)<\/script>/)[1].replace(/^import .*$/gm, '')
+  vm.runInContext(source, context)
+  await vm.runInContext('login()', context)
+  assert.deepEqual(routes, ['/'])
+})

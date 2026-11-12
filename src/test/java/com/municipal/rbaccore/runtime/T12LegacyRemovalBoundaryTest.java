@@ -49,7 +49,10 @@ class T12LegacyRemovalBoundaryTest {
             "RBAC_DB_",
             "RBAC_INITIALIZE");
     List<Path> scopes =
-        List.of(ROOT.resolve("src/main/java"), ROOT.resolve("src/main/resources"), ROOT.resolve("frontend/src"));
+        List.of(
+            ROOT.resolve("src/main/java"),
+            ROOT.resolve("src/main/resources"),
+            ROOT.resolve("frontend/src"));
     for (Path scope : scopes) {
       try (Stream<Path> files = Files.walk(scope)) {
         for (Path file : files.filter(Files::isRegularFile).toList()) {
@@ -70,7 +73,8 @@ class T12LegacyRemovalBoundaryTest {
     try (Stream<Path> files = Files.list(ROOT.resolve("src/main/java/com/municipal/rbac"))) {
       remaining = files.map(Path::getFileName).map(Path::toString).sorted().toList();
     }
-    assertEquals(List.copyOf(KEPT_RBAC_SKELETON).stream().sorted().collect(Collectors.toList()), remaining);
+    assertEquals(
+        List.copyOf(KEPT_RBAC_SKELETON).stream().sorted().collect(Collectors.toList()), remaining);
   }
 
   /** 旧建表脚本、旧默认配置与触发器安装脚本删除，新链路产物在位。 */
@@ -101,7 +105,8 @@ class T12LegacyRemovalBoundaryTest {
   @DisplayName("T12 构建与部署入口切换到整改链路")
   void t12BuildAndDeploymentSwitchToCoreRuntime() throws IOException {
     String pom = Files.readString(ROOT.resolve("pom.xml"), StandardCharsets.UTF_8);
-    assertTrue(pom.contains("<mainClass>com.municipal.rbaccore.runtime.CoreRuntimeCommand</mainClass>"));
+    assertTrue(
+        pom.contains("<mainClass>com.municipal.rbaccore.runtime.CoreRuntimeCommand</mainClass>"));
     assertFalse(pom.contains("spring-boot-starter-jdbc"));
     assertTrue(pom.contains("com.mysql"));
     assertTrue(pom.contains("clonefactory"));
@@ -113,7 +118,8 @@ class T12LegacyRemovalBoundaryTest {
     assertTrue(stack.contains("rbac_core"));
     assertTrue(stack.contains("/api/me"));
 
-    String script = Files.readString(ROOT.resolve("deploy/test-backend.sh"), StandardCharsets.UTF_8);
+    String script =
+        Files.readString(ROOT.resolve("deploy/test-backend.sh"), StandardCharsets.UTF_8);
     assertFalse(script.contains("log-bin-trust-function-creators"));
     assertFalse(script.contains("com/municipal/rbac/*.java"));
     assertTrue(script.contains("src/main/java"));
@@ -145,14 +151,18 @@ class T12LegacyRemovalBoundaryTest {
   @Test
   @DisplayName("T12 登录双入口与手机号登录保留")
   void t12LoginDualEntryIsPreserved() throws IOException {
-    String loginPage = Files.readString(ROOT.resolve("frontend/src/pages/Login.vue"), StandardCharsets.UTF_8);
+    String loginPage =
+        Files.readString(ROOT.resolve("frontend/src/pages/Login.vue"), StandardCharsets.UTF_8);
     assertTrue(loginPage.contains("工号或手机号"));
     String importConfig =
-        Files.readString(ROOT.resolve("src/main/resources/application-core-import.yml"), StandardCharsets.UTF_8);
+        Files.readString(
+            ROOT.resolve("src/main/resources/application-core-import.yml"), StandardCharsets.UTF_8);
     assertFalse(importConfig.contains("employee_no"));
     // 新用户模型只保存一份工号(username)，User实体不声明第二工号字段。
     String userModel =
-        Files.readString(ROOT.resolve("src/main/java/com/municipal/rbaccore/model/User.java"), StandardCharsets.UTF_8);
+        Files.readString(
+            ROOT.resolve("src/main/java/com/municipal/rbaccore/model/User.java"),
+            StandardCharsets.UTF_8);
     assertFalse(Arrays.stream(userModel.split("\n")).anyMatch(line -> line.contains("employeeNo")));
   }
 }
