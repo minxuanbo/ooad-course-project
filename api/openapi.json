@@ -2014,7 +2014,7 @@
       "Q": {
         "name": "q",
         "in": "query",
-        "description": "姓名/工号或名称/编码或方法/路径包含搜索，依接口说明；首尾空白不参与搜索，长度上限100",
+        "description": "按接口指定的姓名/工号、名称/编码或方法/路径作不区分大小写的包含搜索；先去首尾空白，处理后长度上限100",
         "schema": {
           "type": "string",
           "maxLength": 100
@@ -2939,13 +2939,14 @@
             "maxLength": 100,
             "minLength": 1,
             "pattern": "\\S",
-            "description": "归一首尾空白，编码创建后不可改"
+            "description": "先去首尾空白，再校验非空及1—100字符；编码创建后不可改"
           },
           "name": {
             "type": "string",
             "maxLength": 100,
             "minLength": 1,
-            "pattern": "\\S"
+            "pattern": "\\S",
+            "description": "先去首尾空白，再校验非空及1—100字符"
           }
         },
         "required": [
@@ -2961,7 +2962,8 @@
             "type": "string",
             "maxLength": 100,
             "minLength": 1,
-            "pattern": "\\S"
+            "pattern": "\\S",
+            "description": "提供时先去首尾空白，再校验非空及1—100字符"
           },
           "enabled": {
             "type": "boolean"
