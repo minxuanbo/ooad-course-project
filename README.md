@@ -1,42 +1,36 @@
 # 市政公司统一权限管理系统
 
-面向组织人员、角色、菜单/按钮及API的统一授权管理。用户名即工号，手机号是同账号另一登录入口；实际有效授权决定操作，部门树决定人员管理范围。
+管理组织人员、角色、菜单/按钮及API的授权关系。用户名即工号，手机号是同一账号的另一个登录入口；有效授权决定可执行操作，本人部门及后代限定人员管理范围。
 
-## 文档
+## 文档与审核
 
-从[正式文档导航](docs/README.md)开始，按需求、领域模型、数据库、前后端设计、API及验收阅读。业务依据是老师检查说明、原始Excel和用户后续确认；老师示例项目用于文档组织与双实现架构参考。旧需求规格说明书不覆盖现行规则。
+资料按老师[course-project-mgt](https://gitee.com/mingqcn/course-project-mgt)的职责组织；业务依据为老师说明、原Excel及用户后续确认，不以老师课程业务或旧需求规格说明书替代本RBAC需求。
 
 | 入口 | 内容 |
 | --- | --- |
-| [需求说明](docs/requirements.md) | 来源、初始化、五角色、双入口、实际授权、部门范围及项目边界 |
-| [后端设计](docs/backend-design.md) / [前端设计](docs/frontend-design.md) | 当前结构化基线、完整前端目标及同仓库双实现方案 |
-| [API入口](api/README.md) | 正式契约、页面/用例对照与原型 |
-| [测试与验收](docs/testing-acceptance.md) | 阶段状态、验收矩阵、隔离与证据要求 |
-| [部署说明](deploy/README.md) | 构建、秘密配置、离线初始化、默认jar及部署边界 |
-| [协作规范](CONTRIBUTING.md) | 分支、工作树、评审与Issue维护 |
+| [文档导航](docs/README.md) / [本次审核指南](docs/review-guide.md) | 正式目录、逐项阅读顺序、变更与待审点 |
+| [需求](docs/requirements.md) / [来源](docs/requirements/sources.md) | 项目范围、业务规则及确认依据 |
+| [领域](docs/domain-model.md) / [数据库](docs/database-design.md) | 核心对象、规则、Chen ER、12张物理表 |
+| [后端](docs/backend-design.md) / [前端](docs/frontend-design.md) | 同仓库双实现目标、完整RBAC前端设计 |
+| [API](api/README.md) / [参考原型](prototype/README.md) | OpenAPI、24项操作及原交互参考 |
+| [初始化](docs/initialization.md) / [部署](deploy/README.md) | 来源映射、五角色、依赖安装与运行 |
+| [测试验收](docs/testing-acceptance.md) / [开发计划](docs/development-plan.md) | 历史T13基线、当前检查及后续审核关口 |
+| [协作](CONTRIBUTING.md) / [历史](docs/history/README.md) | 分支、审核与只读整改追溯 |
 
-## 工程状态
+## 当前基线与目标
 
-共同整改分支为refactor/rbac-core-backend，main仍保留历史工程。T12已合入a79b668，当前生产后端使用整改JPA链路，代码位于src/main/java/com/municipal/rbaccore。当前只有结构化业务实现，尚未分成structured/ddd包，尚无策略切换；DDD属于目标设计。
+共同基线为refactor/rbac-core-backend，main仍保留历史工程。当前后端位于src/main/java/com/municipal/rbaccore，使用Java21、Boot3.5.6、JPA、MySQL8.4、AOP与老师真实CloneFactory。尚未整理成structured/ddd目录，没有DDD实现或策略开关；这些是后续设计目标。
 
-前端Vue/Vite位于frontend，生产页面目前为登录、最小日志兼容与登录成功外壳；完整人员、角色、资源交互见正式前端设计及[已评审原型](docs/rbac-rectification/prototype/index.html)。原型为内存模拟，不作为真实界面/后端验收。课程受控系统与双业务系统演示尚未完成。
+生产前端frontend为Vue3/Vite，目前仅登录、最小日志兼容与登录成功外壳。完整人员、角色、资源及日志页面属于设计范围；顶层prototype保留原四组内存交互参考，新前端原型须单独审核。课程系统指老师Gitee课程项目，T14/T15等待老师进一步要求。
 
-本次工作顺序是文档整理→T13当前后端验收→停止，不启动DDD编码、T14/T15或其他后续任务。阶段结果见[验收说明](docs/testing-acceptance.md)，历史整改与PR证据保留在[整改记录](docs/rbac-rectification/README.md)。
+T13历史验收记录142项后端回归、3项运行器安全单测、70次默认JAR真实HTTP及两轮启动，详见[原验收记录](docs/acceptance/T13.md)。本次文档分支不重新执行或冒称这些结果，也不代表完整前端、DDD或云端通过。
 
-T13本轮实际OpenJDK21/MySQL8.4验收已通过：142项后端回归、3项运行器隔离单测、70次默认JAR真实HTTP及两轮启动/重复初始化；完整证据、源提交和未验收范围见[T13记录](docs/acceptance/T13.md)。用户指定的后续停止点保持不变。
+本次只清理/完善正式文档，独立分支供用户逐项审核，未经确认不合并。后续按文档→结构化归类→新原型→正式前端→DDD→双实现总验收推进，详见开发计划。
 
-## 运行
+## 运行入口
 
-后端采用Java21、Boot3.5.6、Spring Data JPA、MySQL8.4、AOP及老师真实CloneFactory。新环境先按[部署说明](deploy/README.md)准备老师固定源码依赖、显式整改库和账号，执行离线导入、只读预览及实际五角色授权；设置RBAC_CORE_DB_URL、RBAC_CORE_DB_USER、RBAC_CORE_DB_PASSWORD后运行：
+先按部署说明安装固定来源CloneFactory、显式准备独立rbac_core及秘密配置，再执行离线导入、只读预览、实际五角色授权。默认jar为target/rbac0-0.1.0.jar；启动不建表、不导入、不重授角色。不能指向旧业务库。
 
-```bash
-mvn spring-boot:run
-```
+现有前端在frontend执行npm ci、npm run dev，默认5173代理/api到后端8081；npm test和npm run build分别检查测试与构建。参考原型可直接打开prototype/index.html。
 
-打包后默认java -jar target/rbac0-0.1.0.jar即整改HTTP入口。应用启动不建表、不导入、不重授角色，不能指向旧业务库。
-
-现有前端在frontend目录执行npm ci、npm run dev，默认localhost:5173代理/api到后端8081；npm test及npm run build检查前端。原型可直接打开HTML。
-
-三份原始Excel保留：10000人员、111组织来源，目标合并为110部门、独立admin后10001账号；新项目不复用旧ID/口令/状态/授权。口令由部署秘密配置提供，不在文档给出默认明文。
-
-测试使用与profile对应的本机隔离MySQL专库；功能回归与JaCoCo分别报告，用户确认本轮覆盖率不阻塞，配置保留。不要提交生成报告、CSV、数据库或凭据。
+三份原Excel保持原件；目标为111组织来源合并到110部门、10000员工加独立admin共10001账号。新项目不复用旧ID/哈希/状态/授权，口令来自部署秘密。测试使用隔离MySQL专库；JaCoCo独立报告，当前不作为阻塞，不提交凭据或生成报告。

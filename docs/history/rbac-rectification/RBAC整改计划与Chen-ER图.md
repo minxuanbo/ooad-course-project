@@ -1,13 +1,15 @@
 # RBAC 核心整改计划与 Chen 风格 ER 图
 
-> 文档整理说明（2026-11-12）：当前业务与目标设计入口已整理至[正式文档导航](../README.md)。本文保留原执行计划、原Chen ER/三段源码及分票历史证据；旧“当前代码/待实现”等段落按其记录时间阅读，最新状态见[验收说明](../testing-acceptance.md)。新需求/设计不再重复追加到本历史正文。
+> 只读历史归档，非现行规范。需求/设计见[正式导航](../../README.md)，原相对链接已固定到T13基线；本次保留追溯证据，不新增实现或验收结论。
+
+> 文档整理说明（2026-11-12）：当前业务与目标设计入口已整理至[正式文档导航](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/README.md)。本文保留原执行计划、原Chen ER/三段源码及分票历史证据；旧“当前代码/待实现”等段落按其记录时间阅读，最新状态见[验收说明](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/testing-acceptance.md)。新需求/设计不再重复追加到本历史正文。
 
 > 原版执行计划：以老师检查纪要、补充图片和用户确认确定需求，方案选择经小组评审。
-> [整改入口](README.md)提供任务导航，[复核说明](RBAC检查记录复核说明.md)记录需求归属，进度与评审证据见第 5 节。
+> [整改入口](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/README.md)提供任务导航，[复核说明](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%A3%80%E6%9F%A5%E8%AE%B0%E5%BD%95%E5%A4%8D%E6%A0%B8%E8%AF%B4%E6%98%8E.md)记录需求归属，进度与评审证据见第 5 节。
 
 ## 1. 目标、依据与本轮边界
 
-以《2-9组检查记录》第一轮技术纪要为基础，结合补充图片及用户确认整改；令牌机制属于运行支撑。旧需求、设计与代码用于差异核对，逐项依据见[复核说明](RBAC检查记录复核说明.md)。
+以《2-9组检查记录》第一轮技术纪要为基础，结合补充图片及用户确认整改；令牌机制属于运行支撑。旧需求、设计与代码用于差异核对，逐项依据见[复核说明](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%A3%80%E6%9F%A5%E8%AE%B0%E5%BD%95%E5%A4%8D%E6%A0%B8%E8%AF%B4%E6%98%8E.md)。
 
 **本轮目标：完成“用户—角色—权限—API”的实际授权链路，并支持按部门管理约一万名用户。**
 
@@ -27,7 +29,7 @@
 
 ### 1.1 补充依据与本次保持的边界
 
-2026-11-07 补充检查图片要求跨部门调动、针对用户的权限、部门范围授权、REST、读写声明式事务和 CloneFactory，来源见[复核说明](RBAC检查记录复核说明.md#11-补充图片要求)。老师三份 Excel 用于核对数据及导入适配，权限目录按已评审场景选取；别组 HTML 作为交流参考。
+2026-11-07 补充检查图片要求跨部门调动、针对用户的权限、部门范围授权、REST、读写声明式事务和 CloneFactory，来源见[复核说明](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%A3%80%E6%9F%A5%E8%AE%B0%E5%BD%95%E5%A4%8D%E6%A0%B8%E8%AF%B4%E6%98%8E.md#11-补充图片要求)。老师三份 Excel 用于核对数据及导入适配，权限目录按已评审场景选取；别组 HTML 作为交流参考。
 
 用户于 2026-11-07 确认：复用最小鉴权日志；普通员工及无有效管理权限账号拒绝登录，取代此前登录后提示方案。部门管理员仍管理本部门及下级；本轮保留部门树查询，完整组织 CRUD 和固定菜单清单尚未列为必做项。管理员由角色的实际权限决定。
 
@@ -35,7 +37,7 @@
 
 ### 1.2 登录要求与统一账号口径（2026-11-08）
 
-按课堂要求支持“工号或手机号＋密码”，用户确认“用户名就是工号”。本节取代此前仅 username 登录、另查工号来源的方案，来源见[复核说明 1.3](RBAC检查记录复核说明.md#13-登录要求与字段口径)。第一轮检查清理独立统一标识模型，基本登录方式按本节保留。
+按课堂要求支持“工号或手机号＋密码”，用户确认“用户名就是工号”。本节取代此前仅 username 登录、另查工号来源的方案，来源见[复核说明 1.3](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%A3%80%E6%9F%A5%E8%AE%B0%E5%BD%95%E5%A4%8D%E6%A0%B8%E8%AF%B4%E6%98%8E.md#13-登录要求与字段口径)。第一轮检查清理独立统一标识模型，基本登录方式按本节保留。
 
 | 字段/输入 | 唯一含义与规则 |
 | --- | --- |
@@ -47,13 +49,13 @@
 
 `id` 负责内部关联，`username` 负责业务识别与登录，两者职责不同。目标模型删除重复工号 `employee_no`/`employeeNo`，使用用户表直接匹配工号或手机号。两者均按字符串等值查询；判重与查询采用一致的 MySQL 字符比较规则。导入及账号写入口校验各字段唯一性和跨用户碰撞：同一输入命中不同用户时拒绝并报告冲突；登录统一返回 `LOGIN_FAILED`。同时命中同一用户的两个字段按一个用户处理，不按长度、数字特征或字段优先级选择账号。
 
-T03 在导入前修正用户映射、约束和测试，保留来源与 ID 对应，已有冲突先报告再处理。T04 双入口补充原型/契约已技术复核并获用户确认，证据见[契约8.1](RBAC原型与API契约.md#login-review)及Issue #5；T05仍需T03完成并取得本次修订合入后的共同基线再实现。T12 清理旧标识表、触发器、重复字段及调用，T13 验证同身份、同授权及一致失败规则。历史验收保留，新增要求按本次修正验收；15 票及直接依赖不变。
+T03 在导入前修正用户映射、约束和测试，保留来源与 ID 对应，已有冲突先报告再处理。T04 双入口补充原型/契约已技术复核并获用户确认，证据见[契约8.1](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E5%8E%9F%E5%9E%8B%E4%B8%8EAPI%E5%A5%91%E7%BA%A6.md#login-review)及Issue #5；T05仍需T03完成并取得本次修订合入后的共同基线再实现。T12 清理旧标识表、触发器、重复字段及调用，T13 验证同身份、同授权及一致失败规则。历史验收保留，新增要求按本次修正验收；15 票及直接依赖不变。
 
 ## 2. ER 图与九张表
 
 ### 2.1 核心 ER 图
 
-![RBAC 核心 Chen ER 图](RBAC-ER图-预览.png)
+![RBAC 核心 Chen ER 图](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC-ER%E5%9B%BE-%E9%A2%84%E8%A7%88.png)
 
 静态图用于核对标准 Chen 符号；三段 Mermaid 保留相同实体和关系，便于编辑讨论，其布局和属性形状随阅读器变化。图中“用户编号”表示内部主键 `users.id`。
 
@@ -246,7 +248,7 @@ T02 允许多根用于独立模型测试。业务组织以原始 Excel 的共同
 - 人员以原始数据导入为主，不增加注册、找回密码流程。角色、权限、系统和 API 默认通过停用处理，不增加批量物理删除流程。
 - 移除独立管理权限、管理范围、交接及业务目录演示；保留最小鉴权日志记录/查询，移除日志归档和授权变更历史等扩展。登录只增加本节的权限准入判断，认证机制继续作为运行支撑。
 
-四组产物见[统一原型与 API 契约](RBAC原型与API契约.md)：可运行 HTML、请求/响应/错误/范围及验收案例。2026-11-07 评审和用户确认见 5.5；正式接口由后续业务票实现。
+四组产物见[统一原型与 API 契约](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E5%8E%9F%E5%9E%8B%E4%B8%8EAPI%E5%A5%91%E7%BA%A6.md)：可运行 HTML、请求/响应/错误/范围及验收案例。2026-11-07 评审和用户确认见 5.5；正式接口由后续业务票实现。
 
 T04/T06/T08/T10 及后续 T14 逐项审核 REST：资源命名、HTTP 方法、路径、参数、响应与错误符合场景，查询无业务写操作。人员列表须覆盖部门分组、搜索和分页；操作范围由评审场景确定。
 
@@ -256,7 +258,7 @@ T04/T06/T08/T10 及后续 T14 逐项审核 REST：资源命名、HTTP 方法、�
 
 K 固定为角色定义维护、角色权限配置、人员角色分配、菜单/按钮及 API 映射维护四类能力，包含必要查询。T06/T08/T10 落实具体操作、编码及映射，T07/T09/T11 共用判定。新增系统停用等影响维护恢复能力的场景时，先统一评审并回写 K，再同步所有写入票。
 
-具体 K 为[契约 2.3](RBAC原型与API契约.md#common)列明的全部方法与模板：`rbac.users.read`、`rbac.users.roles.write`、`rbac.resources.read`、`rbac.resources.write`、`rbac.roles.read`、`rbac.roles.write`、`rbac.roles.permissions.write`。本人多角色、多权限 OR 映射均可覆盖；日志、停人和调动不计入 K。真实 `rbac` 系统 ID、共同根及各资源 ID 由来源核对产生。T06 维护必要资源字段、停用及映射，系统停用和 method/path 编辑留在当前范围之外；这些属于用户已确认的方案选择。
+具体 K 为[契约 2.3](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E5%8E%9F%E5%9E%8B%E4%B8%8EAPI%E5%A5%91%E7%BA%A6.md#common)列明的全部方法与模板：`rbac.users.read`、`rbac.users.roles.write`、`rbac.resources.read`、`rbac.resources.write`、`rbac.roles.read`、`rbac.roles.write`、`rbac.roles.permissions.write`。本人多角色、多权限 OR 映射均可覆盖；日志、停人和调动不计入 K。真实 `rbac` 系统 ID、共同根及各资源 ID 由来源核对产生。T06 维护必要资源字段、停用及映射，系统停用和 method/path 编辑留在当前范围之外；这些属于用户已确认的方案选择。
 
 管理员保护覆盖同一已确认共同维护域，按修改后完整状态至少保留一名各自拥有完整 K 的有效用户；首次可信初始化由 T05 原子建立基线。
 
@@ -270,7 +272,7 @@ K 固定为角色定义维护、角色权限配置、人员角色分配、菜单
 | 系统停用或改变所属系统、权限树/部门树调整 | 系统有效性、同系统关系或根部门身份可能变化，相关写入也必须遵守同一保护 | T07；若其他契约纳入树维护则由该切片承担 |
 | 同时撤权、停用或移动不同管理员 | 以事务修改后的完整状态重新判定；并发写入共用稳定的锁定顺序/保护点，失败整体回滚 | T07/T09/T11 |
 
-旧 [`ManagementAccessRepository.java`](../../src/main/java/com/municipal/rbac/ManagementAccessRepository.java) 第 10、22、26 行使用“系统管理员”、GLOBAL 和 `management.grant` 计数/锁定。新保护改用实际 K，并由写入票共同确定稳定锁点、顺序及并发验证；可改名或停用的角色代码不作为锁依据。
+旧 [`ManagementAccessRepository.java`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/main/java/com/municipal/rbac/ManagementAccessRepository.java) 第 10、22、26 行使用“系统管理员”、GLOBAL 和 `management.grant` 计数/锁定。新保护改用实际 K，并由写入票共同确定稳定锁点、顺序及并发验证；可改名或停用的角色代码不作为锁依据。
 
 部门管理员拒绝修改有效全局管理员及自己的授权/部门。调动须同时满足原、目标部门范围；角色分配比较有效权限子集。全局维护须先核实共同根及覆盖范围，再检查实际权限；部门名和空 `parent_id` 只作为组织资料。
 
@@ -320,16 +322,16 @@ T04 评审登录拒绝、最小记录及全局分页/筛选查询，T05 接入�
 
 | 处理 | 源码证据与现状 | 需要到达的调用、初始化、测试、配置和文档范围 |
 | --- | --- | --- |
-| 复用工程骨架，加入 JPA/AOP | [`pom.xml`](../../pom.xml) 第 4、6、11—15 行为 Java 21、Spring Boot、Web、JDBC、MySQL；[`RbacApplication.java`](../../src/main/java/com/municipal/rbac/RbacApplication.java) 第 6—9 行是既有启动入口 | T02 继续同一 Maven 工程并保留 MySQL；JDBC 在旧调用迁完前保留。AOP 随真实接口切片接入，不为模型测试另建产品工程 |
-| 复用响应、异常处理与最小日志上下文 | [`ApiResponse.java`](../../src/main/java/com/municipal/rbac/ApiResponse.java) 第 4 行；[`ApiResponseAdvice.java`](../../src/main/java/com/municipal/rbac/ApiResponseAdvice.java) 第 15 行和 [`ApiExceptionHandler.java`](../../src/main/java/com/municipal/rbac/ApiExceptionHandler.java) 第 24—25 行调用 `RequestAuditFilter` | 保留统一外壳、HTTP 状态、安全错误及 requestId；T05 适配可信操作者和日志记录，T12 清理旧耦合时不得删断这些调用 |
-| 复用 Excel 读取，替换初始化策略 | [`ExcelXmlReader.java`](../../src/main/java/com/municipal/rbac/ExcelXmlReader.java) 第 13、30 行处理工作簿及禁用外部实体；[`DataInitializer.java`](../../src/main/java/com/municipal/rbac/DataInitializer.java) 第 14—28、38—53、62—64 行导入旧五类角色/范围/目录，仅核对上级而不保存树关系 | T03 仅导组织人员并核对来源与异常；T05 建最小已评审授权基线；T12 移除旧角色名授予、旧整包目录、默认初始化路径及相关测试假设。三份 Excel 原位保留，权限清单不整包迁入 |
-| 替换组织及用户持久化 | [`schema.sql`](../../src/main/resources/schema.sql) 第 2、9、20 行为 companies、无 parent 的 departments、可空用户部门；[`ManagementService.java`](../../src/main/java/com/municipal/rbac/ManagementService.java) 第 88—95 行拒绝 parentId | T02 建树模型，T03 迁人员；T05/T11 迁查询和受限变更；T12 处理旧公司 CRUD、Requests/Responses 组织字段、`Organizations.vue`、`main.js` 路由、初始化及测试。旧公司/部门 ID 不直接混作新 ID，来源对应由 T03 核对 |
-| 替换双轨授权及旧范围 | [`ManagementAccessRepository.java`](../../src/main/java/com/municipal/rbac/ManagementAccessRepository.java) 第 9—14 行把独立管理权限、GLOBAL/COMPANY/DEPARTMENT 与角色名绑定；[`ManagementController.java`](../../src/main/java/com/municipal/rbac/ManagementController.java) 第 9—18 行提供旧管理权限/范围接口 | T05 统一用户—角色—权限—API 和部门范围；T09/T11 迁角色配置与人员分配。T12 删除 `role_management_permissions`、`management_scopes`、Scope/Assignments DTO、`ManagementGrants.vue`、`RoleManagementEditor.vue` 及其前端调用和测试；不把旧范围静默翻译成更大授权 |
-| 复用分页/搜索行为，替换 SQL 和重复列表 | [`ApplicationService.java`](../../src/main/java/com/municipal/rbac/ApplicationService.java) 第 27—52 行已有两个列表入口；[`ApplicationRepository.java`](../../src/main/java/com/municipal/rbac/ApplicationRepository.java) 第 9—16、29—34 行已有筛选、计数、分页，但依赖旧公司/范围/交接 | T04 先确认唯一列表场景与分页契约，T05 以 JPA 在部门范围内检索、计数和分页；迁同切片 DTO 和测试。`Users.vue`、旧调用和说明由 T12 收口，正式新页面仍暂缓 |
-| 替换业务功能目录和模拟鉴权 | [`schema.sql`](../../src/main/resources/schema.sql) 第 36—86 行为 applications/modules/features/actions/permissions；[`ApiController.java`](../../src/main/java/com/municipal/rbac/ApiController.java) 第 17、43—50 行及 [`ApplicationService.java`](../../src/main/java/com/municipal/rbac/ApplicationService.java) 第 18 行仍靠前端传权限名返回模拟结果 | T06/T08 先做原型/契约；T07/T09 迁菜单/按钮—API 映射及角色授权，T05 起由 AOP 拦真实接口。T12 移除旧目录结构、`Portal.vue`/`System.vue` 调用、旧鉴权演示及测试，不把目录展示判为真实授权完成 |
-| 删除会话表与统一登录标识依赖 | [`AuthRepository.java`](../../src/main/java/com/municipal/rbac/AuthRepository.java) 第 14—17 行读写 `login_identifiers`/`sessions`；[`DatabaseConstraints.java`](../../src/main/java/com/municipal/rbac/DatabaseConstraints.java) 第 12—17 行建旧外键/标识触发器；[`AuthService.java`](../../src/main/java/com/municipal/rbac/AuthService.java) 第 8—23 行依赖数据库会话 | T03先修正重复工号字段，T04/T05按1.2和4.2衔接；T12检查重复字段残留、schema、触发器、`deploy/install-login-constraints.sql`、会话配置、测试及登录说明。新链路就绪前旧调用不提前删；整改库不能启动这些旧组件 |
-| 删除交接和审计扩展，复用鉴权日志 | [`ApiController.java`](../../src/main/java/com/municipal/rbac/ApiController.java) 第 51—56 行；[`AuditController.java`](../../src/main/java/com/municipal/rbac/AuditController.java) 第 4—9 行；[`RequestAuditFilter.java`](../../src/main/java/com/municipal/rbac/RequestAuditFilter.java) 第 24—28 行；[`ApplicationRepository.java`](../../src/main/java/com/municipal/rbac/ApplicationRepository.java) 第 28、34、38、65 行混合日志/交接/会话 | T05 复用 authorization_logs、Audit* 最小记录/查询及 requestId，迁 JPA 和统一权限；T12 删除 handovers、authorization_changes、归档接口、扩展 DTO 及对应前端调用/测试/配置，保留日志查询链及必要旧页面适配，按 3.5 验证 |
-| 清理测试、配置和历史说明 | [`AccessBoundaryTest.java`](../../src/test/java/com/municipal/rbac/AccessBoundaryTest.java) 第 25—81 行绑定会话/交接；[`IdentifierConstraintTest.java`](../../src/test/java/com/municipal/rbac/IdentifierConstraintTest.java) 第 16—42 行绑定标识触发器；[`application.yml`](../../src/main/resources/application.yml) 第 2、14、18—20 行开启旧本地配置/SQL/初始化/会话设置 | 各票保留越权、回滚、分页、日志脱敏和数据异常等有效测试意图并改成新模型；T12 清除审计扩展、旧范围、标识/会话及失效原型断言，更新普通员工登录拒绝的旧假设。检查 `frontend/tests`、部署脚本、README、docs；`docs/legacy` 只作差异参考 |
+| 复用工程骨架，加入 JPA/AOP | [`pom.xml`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/pom.xml) 第 4、6、11—15 行为 Java 21、Spring Boot、Web、JDBC、MySQL；[`RbacApplication.java`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/main/java/com/municipal/rbac/RbacApplication.java) 第 6—9 行是既有启动入口 | T02 继续同一 Maven 工程并保留 MySQL；JDBC 在旧调用迁完前保留。AOP 随真实接口切片接入，不为模型测试另建产品工程 |
+| 复用响应、异常处理与最小日志上下文 | [`ApiResponse.java`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/main/java/com/municipal/rbac/ApiResponse.java) 第 4 行；[`ApiResponseAdvice.java`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/main/java/com/municipal/rbac/ApiResponseAdvice.java) 第 15 行和 [`ApiExceptionHandler.java`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/main/java/com/municipal/rbac/ApiExceptionHandler.java) 第 24—25 行调用 `RequestAuditFilter` | 保留统一外壳、HTTP 状态、安全错误及 requestId；T05 适配可信操作者和日志记录，T12 清理旧耦合时不得删断这些调用 |
+| 复用 Excel 读取，替换初始化策略 | [`ExcelXmlReader.java`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/main/java/com/municipal/rbac/ExcelXmlReader.java) 第 13、30 行处理工作簿及禁用外部实体；[`DataInitializer.java`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/main/java/com/municipal/rbac/DataInitializer.java) 第 14—28、38—53、62—64 行导入旧五类角色/范围/目录，仅核对上级而不保存树关系 | T03 仅导组织人员并核对来源与异常；T05 建最小已评审授权基线；T12 移除旧角色名授予、旧整包目录、默认初始化路径及相关测试假设。三份 Excel 原位保留，权限清单不整包迁入 |
+| 替换组织及用户持久化 | [`schema.sql`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/main/resources/schema.sql) 第 2、9、20 行为 companies、无 parent 的 departments、可空用户部门；[`ManagementService.java`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/main/java/com/municipal/rbac/ManagementService.java) 第 88—95 行拒绝 parentId | T02 建树模型，T03 迁人员；T05/T11 迁查询和受限变更；T12 处理旧公司 CRUD、Requests/Responses 组织字段、`Organizations.vue`、`main.js` 路由、初始化及测试。旧公司/部门 ID 不直接混作新 ID，来源对应由 T03 核对 |
+| 替换双轨授权及旧范围 | [`ManagementAccessRepository.java`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/main/java/com/municipal/rbac/ManagementAccessRepository.java) 第 9—14 行把独立管理权限、GLOBAL/COMPANY/DEPARTMENT 与角色名绑定；[`ManagementController.java`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/main/java/com/municipal/rbac/ManagementController.java) 第 9—18 行提供旧管理权限/范围接口 | T05 统一用户—角色—权限—API 和部门范围；T09/T11 迁角色配置与人员分配。T12 删除 `role_management_permissions`、`management_scopes`、Scope/Assignments DTO、`ManagementGrants.vue`、`RoleManagementEditor.vue` 及其前端调用和测试；不把旧范围静默翻译成更大授权 |
+| 复用分页/搜索行为，替换 SQL 和重复列表 | [`ApplicationService.java`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/main/java/com/municipal/rbac/ApplicationService.java) 第 27—52 行已有两个列表入口；[`ApplicationRepository.java`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/main/java/com/municipal/rbac/ApplicationRepository.java) 第 9—16、29—34 行已有筛选、计数、分页，但依赖旧公司/范围/交接 | T04 先确认唯一列表场景与分页契约，T05 以 JPA 在部门范围内检索、计数和分页；迁同切片 DTO 和测试。`Users.vue`、旧调用和说明由 T12 收口，正式新页面仍暂缓 |
+| 替换业务功能目录和模拟鉴权 | [`schema.sql`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/main/resources/schema.sql) 第 36—86 行为 applications/modules/features/actions/permissions；[`ApiController.java`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/main/java/com/municipal/rbac/ApiController.java) 第 17、43—50 行及 [`ApplicationService.java`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/main/java/com/municipal/rbac/ApplicationService.java) 第 18 行仍靠前端传权限名返回模拟结果 | T06/T08 先做原型/契约；T07/T09 迁菜单/按钮—API 映射及角色授权，T05 起由 AOP 拦真实接口。T12 移除旧目录结构、`Portal.vue`/`System.vue` 调用、旧鉴权演示及测试，不把目录展示判为真实授权完成 |
+| 删除会话表与统一登录标识依赖 | [`AuthRepository.java`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/main/java/com/municipal/rbac/AuthRepository.java) 第 14—17 行读写 `login_identifiers`/`sessions`；[`DatabaseConstraints.java`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/main/java/com/municipal/rbac/DatabaseConstraints.java) 第 12—17 行建旧外键/标识触发器；[`AuthService.java`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/main/java/com/municipal/rbac/AuthService.java) 第 8—23 行依赖数据库会话 | T03先修正重复工号字段，T04/T05按1.2和4.2衔接；T12检查重复字段残留、schema、触发器、`deploy/install-login-constraints.sql`、会话配置、测试及登录说明。新链路就绪前旧调用不提前删；整改库不能启动这些旧组件 |
+| 删除交接和审计扩展，复用鉴权日志 | [`ApiController.java`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/main/java/com/municipal/rbac/ApiController.java) 第 51—56 行；[`AuditController.java`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/main/java/com/municipal/rbac/AuditController.java) 第 4—9 行；[`RequestAuditFilter.java`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/main/java/com/municipal/rbac/RequestAuditFilter.java) 第 24—28 行；[`ApplicationRepository.java`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/main/java/com/municipal/rbac/ApplicationRepository.java) 第 28、34、38、65 行混合日志/交接/会话 | T05 复用 authorization_logs、Audit* 最小记录/查询及 requestId，迁 JPA 和统一权限；T12 删除 handovers、authorization_changes、归档接口、扩展 DTO 及对应前端调用/测试/配置，保留日志查询链及必要旧页面适配，按 3.5 验证 |
+| 清理测试、配置和历史说明 | [`AccessBoundaryTest.java`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/test/java/com/municipal/rbac/AccessBoundaryTest.java) 第 25—81 行绑定会话/交接；[`IdentifierConstraintTest.java`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/test/java/com/municipal/rbac/IdentifierConstraintTest.java) 第 16—42 行绑定标识触发器；[`application.yml`](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/main/resources/application.yml) 第 2、14、18—20 行开启旧本地配置/SQL/初始化/会话设置 | 各票保留越权、回滚、分页、日志脱敏和数据异常等有效测试意图并改成新模型；T12 清除审计扩展、旧范围、标识/会话及失效原型断言，更新普通员工登录拒绝的旧假设。检查 `frontend/tests`、部署脚本、README、docs；`docs/legacy` 只作差异参考 |
 
 源码基线没有独立角色版本表或字段；新模型排除角色版本，T12 核对文档中的版本及交接残留约定。
 
@@ -376,7 +378,7 @@ mvn -B -ntp -DskipTests package
 
 ### 4.4 原始数据复核与导入前置
 
-2026-11-07，老师三份 Excel 与仓库副本的大小和 SHA-256 均一致；权限清单原件名含 `(1)`。摘要、哈希及异常单元格见[复核说明](RBAC检查记录复核说明.md#12-原始数据复核)，原件保留原位。
+2026-11-07，老师三份 Excel 与仓库副本的大小和 SHA-256 均一致；权限清单原件名含 `(1)`。摘要、哈希及异常单元格见[复核说明](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%A3%80%E6%9F%A5%E8%AE%B0%E5%BD%95%E5%A4%8D%E6%A0%B8%E8%AF%B4%E6%98%8E.md#12-原始数据复核)，原件保留原位。
 
 - 员工恰为10,000人，原表六列为姓名、用户名、分公司、部门、岗位、电话号码。按1.2，“用户名”直接映射唯一工号`username`，“电话号码”映射`phone`；没有另一个名为“工号”的列不构成缺项。原表不提供口令哈希、有效状态或角色分配；部门编码仍是导入映射。重名人员按工号等已核实标识匹配，不能只按姓名。
 - 部门共 111 个节点，唯一共同根为“总公司”，无缺失上级、无环且连通。244 人直接匹配原部门名，9,756 人结合分公司前缀匹配，10,000 人均有唯一归属；数据库导入后仍须重新核对实际外键和树关系，不能用本次静态核对代替 JPA/MySQL 验收。
@@ -396,9 +398,9 @@ T03只建组织、账号和来源，不分配任何角色。启用及已有口�
 首次部署步骤：
 
 1. 在MySQL 8中单独创建`rbac_core`库及仅有该库权限的账号，字符集`utf8mb4`、排序规则`utf8mb4_0900_bin`。原库保持原状。
-2. 显式选择该库执行[建表脚本](../../deploy/rbac-core-schema.sql)。脚本只含`CREATE TABLE IF NOT EXISTS`，不清空或重建已有表；导入上下文仅`ddl-auto=validate`，结构不符时拒绝。
+2. 显式选择该库执行[建表脚本](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/deploy/rbac-core-schema.sql)。脚本只含`CREATE TABLE IF NOT EXISTS`，不清空或重建已有表；导入上下文仅`ddl-auto=validate`，结构不符时拒绝。
 3. 部署环境设置`RBAC_CORE_DB_URL`（例如`jdbc:mysql://127.0.0.1:3307/rbac_core?connectionTimeZone=UTC`）、`RBAC_CORE_DB_USER`、`RBAC_CORE_DB_PASSWORD`、`RBAC_CORE_EMPLOYEE_PASSWORD`和`RBAC_CORE_ADMIN_PASSWORD`。后两项必须分别显式提供，无旧口令默认值，不通过命令行参数或Git传递。可选`RBAC_CORE_SOURCE_DIR`指定原件目录，`RBAC_CORE_ADMIN_USERNAME`默认`admin`；实际部署秘密由部署环境提供。
-4. 先在仓库根执行`mvn package`，再运行`java "-Dloader.main=com.municipal.rbaccore.importing.CoreImportCommand" -cp target/rbac0-0.1.0.jar org.springframework.boot.loader.launch.PropertiesLauncher`。通过现有Spring Boot包的加载器选择离线入口，不改变产品默认主程序；命令使用[独立配置](../../src/main/resources/application-core-import.yml)，不加载旧本地配置。预期报告为来源组织111、目标部门110、员工10000、新建账号10001；输出不含个人明细或秘密。
+4. 先在仓库根执行`mvn package`，再运行`java "-Dloader.main=com.municipal.rbaccore.importing.CoreImportCommand" -cp target/rbac0-0.1.0.jar org.springframework.boot.loader.launch.PropertiesLauncher`。通过现有Spring Boot包的加载器选择离线入口，不改变产品默认主程序；命令使用[独立配置](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/src/main/resources/application-core-import.yml)，不加载旧本地配置。预期报告为来源组织111、目标部门110、员工10000、新建账号10001；输出不含个人明细或秘密。
 5. 相同原件重复执行只核对来源与组织，不重置密码、状态、已调整岗位/手机号/人员调动或授权。重复执行仍核对现有账号的跨字段歧义。源文件、源行、来源映射或组织结构不一致时报告错误，不自动覆盖；首次遇到无来源的已有人员/部门拒绝合并。保留完整事务以支持失败回滚后安全重试。
 
 部门编码为原名UTF-8的SHA-256加`org-`前缀，与行序及自增值无关；已合并的两个来源使用相同目标编码。账号工号/手机号使用显式`utf8mb4_0900_bin`列，按trim后的字符串精确比较、保留前导零；同用户双字段同值允许，跨用户任意字段碰撞拒绝，错误只定位来源记录，不输出标识值。T05查询及后续账号写入口须沿用相同比较规则。
@@ -580,7 +582,7 @@ mvn -DskipTests package
 
 2026-11-12按用户“先整理文档、再T13、之后停止”执行。正式资料已随PR #27合入32f0361；T13以实际Microsoft OpenJDK21.0.13.0.2/MySQL8.4.8的新私有实例重新执行clean package，142项失败/错误/跳过均0。新增运行器3项安全单测先复现环境覆盖风险后修复；固定1149c24从空rbac_core执行生产BCrypt10导入/只读预览/实际五角色授权，70次默认JAR真实HTTP及两轮启动、重复初始化保留调整均通过。原Excel/ER哈希及12物理表边界核对通过，产品Java/SQL未修改。
 
-当前需求与设计见[正式导航](../README.md)，可复现命令、逐需求测试/并发/回滚映射、产物摘要与限制见[T13记录](../acceptance/T13.md)。本记录只确认当前结构化后端；正式全量前端、DDD、课程系统及Docker/Swarm未验收，JaCoCo按用户要求不阻塞。实际合入与关票状态见PR #28/Issue #14。T13完成后停止，不启动DDD/T14/T15或其他任务。
+当前需求与设计见[正式导航](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/README.md)，可复现命令、逐需求测试/并发/回滚映射、产物摘要与限制见[T13记录](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/acceptance/T13.md)。本记录只确认当前结构化后端；正式全量前端、DDD、课程系统及Docker/Swarm未验收，JaCoCo按用户要求不阻塞。实际合入与关票状态见PR #28/Issue #14。T13完成后停止，不启动DDD/T14/T15或其他任务。
 
 ## 5. 组员讨论与验证清单
 
@@ -650,9 +652,9 @@ T01 文档评审经 PR #17 合入，Issue #2 已关闭；T02 独立模型证据�
 
 本轮涵盖 T04/#5、T06/#7、T08/#9、T10/#11，开工时原生前置均为 T01/#2，证据为 PR #17 及 5.3。共同基线为 `c2e3adad3ce72934bc1000c7b9143d3131ab0c3e`。
 
-产物为[交互原型](prototype/index.html)及[统一契约](RBAC原型与API契约.md)。先原型，后核对 REST、DTO、错误、分页/total、权限/系统/范围、整体替换及 K 保护；技术证据见[契约第 8 节](RBAC原型与API契约.md#review)。全局目录要求共同根及实际权限，人员候选要求权限子集，调动检查双范围，日志要求共同根及日志 API。
+产物为[交互原型](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/prototype/index.html)及[统一契约](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E5%8E%9F%E5%9E%8B%E4%B8%8EAPI%E5%A5%91%E7%BA%A6.md)。先原型，后核对 REST、DTO、错误、分页/total、权限/系统/范围、整体替换及 K 保护；技术证据见[契约第 8 节](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E5%8E%9F%E5%9E%8B%E4%B8%8EAPI%E5%A5%91%E7%BA%A6.md#review)。全局目录要求共同根及实际权限，人员候选要求权限子集，调动检查双范围，日志要求共同根及日志 API。
 
-[契约第 9 节](RBAC原型与API契约.md#decisions)记录本人 DTO、日志 total/归档字段、维护路由、候选及完整 K 等已确认方案。旧 username 单入口已由 1.2 取代；账号/哈希/状态、根及初始维护者来源交 T03/T05，CloneFactory指定来源与版本已在4.6核实。T10 用模拟下一请求说明角色变更，独立权限来源页留在范围之外。
+[契约第 9 节](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E5%8E%9F%E5%9E%8B%E4%B8%8EAPI%E5%A5%91%E7%BA%A6.md#decisions)记录本人 DTO、日志 total/归档字段、维护路由、候选及完整 K 等已确认方案。旧 username 单入口已由 1.2 取代；账号/哈希/状态、根及初始维护者来源交 T03/T05，CloneFactory指定来源与版本已在4.6核实。T10 用模拟下一请求说明角色变更，独立权限来源页留在范围之外。
 
 2026-11-07，用户查看原型及验收路线后表示“应该可以了，更新推送，对应的标为完成”，据此确认四组准备产物并关闭 #5/#7/#9/#11。技术评审与用户确认分别记录；真实 HTTP/JPA/AOP、事务/锁并发、正式前端及双系统由后续任务验收。
 

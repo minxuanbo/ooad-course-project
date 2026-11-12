@@ -1,13 +1,30 @@
-# 华为云后端部署
+# 构建、初始化与后端部署
 
 当前后端本机隔离验收及完整初始化复现见[T13记录](../docs/acceptance/T13.md)。该结果包含实际Java21、正式空库/五角色初始化及默认JAR两轮，不代表Docker镜像/Swarm已实测；本页仍分别说明部署步骤与尚未验证的云端状态。
 
 > 本页用于运行整改后工程（默认入口为 `com.municipal.rbaccore.runtime.CoreRuntimeCommand`）。数据库及业务代码切换后，须按实际实现复核部署步骤；历史上线结果不代表当前运行状态。
 
-2026-10-27 的旧实现仅部署后端，详见 [历史发布记录](deployment-2026-10-27.md)。现场测试使用 Git 克隆目录，见 [现场说明](现场运行JaCoCo.md)。
+旧发布说明已从当前树清理，原版本仍在Git历史；当前结构和默认入口按本页执行。现场测试见[现场说明](现场运行JaCoCo.md)。下文A/B/C/D为既有课程部署拓扑，公网地址仅为环境配置记录，不表示本分支已发布或地址当前健康。
 
 此配置只新增 `rbac` Stack，不操作现有 `lab` 服务。A 构建和推送镜像，
 C 发布 Stack，B 保存独立 MySQL 数据卷，D 运行后端。
+
+## 本机依赖安装
+
+使用JDK21、Maven及Git。老师course-project-mgt通过真实CloneFactory映射；本项目沿用cn.edu.xmu:clonefactory:0.0.1-SNAPSHOT，但以源码提交固定实际内容，不按可变SNAPSHOT拉取未知实现。来源为[老师spring-fundamentals](https://gitee.com/mingqcn/spring-fundamentals/tree/237f49c52bdc72da30383571bb2f985ac54a514a/clonefactory)，已核对来源版本和Java21编译方式；来源仓库许可为Apache-2.0，不将其源码或jar复制进本仓库。
+
+以下PowerShell命令在仓库根执行，使用新的本地忽略目录；目录已存在时先核对所属及提交，不覆盖。安装命令与Dockerfile一致，编译器proc=full使老师处理器源码可在Java21正确编译，不改老师源码或升级本项目Boot。
+
+```powershell
+git clone --no-checkout https://gitee.com/mingqcn/spring-fundamentals.git .local/teacher-clonefactory-build
+git -C .local/teacher-clonefactory-build checkout --detach 237f49c52bdc72da30383571bb2f985ac54a514a
+git -C .local/teacher-clonefactory-build rev-parse HEAD
+Push-Location .local/teacher-clonefactory-build/clonefactory
+mvn -B -ntp -Dmaven.compiler.proc=full clean org.apache.maven.plugins:maven-compiler-plugin:3.14.0:compile jar:jar install:install
+Pop-Location
+```
+
+确认安装BUILD SUCCESS且提交完全一致，再构建本工程。完整功能回归需先准备对应隔离MySQL专库，见[T13复现](../docs/acceptance/T13.md#2-可复现步骤)；只打包时可以显式跳过测试，但不得把该构建结果表述为回归通过。首次依赖下载需要Gitee/Maven网络。密码、token、生成报告和老师源码留在忽略目录，不提交Git。
 
 ## 构建（A）
 

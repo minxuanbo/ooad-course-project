@@ -1,6 +1,6 @@
 # 口试现场运行 JaCoCo（独立 MySQL 测试库）
 
-本流程在 A（course-build，120.46.134.42）的 Termius 终端执行。
+本流程面向既有课程部署拓扑中的 A（course-build，120.46.134.42）Termius 终端；地址是环境记录，不表示本分支已发布或容器脚本已实测。
 报告来自 Maven 测试 JVM，包含真实 MySQL 集成测试与单元测试；不是公网线上实例的运行覆盖率。
 B/C/D 的业务服务不参与，不需要重启；已有业务库不会被清空或改动。
 
@@ -18,7 +18,7 @@ docker build --target build --memory 1200m -t "$RBAC_BUILD_IMAGE" .
 export RBAC_TEST_MYSQL_IMAGE=swr.cn-north-4.myhuaweicloud.com/javaee_xmu/rbac-mysql@sha256:54ad54987c01f1d7af9e1343910fd0cf0d4c4526b552f13e712ddbeacf13dd02
 ```
 
-构建阶段按固定源码提交安装老师的CloneFactory后编译，不运行测试；Excel 被 .dockerignore 排除，不进入镜像、不上传 SWR。首次构建须可访问老师的Gitee仓库和Maven镜像；使用的源码与版本见执行计划4.6。
+构建阶段按固定源码提交安装老师的CloneFactory后编译，不运行测试；Excel 被 .dockerignore 排除，不进入镜像、不上传 SWR。首次构建须可访问老师的Gitee仓库和Maven镜像；固定源码与版本见[部署依赖安装](README.md#本机依赖安装)。
 若打开新终端，需重新设置以上三个 export；不必重复构建已经存在且工具版本匹配的镜像。
 脚本会从当前项目只读复制 pom.xml、src、deploy、frontend/src与frontend/tests，在容器新目录重新编译；不复制node_modules或dist，因此不会用工具镜像内的旧代码冒充当前代码。
 

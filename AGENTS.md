@@ -1,11 +1,11 @@
-# RBAC 整改协作
+# RBAC项目协作
 
-正式需求、前后端/双实现设计及验收以[文档导航](docs/README.md)为入口，HTTP规范正文见docs/api-contract.md。原整改计划/契约保留来源、任务依赖、评审及原锚点，不把历史待办当作当前状态。当前只有结构化实现，DDD仅为设计。
+现行资料从[文档导航](docs/README.md)进入，业务需求以老师说明、原始资料和用户确认形成的[需求说明](docs/requirements.md)为准；老师Gitee项目用于文档与架构参考。HTTP字段主规范为api/openapi.yaml，跨字段、授权、范围与事务语义见docs/api-contract.md。
 
-2026-11-12用户授权：先整理文档，随后完成T13；T13结束后停止，不启动DDD编码、T14/T15或其他后续任务。代码/测试改动继续应用用户提供的编码与双轴审核skill；图件按用户提供的UML skill，仅反映实际代码。
+2026-11-12本次授权仅清理并完善正式文档，独立分支交用户逐项审核。未经用户明确确认不得合并，不推进代码归类、新前端原型、正式前端、DDD或T14/T15。T13已完成，记录见docs/acceptance/T13.md；旧“T13后停止”是当时边界，不代替最新[开发计划](docs/development-plan.md)。
 
-执行 T01—T15 或相关评审前，阅读 [整改入口](docs/rbac-rectification/README.md)、[协作步骤](CONTRIBUTING.md)、原版执行计划及指定 Issue/任务清单对应章节。
+当前仅结构化业务实现，尚无DDD代码或策略开关；设计必须区分目标和现状。完整前端属于设计范围，当前原型只是参考，不冒称新原型已获批。
 
-每个对话只执行用户指定票，先核对实际 Blocked by、前置评审证据和共同基线。交付本票可复核产物及未决项，由小组评审及合并。
+后续代码/测试改动遵循用户提供的projectmgt-code-conventions和code-review skill；本RBAC保留本地口令，分页沿既有page/size契约，不照搬课程系统外部身份或pageSize。UML skill只在其适用范围内使用，实际实现图须有源码依据。
 
-旧资料位于 docs/legacy/，只作差异参考。保留本地资料与原始 Excel，按文件明确暂存；生成报告和临时工作文件保持在 Git 之外。
+从origin/refactor/rbac-core-backend建立独立codex/分支及工作树，按[协作规范](CONTRIBUTING.md)执行。历史任务/依赖只从[历史索引](docs/history/README.md)追溯，实时状态核对GitHub Issue/PR。保留原Excel、用户本地DOCX/Markdown、旧库及历史日志；按文件暂存，临时材料和生成报告不提交。

@@ -1,32 +1,24 @@
 # 正式文档导航
 
-本目录按老师项目的文档职责组织，保留本项目业务口径。推荐顺序：需求→领域模型→Chen ER/物理模型→前后端设计→API→部署与验收。
+按老师项目的requirements/domain-model/database/backend/api/prototype/deploy职责组织。当前版本为2026-11-12文档评审稿，先读[审核指南](review-guide.md)。需求来自老师说明与用户确认，示例仓库用于组织和框架参考。
 
-| 文档 | 回答的问题 | 状态/权威边界 |
+| 顺序 | 文档 | 职责 |
 | --- | --- | --- |
-| [requirements.md](requirements.md) | 做什么、来源是谁、范围到哪里 | 当前业务需求正文；设计不等于实现 |
-| [domain-model.md](domain-model.md) | 对象、行为、不变量、DDD拟议聚合 | 概念与目标设计；当前没有DDD代码 |
-| [database-design.md](database-design.md) | Chen ER、联系及关系映射 | 既有六实体/九核心表，原ER不变 |
-| [database/physical-model.md](database/physical-model.md) | 字段、约束、支撑表与初始化 | 现有SQL/JPA对应，双实现共用结构 |
-| [backend-design.md](backend-design.md) | 当前分层、目标双实现、事务与依赖 | 当前结构化及未来DDD明确分开 |
-| [frontend-design.md](frontend-design.md) | 完整RBAC页面与交互如何组织 | 设计覆盖完整前端，当前生产仅兼容入口 |
-| [api-contract.md](api-contract.md) | 方法、路径、字段、错误、权限与范围 | 正式HTTP规范正文；24个操作 |
-| [api-map.md](api-map.md) / [API入口](../api/README.md) | 页面/用例如何调用API | 索引，不重复定义字段；尚无经核对OpenAPI |
-| [testing-acceptance.md](testing-acceptance.md) | 验收什么、如何复现、哪些未完成 | 当前状态与T13验收入口 |
-| [acceptance/T13.md](acceptance/T13.md) | 当前后端的本轮真实结果与需求映射 | JDK21/MySQL、142+3测试、70次默认JAR HTTP；范围不含完整前端/DDD/课程系统 |
-| [部署说明](../deploy/README.md) | 依赖、建库、秘密、导入、授权及启动 | 唯一维护的产品初始化命令 |
-| [当前实现UML](design/README.md) | 现有类协作与身份校验顺序 | 实际代码图，非DDD实现图 |
+| 1 | [需求说明](requirements.md)、[需求来源](requirements/sources.md) | 做什么、原始事实、后续确认、范围与质量要求 |
+| 2 | [领域模型](domain-model.md) | 统一语言、核心不变量、目标聚合/行为/策略 |
+| 3 | [数据库设计](database-design.md)、[物理模型](database/physical-model.md)、[Chen源码](database/chen-er-source.md) | 六实体联系、九核心表与三支撑表，保留原ER |
+| 4 | [后端设计](backend-design.md)、[当前实现图](design/README.md) | 17章总体架构、模块、双实现、事务与技术约束；图仅表示当前结构化代码 |
+| 5 | [前端设计](frontend-design.md)、[参考原型](../prototype/README.md) | 完整RBAC交互、状态与组件边界；新原型另行审核 |
+| 6 | [API入口](../api/README.md)、[OpenAPI](../api/openapi.yaml)、[API业务约束](api-contract.md)、[页面对照](api-map.md) | Schema主规范与24项操作、授权/范围/事务语义 |
+| 7 | [初始化](initialization.md)、[部署说明](../deploy/README.md) | 数据转换、五角色、依赖与唯一运行命令 |
+| 8 | [测试验收](testing-acceptance.md)、[T13历史结果](acceptance/T13.md) | 需求验证矩阵、隔离、证据及实际限制 |
+| 9 | [开发计划](development-plan.md)、[协作规范](../CONTRIBUTING.md) | 六阶段顺序、分支与审核关口 |
+| 追溯 | [历史索引](history/README.md) | 只读整改记录，不作为第二份当前规范 |
 
-## 来源、历史与更新规则
+## 文档之间的维护规则
 
-老师检查记录、图片与原数据事实见[复核说明](rbac-rectification/RBAC检查记录复核说明.md)。老师示例仓库只提供文档与框架组织参考，不能覆盖已确认的RBAC业务。用户后续确认的双入口、领导合根、独立admin和五角色规则见需求正文。
+requirements定义业务规则；domain-model定义行为与不变量；数据库文档定义概念映射和存储；前后端文档定义实现方案。OpenAPI YAML唯一维护字段，JSON同源导出，api-contract只解释Schema以外的约束，api-map只作索引。状态与证据进入testing-acceptance或独立验收记录，不混写成设计已实现。
 
-[整改入口](rbac-rectification/README.md)、[执行计划](rbac-rectification/RBAC整改计划与Chen-ER图.md)、[任务清单](rbac-rectification/RBAC整改任务清单.md)、[原型/评审记录](rbac-rectification/RBAC原型与API契约.md)保留原路径及锚点，用于需求追溯、任务依赖与历史证据；不再把新正式设计混写到历史过程。原始Excel、旧库和本地小组材料保留。
+变更业务、模型或接口时同步受影响规范与测试，保留同一个需求编号。历史摘录保留时间语境，新结论以现行正文为准。原Excel、用户本地设计文档及数据库不清理；已淘汰资料从当前树删除后仍可在Git历史追溯。
 
-API语义只在正式契约维护，页面对照只链接，历史原契约不作为另一份独立现行规范；变更须同步原型、测试及受影响设计。需求正文维护规则，验收页维护完成状态，Issue维护实时任务状态；出现冲突须修正文档，不能靠选择一份有利旧报告通过验收。
-
-[legacy](legacy/README.md)仅供历史差异参考。[协作规范](../CONTRIBUTING.md)约束分支和交付。本次文档整理后完成T13即停止，不启动后续实现。
-
-## 本次整理核对
-
-2026-11-12基于T12共同基线a79b668整理；核对15份正式/导航文件的88个本地链接及锚点、24项HTTP操作、原Excel/ER摘要不变。两张当前实现UML由同一脚本生成SVG/PNG并实际打开检查。独立Standards审核发现退出契约遗漏，补齐现有幂等兼容行为后Standards/Spec剩余各0。此为代理技术复核，不代替T13实际运行或老师验收；本次未修改生产源码/SQL，未执行Apifox同步。
+本次仅文档评审分支，T13已完成；不启动代码整理、新原型、DDD或T14/T15。全部文件的修改、迁移、归档和删除范围见审核指南。

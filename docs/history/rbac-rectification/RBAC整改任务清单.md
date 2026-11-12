@@ -1,10 +1,12 @@
 # RBAC 整改任务清单
 
+> 只读历史归档，非现行规范。需求/设计见[正式导航](../../README.md)，原相对链接已固定到T13基线；本次保留追溯证据，不新增实现或验收结论。
+
 共 15 票、22 条直接依赖：当前范围 13 票，课程后续 2 票。T01/T02 与四组原型契约已有评审及合入记录；2026-11-08 T04 登录补充产物已获用户确认，证据见契约8.1及Issue #5。认领、进度和验收状态以 Issue 为准。
 
 ## 1. 依据与交付边界
 
-按[原版执行计划](RBAC整改计划与Chen-ER图.md)实施，需求归属及纪要见[复核说明](RBAC检查记录复核说明.md)。本文集中维护交付、验收及依赖，GitHub 记录认领、讨论和实时状态。
+按[原版执行计划](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%95%B4%E6%94%B9%E8%AE%A1%E5%88%92%E4%B8%8EChen-ER%E5%9B%BE.md)实施，需求归属及纪要见[复核说明](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%A3%80%E6%9F%A5%E8%AE%B0%E5%BD%95%E5%A4%8D%E6%A0%B8%E8%AF%B4%E6%98%8E.md)。本文集中维护交付、验收及依赖，GitHub 记录认领、讨论和实时状态。
 
 | 依据类别 | 本清单如何使用 |
 | --- | --- |
@@ -14,11 +16,11 @@
 | 方案建议 | 九张表、全局共享角色、单部门归属、根部门全局维护、API 多对多、整体替换及分页默认值；须评审，不能当作老师原话 |
 | 暂缓范围 | 正式前端开发；课程受控场景另行确认启动。原型仍须完成，不据此宣称界面验收 |
 
-旧资料已归入 docs/legacy/，产品业务路径仍为旧实现；已有工程骨架、数据读取、分页/搜索和适用测试可复用，错误模型及直接 JDBC 实现须逐块替换。T02 独立模型的 MySQL/JPA 及打包证据见[原版计划 4.3](RBAC整改计划与Chen-ER图.md#43-t02-独立模型与验证)，尚未接产品接口。
+旧资料已归入 docs/legacy/，产品业务路径仍为旧实现；已有工程骨架、数据读取、分页/搜索和适用测试可复用，错误模型及直接 JDBC 实现须逐块替换。T02 独立模型的 MySQL/JPA 及打包证据见[原版计划 4.3](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%95%B4%E6%94%B9%E8%AE%A1%E5%88%92%E4%B8%8EChen-ER%E5%9B%BE.md#43-t02-独立模型与验证)，尚未接产品接口。
 
 ### 1.1 最新执行口径
 
-补充要求及数据复核见[原版计划](RBAC整改计划与Chen-ER图.md#11-补充依据与本次保持的边界)和[数据说明](RBAC检查记录复核说明.md#12-原始数据复核)，登录按[计划 1.2](RBAC整改计划与Chen-ER图.md#login)。修正纳入原 15 票和 22 条依赖；T04 原五项保留历史勾选，双入口补充复核按本次用户授权完成。
+补充要求及数据复核见[原版计划](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%95%B4%E6%94%B9%E8%AE%A1%E5%88%92%E4%B8%8EChen-ER%E5%9B%BE.md#11-补充依据与本次保持的边界)和[数据说明](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%A3%80%E6%9F%A5%E8%AE%B0%E5%BD%95%E5%A4%8D%E6%A0%B8%E8%AF%B4%E6%98%8E.md#12-原始数据复核)，登录按[计划 1.2](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%95%B4%E6%94%B9%E8%AE%A1%E5%88%92%E4%B8%8EChen-ER%E5%9B%BE.md#login)。修正纳入原 15 票和 22 条依赖；T04 原五项保留历史勾选，双入口补充复核按本次用户授权完成。
 
 - 管理端登录：`username` 即工号，`phone` 定位同一用户，统一使用 account 输入及原口令/状态/有效权限计算。无本系统实际管理操作权限时拒绝，岗位、角色名、角色非空或菜单可见不作为依据；每次请求检查具体权限和范围。独立 employee_no、用户名别名、标识注册表、管理员字段、资格表及认证接口不新增。
 - 鉴权日志：T04 审契约，T05 复用最小记录/查询并迁 JPA；查询同时要求日志权限和全局范围，部门管理员拒绝。T12 保留最小链，清理归档、导出及变更历史；日志支撑表留在核心 ER 之外。
@@ -122,7 +124,7 @@ flowchart LR
 - [x] 列明旧会话与统一标识依赖的最小衔接方案、保留的基础登录字段，以及旧功能的调用方、初始化、测试、配置、文档清理范围；不在本票设计令牌格式或生命周期。
 - [x] 记录评审人、结论和未决项；涉及原版建议变更时先回写原版，相关下游票保持阻塞。
 
-**评审证据：**原版计划 2.3—2.5、3.1、3.3、4.1—4.2 及 [5.3](RBAC整改计划与Chen-ER图.md#53-t01-评审记录与未决项)。已确认四类 K、共同根及计数域、身份衔接和模型隔离；具体接口/编码与导入由下游票按对应契约完成。
+**评审证据：**原版计划 2.3—2.5、3.1、3.3、4.1—4.2 及 [5.3](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%95%B4%E6%94%B9%E8%AE%A1%E5%88%92%E4%B8%8EChen-ER%E5%9B%BE.md#53-t01-评审记录与未决项)。已确认四类 K、共同根及计数域、身份衔接和模型隔离；具体接口/编码与导入由下游票按对应契约完成。
 
 **共享模块及冲突：**模型与术语、初始化边界、当前身份、授权规则。与所有下游票共享；后续改变这些约定须先同步评审。
 
@@ -142,7 +144,7 @@ flowchart LR
 - [x] 整改库与原库隔离，启动或测试不会让旧初始化器向新模型写入旧目录，也不会修改原库；保留 MySQL 驱动和必要工程依赖。
 - [x] 记录与原实现共存/集成的边界；旧调用尚未迁移时不提前删除其共享实现。没有新增正式 Controller 或产品页面。
 
-**评审证据：**[原版计划 4.3](RBAC整改计划与Chen-ER图.md#43-t02-独立模型与验证)及 [PR #18](https://github.com/minxuanbo/ooad-course-project/pull/18)。Standards 0 项明文违规、1 条非阻塞 P3 重复逻辑观察；Spec 无缺失/错误/扩展。已核对 52 项测试及打包结果；未验证产品接口、全量集成或界面。
+**评审证据：**[原版计划 4.3](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%95%B4%E6%94%B9%E8%AE%A1%E5%88%92%E4%B8%8EChen-ER%E5%9B%BE.md#43-t02-独立模型与验证)及 [PR #18](https://github.com/minxuanbo/ooad-course-project/pull/18)。Standards 0 项明文违规、1 条非阻塞 P3 重复逻辑观察；Spec 无缺失/错误/扩展。已核对 52 项测试及打包结果；未验证产品接口、全量集成或界面。
 
 **补充边界：**T02 历史模型含重复 `employee_no`。T03 按 2026-11-08 口径保留 Excel“用户名”对应的工号 `username`，调整调用/约束/测试并验证 phone 唯一性及跨用户碰撞。哈希、状态、初始账号及新增业务要求交 T03/T05 和下游，T02 历史证据保持原验收范围。
 
@@ -184,13 +186,13 @@ flowchart LR
 - [x] 留存原型及逐项契约评审结论，覆盖登录拒绝和日志范围；缺项明确记录，不以正式前端暂缓跳过原型，也不宣称界面已验收。
 - [x] 2026-11-08补充复核工号/手机号共用account入口、同id/同口令/同授权、无手机号仍可用工号、同用户双字段同值、跨用户歧义拒绝，以及普通员工/停用/错误口令的两种入口；明确username就是工号、无employeeNo字段。留存新原型/契约评审结论并进入共同基线后才放行T05。
 
-**2026-11-07 历史产物与证据：**[交互原型](prototype/index.html)、[T04 契约](RBAC原型与API契约.md#t04)、[验收案例](RBAC原型与API契约.md#acceptance)、[技术审查](RBAC原型与API契约.md#review)及[未决项](RBAC原型与API契约.md#decisions)。准备产物经用户确认后随 PR #19 合入；2026-11-08 新增项的355项自检、浏览器检查及独立两轴技术评审见[契约8.1](RBAC原型与API契约.md#login-review)；用户要求“推送合并完结”，据此确认补充准备产物，合入证据见Issue #5。T05仍需T03及本次修订后的共同基线。正式界面和后端由对应任务验收。
+**2026-11-07 历史产物与证据：**[交互原型](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/prototype/index.html)、[T04 契约](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E5%8E%9F%E5%9E%8B%E4%B8%8EAPI%E5%A5%91%E7%BA%A6.md#t04)、[验收案例](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E5%8E%9F%E5%9E%8B%E4%B8%8EAPI%E5%A5%91%E7%BA%A6.md#acceptance)、[技术审查](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E5%8E%9F%E5%9E%8B%E4%B8%8EAPI%E5%A5%91%E7%BA%A6.md#review)及[未决项](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E5%8E%9F%E5%9E%8B%E4%B8%8EAPI%E5%A5%91%E7%BA%A6.md#decisions)。准备产物经用户确认后随 PR #19 合入；2026-11-08 新增项的355项自检、浏览器检查及独立两轴技术评审见[契约8.1](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E5%8E%9F%E5%9E%8B%E4%B8%8EAPI%E5%A5%91%E7%BA%A6.md#login-review)；用户要求“推送合并完结”，据此确认补充准备产物，合入证据见Issue #5。T05仍需T03及本次修订后的共同基线。正式界面和后端由对应任务验收。
 
 **共享模块及冲突：**登录准入、工号/phone字段与DTO含义、人员导航、本人信息、分页、错误及旧日志契约。与 T06 的资源/日志权限、T08/T10 的角色和授权入口交叉核对；可并行评审，不增加无关硬依赖。
 
 ### T05 跑通管理端准入、人员查询与鉴权日志闭环
 
-**2026-11-10补充：**用户确认Excel“系统管理后台”与RBAC自身是不同系统，权限按system_id隔离。首次五角色精确分类及人数以[计划4.6](RBAC整改计划与Chen-ER图.md#46-t05-五角色首次授权与实际管理链路)为准：系统管理员1、公司领导64、部门经理106、项目经理72、普通员工9758；三个管理角色有范围内人员查询/分配/停用/调动，无角色定义/资源/日志权限。此前“不凭岗位猜授”指禁止未确认推断，不否定本次明确初始规则。T03/T04已进入共同基线70c3bef，本票在独立分支实施；不改变后续票职责。
+**2026-11-10补充：**用户确认Excel“系统管理后台”与RBAC自身是不同系统，权限按system_id隔离。首次五角色精确分类及人数以[计划4.6](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%95%B4%E6%94%B9%E8%AE%A1%E5%88%92%E4%B8%8EChen-ER%E5%9B%BE.md#46-t05-五角色首次授权与实际管理链路)为准：系统管理员1、公司领导64、部门经理106、项目经理72、普通员工9758；三个管理角色有范围内人员查询/分配/停用/调动，无角色定义/资源/日志权限。此前“不凭岗位猜授”指禁止未确认推断，不否定本次明确初始规则。T03/T04已进入共同基线70c3bef，本票在独立分支实施；不改变后续票职责。
 
 **类型：**首个后端业务闭环。**状态：**独立分支`codex/t05-management-loop`实现、本地验证及两轴代理评审通过；128项完整回归失败/错误/跳过均0，Spring Boot打包及实际打包入口验证通过。初审2项已修复、复核剩余0项，证据见计划4.6。用户要求JaCoCo本票不阻塞，规则保留、不声称全覆盖。合入/关票以Issue #6和PR记录为准。
 
@@ -225,13 +227,13 @@ flowchart LR
 - [x] 审核根部门成员还须拥有对应操作权限的条件，以及会影响最后有效管理员时的处理；不新增管理员字段。
 - [x] 仅选择实际需要的本权限系统目录，纳入 T04 已评审的最小日志查询权限/API，但不恢复完整业务矩阵；逐项审 REST。课程侧待后续场景，正式前端仍暂缓。
 
-**产物与证据：**[交互原型](prototype/index.html)、[T06 契约](RBAC原型与API契约.md#t06)、[验收案例](RBAC原型与API契约.md#acceptance)、[技术评审与用户确认](RBAC原型与API契约.md#review)及[未决项](RBAC原型与API契约.md#decisions)。准备产物随 PR #19 合入，后续实现按本清单依赖开工。
+**产物与证据：**[交互原型](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/prototype/index.html)、[T06 契约](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E5%8E%9F%E5%9E%8B%E4%B8%8EAPI%E5%A5%91%E7%BA%A6.md#t06)、[验收案例](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E5%8E%9F%E5%9E%8B%E4%B8%8EAPI%E5%A5%91%E7%BA%A6.md#acceptance)、[技术评审与用户确认](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E5%8E%9F%E5%9E%8B%E4%B8%8EAPI%E5%A5%91%E7%BA%A6.md#review)及[未决项](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E5%8E%9F%E5%9E%8B%E4%B8%8EAPI%E5%A5%91%E7%BA%A6.md#decisions)。准备产物随 PR #19 合入，后续实现按本清单依赖开工。
 
 **共享模块及冲突：**资源术语、权限树、映射 DTO、全局维护与停用语义。与 T08 角色选权原型共享权限树表现，需协调但不强制串行。
 
 ### T07 让本权限系统资源目录与 API 映射真实生效
 
-**类型：**后端业务闭环。**状态：**独立分支`codex/t07-resource-mapping`实现及两轴代理复核通过，证据见[计划4.7](RBAC整改计划与Chen-ER图.md#47-t07-本系统资源目录与映射维护)。最终144项完整回归失败/错误/跳过均0，打包及最终jar实际HTTP通过；Spec初审2项P2已修复，Standards/Spec剩余各0项。JaCoCo本次不阻塞、原门槛保留，合入及关票以Issue #8和PR为准。
+**类型：**后端业务闭环。**状态：**独立分支`codex/t07-resource-mapping`实现及两轴代理复核通过，证据见[计划4.7](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%95%B4%E6%94%B9%E8%AE%A1%E5%88%92%E4%B8%8EChen-ER%E5%9B%BE.md#47-t07-本系统资源目录与映射维护)。最终144项完整回归失败/错误/跳过均0，打包及最终jar实际HTTP通过；Spec初审2项P2已修复，Standards/Spec剩余各0项。JaCoCo本次不阻塞、原门槛保留，合入及关票以Issue #8和PR为准。
 
 **Blocked by:** T05、T06。复用首个真实鉴权链路，并严格依赖资源配置对应契约评审。
 
@@ -264,13 +266,13 @@ flowchart LR
 - [x] 审核整体替换、错误回滚、停用后生效、最后有效管理员保护的契约；以实际权限判断管理员，不按角色名。
 - [x] 逐项审 REST，确认管理权限决定登录准入、岗位不自动赋权及日志查询的全局限制，形成原型/契约结论；没有正式前端或界面验收结论。
 
-**产物与证据：**[交互原型](prototype/index.html)、[T08 契约](RBAC原型与API契约.md#t08)、[验收案例](RBAC原型与API契约.md#acceptance)、[技术评审与用户确认](RBAC原型与API契约.md#review)及[未决项](RBAC原型与API契约.md#decisions)。准备产物随 PR #19 合入，后续实现按本清单依赖开工。
+**产物与证据：**[交互原型](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/prototype/index.html)、[T08 契约](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E5%8E%9F%E5%9E%8B%E4%B8%8EAPI%E5%A5%91%E7%BA%A6.md#t08)、[验收案例](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E5%8E%9F%E5%9E%8B%E4%B8%8EAPI%E5%A5%91%E7%BA%A6.md#acceptance)、[技术评审与用户确认](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E5%8E%9F%E5%9E%8B%E4%B8%8EAPI%E5%A5%91%E7%BA%A6.md#review)及[未决项](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E5%8E%9F%E5%9E%8B%E4%B8%8EAPI%E5%A5%91%E7%BA%A6.md#decisions)。准备产物随 PR #19 合入，后续实现按本清单依赖开工。
 
 **共享模块及冲突：**角色/权限 DTO、权限树原型、停用与授权语义。与 T06 共享资源展示，与 T10 共享可分配角色的含义。
 
 ### T09 让角色权限配置改变真实 API 访问结果
 
-**类型：**后端业务闭环。**状态：**独立分支`codex/t09-role-permissions-local`已随[PR #24](https://github.com/minxuanbo/ooad-course-project/pull/24)合入共同基线`4e2b2a1`，Issue #10已完成。完整回归166项失败/错误/跳过均0，打包及JAR真实HTTP通过；本次单代理复核不冒充独立双轴评审，证据见[计划4.8](RBAC整改计划与Chen-ER图.md#t09-validation)。JaCoCo本次不阻塞、原门槛保留，合入及关票以Issue #10和PR为准。
+**类型：**后端业务闭环。**状态：**独立分支`codex/t09-role-permissions-local`已随[PR #24](https://github.com/minxuanbo/ooad-course-project/pull/24)合入共同基线`4e2b2a1`，Issue #10已完成。完整回归166项失败/错误/跳过均0，打包及JAR真实HTTP通过；本次单代理复核不冒充独立双轴评审，证据见[计划4.8](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%95%B4%E6%94%B9%E8%AE%A1%E5%88%92%E4%B8%8EChen-ER%E5%9B%BE.md#t09-validation)。JaCoCo本次不阻塞、原门槛保留，合入及关票以Issue #10和PR为准。
 
 **Blocked by:** T05、T08。需要通用的真实接口鉴权和相应契约；可使用已确认的初始化权限，不必等待 T07 的资源维护接口。
 
@@ -303,7 +305,7 @@ flowchart LR
 - [x] 明确角色整体替换、空选清空、回滚、最后有效管理员保护及错误，逐项审 REST；角色撤空后再次登录拒绝，调动前后范围变化可解释。
 - [x] 与 T04/T08 交叉核对，针对用户的权限通过角色配置及真实访问变化落实；不新增直接用户授权或必做权限来源页。是否展示最终有效权限在评审记录，正式前端仍暂缓。
 
-**产物与证据：**[交互原型](prototype/index.html)、[T10 契约](RBAC原型与API契约.md#t10)、[验收案例](RBAC原型与API契约.md#acceptance)、[技术评审与用户确认](RBAC原型与API契约.md#review)及[未决项](RBAC原型与API契约.md#decisions)。准备产物随 PR #19 合入，后续实现按本清单依赖开工。
+**产物与证据：**[交互原型](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/prototype/index.html)、[T10 契约](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E5%8E%9F%E5%9E%8B%E4%B8%8EAPI%E5%A5%91%E7%BA%A6.md#t10)、[验收案例](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E5%8E%9F%E5%9E%8B%E4%B8%8EAPI%E5%A5%91%E7%BA%A6.md#acceptance)、[技术评审与用户确认](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E5%8E%9F%E5%9E%8B%E4%B8%8EAPI%E5%A5%91%E7%BA%A6.md#review)及[未决项](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E5%8E%9F%E5%9E%8B%E4%B8%8EAPI%E5%A5%91%E7%BA%A6.md#decisions)。准备产物随 PR #19 合入，后续实现按本清单依赖开工。
 
 **共享模块及冲突：**人员选择、部门范围、可分配角色、人员状态与授权 DTO。与 T04/T08 并行评审，交叉核对后在契约中统一结论。
 
@@ -351,7 +353,7 @@ flowchart LR
 
 **类型：**集成验收。**状态：**本轮实际验收通过，最终审核/合入及关票见PR #28与Issue #14；用户要求本票结束后停止。
 
-**本轮证据：**实际OpenJDK21/MySQL8.4全新专库clean package142项、3项运行器安全单测、固定1149c24空库生产初始化及70次默认JAR真实HTTP通过；含两轮启动和重复初始化保留调整。事务/跨入口并发/锁后重验均在本轮重新执行的现有测试中核对。完整复现、需求映射、产物与未验收范围见[正式T13记录](../acceptance/T13.md)。不以本票宣称全量前端、DDD或课程系统完成，不启动后续票。
+**本轮证据：**实际OpenJDK21/MySQL8.4全新专库clean package142项、3项运行器安全单测、固定1149c24空库生产初始化及70次默认JAR真实HTTP通过；含两轮启动和重复初始化保留调整。事务/跨入口并发/锁后重验均在本轮重新执行的现有测试中核对。完整复现、需求映射、产物与未验收范围见[正式T13记录](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/acceptance/T13.md)。不以本票宣称全量前端、DDD或课程系统完成，不启动后续票。
 
 **Blocked by:** T12。要验证的是清理并切换后的当前后端，不能以旧功能尚在的中间状态替代完成。
 
@@ -442,6 +444,6 @@ flowchart LR
 
 T01/T02 随 PR #17/#18 合入，Issues #2/#3 已关闭，11 项历史验收已有证据。四组原型契约于 2026-11-07 经用户确认并随 PR #19 合入。2026-11-08 登录及单工号模型修正由 T03/T04/T05/T12/T13 接续；T04 新增准备产物经技术复核并获用户确认，其余历史验收保留原范围。
 
-15 张 Issue 已同步登录修正：T03/T04/T05/T12/T13 更新交付与验收，T02 补历史模型说明，其余更正共同数据口径；T04/#5 曾重开处理新增要求，本次按用户“推送合并完结”授权完成，实际合入和关闭证据见该Issue；22条依赖保留。组员须取得包含本次修订的共同基线。T03 前置已满足，本票负责导入缺项；其余任务按[协作步骤](../../CONTRIBUTING.md)核对实际阻塞及数据/课程资料前置，再人工认领。
+15 张 Issue 已同步登录修正：T03/T04/T05/T12/T13 更新交付与验收，T02 补历史模型说明，其余更正共同数据口径；T04/#5 曾重开处理新增要求，本次按用户“推送合并完结”授权完成，实际合入和关闭证据见该Issue；22条依赖保留。组员须取得包含本次修订的共同基线。T03 前置已满足，本票负责导入缺项；其余任务按[协作步骤](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/CONTRIBUTING.md)核对实际阻塞及数据/课程资料前置，再人工认领。
 
-[整改入口](README.md)提供当前范围和 T03 指令，[协作步骤](../../CONTRIBUTING.md)说明基线、认领、工作树及草稿 PR。需求或验收调整同步执行计划、本清单和对应 Issues；业务完成以实际交付证据记录。
+[整改入口](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/README.md)提供当前范围和 T03 指令，[协作步骤](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/CONTRIBUTING.md)说明基线、认领、工作树及草稿 PR。需求或验收调整同步执行计划、本清单和对应 Issues；业务完成以实际交付证据记录。
