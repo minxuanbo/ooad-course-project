@@ -14,5 +14,8 @@ import lombok.Setter;
 @Setter
 @CopyTo(UserAdminModels.MoveCommand.class)
 public class UserDepartmentDTO {
-  @NotNull @Positive @Max(CoreApiLimits.MAX_ID) private Long departmentId;
+  @NotNull
+  @Positive
+  @Max(CoreApiLimits.MAX_ID)
+  private Long departmentId;
 }

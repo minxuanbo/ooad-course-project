@@ -3,15 +3,20 @@ package com.municipal.rbaccore.service;
 import cn.edu.xmu.clonefactory.util.CloneFactory;
 import com.municipal.rbac.ApiException;
 import com.municipal.rbac.RequestAuditFilter;
+import com.municipal.rbaccore.model.ApiResource;
 import com.municipal.rbaccore.model.Department;
+import com.municipal.rbaccore.model.Permission;
 import com.municipal.rbaccore.model.Role;
 import com.municipal.rbaccore.model.User;
-import com.municipal.rbaccore.repository.ApiResourceRepository;
 import com.municipal.rbaccore.repository.DepartmentRepository;
 import com.municipal.rbaccore.repository.RoleRepository;
 import com.municipal.rbaccore.repository.UserRepository;
 import com.municipal.rbaccore.security.CurrentIdentity;
 import com.municipal.rbaccore.security.RbacCatalog;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
@@ -24,8 +29,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.HandlerMapping;
 
@@ -41,7 +50,6 @@ public class CoreUserAdminService {
   private final UserRepository users;
   private final RoleRepository roles;
   private final DepartmentRepository departments;
-  private final ApiResourceRepository apis;
 
   /** 当前角色读取保留全部已保存元数据，含停用或现已不可分配项。 */
   public UserAdminModels.RolesViewResult roles(String header, Long id) {
@@ -50,29 +58,28 @@ public class CoreUserAdminService {
     return rolesView(target);
   }
 
-  /** 候选只包含启用角色，且其有效API集合为本人有效API集合的子集。 */
+  /** 候选只包含启用角色，且其有效权限ID集合为本人有效权限ID集合的子集。 */
+  @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
   public UserAdminModels.AssignablePageResult assignableRoles(
       String header, Long id, UserAdminModels.AssignableSearch query) {
     CurrentIdentity actor = auth.require(header);
     target(actor, id);
-    Set<RbacCatalog.Route> actorRoutes = permissions.routes(actor.id());
     String search = query.getQ() == null ? "" : query.getQ().toLowerCase(Locale.ROOT);
-    List<RoleModels.RoleResult> candidates =
-        roles.findByEnabledTrueOrderByIdAsc().stream()
-            .filter(role -> matches(role, search))
-            .filter(role -> actorRoutes.containsAll(roleRoutes(role)))
-            .map(this::roleResult)
-            .toList();
-    long total = candidates.size();
+    Specification<Role> filter = assignableFilter(ownPermissionIds(actor), search);
+    long total = roles.count(filter);
     long offset = (long) query.getPage() * query.getSize();
     if (offset >= total) {
       return new UserAdminModels.AssignablePageResult(
           List.of(), total, query.getPage(), query.getSize());
     }
-    int from = (int) offset;
-    int to = (int) Math.min(offset + query.getSize(), total);
-    return new UserAdminModels.AssignablePageResult(
-        candidates.subList(from, to), total, query.getPage(), query.getSize());
+    List<RoleModels.RoleResult> items =
+        roles
+            .findAll(filter, PageRequest.of(query.getPage(), query.getSize(), Sort.by("id")))
+            .getContent()
+            .stream()
+            .map(this::roleResult)
+            .toList();
+    return new UserAdminModels.AssignablePageResult(items, total, query.getPage(), query.getSize());
   }
 
   /** 整组校验后在同一写事务内整体替换，失败回滚全部关联。 */
@@ -86,18 +93,15 @@ public class CoreUserAdminService {
           requireSelfProtection(actor, target);
           requireGlobalAdministratorProtection(actor, target);
           Set<Long> wanted = new LinkedHashSet<>(command.getIds());
-          if (wanted.size() != command.getIds().size()) {
-            throw ApiException.bad("INVALID_ARGUMENT", "角色ID不能重复");
-          }
           List<Role> selected = roles.findAllById(wanted);
           if (selected.size() != wanted.size()) {
             throw ApiException.bad("INVALID_ARGUMENT", "存在未知的角色ID");
           }
-          Set<RbacCatalog.Route> actorRoutes = permissions.routes(actor.id());
-          for (Role role : selected) {
-            if (!role.isEnabled() || !actorRoutes.containsAll(roleRoutes(role))) {
-              throw ApiException.scopeDenied();
-            }
+          Specification<Role> allowed =
+              assignableFilter(ownPermissionIds(actor), "")
+                  .and((role, query, builder) -> role.get("id").in(wanted));
+          if (!wanted.isEmpty() && roles.count(allowed) != wanted.size()) {
+            throw ApiException.scopeDenied();
           }
           for (Role existing : List.copyOf(target.getRoles())) {
             if (!wanted.contains(existing.getId())) target.removeRole(existing);
@@ -110,20 +114,25 @@ public class CoreUserAdminService {
 
   /** 停用立即生效，保留部门及角色关系；本票不提供人员恢复。 */
   @Transactional
-  public UserAdminModels.UserWithRolesResult disable(
-      String header, Long id, UserAdminModels.DisableCommand command) {
+  public UserAdminModels.UserWithRolesResult disable(String header, Long id) {
     return write(
         header,
         actor -> {
-          if (!Boolean.FALSE.equals(command.getEnabled())) {
-            throw ApiException.bad("INVALID_ARGUMENT", "本票只支持停用人员");
-          }
           User target = target(actor, id);
           requireGlobalAdministratorProtection(actor, target);
           target.setEnabled(false);
           users.saveAndFlush(target);
           return withRoles(target);
         });
+  }
+
+  /** 参数解析前只做最新身份、具体API、目标范围及适用的人员保护，写事务仍锁后重验。 */
+  public void checkTarget(String header, Long id, boolean protectSelf) {
+    CurrentIdentity actor = reauthenticate(header);
+    if (id == null) return;
+    User target = target(actor, id);
+    if (protectSelf) requireSelfProtection(actor, target);
+    requireGlobalAdministratorProtection(actor, target);
   }
 
   /** 原部门与目标部门都必须在本部门及下级范围，失败保留原归属与授权。 */
@@ -157,8 +166,7 @@ public class CoreUserAdminService {
     } catch (DataIntegrityViolationException | ConcurrencyFailureException exception) {
       throw new ApiException(HttpStatus.CONFLICT, "DATA_CONFLICT", "人员保存冲突，请刷新后重试");
     } catch (DataAccessException exception) {
-      throw new ApiException(
-          HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "人员保存失败，请重试");
+      throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "人员保存失败，请重试");
     }
   }
 
@@ -185,7 +193,10 @@ public class CoreUserAdminService {
   /** 部门管理员不能修改其他有效全局管理员，全局操作者的最后管理员保护由锁内K检查负责。 */
   private void requireGlobalAdministratorProtection(CurrentIdentity actor, User target) {
     if (actor.id().equals(target.getId()) || scope.isGlobal(actor)) return;
-    if (permissions.routes(target.getId()).containsAll(RbacCatalog.maintenanceRoutes())) {
+    CurrentIdentity subject =
+        new CurrentIdentity(target.getId(), target.getUsername(), target.getDepartment().getId());
+    if (scope.isGlobal(subject)
+        && permissions.routes(target.getId()).containsAll(RbacCatalog.maintenanceRoutes())) {
       throw ApiException.scopeDenied();
     }
   }
@@ -207,8 +218,7 @@ public class CoreUserAdminService {
             .orElseThrow(
                 () -> {
                   if (scope.isGlobal(actor)) {
-                    return new ApiException(
-                        HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "人员不存在");
+                    return new ApiException(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "人员不存在");
                   }
                   return ApiException.scopeDenied();
                 });
@@ -216,18 +226,39 @@ public class CoreUserAdminService {
     return user;
   }
 
-  /** 候选角色贡献的有效API，沿启用角色、权限、API及同系统链计算。 */
-  private Set<RbacCatalog.Route> roleRoutes(Role role) {
-    return apis.roleEffectiveApis(role.getId(), RbacCatalog.SYSTEM_CODE).stream()
-        .map(api -> new RbacCatalog.Route(api.getHttpMethod(), api.getPathTemplate()))
+  /** 权限身份而不是API路径才是角色授权子集；同API可被不同权限复用。 */
+  private Set<Long> ownPermissionIds(CurrentIdentity actor) {
+    return permissions.permissions(actor.id()).stream()
+        .map(Permission::getId)
         .collect(Collectors.toUnmodifiableSet());
   }
 
-  /** 候选搜索只匹配名称或编码，不按角色名推导授权。 */
-  private boolean matches(Role role, String search) {
-    if (search.isEmpty()) return true;
-    return role.getName().toLowerCase(Locale.ROOT).contains(search)
-        || role.getCode().toLowerCase(Locale.ROOT).contains(search);
+  /** 数据库排除任何超出本人有效权限的角色，外系统权限不因过滤而变成空集。 */
+  private Specification<Role> assignableFilter(Set<Long> ownIds, String search) {
+    String pattern =
+        "%" + search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
+    return (root, query, builder) -> {
+      Subquery<Long> forbidden = query.subquery(Long.class);
+      Root<Role> candidate = forbidden.correlate(root);
+      Join<Role, Permission> permission = candidate.join("permissions");
+      Join<Permission, ApiResource> api = permission.join("apis");
+      Predicate outside =
+          ownIds.isEmpty() ? builder.conjunction() : builder.not(permission.get("id").in(ownIds));
+      forbidden
+          .select(permission.get("id"))
+          .where(
+              builder.isTrue(permission.get("enabled")),
+              builder.isTrue(permission.get("system").get("enabled")),
+              builder.isTrue(api.get("enabled")),
+              builder.equal(permission.get("system").get("id"), api.get("system").get("id")),
+              outside);
+      return builder.and(
+          builder.isTrue(root.get("enabled")),
+          builder.not(builder.exists(forbidden)),
+          builder.or(
+              builder.like(builder.lower(root.get("name")), pattern, '\\'),
+              builder.like(builder.lower(root.get("code")), pattern, '\\')));
+    };
   }
 
   /** 角色元数据按ID升序输出，状态显式转换不依赖primitive映射。 */

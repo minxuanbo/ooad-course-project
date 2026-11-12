@@ -25,12 +25,4 @@ public interface ApiResourceRepository
           + " a.enabled=true and p.system.id=a.system.id and a.system.enabled=true and"
           + " a.system.code=:system")
   List<ApiResource> effectiveApis(Long userId, String system);
-
-  /** 单个角色对外贡献的有效API，供候选角色与本人有效权限做子集比较。 */
-  @Query(
-      "select distinct a from Role r join r.permissions p join p.apis a where"
-          + " r.id=:roleId and r.enabled=true and p.enabled=true and"
-          + " a.enabled=true and p.system.id=a.system.id and a.system.enabled=true and"
-          + " a.system.code=:system")
-  List<ApiResource> roleEffectiveApis(Long roleId, String system);
 }

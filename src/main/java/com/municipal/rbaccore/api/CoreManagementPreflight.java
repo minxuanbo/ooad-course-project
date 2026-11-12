@@ -5,6 +5,7 @@ import com.municipal.rbac.AuditEvent;
 import com.municipal.rbac.AuditWriter;
 import com.municipal.rbac.RequestAuditFilter;
 import com.municipal.rbaccore.service.CoreResourceService;
+import com.municipal.rbaccore.service.CoreUserAdminService;
 import com.municipal.rbaccore.service.GlobalManagementAccess;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -15,29 +16,39 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.HandlerMapping;
 
-/** 全局资源及角色接口在MVC解析参数前先拒绝匿名、无权及越界请求，真实AOP仍负责执行期鉴权。 */
+/** 管理接口在MVC解析参数前先拒绝匿名、无权及越界请求，真实AOP仍负责执行期鉴权。 */
 @Component
 @RequiredArgsConstructor
-public class CoreGlobalManagementPreflight implements HandlerInterceptor {
+public class CoreManagementPreflight implements HandlerInterceptor {
   private final GlobalManagementAccess access;
   private final CoreResourceService resources;
+  private final CoreUserAdminService users;
   private final AuditWriter audit;
 
-  /** 只处理已评审的全局控制器，业务输入校验仍由DTO及MVC负责。 */
+  /** 只处理已评审的管理控制器，人员接口保留部门范围而不要求共同根。 */
   @Override
   public boolean preHandle(
       HttpServletRequest request, HttpServletResponse response, Object handler) {
     if (!(handler instanceof HandlerMethod method)
         || (!CoreResourceController.class.isAssignableFrom(method.getBeanType())
-            && !CoreRoleController.class.isAssignableFrom(method.getBeanType()))) {
+            && !CoreRoleController.class.isAssignableFrom(method.getBeanType())
+            && !CoreUserController.class.isAssignableFrom(method.getBeanType()))) {
       return true;
     }
     String template =
         String.valueOf(request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE));
     String header = request.getHeader("Authorization");
     try {
-      access.require(header);
       Long id = targetId(request);
+      if (CoreUserController.class.isAssignableFrom(method.getBeanType())) {
+        boolean protectSelf =
+            request.getMethod().equals("PUT")
+                && (template.equals("/api/users/{id}/roles")
+                    || template.equals("/api/users/{id}/department"));
+        users.checkTarget(header, id, protectSelf);
+        return true;
+      }
+      access.require(header);
       if (id != null
           && (template.equals("/api/permissions/{id}")
               || template.equals("/api/permissions/{id}/apis"))) {

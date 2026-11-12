@@ -4,19 +4,28 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.municipal.rbac.RequestAuditFilter;
 import com.municipal.rbaccore.model.*;
 import com.municipal.rbaccore.repository.*;
 import com.municipal.rbaccore.security.RbacCatalog;
 import com.municipal.rbaccore.service.EffectivePermissionService;
+import jakarta.persistence.EntityManagerFactory;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
+import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.*;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,11 +37,17 @@ import org.springframework.transaction.support.TransactionTemplate;
 @SpringBootTest(
     classes = CoreRuntimeConfiguration.class,
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = "spring.config.name=application-core-user-test")
+    properties = {
+      "spring.config.name=application-core-user-test",
+      "spring.jpa.properties.hibernate.generate_statistics=true",
+      "logging.level.org.hibernate.engine.internal.StatisticalLoggingSessionEventListener=OFF"
+    })
 @ActiveProfiles("core-user-test")
+@Import(CoreUserAdminT11Test.LockFixtures.class)
 class CoreUserAdminT11Test {
   private static final String LOGIN = "/api/auth/login";
   private static final String USERS = "/api/users";
+  private static final String ROLES = "/api/roles";
   private static final String PASSWORD = "t11-isolated-fixture-password";
   private static final String ROOT = "t11-root";
   private static final String ROOT2 = "t11-root2";
@@ -52,6 +67,8 @@ class CoreUserAdminT11Test {
   @Autowired ApplicationSystemRepository systems;
   @Autowired PlatformTransactionManager transactions;
   @Autowired EffectivePermissionService effective;
+  @Autowired EntityManagerFactory entityManagerFactory;
+  @Autowired LockObservation observedLock;
   private long rootId;
   private long childId;
   private long grandchildId;
@@ -66,10 +83,35 @@ class CoreUserAdminT11Test {
   private long personnelRoleId;
   private final Map<String, Long> permissionIds = new LinkedHashMap<>();
 
+  /** 仅观察实际HTTP请求到达共同根锁的时刻，不替换仓储或鉴权实现。 */
+  @TestConfiguration(proxyBeanMethods = false)
+  static class LockFixtures {
+    /** 为范围变更竞争提供确定的同步点，不使用固定睡眠。 */
+    @Bean
+    LockObservation lockObservation() {
+      return new LockObservation();
+    }
+  }
+
+  /** 同步持锁事务与已经完成AOP检查的请求，实际锁仍由MySQL执行。 */
+  @Aspect
+  static class LockObservation {
+    private final AtomicReference<CountDownLatch> entered = new AtomicReference<>();
+
+    /** 请求将获取数据库锁时通知夹具，之后继续执行原方法。 */
+    @Before("execution(* com.municipal.rbaccore.service.MaintenanceGuard.lock(..))")
+    public void beforeLock() {
+      CountDownLatch gate = entered.get();
+      if (gate != null && RequestAuditFilter.current() != null) gate.countDown();
+    }
+  }
+
   /** 每例从可丢弃专库重建小样本组织与真实权限链，不使用生产初始化数据。 */
   @BeforeEach
   void t11Prepare() {
     assertEquals("rbac_core_t11_test", jdbc.queryForObject("SELECT DATABASE()", String.class));
+    jdbc.execute("DROP TRIGGER IF EXISTS t11_fail_roles");
+    jdbc.execute("DROP TRIGGER IF EXISTS t11_fail_move");
     for (String table :
         List.of(
             "authorization_logs",
@@ -166,14 +208,23 @@ class CoreUserAdminT11Test {
     assertTrue(empty.get("user").get("enabled").asBoolean());
     assertEquals(0, empty.get("roles").size());
 
-    success(request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(fullRoleId))), 200);
+    success(
+        request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(fullRoleId))), 200);
     JsonNode assigned = success(request("GET", userRoles(employeeUserId), dept, null), 200);
     assertEquals(1, assigned.get("roles").size());
     assertEquals("t11-full", assigned.get("roles").get(0).get("code").asText());
     assertEquals(4, assigned.get("roles").get(0).size());
     assertTrue(assigned.get("roles").get(0).get("enabled").asBoolean());
+    long disabledRole =
+        role("t11-current-disabled", List.of(permissionIds.get("rbac.users.read")), false);
+    jdbc.update(
+        "INSERT INTO user_roles(user_id,role_id) VALUES(?,?)", employeeUserId, disabledRole);
+    JsonNode retained = success(request("GET", userRoles(employeeUserId), dept, null), 200);
+    assertEquals(2, retained.get("roles").size());
+    assertFalse(retained.get("roles").get(1).get("enabled").asBoolean());
 
-    assertError(request("GET", userRoles(siblingUserId), dept, null), 403, "MANAGEMENT_SCOPE_DENIED");
+    assertError(
+        request("GET", userRoles(siblingUserId), dept, null), 403, "MANAGEMENT_SCOPE_DENIED");
     assertError(request("GET", userRoles(900000001L), root, null), 404, "RESOURCE_NOT_FOUND");
     assertError(request("GET", userRoles(900000001L), dept, null), 403, "MANAGEMENT_SCOPE_DENIED");
   }
@@ -204,17 +255,21 @@ class CoreUserAdminT11Test {
     assertEquals(1, searched.get("total").asInt());
     assertEquals("t11-personnel", searched.get("items").get(0).get("code").asText());
     assertEquals(
-        0, success(request("GET", assignable(employeeUserId) + "?q=absent", dept, null), 200)
-            .get("total").asInt());
+        0,
+        success(request("GET", assignable(employeeUserId) + "?q=absent", dept, null), 200)
+            .get("total")
+            .asInt());
     JsonNode paged =
         success(request("GET", assignable(employeeUserId) + "?size=1&page=0", dept, null), 200);
     assertEquals(1, paged.get("items").size());
     assertEquals(searched.get("total").asInt(), paged.get("total").asInt());
 
     String root = token(ROOT);
-    JsonNode rootCandidates = success(request("GET", assignable(employeeUserId) + "?size=100", root, null), 200);
+    JsonNode rootCandidates =
+        success(request("GET", assignable(employeeUserId) + "?size=100", root, null), 200);
     assertTrue(rootCandidates.get("total").asInt() >= 5);
-    assertError(request("GET", assignable(siblingUserId), dept, null), 403, "MANAGEMENT_SCOPE_DENIED");
+    assertError(
+        request("GET", assignable(siblingUserId), dept, null), 403, "MANAGEMENT_SCOPE_DENIED");
   }
 
   /** 整体替换、空选清空以及非法/超权/停用角色全部失败且不改变已保存状态。 */
@@ -223,16 +278,22 @@ class CoreUserAdminT11Test {
   void t11ReplacesRolesAtomically() throws Exception {
     String root = token(ROOT);
     JsonNode assigned =
-        success(request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(personnelRoleId))), 200);
+        success(
+            request(
+                "PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(personnelRoleId))),
+            200);
     assertEquals(List.of(personnelRoleId), longs(assigned.get("roleIds")));
     assertTrue(assigned.get("enabled").asBoolean());
     assertEquals(6, assigned.size());
-    success(request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(personnelRoleId))), 200);
+    success(
+        request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(personnelRoleId))),
+        200);
     assertEquals(List.of(personnelRoleId), savedRoleIds(employeeUserId));
 
     long logs = role("t11-logs", List.of(permissionIds.get("rbac.logs.read")), true);
     success(
-        request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(logs, personnelRoleId))),
+        request(
+            "PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(logs, personnelRoleId))),
         200);
     assertEquals(List.of(personnelRoleId, logs), savedRoleIds(employeeUserId));
 
@@ -246,14 +307,20 @@ class CoreUserAdminT11Test {
         "MANAGEMENT_SCOPE_DENIED");
     assertError(
         request(
-            "PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(personnelRoleId, personnelRoleId))),
+            "PUT",
+            userRoles(employeeUserId),
+            root,
+            Map.of("ids", List.of(personnelRoleId, personnelRoleId))),
         400,
         "INVALID_ARGUMENT");
     assertError(
         request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(900000001L))),
         400,
         "INVALID_ARGUMENT");
-    assertError(request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of("x"))), 400, "INVALID_ARGUMENT");
+    assertError(
+        request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of("x"))),
+        400,
+        "INVALID_ARGUMENT");
 
     String dept = token(DEPT);
     assertError(
@@ -261,7 +328,8 @@ class CoreUserAdminT11Test {
         403,
         "MANAGEMENT_SCOPE_DENIED");
     success(
-        request("PUT", userRoles(employeeUserId), dept, Map.of("ids", List.of(personnelRoleId))), 200);
+        request("PUT", userRoles(employeeUserId), dept, Map.of("ids", List.of(personnelRoleId))),
+        200);
     assertError(
         request("PUT", userRoles(siblingUserId), dept, Map.of("ids", List.of())),
         403,
@@ -276,7 +344,8 @@ class CoreUserAdminT11Test {
   void t11RevocationAffectsRequestsAndLogin() throws Exception {
     String root = token(ROOT);
     success(
-        request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(personnelRoleId))), 200);
+        request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(personnelRoleId))),
+        200);
     String employee = token(EMPLOYEE);
     success(request("GET", USERS, employee, null), 200);
 
@@ -285,8 +354,7 @@ class CoreUserAdminT11Test {
     assertError(login(EMPLOYEE), 403, "MANAGEMENT_ACCESS_DENIED");
     assertTrue(savedRoleIds(employeeUserId).isEmpty());
     assertTrue(
-        jdbc.queryForObject(
-            "SELECT enabled FROM users WHERE id=?", Boolean.class, employeeUserId));
+        jdbc.queryForObject("SELECT enabled FROM users WHERE id=?", Boolean.class, employeeUserId));
   }
 
   /** 停用保留角色与部门，旧令牌401、再次登录401且不接受恢复指令。 */
@@ -295,7 +363,8 @@ class CoreUserAdminT11Test {
   void t11DisableEndsSessionAndLogin() throws Exception {
     String root = token(ROOT);
     success(
-        request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(personnelRoleId))), 200);
+        request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(personnelRoleId))),
+        200);
     String employee = token(EMPLOYEE);
     JsonNode disabled =
         success(request("PATCH", status(employeeUserId), root, Map.of("enabled", false)), 200);
@@ -315,7 +384,12 @@ class CoreUserAdminT11Test {
     assertEquals(List.of(personnelRoleId), savedRoleIds(employeeUserId));
     assertEquals(
         grandchildId,
-        jdbc.queryForObject("SELECT department_id FROM users WHERE id=?", Long.class, employeeUserId));
+        jdbc.queryForObject(
+            "SELECT department_id FROM users WHERE id=?", Long.class, employeeUserId));
+    String dept = token(DEPT);
+    success(request("PATCH", status(deptUserId), dept, Map.of("enabled", false)), 200);
+    assertError(request("GET", USERS, dept, null), 401, "SESSION_INVALID");
+    assertError(login(DEPT), 401, "LOGIN_FAILED");
   }
 
   /** 原部门与目标部门都要在范围内，失败保留原归属、状态与角色。 */
@@ -325,18 +399,25 @@ class CoreUserAdminT11Test {
     String root = token(ROOT);
     String dept = token(DEPT);
     success(
-        request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(personnelRoleId))), 200);
+        request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(personnelRoleId))),
+        200);
+    String employee = token(EMPLOYEE);
+    assertEquals(1, success(request("GET", USERS, employee, null), 200).get("total").asInt());
     JsonNode moved =
         success(
             request("PUT", department(employeeUserId), dept, Map.of("departmentId", childId)), 200);
     assertEquals(childId, moved.get("departmentId").asLong());
     assertEquals(List.of(personnelRoleId), longs(moved.get("roleIds")));
+    assertEquals(3, success(request("GET", USERS, employee, null), 200).get("total").asInt());
 
     success(
-        request("PUT", department(employeeUserId), dept, Map.of("departmentId", grandchildId)), 200);
+        request("PUT", department(employeeUserId), dept, Map.of("departmentId", grandchildId)),
+        200);
+    assertEquals(1, success(request("GET", USERS, employee, null), 200).get("total").asInt());
     assertEquals(
         grandchildId,
-        jdbc.queryForObject("SELECT department_id FROM users WHERE id=?", Long.class, employeeUserId));
+        jdbc.queryForObject(
+            "SELECT department_id FROM users WHERE id=?", Long.class, employeeUserId));
 
     assertError(
         request("PUT", department(employeeUserId), dept, Map.of("departmentId", siblingId)),
@@ -358,11 +439,13 @@ class CoreUserAdminT11Test {
 
     assertEquals(
         grandchildId,
-        jdbc.queryForObject("SELECT department_id FROM users WHERE id=?", Long.class, employeeUserId));
+        jdbc.queryForObject(
+            "SELECT department_id FROM users WHERE id=?", Long.class, employeeUserId));
     assertEquals(List.of(personnelRoleId), savedRoleIds(employeeUserId));
     assertEquals(
         siblingId,
-        jdbc.queryForObject("SELECT department_id FROM users WHERE id=?", Long.class, siblingUserId));
+        jdbc.queryForObject(
+            "SELECT department_id FROM users WHERE id=?", Long.class, siblingUserId));
   }
 
   /** 部门管理员不能改自己或有效全局管理员，共同根自改仍受完整K约束。 */
@@ -379,11 +462,11 @@ class CoreUserAdminT11Test {
         403,
         "MANAGEMENT_SCOPE_DENIED");
     assertError(
-        request("PUT", userRoles(childAdminUserId), dept, Map.of("ids", List.of())),
+        request("PUT", userRoles(rootUserId), dept, Map.of("ids", List.of())),
         403,
         "MANAGEMENT_SCOPE_DENIED");
     assertError(
-        request("PATCH", status(childAdminUserId), dept, Map.of("enabled", false)),
+        request("PATCH", status(rootUserId), dept, Map.of("enabled", false)),
         403,
         "MANAGEMENT_SCOPE_DENIED");
     assertEquals(List.of(personnelRoleId), savedRoleIds(deptUserId));
@@ -401,18 +484,24 @@ class CoreUserAdminT11Test {
     jdbc.update("DELETE FROM user_roles WHERE user_id=?", root2UserId);
     String root = token(ROOT);
     assertEquals(1, completeAdministrators());
-    assertError(request("PUT", userRoles(rootUserId), root, Map.of("ids", List.of())), 409, "LAST_ADMIN_REQUIRED");
-    assertError(request("PATCH", status(rootUserId), root, Map.of("enabled", false)), 409, "LAST_ADMIN_REQUIRED");
+    assertError(
+        request("PUT", userRoles(rootUserId), root, Map.of("ids", List.of())),
+        409,
+        "LAST_ADMIN_REQUIRED");
+    assertError(
+        request("PATCH", status(rootUserId), root, Map.of("enabled", false)),
+        409,
+        "LAST_ADMIN_REQUIRED");
     assertError(
         request("PUT", department(rootUserId), root, Map.of("departmentId", childId)),
         409,
         "LAST_ADMIN_REQUIRED");
     assertEquals(1, completeAdministrators());
     assertEquals(List.of(fullRoleId), savedRoleIds(rootUserId));
-    assertTrue(jdbc.queryForObject("SELECT enabled FROM users WHERE id=?", Boolean.class, rootUserId));
+    assertTrue(
+        jdbc.queryForObject("SELECT enabled FROM users WHERE id=?", Boolean.class, rootUserId));
 
-    jdbc.update(
-        "INSERT INTO user_roles(user_id,role_id) VALUES(?,?)", root2UserId, fullRoleId);
+    jdbc.update("INSERT INTO user_roles(user_id,role_id) VALUES(?,?)", root2UserId, fullRoleId);
     assertEquals(2, completeAdministrators());
     success(request("PUT", userRoles(rootUserId), root, Map.of("ids", List.of())), 200);
     assertEquals(1, completeAdministrators());
@@ -432,6 +521,261 @@ class CoreUserAdminT11Test {
     assertEquals(1, statuses.stream().filter(status -> status == 200).count(), statuses::toString);
     assertEquals(1, statuses.stream().filter(status -> status != 200).count(), statuses::toString);
     assertEquals(1, completeAdministrators());
+  }
+
+  /** 同路径的不同权限仍是不同授权，候选和保存都必须满足实际权限子集。 */
+  @Test
+  @DisplayName("T11 相同API不代表可以授出本人未拥有的有效权限")
+  void t11RejectsDifferentPermissionForSameApi() throws Exception {
+    long alias = permission("t11-alias", false);
+    long aliasRole = role("t11-alias-role", List.of(alias), true);
+    String dept = token(DEPT);
+    JsonNode page =
+        success(request("GET", assignable(employeeUserId) + "?size=100", dept, null), 200);
+    for (JsonNode item : page.get("items")) assertNotEquals(aliasRole, item.get("id").asLong());
+    assertError(
+        request("PUT", userRoles(employeeUserId), dept, Map.of("ids", List.of(aliasRole))),
+        403,
+        "MANAGEMENT_SCOPE_DENIED");
+    assertTrue(savedRoleIds(employeeUserId).isEmpty());
+    long stale = role("t11-stale-candidate", List.of(permissionIds.get("rbac.users.read")), true);
+    assertEquals(
+        1,
+        success(
+                request("GET", assignable(employeeUserId) + "?q=t11-stale-candidate", dept, null),
+                200)
+            .get("total")
+            .asInt());
+    success(
+        request(
+            "PUT",
+            ROLES + "/" + stale + "/permissions",
+            token(ROOT),
+            Map.of("ids", List.of(permissionIds.get("rbac.users.read"), alias))),
+        200);
+    assertEquals(
+        0,
+        success(
+                request("GET", assignable(employeeUserId) + "?q=t11-stale-candidate", dept, null),
+                200)
+            .get("total")
+            .asInt());
+    assertError(
+        request("PUT", userRoles(employeeUserId), dept, Map.of("ids", List.of(stale))),
+        403,
+        "MANAGEMENT_SCOPE_DENIED");
+    assertTrue(savedRoleIds(employeeUserId).isEmpty());
+  }
+
+  /** 外系统及混合角色的有效权限不能被系统过滤丢弃后伪装成合法空集。 */
+  @Test
+  @DisplayName("T11 外系统及混合角色不出现在候选且不能保存")
+  void t11RejectsExternalRoleGrants() throws Exception {
+    long foreign = permission("t11-foreign", true);
+    long foreignRole = role("t11-foreign-role", List.of(foreign), true);
+    long mixedRole =
+        role("t11-mixed-role", List.of(foreign, permissionIds.get("rbac.users.read")), true);
+    String root = token(ROOT);
+    JsonNode page =
+        success(request("GET", assignable(employeeUserId) + "?size=100", root, null), 200);
+    for (JsonNode item : page.get("items")) {
+      assertNotEquals(foreignRole, item.get("id").asLong());
+      assertNotEquals(mixedRole, item.get("id").asLong());
+    }
+    for (Long id : List.of(foreignRole, mixedRole)) {
+      assertError(
+          request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(id))),
+          403,
+          "MANAGEMENT_SCOPE_DENIED");
+    }
+    assertTrue(savedRoleIds(employeeUserId).isEmpty());
+  }
+
+  /** 完整K必须同时满足根归属，不能把范围内的非根人员当成全局维护者。 */
+  @Test
+  @DisplayName("T11 非根完整K人员仍可按正常范围规则撤权停用与调动")
+  void t11DoesNotTreatNonRootKUserAsGlobalAdministrator() throws Exception {
+    String dept = token(DEPT);
+    success(request("PUT", userRoles(childAdminUserId), dept, Map.of("ids", List.of())), 200);
+    success(request("PATCH", status(childAdminUserId), dept, Map.of("enabled", false)), 200);
+    success(
+        request("PUT", department(childAdminUserId), dept, Map.of("departmentId", grandchildId)),
+        200);
+    assertEquals(2, completeAdministrators());
+  }
+
+  /** 当身份、权限或目标范围不满足时，不能先用非法输入返回400。 */
+  @Test
+  @DisplayName("T11 人员接口先验证身份权限及目标范围再解析请求")
+  void t11ChecksAccessBeforeInvalidInput() throws Exception {
+    assertError(
+        request("PATCH", status(employeeUserId), null, Map.of()), 401, "AUTHENTICATION_REQUIRED");
+    long readerRole = role("t11-reader", List.of(permissionIds.get("rbac.users.read")), true);
+    account("t11-reader", childId, List.of(readerRole));
+    assertError(
+        request(
+            "PUT", userRoles(employeeUserId), token("t11-reader"), Map.of("ids", List.of(1L, 1L))),
+        403,
+        "PERMISSION_DENIED");
+    String dept = token(DEPT);
+    assertError(
+        request("PUT", userRoles(siblingUserId), dept, Map.of("ids", List.of(1L, 1L))),
+        403,
+        "MANAGEMENT_SCOPE_DENIED");
+    assertError(
+        request("PUT", department(deptUserId), dept, Map.of()), 403, "MANAGEMENT_SCOPE_DENIED");
+  }
+
+  /** 页大小约束实际角色实体读取量，不能读取全部候选后在内存裁剪。 */
+  @Test
+  @DisplayName("T11 候选过滤计数分页在数据库完成且避免逐角色查询")
+  void t11LoadsOnlyRequestedCandidatePage() throws Exception {
+    for (int index = 0; index < 50; index++) role("t11-empty-" + index, List.of(), true);
+    String dept = token(DEPT);
+    SessionFactory factory = entityManagerFactory.unwrap(SessionFactory.class);
+    factory.getStatistics().clear();
+    JsonNode page =
+        success(request("GET", assignable(employeeUserId) + "?size=2", dept, null), 200);
+    assertEquals(51, page.get("total").asLong());
+    assertEquals(2, page.get("items").size());
+    long loaded = factory.getStatistics().getEntityStatistics(Role.class.getName()).getLoadCount();
+    assertTrue(loaded <= 8, "角色实体实际加载数=" + loaded);
+  }
+
+  /** 两种保存故障分别核对稳定错误码及已提交数据不被部分覆盖。 */
+  @Test
+  @DisplayName("T11 数据库保存故障回滚角色及调动并返回稳定错误")
+  void t11RollsBackStorageFailures() throws Exception {
+    String root = token(ROOT);
+    long previousRole = role("t11-previous", List.of(permissionIds.get("rbac.users.read")), true);
+    success(
+        request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(previousRole))), 200);
+    jdbc.execute(
+        "CREATE TRIGGER t11_fail_roles BEFORE INSERT ON user_roles FOR EACH ROW BEGIN IF"
+            + " NEW.user_id="
+            + employeeUserId
+            + " AND NEW.role_id="
+            + personnelRoleId
+            + " THEN SIGNAL SQLSTATE '23000' SET MYSQL_ERRNO=1062,MESSAGE_TEXT='T11 forced"
+            + " conflict'; END IF; END");
+    try {
+      assertError(
+          request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(personnelRoleId))),
+          409,
+          "DATA_CONFLICT");
+      assertEquals(List.of(previousRole), savedRoleIds(employeeUserId));
+    } finally {
+      jdbc.execute("DROP TRIGGER t11_fail_roles");
+    }
+    jdbc.execute(
+        "CREATE TRIGGER t11_fail_move BEFORE UPDATE ON users FOR EACH ROW BEGIN IF NEW.id="
+            + employeeUserId
+            + " AND NEW.department_id="
+            + childId
+            + " THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='T11 forced storage failure'; END IF;"
+            + " END");
+    try {
+      assertError(
+          request("PUT", department(employeeUserId), root, Map.of("departmentId", childId)),
+          500,
+          "INTERNAL_ERROR");
+      assertEquals(
+          grandchildId,
+          jdbc.queryForObject(
+              "SELECT department_id FROM users WHERE id=?", Long.class, employeeUserId));
+      assertEquals(List.of(previousRole), savedRoleIds(employeeUserId));
+    } finally {
+      jdbc.execute("DROP TRIGGER t11_fail_move");
+    }
+    success(request("PUT", department(employeeUserId), root, Map.of("departmentId", childId)), 200);
+  }
+
+  /** 跨角色维护与人员停用入口也必须按同一个根锁保护同一完整K计数。 */
+  @Test
+  @DisplayName("T11 与T09并发变更不能同时清空两名完整维护者")
+  void t11SharesProtectionWithRoleMaintenance() throws Exception {
+    long backup = role("t11-backup", new ArrayList<>(permissionIds.values()), true);
+    jdbc.update("DELETE FROM user_roles WHERE user_id=?", root2UserId);
+    jdbc.update("INSERT INTO user_roles(user_id,role_id) VALUES(?,?)", root2UserId, backup);
+    long partial =
+        role(
+            "t11-partial-operator",
+            List.of(permissionIds.get("rbac.roles.write"), permissionIds.get("rbac.users.disable")),
+            true);
+    account("t11-partial-operator", rootId, List.of(partial));
+    String operator = token("t11-partial-operator");
+    List<Integer> statuses =
+        concurrently(
+            () -> request("PATCH", ROLES + "/" + backup, operator, Map.of("enabled", false)),
+            () -> request("PATCH", status(rootUserId), operator, Map.of("enabled", false)));
+    assertEquals(List.of(200, 409), statuses);
+    assertEquals(1, completeAdministrators());
+  }
+
+  /** 目标在请求等待共同根锁期间调出范围，写事务拿锁后必须读取新归属。 */
+  @Test
+  @DisplayName("T11 锁等待期间目标调出范围后拒绝旧请求")
+  void t11RechecksTargetScopeAfterLockWait() throws Exception {
+    String dept = token(DEPT);
+    CountDownLatch entered = new CountDownLatch(1);
+    observedLock.entered.set(entered);
+    AtomicReference<Future<ResponseEntity<String>>> future = new AtomicReference<>();
+    ExecutorService executor = Executors.newSingleThreadExecutor();
+    try {
+      new TransactionTemplate(transactions)
+          .executeWithoutResult(
+              transaction -> {
+                departments.lockById(rootId).orElseThrow();
+                future.set(
+                    executor.submit(
+                        () ->
+                            request(
+                                "PATCH", status(employeeUserId), dept, Map.of("enabled", false))));
+                try {
+                  assertTrue(entered.await(5, TimeUnit.SECONDS));
+                } catch (InterruptedException exception) {
+                  Thread.currentThread().interrupt();
+                  throw new IllegalStateException(exception);
+                }
+                jdbc.update(
+                    "UPDATE users SET department_id=? WHERE id=?", siblingId, employeeUserId);
+              });
+      assertError(future.get().get(15, TimeUnit.SECONDS), 403, "MANAGEMENT_SCOPE_DENIED");
+      assertTrue(
+          jdbc.queryForObject(
+              "SELECT enabled FROM users WHERE id=?", Boolean.class, employeeUserId));
+      assertEquals(
+          siblingId,
+          jdbc.queryForObject(
+              "SELECT department_id FROM users WHERE id=?", Long.class, employeeUserId));
+    } finally {
+      observedLock.entered.set(null);
+      executor.shutdownNow();
+    }
+  }
+
+  /** 为安全边界构造不同权限共享同路径的真实关联，不作为生产初始化。 */
+  private long permission(String code, boolean foreign) {
+    return new TransactionTemplate(transactions)
+        .execute(
+            transaction -> {
+              ApplicationSystem system =
+                  foreign
+                      ? systems.save(new ApplicationSystem(code, "测试外系统"))
+                      : systems.findAll().getFirst();
+              Permission permission = new Permission(system, code, code, Permission.Type.BUTTON);
+              if (foreign) permission.mapApi(apis.save(new ApiResource(system, "GET", USERS)));
+              else
+                permission.mapApi(
+                    apis.findAll().stream()
+                        .filter(
+                            api ->
+                                api.getHttpMethod().equals("GET")
+                                    && api.getPathTemplate().equals(USERS))
+                        .findFirst()
+                        .orElseThrow());
+              return permissions.save(permission).getId();
+            });
   }
 
   /** 同步发起两个真实HTTP请求，排序结果以消除线程调度顺序差异。 */
@@ -466,7 +810,8 @@ class CoreUserAdminT11Test {
   /** 完整K只统计共同根下启用且具备全部维护能力的用户。 */
   private long completeAdministrators() {
     return jdbc
-        .queryForList("SELECT id FROM users WHERE enabled=1 AND department_id=?", Long.class, rootId)
+        .queryForList(
+            "SELECT id FROM users WHERE enabled=1 AND department_id=?", Long.class, rootId)
         .stream()
         .filter(id -> effective.routes(id).containsAll(RbacCatalog.maintenanceRoutes()))
         .count();
@@ -519,14 +864,17 @@ class CoreUserAdminT11Test {
     return USERS + "/" + id + "/roles";
   }
 
+  /** 候选路径只携带目标人员ID，不提交前端范围。 */
   private String assignable(long id) {
     return USERS + "/" + id + "/assignable-roles";
   }
 
+  /** 停用使用人员状态资源，不提供恢复路由。 */
   private String status(long id) {
     return USERS + "/" + id + "/status";
   }
 
+  /** 调动使用单一部门归属替换接口。 */
   private String department(long id) {
     return USERS + "/" + id + "/department";
   }

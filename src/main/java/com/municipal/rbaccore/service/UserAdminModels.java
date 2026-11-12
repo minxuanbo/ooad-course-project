@@ -64,13 +64,6 @@ public interface UserAdminModels {
     private List<Long> ids;
   }
 
-  /** 本票仅接受停用指令，不提供恢复入口。 */
-  @Getter
-  @Setter
-  class DisableCommand {
-    private Boolean enabled;
-  }
-
   /** 调动目标部门为单一替换值。 */
   @Getter
   @Setter

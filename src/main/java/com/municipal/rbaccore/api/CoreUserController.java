@@ -100,8 +100,7 @@ public class CoreUserController {
       @RequestHeader(value = "Authorization", required = false) String header,
       @PathVariable @Positive @Max(CoreApiLimits.MAX_ID) Long id,
       @Valid @RequestBody UserStatusDTO dto) {
-    return userView(
-        admin.disable(header, id, CloneFactory.copy(new UserAdminModels.DisableCommand(), dto)));
+    return userView(admin.disable(header, id));
   }
 
   /** 单一部门整体替换，原/目标范围与保护条件在锁内重新校验。 */
