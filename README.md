@@ -1,43 +1,40 @@
 # 市政公司统一权限管理系统
 
-依据《2-9组检查记录》、补充检查图片及用户确认，整改“用户—角色—权限—API”授权链路和部门管理。
+面向组织人员、角色、菜单/按钮及API的统一授权管理。用户名即工号，手机号是同账号另一登录入口；实际有效授权决定操作，部门树决定人员管理范围。
 
-- [整改文档](docs/rbac-rectification/README.md)：检查依据、执行计划、Chen ER 图、契约和任务清单。
-- [小组协作](CONTRIBUTING.md)：认领任务、建立工作树、提交草稿 PR。
-- [旧实现资料](docs/legacy/README.md)：历史设计与实现，供差异核对。
+## 文档
 
-**用户名就是工号。** `username` 存工号，`phone` 用于同一账号的手机号登录，两种入口共用口令和授权。有效账号具备本系统实际管理权限才可登录，普通员工拒绝；管理请求逐次检查具体权限和部门范围。最小鉴权日志供有日志权限的全局维护者查询，部门管理员拒绝。字段与范围见[执行计划](docs/rbac-rectification/RBAC整改计划与Chen-ER图.md#login)。
+从[正式文档导航](docs/README.md)开始，按需求、领域模型、数据库、前后端设计、API及验收阅读。业务依据是老师检查说明、原始Excel和用户后续确认；老师示例项目用于文档组织与双实现架构参考。旧需求规格说明书不覆盖现行规则。
 
-已记录进度：T01/T02经PR #17/#18合入，T02的52项测试为历史证据；四组原型/API契约经PR #19合入，T04双入口登录补充见Issue #5。T03已完成单工号修正、组织人员和新项目账号初始化，112项测试通过、代理双轴审核均0项发现，交付[PR #21](https://github.com/minxuanbo/ooad-course-project/pull/21)；合入及关票证据见Issue #4。用户确认JaCoCo本次不作阻塞，原规则保留。T12后产品默认入口已切换为整改链路，离线导入方法见[计划4.5](docs/rbac-rectification/RBAC整改计划与Chen-ER图.md#45-t03离线导入与交接)。
+| 入口 | 内容 |
+| --- | --- |
+| [需求说明](docs/requirements.md) | 来源、初始化、五角色、双入口、实际授权、部门范围及项目边界 |
+| [后端设计](docs/backend-design.md) / [前端设计](docs/frontend-design.md) | 当前结构化基线、完整前端目标及同仓库双实现方案 |
+| [API入口](api/README.md) | 正式契约、页面/用例对照与原型 |
+| [测试与验收](docs/testing-acceptance.md) | 阶段状态、验收矩阵、隔离与证据要求 |
+| [部署说明](deploy/README.md) | 构建、秘密配置、离线初始化、默认jar及部署边界 |
+| [协作规范](CONTRIBUTING.md) | 分支、工作树、评审与Issue维护 |
 
-T09角色定义与权限配置已在独立分支实现并完成本地验证：五项真实接口、即时撤权及恢复、最后管理员与并发保护。完整回归166项失败/错误/跳过均0，打包及JAR实测通过；[验证记录与复现](docs/rbac-rectification/RBAC整改计划与Chen-ER图.md#t09-validation)区分本地验证和待完成的小组评审。
+## 工程状态
 
-正式接口依赖对应原型/API 契约评审。REST、读写声明式事务、CloneFactory 和跨部门调动按票实现与验收；正式前端暂缓，课程受控场景由 T14/T15 后续落实。
+共同整改分支为refactor/rbac-core-backend，main仍保留历史工程。T12已合入a79b668，当前生产后端使用整改JPA链路，代码位于src/main/java/com/municipal/rbaccore。当前只有结构化业务实现，尚未分成structured/ddd包，尚无策略切换；DDD属于目标设计。
 
-## 工程与运行
+前端Vue/Vite位于frontend，生产页面目前为登录、最小日志兼容与登录成功外壳；完整人员、角色、资源交互见正式前端设计及[已评审原型](docs/rbac-rectification/prototype/index.html)。原型为内存模拟，不作为真实界面/后端验收。课程受控系统与双业务系统演示尚未完成。
 
-T12的[PR #26](https://github.com/minxuanbo/ooad-course-project/pull/26)已完成复核补修：旧链路收敛、默认入口切换，真实MySQL回归142项、前端6项及生产构建通过；干净万人初始化、五角色授权、两轮默认JAR及重复初始化保留调整均已验证。Standards、Spec最终剩余各0，详细证据及Docker/Swarm未实测边界见[计划4.10](docs/rbac-rectification/RBAC整改计划与Chen-ER图.md#410-t12-收掉旧模型与旧功能并切换到整改数据链路)。
+本次工作顺序是文档整理→T13当前后端验收→停止，不启动DDD编码、T14/T15或其他后续任务。阶段结果见[验收说明](docs/testing-acceptance.md)，历史整改与PR证据保留在[整改记录](docs/rbac-rectification/README.md)。
 
-后端为 Java 21、Spring Boot、MySQL，持久化统一为 JPA；前端为 Vue/Vite，仅保留登录与鉴权日志查询兼容入口。代码在 src/ 和 frontend/，运行配置见 src/main/resources/application-core-runtime.yml，默认入口为 `com.municipal.rbaccore.runtime.CoreRuntimeCommand`。
+## 运行
 
-根目录三份 Excel 与老师原件的 SHA-256 一致：10,000 人、111 个组织来源节点。“用户名”提供工号，“电话号码”提供手机号；按用户确认将公司领导并入总公司，目标110部门，员工全部启用，另建独立admin。员工和管理员初始口令分别由部署配置提供，不复用旧哈希/状态/授权；首次五角色批量授权沿已确认规则，详见[计划4.4—4.6](docs/rbac-rectification/RBAC整改计划与Chen-ER图.md)。原件和旧库保留，运行使用独立整改库。
-
-设置 RBAC_CORE_DB_URL、RBAC_CORE_DB_USER、RBAC_CORE_DB_PASSWORD 后，在仓库根目录启动整改后端：
+后端采用Java21、Boot3.5.6、Spring Data JPA、MySQL8.4、AOP及老师真实CloneFactory。新环境先按[部署说明](deploy/README.md)准备老师固定源码依赖、显式整改库和账号，执行离线导入、只读预览及实际五角色授权；设置RBAC_CORE_DB_URL、RBAC_CORE_DB_USER、RBAC_CORE_DB_PASSWORD后运行：
 
 ```bash
 mvn spring-boot:run
 ```
 
-组织/人员/账号初始化与五角色首次授权使用离线命令（T03 导入、CoreBootstrapCommand），见[计划 4.5—4.6](docs/rbac-rectification/RBAC整改计划与Chen-ER图.md)；后端启动不建表、不导入。
+打包后默认java -jar target/rbac0-0.1.0.jar即整改HTTP入口。应用启动不建表、不导入、不重授角色，不能指向旧业务库。
 
-另开终端启动现有前端：
+现有前端在frontend目录执行npm ci、npm run dev，默认localhost:5173代理/api到后端8081；npm test及npm run build检查前端。原型可直接打开HTML。
 
-```bash
-cd frontend
-npm ci
-npm run dev
-```
+三份原始Excel保留：10000人员、111组织来源，目标合并为110部门、独立admin后10001账号；新项目不复用旧ID/口令/状态/授权。口令由部署秘密配置提供，不在文档给出默认明文。
 
-前端默认在 http://localhost:5173，代理 /api 到后端 8081。保留页面仅为登录与日志查询兼容；完整新前端暂缓，整改接口以新契约为准。
-
-测试与部署方法见[现场测试](deploy/现场运行JaCoCo.md)和[部署说明](deploy/README.md)。生成报告、构建缓存和本地小组资料留在 Git 之外。
+测试使用与profile对应的本机隔离MySQL专库；功能回归与JaCoCo分别报告，用户确认本轮覆盖率不阻塞，配置保留。不要提交生成报告、CSV、数据库或凭据。
