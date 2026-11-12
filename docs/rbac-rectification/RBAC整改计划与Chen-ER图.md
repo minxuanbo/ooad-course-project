@@ -526,7 +526,7 @@ mvn -DskipTests package
 | 打包 | 2026-11-11 Java 21.0.12、MySQL 8.4.8环境，Spring Boot package成功；使用现有T09专库启动打包后的CoreRuntimeCommand |
 | JAR实际HTTP | 五项角色操作、中文名称与CloneFactory响应正确；撤空角色权限后旧令牌请求403、再次登录403；恢复后同一令牌请求200；最后管理员角色停用409且仍能访问。验证后恢复测试账号授权并关闭本次服务进程 |
 
-本次单代理对照契约和源码复核，未发现需修复的阻塞项；未将前序票的双轴代理审阅结论算作本票独立审阅。本票按协作流程提交草稿PR，等待小组评审合并，Issue完成状态以GitHub为准。JaCoCo沿此前用户确认不作本次阻塞，原门槛保留，test/package通过不代表verify全覆盖或后续集成验收。
+本次单代理对照契约和源码复核，未发现需修复的阻塞项；未将前序票的双轴代理审阅结论算作本票独立审阅。本票已随[PR #24](https://github.com/minxuanbo/ooad-course-project/pull/24)合入共同分支，合并提交`4e2b2a1b42ea9b842702a29173af3bd701c0a1d5`，Issue #10已完成。2026-11-12复核任务分支全部提交已在共同基线，T11修复的190项组合回归亦通过，按用户授权清理完成分支。JaCoCo沿此前用户确认不作本次阻塞，原门槛保留，test/package通过不代表verify全覆盖或后续集成验收。
 
 
 ### 4.9 T11 人员维护与 PR #25 复核
@@ -552,7 +552,7 @@ mvn clean test-compile test '-DtestJvmArgs=-Xmx512m -Duser.timezone=UTC'
 mvn -DskipTests package
 ```
 
-CloneFactory和实际整改启动入口沿4.6；本票不增加初始化入口，不改T05五角色首次清单，不迁移旧授权、不增加人员创建/恢复/删除或课程接口。JaCoCo按用户既有要求不作本次阻塞，原门槛保留，不宣称verify全覆盖。PR保留待小组合入状态，Issue #12的最终完成状态由合入证据维护。
+CloneFactory和实际整改启动入口沿4.6；本票不增加初始化入口，不改T05五角色首次清单，不迁移旧授权、不增加人员创建/恢复/删除或课程接口。JaCoCo按用户既有要求不作本次阻塞，原门槛保留，不宣称verify全覆盖。2026-11-12用户确认修复无剩余问题后合入并清理完成分支，据此完成验收勾选与Issue状态维护；实际合入提交及关票证据见PR #25与Issue #12。
 
 ## 5. 组员讨论与验证清单
 

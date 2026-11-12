@@ -21,7 +21,7 @@ GitHub Issues #2—#16 共 15 票：当前范围 13 票、课程后续 2 票，2
 - **T05已取得前置基线**：包含T03 PR #21和T04修订的70c3bef，独立分支`codex/t05-management-loop`实现及两轴代理复核通过，完整回归128项失败/错误/跳过均0，打包/入口验证通过；初审2项修复后剩余0项。JaCoCo本票不阻塞，合入及关票以GitHub为准；五角色规则、RBAC/业务后台边界及复现见[计划4.6](RBAC整改计划与Chen-ER图.md#46-t05-五角色首次授权与实际管理链路)。T07/T09/T11 分别依赖 T05 及对应 T06/T08/T10 契约。开工时获取最新共同基线。
 - **T07实现及代理复核通过**：用户指示继续，本票前置T05 [PR #22](https://github.com/minxuanbo/ooad-course-project/pull/22)已合入、Issue #6已完成，T06契约亦已合入。从`8afac13`建立独立分支`codex/t07-resource-mapping`，实现7项必要资源操作，范围/事务及复现见[计划4.7](RBAC整改计划与Chen-ER图.md#47-t07-本系统资源目录与映射维护)。最终完整回归144项失败/错误/跳过均0，打包/实际入口验证通过；Spec初审2项P2修复后两轴剩余均0。合入/关票以Issue #8及PR为准，JaCoCo按用户要求本次不作阻塞。
 - **T09已合入**：工作树`D:\Codex\outputs\ooad-t09`，分支`codex/t09-role-permissions-local`，基线为T07合并提交`322e334`。五项角色接口、即时授权变化、回滚、与T07共用锁的并发保护已验证；完整回归166项失败/错误/跳过均0，打包/JAR实际HTTP通过。证据和复现见[计划4.8](RBAC整改计划与Chen-ER图.md#t09-validation)。已随[PR #24](https://github.com/minxuanbo/ooad-course-project/pull/24)合入共同基线`4e2b2a1`，实时状态见[Issue #10](https://github.com/minxuanbo/ooad-course-project/issues/10)。
-- **T11 PR复核及补修通过**：组员提交[PR #25](https://github.com/minxuanbo/ooad-course-project/pull/25)，按用户要求以两个skill审核并追加`cce0156`修复。原PR 11项补跑通过，新增5类行为回归复现后修复；最终190项全量失败/错误/跳过均0，打包/真实HTTP通过，Standards与Spec复核剩余各0。实现、修复及复现见[计划4.9](RBAC整改计划与Chen-ER图.md#49-t11-人员维护与-pr-25-复核)，PR仍待小组合入，不把代理验证当作关票。
+- **T11 PR复核及补修通过**：组员提交[PR #25](https://github.com/minxuanbo/ooad-course-project/pull/25)，按用户要求以两个skill审核并追加`cce0156`修复。原PR 11项补跑通过，新增5类行为回归复现后修复；最终190项全量失败/错误/跳过均0，打包/真实HTTP通过，Standards与Spec复核剩余各0。实现、修复及复现见[计划4.9](RBAC整改计划与Chen-ER图.md#49-t11-人员维护与-pr-25-复核)，2026-11-12用户已确认合入修复及清理完成分支，实际合入/关票记录见PR #25与Issue #12。
 - **T14/T15 待小组确认启动**：课程受控场景与双系统授权演示仍待落实。
 
 ## 四组原型与契约的查看方法
