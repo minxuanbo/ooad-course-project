@@ -159,13 +159,11 @@ abstract class R13RoleContractSupport {
               systemId = system.getId();
               PermissionEntity menu =
                   permissions.save(
-                      /** 创建带必要归属和稳定编码的持久化记录，输入缺失时拒绝。 */
                       new PermissionEntity(system, "rbac.workspace", "父菜单", PermissionType.MENU));
               permissionIds.put("rbac.workspace", menu.getId());
               for (Map.Entry<String, List<RbacCatalog.Route>> entry :
                   RbacCatalog.definitions().entrySet()) {
                 PermissionEntity permission =
-                    /** 创建带必要归属和稳定编码的持久化记录，输入缺失时拒绝。 */
                     new PermissionEntity(
                         system, entry.getKey(), entry.getKey(), PermissionType.BUTTON);
                 permission.moveTo(menu);
@@ -190,7 +188,6 @@ abstract class R13RoleContractSupport {
   void R13_RoleLifecycle() throws Exception {
     String admin = token("t09-admin");
     JsonNode created =
-        /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
         success(request("POST", ROLES, admin, Map.of("code", " new-role ", "name", " 新角色 ")), 201);
     long id = created.get("id").asLong();
     assertEquals("new-role", created.get("code").asText());
@@ -202,18 +199,18 @@ abstract class R13RoleContractSupport {
     assertEquals("更名", renamed.get("name").asText());
     assertTrue(renamed.get("enabled").asBoolean());
     assertEquals("new-role", renamed.get("code").asText());
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("PATCH", role(id), admin, Map.of("enabled", false)), 200);
     List<Long> ids =
         List.of(permissionIds.get("rbac.logs.read"), permissionIds.get("rbac.users.read"));
     JsonNode saved = success(request("PUT", selected(id), admin, Map.of("ids", ids)), 200);
     assertEquals(id, saved.get("roleId").asLong());
     assertEquals(ids.stream().sorted().toList(), savedIds(id));
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("PUT", selected(id), admin, Map.of("ids", ids)), 200);
     assertEquals(2, savedIds(id).size());
     assertEquals(saved, success(request("GET", selected(id), admin, null), 200));
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("PUT", selected(id), admin, Map.of("ids", List.of())), 200);
     assertTrue(savedIds(id).isEmpty());
   }
@@ -225,7 +222,7 @@ abstract class R13RoleContractSupport {
     String admin = token("t09-admin");
     for (String code : List.of("Alpha_1", "alpha%2", "Beta")) create(admin, code, "显示" + code);
     long disabled = jdbc.queryForObject("SELECT id FROM roles WHERE code='Alpha_1'", Long.class);
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("PATCH", role(disabled), admin, Map.of("enabled", false)), 200);
     JsonNode first = success(request("GET", ROLES + "?q=ALPHA&size=1", admin, null), 200);
     JsonNode next = success(request("GET", ROLES + "?q=ALPHA&size=1&page=1", admin, null), 200);
@@ -235,18 +232,15 @@ abstract class R13RoleContractSupport {
         first.get("items").get(0).get("id").asLong() < next.get("items").get(0).get("id").asLong());
     assertEquals(
         1,
-        /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
         success(request("GET", ROLES + "?q=alpha&enabled=false", admin, null), 200)
             .get("total")
             .asInt());
     for (String q : List.of("%25", "_")) {
       assertEquals(
-          /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
           1, success(request("GET", ROLES + "?q=" + q, admin, null), 200).get("total").asInt());
     }
     assertEquals(
         2,
-        /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
         success(
                 request(
                     "GET",
@@ -257,12 +251,10 @@ abstract class R13RoleContractSupport {
             .get("total")
             .asInt());
     JsonNode beyond =
-        /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
         success(request("GET", ROLES + "?page=2147483647&size=100", admin, null), 200);
     assertEquals(4, beyond.get("total").asInt());
     assertEquals(0, beyond.get("items").size());
     assertEquals(
-        /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
         0, success(request("GET", ROLES + "?q=absent", admin, null), 200).get("total").asInt());
   }
 
@@ -384,7 +376,6 @@ abstract class R13RoleContractSupport {
         400,
         "INVALID_ARGUMENT");
     JsonNode created =
-        /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
         success(
             request(
                 "POST",
@@ -395,12 +386,10 @@ abstract class R13RoleContractSupport {
     assertEquals("unicode-role", created.get("code").asText());
     assertEquals("旧名称", created.get("name").asText());
     JsonNode renamed =
-        /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
         success(request("PATCH", role(target), admin, Map.of("name", "\u3000新名称\u00a0")), 200);
     assertEquals("新名称", renamed.get("name").asText());
     assertEquals(
         1,
-        /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
         success(request("GET", ROLES + "?q=%E3%80%80unicode-role%C2%A0", admin, null), 200)
             .get("total")
             .asInt());
@@ -473,7 +462,7 @@ abstract class R13RoleContractSupport {
       assertError(request("PUT", selected(target), admin, body), 400, "INVALID_ARGUMENT");
       assertEquals(List.of(userRead, retired).stream().sorted().toList(), savedIds(target));
     }
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("PUT", selected(target), admin, Map.of("ids", List.of(userRead))), 200);
     assertEquals(List.of(userRead), savedIds(target));
   }
@@ -490,7 +479,6 @@ abstract class R13RoleContractSupport {
                       systems.save(new ApplicationSystemEntity("other", "外系统测试夹具"));
                   return permissions
                       .save(
-                          /** 创建带必要归属和稳定编码的持久化记录，输入缺失时拒绝。 */
                           new PermissionEntity(system, "other.read", "外系统权限", PermissionType.MENU))
                       .getId();
                 });
@@ -518,12 +506,12 @@ abstract class R13RoleContractSupport {
     long target = account("t09-employee", childId, List.of());
     assertError(login("t09-employee"), 403, "MANAGEMENT_ACCESS_DENIED");
     long userRead = permissionIds.get("rbac.users.read");
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("PUT", selected(target), admin, Map.of("ids", List.of(userRead))), 200);
     String employee = token("t09-employee");
     assertEquals(200, request("GET", USERS, employee, null).getStatusCode().value());
     assertError(request("GET", LOGS, employee, null), 403, "PERMISSION_DENIED");
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(
         request(
             "PUT",
@@ -532,12 +520,12 @@ abstract class R13RoleContractSupport {
             Map.of("ids", List.of(userRead, permissionIds.get("rbac.logs.read")))),
         200);
     assertError(request("GET", LOGS, employee, null), 403, "MANAGEMENT_SCOPE_DENIED");
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("PUT", selected(target), admin, Map.of("ids", List.of())), 200);
     assertError(request("GET", USERS, employee, null), 403, "PERMISSION_DENIED");
     assertError(login("t09-employee"), 403, "MANAGEMENT_ACCESS_DENIED");
     assertEquals(200, request("GET", USERS, admin, null).getStatusCode().value());
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(
         request(
             "PUT",
@@ -555,11 +543,11 @@ abstract class R13RoleContractSupport {
     String admin = token("t09-admin");
     long target = account("t09-switch", rootId, List.of(permissionIds.get("rbac.users.read")));
     String member = token("t09-switch");
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("PATCH", role(target), admin, Map.of("enabled", false)), 200);
     assertError(request("GET", USERS, member, null), 403, "PERMISSION_DENIED");
     assertError(login("t09-switch"), 403, "MANAGEMENT_ACCESS_DENIED");
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(
         request(
             "PUT",
@@ -568,7 +556,7 @@ abstract class R13RoleContractSupport {
             Map.of("ids", List.of(permissionIds.get("rbac.logs.read")))),
         200);
     assertError(login("t09-switch"), 403, "MANAGEMENT_ACCESS_DENIED");
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("PATCH", role(target), admin, Map.of("enabled", true)), 200);
     assertEquals(200, request("GET", LOGS, member, null).getStatusCode().value());
     assertError(request("GET", USERS, member, null), 403, "PERMISSION_DENIED");
@@ -596,7 +584,7 @@ abstract class R13RoleContractSupport {
         409,
         "LAST_ADMIN_REQUIRED");
     assertEquals(original, savedIds(adminRoleId));
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("PATCH", role(adminRoleId), admin, Map.of("name", "普通名字不影响授权")), 200);
     assertEquals(200, request("GET", ROLES, admin, null).getStatusCode().value());
   }
@@ -646,7 +634,7 @@ abstract class R13RoleContractSupport {
             ROLES,
             token("t09-admin"),
             Map.of("code", "audit-created", "name", "只存角色不存请求体"));
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(response, 201);
     String requestId = response.getHeaders().getFirst("X-Request-Id");
     assertEquals(
@@ -697,7 +685,7 @@ abstract class R13RoleContractSupport {
                   users.findById(userId).orElseThrow().assignRole(second);
                   return second.getId();
                 });
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("PATCH", role(adminRoleId), admin, Map.of("name", "多角色完整维护者")), 200);
     assertError(
         request("PUT", selected(split), admin, Map.of("ids", List.of())),
@@ -713,9 +701,9 @@ abstract class R13RoleContractSupport {
     long alternative = alternativePermission("t09-alternative-read", "rbac.roles.read");
     account("t09-api-reader", rootId, List.of(alternative));
     String reader = token("t09-api-reader");
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("GET", ROLES, reader, null), 200);
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("GET", selected(adminRoleId), reader, null), 200);
     assertError(
         request("POST", ROLES, reader, Map.of("code", "x", "name", "x")), 403, "PERMISSION_DENIED");
@@ -724,9 +712,9 @@ abstract class R13RoleContractSupport {
     List<Long> replacement = new ArrayList<>(original);
     replacement.remove(permissionIds.get("rbac.roles.read"));
     replacement.add(alternative);
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("PUT", selected(adminRoleId), admin, Map.of("ids", replacement)), 200);
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("GET", ROLES, admin, null), 200);
   }
 
@@ -741,7 +729,7 @@ abstract class R13RoleContractSupport {
             api -> "GET".equals(api.getHttpMethod()) && ROLES.equals(api.getPathTemplate()));
     account("t09-list-reader", rootId, List.of(listOnly));
     String reader = token("t09-list-reader");
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("GET", ROLES, reader, null), 200);
     assertError(request("GET", selected(adminRoleId), reader, null), 403, "PERMISSION_DENIED");
   }
@@ -766,7 +754,7 @@ abstract class R13RoleContractSupport {
                   return role.getId();
                 });
     String member = token("t09-multi");
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(
         request(
             "PUT",
@@ -774,7 +762,7 @@ abstract class R13RoleContractSupport {
             admin,
             Map.of("ids", List.of(permissionIds.get("rbac.workspace")))),
         200);
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(
         request(
             "PATCH",
@@ -782,9 +770,9 @@ abstract class R13RoleContractSupport {
             admin,
             Map.of("enabled", false)),
         200);
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("GET", USERS, member, null), 200);
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("PATCH", role(second), admin, Map.of("enabled", false)), 200);
     assertError(request("GET", USERS, member, null), 403, "PERMISSION_DENIED");
     assertError(login("t09-multi"), 403, "MANAGEMENT_ACCESS_DENIED");
@@ -842,7 +830,7 @@ abstract class R13RoleContractSupport {
     } finally {
       jdbc.execute("DROP TRIGGER t09_fail_role");
     }
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("PUT", selected(target), admin, Map.of("ids", List.of(nextPermission))), 200);
     assertEquals(List.of(nextPermission), savedIds(target));
   }
@@ -968,7 +956,6 @@ abstract class R13RoleContractSupport {
               PermissionEntity source =
                   permissions.findById(permissionIds.get(sourceCode)).orElseThrow();
               PermissionEntity alternative =
-                  /** 创建带必要归属和稳定编码的持久化记录，输入缺失时拒绝。 */
                   new PermissionEntity(
                       systems.findById(systemId).orElseThrow(), code, code, PermissionType.BUTTON);
               source.getApis().stream().filter(allowed).forEach(alternative::mapApi);
@@ -1055,7 +1042,7 @@ abstract class R13RoleContractSupport {
 
   /** 创建必须经HTTP并验证201状态，不能在测试中替代待验收行为。 */
   private long create(String token, String code, String name) throws Exception {
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     return success(request("POST", ROLES, token, Map.of("code", code, "name", name)), 201)
         .get("id")
         .asLong();

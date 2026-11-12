@@ -1,6 +1,5 @@
 package com.municipal.rbaccore.infrastructure.persistence.entity;
 
-
 import jakarta.persistence.*;
 import org.springframework.util.Assert;
 

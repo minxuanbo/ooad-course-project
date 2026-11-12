@@ -31,7 +31,7 @@ public class ImportConfiguration {
   /** 在数据源实例化前检查明确的整改库和初始化隔离配置。 */
   @Bean
   public static BeanFactoryPostProcessor databaseGuard(Environment environment) {
-    /** 仅允许本机明确的模型专库，防止create-drop落到其他库。 */
+
     requireIsolatedDatabase(
         environment.getProperty("spring.datasource.url"),
         environment.getProperty("spring.sql.init.mode"),

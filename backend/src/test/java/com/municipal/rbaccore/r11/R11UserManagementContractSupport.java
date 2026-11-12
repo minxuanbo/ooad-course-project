@@ -150,7 +150,6 @@ abstract class R11UserManagementContractSupport {
               for (Map.Entry<String, List<RbacCatalog.Route>> entry :
                   RbacCatalog.definitions().entrySet()) {
                 PermissionEntity permission =
-                    /** 创建带必要归属和稳定编码的持久化记录，输入缺失时拒绝。 */
                     new PermissionEntity(
                         system, entry.getKey(), entry.getKey(), PermissionType.BUTTON);
                 for (RbacCatalog.Route route : entry.getValue()) {
@@ -210,7 +209,7 @@ abstract class R11UserManagementContractSupport {
     assertEquals(grandchildId, empty.get("user").get("departmentId").asLong());
     assertTrue(empty.get("user").get("enabled").asBoolean());
     assertEquals(0, empty.get("roles").size());
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(
         request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(fullRoleId))), 200);
     JsonNode assigned = success(request("GET", userRoles(employeeUserId), dept, null), 200);
@@ -241,7 +240,6 @@ abstract class R11UserManagementContractSupport {
     role("t11-disabled-hr", List.of(permissionIds.get("rbac.users.read")), false);
     String dept = token(DEPT);
     JsonNode page =
-        /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
         success(request("GET", assignable(employeeUserId) + "?size=100", dept, null), 200);
     List<String> codes = new ArrayList<>();
     page.get("items").forEach(item -> codes.add(item.get("code").asText()));
@@ -255,25 +253,21 @@ abstract class R11UserManagementContractSupport {
     page.get("items").forEach(item -> assertTrue(item.get("enabled").asBoolean()));
 
     JsonNode searched =
-        /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
         success(request("GET", assignable(employeeUserId) + "?q=PERSON", dept, null), 200);
     assertEquals(1, searched.get("total").asInt());
     assertEquals("t11-personnel", searched.get("items").get(0).get("code").asText());
     assertEquals(
         0,
-        /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
         success(request("GET", assignable(employeeUserId) + "?q=absent", dept, null), 200)
             .get("total")
             .asInt());
     JsonNode paged =
-        /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
         success(request("GET", assignable(employeeUserId) + "?size=1&page=0", dept, null), 200);
     assertEquals(1, paged.get("items").size());
     assertEquals(searched.get("total").asInt(), paged.get("total").asInt());
 
     String root = token(ROOT);
     JsonNode rootCandidates =
-        /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
         success(request("GET", assignable(employeeUserId) + "?size=100", root, null), 200);
     assertTrue(rootCandidates.get("total").asInt() >= 5);
     assertError(
@@ -286,7 +280,6 @@ abstract class R11UserManagementContractSupport {
   void R11_ReplacesRolesAtomically() throws Exception {
     String root = token(ROOT);
     JsonNode assigned =
-        /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
         success(
             request(
                 "PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(personnelRoleId))),
@@ -294,20 +287,20 @@ abstract class R11UserManagementContractSupport {
     assertEquals(List.of(personnelRoleId), longs(assigned.get("roleIds")));
     assertTrue(assigned.get("enabled").asBoolean());
     assertEquals(6, assigned.size());
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(
         request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(personnelRoleId))),
         200);
     assertEquals(List.of(personnelRoleId), savedRoleIds(employeeUserId));
 
     long logs = role("t11-logs", List.of(permissionIds.get("rbac.logs.read")), true);
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(
         request(
             "PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(logs, personnelRoleId))),
         200);
     assertEquals(List.of(personnelRoleId, logs), savedRoleIds(employeeUserId));
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of())), 200);
     assertTrue(savedRoleIds(employeeUserId).isEmpty());
 
@@ -338,7 +331,7 @@ abstract class R11UserManagementContractSupport {
         request("PUT", userRoles(employeeUserId), dept, Map.of("ids", List.of(fullRoleId))),
         403,
         "MANAGEMENT_SCOPE_DENIED");
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(
         request("PUT", userRoles(employeeUserId), dept, Map.of("ids", List.of(personnelRoleId))),
         200);
@@ -355,14 +348,14 @@ abstract class R11UserManagementContractSupport {
   @DisplayName("R11/R12/R15 撤权即时影响后续请求与再次登录")
   void R11_RevocationAffectsRequestsAndLogin() throws Exception {
     String root = token(ROOT);
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(
         request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(personnelRoleId))),
         200);
     String employee = token(EMPLOYEE);
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("GET", USERS, employee, null), 200);
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of())), 200);
     assertError(request("GET", USERS, employee, null), 403, "PERMISSION_DENIED");
     assertError(login(EMPLOYEE), 403, "MANAGEMENT_ACCESS_DENIED");
@@ -376,13 +369,12 @@ abstract class R11UserManagementContractSupport {
   @DisplayName("R11/R12/R15 停用保留关联并使会话与登录失效")
   void R11_DisableEndsSessionAndLogin() throws Exception {
     String root = token(ROOT);
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(
         request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(personnelRoleId))),
         200);
     String employee = token(EMPLOYEE);
     JsonNode disabled =
-        /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
         success(request("PATCH", status(employeeUserId), root, Map.of("enabled", false)), 200);
     assertFalse(disabled.get("enabled").asBoolean());
     assertEquals(grandchildId, disabled.get("departmentId").asLong());
@@ -395,7 +387,6 @@ abstract class R11UserManagementContractSupport {
         400,
         "INVALID_ARGUMENT");
     JsonNode repeated =
-        /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
         success(request("PATCH", status(employeeUserId), root, Map.of("enabled", false)), 200);
     assertFalse(repeated.get("enabled").asBoolean());
     assertEquals(List.of(personnelRoleId), savedRoleIds(employeeUserId));
@@ -404,7 +395,7 @@ abstract class R11UserManagementContractSupport {
         jdbc.queryForObject(
             "SELECT department_id FROM users WHERE id=?", Long.class, employeeUserId));
     String dept = token(DEPT);
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("PATCH", status(deptUserId), dept, Map.of("enabled", false)), 200);
     assertError(request("GET", USERS, dept, null), 401, "SESSION_INVALID");
     assertError(login(DEPT), 401, "LOGIN_FAILED");
@@ -416,20 +407,19 @@ abstract class R11UserManagementContractSupport {
   void R11_MovesWithinDoubleScope() throws Exception {
     String root = token(ROOT);
     String dept = token(DEPT);
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(
         request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(personnelRoleId))),
         200);
     String employee = token(EMPLOYEE);
     assertEquals(1, success(request("GET", USERS, employee, null), 200).get("total").asInt());
     JsonNode moved =
-        /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
         success(
             request("PUT", department(employeeUserId), dept, Map.of("departmentId", childId)), 200);
     assertEquals(childId, moved.get("departmentId").asLong());
     assertEquals(List.of(personnelRoleId), longs(moved.get("roleIds")));
     assertEquals(3, success(request("GET", USERS, employee, null), 200).get("total").asInt());
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(
         request("PUT", department(employeeUserId), dept, Map.of("departmentId", grandchildId)),
         200);
@@ -493,7 +483,7 @@ abstract class R11UserManagementContractSupport {
 
     // 共同根可以修改自己，且第二名完整管理者存在时允许撤权。
     String root = token(ROOT);
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("PUT", userRoles(rootUserId), root, Map.of("ids", List.of())), 200);
     assertEquals(1, completeAdministrators());
   }
@@ -524,7 +514,7 @@ abstract class R11UserManagementContractSupport {
 
     jdbc.update("INSERT INTO user_roles(user_id,role_id) VALUES(?,?)", root2UserId, fullRoleId);
     assertEquals(2, completeAdministrators());
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("PUT", userRoles(rootUserId), root, Map.of("ids", List.of())), 200);
     assertEquals(1, completeAdministrators());
   }
@@ -553,7 +543,6 @@ abstract class R11UserManagementContractSupport {
     long aliasRole = role("t11-alias-role", List.of(alias), true);
     String dept = token(DEPT);
     JsonNode page =
-        /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
         success(request("GET", assignable(employeeUserId) + "?size=100", dept, null), 200);
     for (JsonNode item : page.get("items")) assertNotEquals(aliasRole, item.get("id").asLong());
     assertError(
@@ -564,13 +553,12 @@ abstract class R11UserManagementContractSupport {
     long stale = role("t11-stale-candidate", List.of(permissionIds.get("rbac.users.read")), true);
     assertEquals(
         1,
-        /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
         success(
                 request("GET", assignable(employeeUserId) + "?q=t11-stale-candidate", dept, null),
                 200)
             .get("total")
             .asInt());
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(
         request(
             "PUT",
@@ -580,7 +568,6 @@ abstract class R11UserManagementContractSupport {
         200);
     assertEquals(
         0,
-        /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
         success(
                 request("GET", assignable(employeeUserId) + "?q=t11-stale-candidate", dept, null),
                 200)
@@ -603,7 +590,6 @@ abstract class R11UserManagementContractSupport {
         role("t11-mixed-role", List.of(foreign, permissionIds.get("rbac.users.read")), true);
     String root = token(ROOT);
     JsonNode page =
-        /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
         success(request("GET", assignable(employeeUserId) + "?size=100", root, null), 200);
     for (JsonNode item : page.get("items")) {
       assertNotEquals(foreignRole, item.get("id").asLong());
@@ -623,11 +609,11 @@ abstract class R11UserManagementContractSupport {
   @DisplayName("R11/R12/R15 非根完整K人员仍可按正常范围规则撤权停用与调动")
   void R11_DoesNotTreatNonRootKUserAsGlobalAdministrator() throws Exception {
     String dept = token(DEPT);
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("PUT", userRoles(childAdminUserId), dept, Map.of("ids", List.of())), 200);
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("PATCH", status(childAdminUserId), dept, Map.of("enabled", false)), 200);
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(
         request("PUT", department(childAdminUserId), dept, Map.of("departmentId", grandchildId)),
         200);
@@ -665,7 +651,6 @@ abstract class R11UserManagementContractSupport {
     SessionFactory factory = entityManagerFactory.unwrap(SessionFactory.class);
     factory.getStatistics().clear();
     JsonNode page =
-        /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
         success(request("GET", assignable(employeeUserId) + "?size=2", dept, null), 200);
     assertEquals(51, page.get("total").asLong());
     assertEquals(2, page.get("items").size());
@@ -680,7 +665,7 @@ abstract class R11UserManagementContractSupport {
   void R11_RollsBackStorageFailures() throws Exception {
     String root = token(ROOT);
     long previousRole = role("t11-previous", List.of(permissionIds.get("rbac.users.read")), true);
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(
         request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(previousRole))), 200);
     jdbc.execute(
@@ -720,7 +705,7 @@ abstract class R11UserManagementContractSupport {
     } finally {
       jdbc.execute("DROP TRIGGER t11_fail_move");
     }
-    /** 包装安全业务结果并保留调用方提供的请求追踪号。 */
+
     success(request("PUT", department(employeeUserId), root, Map.of("departmentId", childId)), 200);
   }
 
@@ -798,7 +783,6 @@ abstract class R11UserManagementContractSupport {
                       ? systems.save(new ApplicationSystemEntity(code, "测试外系统"))
                       : systems.findAll().getFirst();
               PermissionEntity permission =
-                  /** 创建带必要归属和稳定编码的持久化记录，输入缺失时拒绝。 */
                   new PermissionEntity(system, code, code, PermissionType.BUTTON);
               if (foreign)
                 permission.mapApi(apis.save(new ApiResourceEntity(system, "GET", USERS)));

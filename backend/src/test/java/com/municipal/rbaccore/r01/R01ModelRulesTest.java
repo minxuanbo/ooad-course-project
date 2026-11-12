@@ -19,14 +19,14 @@ class R01ModelRulesTest {
 
   /** 构造本测试系统中的权限夹具，不生成额外授权。 */
   private PermissionEntity permission(String code, PermissionType type) {
-    /** 创建带必要归属和稳定编码的持久化记录，输入缺失时拒绝。 */
+
     return new PermissionEntity(system, code, code, type);
   }
 
   /** 部门自指和循环在修改父级前拒绝，原树保持完整。 */
   @Test
   @org.junit.jupiter.api.DisplayName("R01/R02/R09/R14 部门自指和循环在修改父级前拒绝，原树保持完整。")
-  void departmentTreesRejectSelfAndCyclesBeforeChangingParent() {
+  void R01_departmentTreesRejectSelfAndCyclesBeforeChangingParent() {
     DepartmentEntity root = new DepartmentEntity("root", "根");
     DepartmentEntity child = new DepartmentEntity("child", "子");
     DepartmentEntity leaf = new DepartmentEntity("leaf", "叶");
@@ -44,7 +44,7 @@ class R01ModelRulesTest {
   /** 权限自指、循环和跨系统父级拒绝后，原关联不得丢失。 */
   @Test
   @org.junit.jupiter.api.DisplayName("R01/R02/R09/R14 权限自指、循环和跨系统父级拒绝后，原关联不得丢失。")
-  void permissionTreesRejectSelfCyclesAndCrossSystemParentsWithoutUnlinking() {
+  void R01_permissionTreesRejectSelfCyclesAndCrossSystemParentsWithoutUnlinking() {
     PermissionEntity root = permission("root", MENU);
     PermissionEntity child = permission("child", MENU);
     PermissionEntity leaf = permission("leaf", MENU);
@@ -53,7 +53,6 @@ class R01ModelRulesTest {
     assertThrows(IllegalArgumentException.class, () -> child.moveTo(child));
     assertThrows(IllegalArgumentException.class, () -> root.moveTo(leaf));
     PermissionEntity other =
-        /** 创建带必要归属和稳定编码的持久化记录，输入缺失时拒绝。 */
         new PermissionEntity(new ApplicationSystemEntity("other", "其他"), "other", "其他", MENU);
     assertThrows(IllegalArgumentException.class, () -> child.moveTo(other));
     assertSame(root, child.getParent());
@@ -65,7 +64,7 @@ class R01ModelRulesTest {
   /** 按钮不能挂子节点，移动子节点后类型检查使用最新集合。 */
   @Test
   @org.junit.jupiter.api.DisplayName("R01/R02/R09/R14 按钮不能挂子节点，移动子节点后类型检查使用最新集合。")
-  void buttonCannotBeParentAndMovingChildrenKeepsTypeChecksCurrent() {
+  void R01_buttonCannotBeParentAndMovingChildrenKeepsTypeChecksCurrent() {
     PermissionEntity oldParent = permission("old", MENU);
     PermissionEntity newParent = permission("new", MENU);
     PermissionEntity button = permission("button", BUTTON);
@@ -88,13 +87,11 @@ class R01ModelRulesTest {
   /** API映射先检查同系统再变更，拒绝时不留部分关联。 */
   @Test
   @org.junit.jupiter.api.DisplayName("R01/R02/R09/R14 API映射先检查同系统再变更，拒绝时不留部分关联。")
-  void apiMappingsRequireSameSystemAndRejectBeforeMutating() {
+  void R01_apiMappingsRequireSameSystemAndRejectBeforeMutating() {
     PermissionEntity permission = permission("read", BUTTON);
     ApiResourceEntity api = new ApiResourceEntity(system, " get ", "/__t02__/sample");
     ApiResourceEntity other =
-        /** 创建带必要归属和稳定编码的持久化记录，输入缺失时拒绝。 */
         new ApiResourceEntity(
-            /** 创建带必要归属和稳定编码的持久化记录，输入缺失时拒绝。 */
             new ApplicationSystemEntity("sample", "同名但未持久化的另一系统"), "GET", "/__t02__/other");
     permission.mapApi(api);
     permission.mapApi(api);
@@ -108,7 +105,7 @@ class R01ModelRulesTest {
   /** 暴露的关联集合只读，调用者不能直接绕过数据一致性检查。 */
   @Test
   @org.junit.jupiter.api.DisplayName("R01/R02/R09/R14 暴露的关联集合只读，调用者不能直接绕过数据一致性检查。")
-  void associationCollectionsCannotBypassDomainWriteMethods() {
+  void R01_associationCollectionsCannotBypassEntityGuards() {
     DepartmentEntity department = new DepartmentEntity("d", "部门");
     UserEntity user = new UserEntity("u", "existing-hash", "用户", department, true);
     RoleEntity role = new RoleEntity("r", "角色");
@@ -134,7 +131,7 @@ class R01ModelRulesTest {
   /** 必需字段和关联缺失时立即拒绝创建非法持久化记录。 */
   @Test
   @org.junit.jupiter.api.DisplayName("R01/R02/R09/R14 必需字段和关联缺失时立即拒绝创建非法持久化记录。")
-  void requiredFieldsAndAssociationsRejectMissingValues() {
+  void R01_requiredFieldsAndAssociationsRejectMissingValues() {
     DepartmentEntity department = new DepartmentEntity("d", "部门");
     assertThrows(IllegalArgumentException.class, () -> new DepartmentEntity(" ", "部门"));
     assertThrows(IllegalArgumentException.class, () -> new ApplicationSystemEntity("s", " "));
@@ -161,7 +158,7 @@ class R01ModelRulesTest {
   /** 模型建删表测试不能连接旧库、外部主机或未知数据库。 */
   @Test
   @org.junit.jupiter.api.DisplayName("R01/R02/R09/R14 模型建删表测试不能连接旧库、外部主机或未知数据库。")
-  void destructiveSchemaTestsRejectLegacyOrUnexpectedDatabaseUrls() {
+  void R01_destructiveSchemaTestsRejectLegacyOrUnexpectedDatabaseUrls() {
     for (String url :
         List.of(
             "",

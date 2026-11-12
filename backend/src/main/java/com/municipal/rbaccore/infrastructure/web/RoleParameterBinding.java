@@ -19,6 +19,7 @@ public class RoleParameterBinding {
   /** 先校验原始参数，再交给现有转换器检查整数范围。 */
   private CustomNumberEditor decimalEditor(Class<? extends Number> type) {
     return new CustomNumberEditor(type, false) {
+      /** 先拒绝非十进制输入，再委托类型转换器校验整数范围。 */
       @Override
       public void setAsText(String text) {
         if (text == null || !text.matches("[0-9]+")) {

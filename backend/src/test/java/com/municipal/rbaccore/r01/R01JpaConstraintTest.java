@@ -44,13 +44,14 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.RestController;
 
+/** R01真实MySQL验证核心表与支撑表的持久化约束，仅使用隔离专库。 */
 @SpringBootTest(
     classes = R01JpaConstraintTest.ModelConfiguration.class,
     webEnvironment = SpringBootTest.WebEnvironment.NONE,
     properties = "spring.config.name=application-core-model-test")
-/** R01真实MySQL验证九张核心表、支撑表及数据库约束，测试数据在独立库中回滚。 */
 @Transactional
 class R01JpaConstraintTest {
+  /** 仅装配真实JPA和本机模型专库守卫，不启动产品HTTP或初始化用例。 */
   @Configuration(proxyBeanMethods = false)
   @EnableAutoConfiguration
   @EntityScan(basePackageClasses = DepartmentEntity.class)
@@ -59,7 +60,7 @@ class R01JpaConstraintTest {
     /** 在数据源创建前校验本机专库，禁止破坏性DDL连接业务库。 */
     @Bean
     static BeanFactoryPostProcessor databaseGuard(Environment environment) {
-      /** 仅允许本机明确的模型专库，防止create-drop落到其他库。 */
+
       requireIsolatedDatabase(environment.getRequiredProperty("spring.datasource.url"));
       return beanFactory -> {};
     }
@@ -74,7 +75,6 @@ class R01JpaConstraintTest {
     }
   }
 
-  /** 关联当前测试场景的持久化夹具，保持原始引用便于回读比较。 */
   @Autowired DepartmentJpaRepository departments;
 
   @Autowired ApplicationSystemJpaRepository systems;
@@ -87,6 +87,7 @@ class R01JpaConstraintTest {
   @Autowired PlatformTransactionManager transactionManager;
   @PersistenceContext EntityManager em;
 
+  /** 关联同一测试场景的持久化夹具，便于重读后比较完整关系。 */
   record Sample(
       ApplicationSystemEntity system,
       DepartmentEntity root,
@@ -134,7 +135,7 @@ class R01JpaConstraintTest {
     users.saveAndFlush(user);
     UserEntity noRole =
         users.saveAndFlush(new UserEntity("user-2", "other-hash", "无角色人员", root, false));
-    /** 关联当前测试场景的持久化夹具，保持原始引用便于回读比较。 */
+
     return new Sample(
         system, root, child, menu, read, other, api, firstRole, secondRole, user, noRole);
   }
@@ -142,7 +143,7 @@ class R01JpaConstraintTest {
   /** 持久化并重读整条授权关联，核对多角色、无角色和共享API。 */
   @Test
   @org.junit.jupiter.api.DisplayName("R01/R02/R09/R14 持久化并重读整条授权关联，核对多角色、无角色和共享API。")
-  void savesAndReloadsWholeChainWithMultipleRolesNoRolesAndSharedApi() {
+  void R01_savesAndReloadsWholeChainWithMultipleRolesNoRolesAndSharedApi() {
     Sample sample = sample();
     em.clear();
     UserEntity user = users.findById(sample.user().getId()).orElseThrow();
@@ -206,7 +207,6 @@ class R01JpaConstraintTest {
             "systems",
             "user_roles",
             "users"),
-        /** 读取当前隔离库的元数据或断言结果，不访问业务库。 */
         sqlList(
             "SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() ORDER"
                 + " BY table_name"));
@@ -222,7 +222,6 @@ class R01JpaConstraintTest {
       assertEquals(
           new HashSet<>(entry.getValue()),
           new HashSet<>(
-              /** 读取当前隔离库的元数据或断言结果，不访问业务库。 */
               sqlList(
                   "SELECT column_name FROM information_schema.key_column_usage WHERE"
                       + " table_schema=DATABASE() AND table_name='"
@@ -277,10 +276,10 @@ class R01JpaConstraintTest {
   @ParameterizedTest
   @ValueSource(strings = {"user_roles", "role_permissions", "permission_apis"})
   @org.junit.jupiter.api.DisplayName("R01/R02/R09/R14 重复关联必须被联合主键拒绝，不能只依靠集合去重。")
-  void duplicateAssociationIsRejectedByMySqlPrimaryKey(String table) {
-    /** 构造多角色、无角色和共享API夹具，供持久化与约束场景复用。 */
+  void R01_duplicateAssociationIsRejectedByMySqlPrimaryKey(String table) {
+
     sample();
-    /** 在独立事务中触发数据库约束失败，核对SQL状态及回滚效果。 */
+
     sqlError(1062, "INSERT INTO " + table + " SELECT * FROM " + table + " LIMIT 1");
   }
 
@@ -314,10 +313,10 @@ class R01JpaConstraintTest {
   @ParameterizedTest
   @MethodSource("duplicateRows")
   @org.junit.jupiter.api.DisplayName("R01/R02/R09/R14 工号、非空手机号、角色和系统内资源编码由数据库兜底唯一性。")
-  void requiredUniquenessIsEnforcedByMySql(String sql) {
-    /** 构造多角色、无角色和共享API夹具，供持久化与约束场景复用。 */
+  void R01_requiredUniquenessIsEnforcedByMySql(String sql) {
+
     sample();
-    /** 在独立事务中触发数据库约束失败，核对SQL状态及回滚效果。 */
+
     sqlError(1062, sql);
   }
 
@@ -352,13 +351,15 @@ class R01JpaConstraintTest {
   @ParameterizedTest
   @MethodSource("missingReferences")
   @org.junit.jupiter.api.DisplayName("R01/R02/R09/R14 核心关系引用不存在目标时由MySQL拒绝并回滚。")
-  void necessaryForeignKeysRejectMissingTargets(String sql) {
-    /** 构造多角色、无角色和共享API夹具，供持久化与约束场景复用。 */
+  void R01_necessaryForeignKeysRejectMissingTargets(String sql) {
+
     sample();
-    /** 在独立事务中触发数据库约束失败，核对SQL状态及回滚效果。 */
+
     sqlError(1452, sql);
   }
 
+  /** R01人员部门及资源系统不可空，由真实数据库拒绝非法引用。 */
+  @org.junit.jupiter.api.DisplayName("R01 mandatoryDepartmentAndSystemCannotBeNull")
   @ParameterizedTest
   @ValueSource(
       strings = {
@@ -369,16 +370,15 @@ class R01JpaConstraintTest {
         "INSERT INTO api_resources(system_id,http_method,path_template,enabled)"
             + " VALUES(NULL,'GET','/missing',1)"
       })
-  /** 人员部门及资源系统归属不可空，验证实际数据库约束。 */
-  void mandatoryDepartmentAndSystemCannotBeNull(String sql) {
-    /** 在独立事务中触发数据库约束失败，核对SQL状态及回滚效果。 */
+  void R01_mandatoryDepartmentAndSystemCannotBeNull(String sql) {
+
     sqlError(1048, sql);
   }
 
   /** 系统内唯一不应错误扩大为跨系统唯一。 */
   @Test
   @org.junit.jupiter.api.DisplayName("R01/R02/R09/R14 系统内唯一不应错误扩大为跨系统唯一。")
-  void sameCodesAndApiTemplatesAreAllowedAcrossDifferentSystems() {
+  void R01_sameCodesAndApiTemplatesAreAllowedAcrossDifferentSystems() {
     Sample sample = sample();
     ApplicationSystemEntity second =
         systems.saveAndFlush(new ApplicationSystemEntity("second-system", "第二系统样例"));
@@ -393,7 +393,7 @@ class R01JpaConstraintTest {
   /** 重载后的树和映射仍执行局部约束，移动后正反向关联保持一致。 */
   @Test
   @org.junit.jupiter.api.DisplayName("R01/R02/R09/R14 重载后的树和映射仍执行局部约束，移动后正反向关联保持一致。")
-  void loadedTreesAndMappingsRejectInvalidMutationsAndRemainConsistentAfterMoves() {
+  void R01_loadedTreesAndMappingsRejectInvalidMutationsAndRemainConsistentAfterMoves() {
     Sample sample = sample();
     ApplicationSystemEntity second =
         systems.saveAndFlush(new ApplicationSystemEntity("other-system", "其他系统"));
@@ -431,7 +431,7 @@ class R01JpaConstraintTest {
   @Test
   @Transactional(propagation = Propagation.NOT_SUPPORTED)
   @org.junit.jupiter.api.DisplayName("R01/R02/R09/R14 持久化数据约束失败必须回滚事务内此前已经执行的写入。")
-  void domainFailureRollsBackEarlierJpaWrites() {
+  void R01_dataConstraintFailureRollsBackEarlierJpaWrites() {
     TransactionTemplate transaction = new TransactionTemplate(transactionManager);
     long before = departments.count();
     assertThrows(
@@ -452,7 +452,7 @@ class R01JpaConstraintTest {
   /** 分别保存各对象状态，确认启停不隐式级联改变其他对象。 */
   @Test
   @org.junit.jupiter.api.DisplayName("R01/R02/R09/R14 分别保存各对象状态，确认启停不隐式级联改变其他对象。")
-  void systemsRolesApisAndUsersKeepTheirOwnEnabledState() {
+  void R01_systemsRolesApisAndUsersKeepTheirOwnEnabledState() {
     Sample sample = sample();
     sample.system().setEnabled(false);
     sample.firstRole().setEnabled(false);

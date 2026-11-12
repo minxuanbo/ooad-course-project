@@ -11,7 +11,7 @@ class R03ExcelSourceTest {
   /** 读取原表实际单元格，验证三份Excel不被错误声明范围截断。 */
   @Test
   @org.junit.jupiter.api.DisplayName("R03/R04/R05/R06 读取原表实际单元格，验证三份Excel不被错误声明范围截断。")
-  void readsNonStandardWorkbookDimensions() throws Exception {
+  void R03_readsNonStandardWorkbookDimensions() throws Exception {
     java.util.List<java.util.List<String>> employees =
         ExcelXmlReader.read(TestProjectPaths.sources().resolve("市政公司员工信息表.xlsx"));
     assertEquals(10001, employees.size());

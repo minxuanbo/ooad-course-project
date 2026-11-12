@@ -109,7 +109,7 @@ public class StructuredResourceService implements ResourceUseCase {
   /** MVC解析输入前先检查合法目标的系统范围；实际写事务拿锁后仍完整复核。 */
   public void checkPermissionTarget(String header, Long id) {
     access.require(header);
-    /** 构造本测试系统中的权限夹具，不生成额外授权。 */
+
     permission(id);
   }
 

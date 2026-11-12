@@ -134,13 +134,11 @@ abstract class R14ResourceContractSupport {
               RoleEntity admin = roles.save(new RoleEntity("t07-admin", "可改名的完整维护者"));
               PermissionEntity menu =
                   permissions.save(
-                      /** 创建带必要归属和稳定编码的持久化记录，输入缺失时拒绝。 */
                       new PermissionEntity(system, "rbac.workspace", "导航容器", PermissionType.MENU));
               permissionIds.put("rbac.workspace", menu.getId());
               for (Map.Entry<String, List<RbacCatalog.Route>> definition :
                   RbacCatalog.definitions().entrySet()) {
                 PermissionEntity permission =
-                    /** 创建带必要归属和稳定编码的持久化记录，输入缺失时拒绝。 */
                     new PermissionEntity(
                         system, definition.getKey(), definition.getKey(), PermissionType.BUTTON);
                 permission.moveTo(menu);
@@ -505,7 +503,6 @@ abstract class R14ResourceContractSupport {
                       systems.save(new ApplicationSystemEntity("t07-invalid-target", "外系统"));
                   PermissionEntity permission =
                       permissions.save(
-                          /** 创建带必要归属和稳定编码的持久化记录，输入缺失时拒绝。 */
                           new PermissionEntity(system, "foreign", "外系统权限", PermissionType.MENU));
                   ApiResourceEntity api = apis.save(new ApiResourceEntity(system, "GET", USERS));
                   return new long[] {permission.getId(), api.getId()};
@@ -543,7 +540,6 @@ abstract class R14ResourceContractSupport {
                   ApiResourceEntity api = apis.save(new ApiResourceEntity(system, "GET", USERS));
                   PermissionEntity permission =
                       permissions.save(
-                          /** 创建带必要归属和稳定编码的持久化记录，输入缺失时拒绝。 */
                           new PermissionEntity(
                               system, "t07-foreign", "外系统测试权限", PermissionType.MENU));
                   permission.mapApi(api);
@@ -614,7 +610,6 @@ abstract class R14ResourceContractSupport {
                 .executeWithoutResult(
                     status ->
                         apis.saveAndFlush(
-                            /** 创建带必要归属和稳定编码的持久化记录，输入缺失时拒绝。 */
                             new ApiResourceEntity(
                                 systems.findById(systemId).orElseThrow(), "GET", USERS))));
     assertEquals(20, apis.count());
@@ -739,7 +734,6 @@ abstract class R14ResourceContractSupport {
         .execute(
             status -> {
               PermissionEntity permission =
-                  /** 创建带必要归属和稳定编码的持久化记录，输入缺失时拒绝。 */
                   new PermissionEntity(systems.findById(systemId).orElseThrow(), code, code, type);
               for (Long id : ids) permission.mapApi(apis.findById(id).orElseThrow());
               return permissions.save(permission).getId();

@@ -1,6 +1,5 @@
 package com.municipal.rbaccore.service.port.auth;
 
-
 /** 共享认证用例；结构化实现与后续DDD共用输入输出。 */
 public interface AuthenticationUseCase {
 

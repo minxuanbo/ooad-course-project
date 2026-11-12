@@ -14,7 +14,7 @@ class R16RequestAuditBoundaryTest {
   /** 后台调用没有虚假请求身份，未知异常的响应不得泄漏内部消息。 */
   @Test
   @org.junit.jupiter.api.DisplayName("R16/R20 后台调用没有虚假请求身份，未知异常的响应不得泄漏内部消息。")
-  void backgroundCallsHaveNoRequestAndInternalErrorsNeverExposeSecrets() {
+  void R16_backgroundCallsHaveNoRequestAndInternalErrorsNeverExposeSecrets() {
     org.springframework.web.context.request.RequestAttributes previous =
         RequestContextHolder.getRequestAttributes();
     RequestContextHolder.resetRequestAttributes();
@@ -39,7 +39,7 @@ class R16RequestAuditBoundaryTest {
   /** 非API请求只生成追踪号，不混入鉴权事件统计。 */
   @Test
   @org.junit.jupiter.api.DisplayName("R16/R20 非API请求只生成追踪号，不混入鉴权事件统计。")
-  void nonApiRequestsAreNotRecorded() throws Exception {
+  void R16_nonApiRequestsAreNotRecorded() throws Exception {
     AuditWriter recorder = mock(AuditWriter.class);
     MockHttpServletResponse response = new MockHttpServletResponse();
     new RequestAuditFilter(recorder)

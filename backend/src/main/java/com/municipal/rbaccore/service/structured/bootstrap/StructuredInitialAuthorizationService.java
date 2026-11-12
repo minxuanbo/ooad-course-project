@@ -192,14 +192,12 @@ public class StructuredInitialAuthorizationService implements AuthorizationBoots
         systems.save(new ApplicationSystemEntity(RbacCatalog.SYSTEM_CODE, "RBAC权限管理系统"));
     PermissionEntity workspace =
         permissions.save(
-            /** 创建带必要归属和稳定编码的持久化记录，输入缺失时拒绝。 */
             new PermissionEntity(system, "rbac.workspace", "权限管理", PermissionType.MENU));
     Map<String, PermissionEntity> resourcePermissions = new LinkedHashMap<>();
     Map<RbacCatalog.Route, ApiResourceEntity> resourceApis = new HashMap<>();
     for (Map.Entry<String, List<RbacCatalog.Route>> definition :
         RbacCatalog.definitions().entrySet()) {
       PermissionEntity permission =
-          /** 创建带必要归属和稳定编码的持久化记录，输入缺失时拒绝。 */
           new PermissionEntity(
               system, definition.getKey(), definition.getKey(), PermissionType.BUTTON);
       permission.moveTo(workspace);

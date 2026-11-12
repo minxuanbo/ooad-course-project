@@ -1,6 +1,5 @@
 package com.municipal.rbaccore.architecture;
 
-
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.nio.file.Files;
