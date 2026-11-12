@@ -13,6 +13,7 @@
 | [api-contract.md](api-contract.md) | 方法、路径、字段、错误、权限与范围 | 正式HTTP规范正文；24个操作 |
 | [api-map.md](api-map.md) / [API入口](../api/README.md) | 页面/用例如何调用API | 索引，不重复定义字段；尚无经核对OpenAPI |
 | [testing-acceptance.md](testing-acceptance.md) | 验收什么、如何复现、哪些未完成 | 当前状态与T13验收入口 |
+| [acceptance/T13.md](acceptance/T13.md) | 当前后端的本轮真实结果与需求映射 | JDK21/MySQL、142+3测试、70次默认JAR HTTP；范围不含完整前端/DDD/课程系统 |
 | [部署说明](../deploy/README.md) | 依赖、建库、秘密、导入、授权及启动 | 唯一维护的产品初始化命令 |
 | [当前实现UML](design/README.md) | 现有类协作与身份校验顺序 | 实际代码图，非DDD实现图 |
 

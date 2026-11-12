@@ -23,6 +23,8 @@
 
 本次工作顺序是文档整理→T13当前后端验收→停止，不启动DDD编码、T14/T15或其他后续任务。阶段结果见[验收说明](docs/testing-acceptance.md)，历史整改与PR证据保留在[整改记录](docs/rbac-rectification/README.md)。
 
+T13本轮实际OpenJDK21/MySQL8.4验收已通过：142项后端回归、3项运行器隔离单测、70次默认JAR真实HTTP及两轮启动/重复初始化；完整证据、源提交和未验收范围见[T13记录](docs/acceptance/T13.md)。用户指定的后续停止点保持不变。
+
 ## 运行
 
 后端采用Java21、Boot3.5.6、Spring Data JPA、MySQL8.4、AOP及老师真实CloneFactory。新环境先按[部署说明](deploy/README.md)准备老师固定源码依赖、显式整改库和账号，执行离线导入、只读预览及实际五角色授权；设置RBAC_CORE_DB_URL、RBAC_CORE_DB_USER、RBAC_CORE_DB_PASSWORD后运行：
