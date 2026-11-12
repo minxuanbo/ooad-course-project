@@ -11,7 +11,7 @@
 | DDD | 目标分层与聚合已设计，无DDD实现/策略开关 | 后续编码及同契约验收，当前不宣称通过 |
 | 课程系统/双业务系统 | 等待老师进一步要求 | T14/T15当前不实施 |
 | 文档阶段 | PR #29已于2026-11-13经用户批准合入 | 历史文件清单保留；当前进入结构化代码归类 |
-| 当前结构化归类分支 | 最终代码34f3cec：Java21/本轮私有MySQL完整package共156项通过，Failures/Errors/Skipped均0；3项Python环境安全单测、70次完整JAR HTTP及最终产物3次HTTP通过 | [本阶段记录](acceptance/structured-organization.md)保留源码/产物及失败诊断边界；不代表DDD/新前端/服务器部署完成 |
+| 当前结构化归类分支 | 审核修复后代码5da102b：Java21/本轮私有MySQL完整package共156项通过，Failures/Errors/Skipped均0；3项Python环境安全单测、16adbcb的70次完整JAR HTTP及最终5da102b产物3次HTTP通过 | [本阶段记录](acceptance/structured-organization.md)保留源码/产物及失败诊断边界；不代表DDD/新前端/服务器部署完成 |
 
 ## 2. 需求验证矩阵
 
