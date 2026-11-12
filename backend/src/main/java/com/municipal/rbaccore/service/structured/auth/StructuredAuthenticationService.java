@@ -38,7 +38,7 @@ public class StructuredAuthenticationService implements AuthenticationUseCase {
     requestContext.actor(null, null);
     List<UserEntity> matches = users.findByUsernameOrPhone(account.trim(), account.trim());
     UserEntity user = matches.size() == 1 ? matches.getFirst() : null;
-    if (user == null || !user.isEnabled() || !matchesPassword(password, user.getPasswordHash())) {
+    if (user == null || !user.isEnabled() || !encoder.matches(password, user.getPasswordHash())) {
       throw new BusinessException(401, "LOGIN_FAILED", "账号或密码错误");
     }
     requestContext.actor(user.getId(), user.getUsername());
@@ -93,12 +93,4 @@ public class StructuredAuthenticationService implements AuthenticationUseCase {
     return result;
   }
 
-  /** 非法历史哈希和超长口令均统一失败，不泄露哈希格式异常。 */
-  private boolean matchesPassword(String password, String hash) {
-    try {
-      return encoder.matches(password, hash);
-    } catch (IllegalArgumentException exception) {
-      return false;
-    }
-  }
 }
