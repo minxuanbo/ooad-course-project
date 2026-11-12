@@ -14,7 +14,7 @@ class RequestAuditBoundaryTest {
     }finally{RequestContextHolder.setRequestAttributes(previous);}
   }
   @Test void nonApiRequestsAreNotRecorded()throws Exception{
-    var recorder=mock(AuditRecorder.class);var response=new MockHttpServletResponse();
+    var recorder=mock(AuditWriter.class);var response=new MockHttpServletResponse();
     new RequestAuditFilter(recorder).doFilterInternal(new MockHttpServletRequest("GET","/favicon.ico"),response,(request,res)->((jakarta.servlet.http.HttpServletResponse)res).setStatus(404));
     assertNotNull(response.getHeader("X-Request-Id"));verifyNoInteractions(recorder);
   }

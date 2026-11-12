@@ -554,6 +554,22 @@ mvn -DskipTests package
 
 CloneFactory和实际整改启动入口沿4.6；本票不增加初始化入口，不改T05五角色首次清单，不迁移旧授权、不增加人员创建/恢复/删除或课程接口。JaCoCo按用户既有要求不作本次阻塞，原门槛保留，不宣称verify全覆盖。2026-11-12用户确认修复无剩余问题后合入并清理完成分支，据此完成验收勾选与Issue状态维护；实际合入提交及关票证据见PR #25与Issue #12。
 
+### 4.10 T12 收掉旧模型与旧功能并切换到整改数据链路
+
+T12在T07/T09/T11合入后的共同基线（PR #25合并提交`fbb4f3d`）上执行，分支`feat/issue-13`。删除旧链路22个类（`ApiController`、`Management*`、`AuthService/AuthRepository`、`Audit*`含归档与变更历史、`DataInitializer`、`DatabaseConstraints`含login_identifiers触发器、`DtoMapper/Requests/Responses/RolePolicy`、旧入口`RbacApplication`），`com.municipal.rbac`仅保留新旧共享骨架8类（统一响应/requestId/异常处理、`RequestAuditFilter`、`AuditEvent/AuditWriter`端口、`ExcelXmlReader`）；保留的最小鉴权日志读写全部走rbaccore的JPA实现（`CoreAuditWriter`/`CoreAuditController`），不整删authorization_logs。同时删除旧库`schema.sql`、旧默认`application.yml`、`deploy/install-login-constraints.sql`及16个绑定旧物的测试类，保留`ExcelXmlReaderTest`、`ExcelImportT03Test`并适配`RequestAuditBoundaryTest`。
+
+构建与部署切换：`pom.xml`默认Start-Class改为`CoreRuntimeCommand`并移除`spring-boot-starter-jdbc`（MySQL驱动与CloneFactory保留）；`deploy/stack.yml`改用`RBAC_CORE_DB_URL`等整改变量、删除`RBAC_INITIALIZE`与Excel挂载，健康检查仍为匿名`/api/me`预期401；`deploy/test-backend.sh`摘要清单改覆盖全源码并移除触发器权限开关；`deploy/README.md`与根`README.md`初始化说明改为`rbac_core`脚本加T03导入、CoreBootstrapCommand两步离线命令，应用启动不建表、不导入。
+
+前端仅保留登录与鉴权日志查询兼容入口：删除Portal/System/Organizations/Users/Management及Handover/ManagementGrants/RoleManagementEditor/RoleEditor组件、归档按钮与请求、3秒管理范围同步及“普通员工登录后提示”路由假设；导航按`/me/permissions`有效权限码显示，部门管理员无日志权限时入口不显示且后端拒绝。工号/手机号双入口保留，未删除手机号登录。
+
+验证采用新增`T12LegacyRemovalBoundaryTest`6项纯源码边界测试（旧标识残留、旧包文件清单、旧脚本缺失、构建/部署入口、前端入口、双入口保留），并以真实RED（`style.css`交接样式残留）先行见证后清理。本机无MySQL环境下通过：无数据库依赖测试37项失败/错误/跳过均0（含T02规则、T03导入边界、T07/T09/T11边界及T12六项），前端保留测试4项通过，`mvn -DskipTests package`成功且Boot jar Manifest核对`Start-Class: com.municipal.rbaccore.runtime.CoreRuntimeCommand`。依赖真实MySQL的回归（T05/T07/T09/T11 HTTP及T02/T03 JPA，6个类）与干净整改库两轮启动、打包jar实测未在本机执行，需按既有各票说明配置隔离测试库后补跑；本记录不把上述未执行项写成已通过。
+
+```powershell
+mvn clean test-compile test '-DtestJvmArgs=-Xmx512m -Duser.timezone=UTC'
+mvn -DskipTests package
+# 打包jar默认入口即整改HTTP产品；干净整改库初始化沿部署README两步离线命令后再启动验证
+```
+
 ## 5. 组员讨论与验证清单
 
 方案默认：**角色全局共享、每人一个部门、管理范围为本部门及后代；跨部门临时委托与角色继承留在范围之外。** 根部门全局维护、API 多对多、停用替代删除及分页参数也属于实现建议，课程尚未正式指定 RBAC0。变更时同步图、表、原型、契约和测试；实际管理权限决定可做什么，组织位置决定管理范围。

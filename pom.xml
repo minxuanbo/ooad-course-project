@@ -11,7 +11,6 @@
   </properties>
   <dependencies>
     <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
-    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-jdbc</artifactId></dependency>
     <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-data-jpa</artifactId></dependency>
     <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-crypto</artifactId></dependency>
     <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-aop</artifactId></dependency>
@@ -35,7 +34,7 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
-        <configuration><mainClass>com.municipal.rbac.RbacApplication</mainClass></configuration>
+        <configuration><mainClass>com.municipal.rbaccore.runtime.CoreRuntimeCommand</mainClass></configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

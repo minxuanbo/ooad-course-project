@@ -1,5 +1,5 @@
 import { reactive } from 'vue'
-export const session = reactive({ token: sessionStorage.getItem('rbacToken') || '', me: null, notice: '' })
+export const session = reactive({ token: sessionStorage.getItem('rbacToken') || '', me: null, permissions: [], notice: '' })
 let noticeTimer
 export function notify(message) {
   session.notice = message
@@ -10,7 +10,7 @@ function clearNotice() { session.notice = '' }
 export function setToken(token) {
   session.token = token
   if (token) sessionStorage.setItem('rbacToken', token)
-  else { sessionStorage.removeItem('rbacToken'); session.me = null }
+  else { sessionStorage.removeItem('rbacToken'); session.me = null; session.permissions = [] }
 }
 export async function api(path, method = 'GET', body) {
   const requestToken = session.token
@@ -46,19 +46,10 @@ export async function api(path, method = 'GET', body) {
 export async function refreshSession() {
   const token = session.token
   const me = await api('/me')
-  if (session.token === token) session.me = me
+  const permissions = await api('/me/permissions')
+  if (session.token === token) {
+    session.me = me
+    session.permissions = (permissions || []).map(item => item.code)
+  }
   return me
-}
-export function employmentLabel(state) {
-  if (state === 'HANDOVER') return '离职交接中'
-  if (state === 'DEPARTED') return '已离职'
-  return '在职'
-}
-
-export const routePermissions = { dashboard: 'user.read', users: 'user.read', roles: 'role.read', apps: 'app.read', logs: 'audit.read', organizations: 'org.read' }
-export function can(permission, global = false) {
-  return (session.me?.managementGrants || []).some(g => g.permission === permission && (!global || g.scope === 'GLOBAL'))
-}
-export function scopeSummary() {
-  return [...new Set((session.me?.managementGrants || []).map(g => `${g.roleName}：` + (g.scope === 'GLOBAL' ? '全平台' : g.scope === 'COMPANY' ? g.company : `${g.company} / ${g.department}`)))].join('；') || '无管理范围'
 }

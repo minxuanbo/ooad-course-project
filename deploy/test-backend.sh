@@ -31,7 +31,7 @@ unset password
 docker network create "$test_name" >/dev/null
 docker run -d --name "$test_name" --network "$test_name" --memory 512m \
   --env-file "$test_dir/mysql.env" "$RBAC_TEST_MYSQL_IMAGE" \
-  --innodb-buffer-pool-size=128M --performance-schema=OFF --mysqlx=OFF --log-bin-trust-function-creators=ON >/dev/null
+  --innodb-buffer-pool-size=128M --performance-schema=OFF --mysqlx=OFF >/dev/null
 ready=false
 for attempt in $(seq 1 90); do
   if docker exec "$test_name" sh -c \
@@ -60,8 +60,8 @@ docker run --rm --network "$test_name" --memory 800m \
       for f in target/surefire-reports/*.txt; do
         sed -n "/Tests run:/p" "$f"
       done > /reports/test-summary.txt
-      sha256sum target/classes/com/municipal/rbac/*.class > /reports/class-sha256.txt
-      sha256sum pom.xml src/main/java/com/municipal/rbac/*.java src/test/java/com/municipal/rbac/*.java > /reports/source-sha256.txt
+      find target/classes/com/municipal -name '*.class' | sort | xargs sha256sum > /reports/class-sha256.txt
+      find src/main/java src/test/java -name '*.java' | sort | xargs sha256sum > /reports/source-sha256.txt
     fi
     exit "$result"
   '

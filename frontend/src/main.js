@@ -2,38 +2,26 @@ import { createApp } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
 import Login from './pages/Login.vue'
-import Portal from './pages/Portal.vue'
-import System from './pages/System.vue'
-import Organizations from './pages/Organizations.vue'
-import Users from './pages/Users.vue'
-import Management from './pages/Management.vue'
 import AuditLogs from './pages/AuditLogs.vue'
-import { session, refreshSession, notify, can, routePermissions } from './api.js'
+import { session, refreshSession, notify, can } from './api.js'
 import './style.css'
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/', redirect: '/portal' },
+    { path: '/', redirect: '/login' },
     { path: '/login', component: Login },
-    { path: '/portal', component: Portal, meta: { title: '我的应用' } },
-    { path: '/applications/:id(\\d+)', component: System, meta: { title: '应用功能' } },
-    { path: '/organizations', component: Organizations, meta: { admin: true, title: '组织管理' } },
-    { path: '/users', component: Users, meta: { admin: true, title: '用户与授权' } },
-    { path: '/dashboard', component: Management, meta: { admin: true, title: '工作台' } },
-    { path: '/roles', component: Management, meta: { admin: true, title: '角色与权限' } },
-    { path: '/apps', component: Management, meta: { admin: true, title: '业务系统' } },
     { path: '/logs', component: AuditLogs, meta: { admin: true, title: '鉴权日志' } },
-    { path: '/:pathMatch(.*)*', redirect: '/portal' }
+    { path: '/:pathMatch(.*)*', redirect: '/login' }
   ]
 })
 router.beforeEach(async function(to) {
   if (to.path === '/login') return true
   if (!session.token) return '/login'
   try {
-    const me = await refreshSession()
-    if (to.meta.admin && !can(routePermissions[to.path.slice(1)])) {
-      notify('您没有权限管理后台的访问权限。')
-      return '/portal'
+    await refreshSession()
+    if (to.meta.admin && !can('rbac.logs.read')) {
+      notify('当前账号没有该页面的访问权限。')
+      return '/login'
     }
   } catch (error) { notify(error.message); return '/login' }
   return true

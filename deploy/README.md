@@ -1,6 +1,6 @@
 # 华为云后端部署
 
-> 本页用于运行整改前工程。数据库及业务代码切换后，须按实际实现复核部署步骤；历史上线结果不代表当前运行状态。
+> 本页用于运行整改后工程（默认入口为 `com.municipal.rbaccore.runtime.CoreRuntimeCommand`）。数据库及业务代码切换后，须按实际实现复核部署步骤；历史上线结果不代表当前运行状态。
 
 2026-10-27 的旧实现仅部署后端，详见 [历史发布记录](deployment-2026-10-27.md)。现场测试使用 Git 克隆目录，见 [现场说明](现场运行JaCoCo.md)。
 
@@ -19,10 +19,8 @@ docker push "$RBAC_BACKEND_IMAGE"
 
 构建只编译测试，不执行依赖真实数据库的测试。口试覆盖率采用
 [独立数据库自动化测试](现场运行JaCoCo.md)。三份 Excel 排除在构建
-上下文之外，不进入镜像、不推送 SWR。部署前通过 SSH 将三份文件放入 D 的
-`/opt/course-rbac/source/`，目录与文件分别设为 750、640，属主为容器 UID
-10001。后端只读挂载到 `/app/source`，新库启动自动初始化；数据库已有
-用户时不会重复导入。默认管理权限和范围随空库导入在同一事务建立；非空库保留现有授权。
+上下文之外，不进入镜像、不推送 SWR，运行中的后端不再读取 Excel；
+组织、人员与账号的初始化由离线命令在数据准备阶段完成（见"新库初始化约束"）。
 
 MySQL 使用官方 8.4 镜像，在 A 拉取后推送到组织内独立镜像仓库。
 发布使用镜像摘要，避免可变标签导致不同节点运行不同版本。
@@ -53,9 +51,9 @@ Swarm 不保证 MySQL 先启动。后端初次连接失败时会自动重试启�
 安全组应允许所需来源访问 D 的 TCP 8081。MySQL 不发布宿主机端口，
 仅在独立加密 overlay 网络供后端连接。
 
-先登录，再使用响应中的 data.token 请求 `/api/me`、`/api/dashboard` 验证。
-默认课程账号见根目录 README；当前接口为 HTTP，未配置 TLS。
-健康检查用无效令牌访问 `/api/me`，预期 401，同时触发数据库会话查询。
+先登录，再使用响应中的 data.token 请求 `/api/me` 验证身份，再以带日志权限的
+维护账号请求 `/api/authorization-logs`。默认课程账号见根目录 README；当前接口为 HTTP，未配置 TLS。
+健康检查用无效令牌访问 `/api/me`，预期 401。
 
 ## 更新、回滚和备份
 
@@ -67,6 +65,6 @@ Swarm 不保证 MySQL 先启动。后端初次连接失败时会自动重试启�
 
 ## 新库初始化约束
 
-首次建库由 DBA 执行 src/main/resources/schema.sql，再执行 deploy/install-login-constraints.sql，之后启动后端。DatabaseConstraints 建立缺失的部门负责人外键，并在触发器不存在时创建触发器；DataInitializer 仅在空库导入 Excel 与默认权限范围。
-生产应用不授予 SUPER，也不修改生产 MySQL 的 log_bin_trust_function_creators。生产两条 users 触发器预先由 DBA 安装，维护 username、employee_no、phone 的统一唯一性；冲突时语句回滚。独立测试数据库允许测试账号创建触发器。
+首次建库由 DBA 在 MySQL 中创建 `rbac_core` 库（`utf8mb4`、`utf8mb4_0900_bin`）及仅有该库权限的账号，依次执行 `deploy/rbac-core-schema.sql` 与 `deploy/rbac-core-runtime.sql`；脚本只包含 `CREATE TABLE IF NOT EXISTS`，不清空或重建已有表。应用固定 `ddl-auto=validate`、`sql.init.mode=never`、`rbac.initialize=false`，不在启动时建表或导入。
+组织、人员与账号初始化使用离线命令（在仓库根目录或数据准备环境执行，需设置 `RBAC_CORE_DB_URL/USER/PASSWORD` 与 `RBAC_CORE_SOURCE_DIR`）：先 `java -Dloader.main=com.municipal.rbaccore.importing.CoreImportCommand -cp target/rbac0-0.1.0.jar org.springframework.boot.loader.launch.PropertiesLauncher` 完成原始组织/人员导入，再用 `java -Dloader.main=com.municipal.rbaccore.runtime.CoreBootstrapCommand -cp target/rbac0-0.1.0.jar org.springframework.boot.loader.launch.PropertiesLauncher --rbac.core.preview-file=.local/initial-role-preview.csv` 预检并执行五角色首次授权。重复执行只核对来源与组织，不重置口令、状态或授权。
 后端入口是 D 的 http://120.46.86.147:8081/api，C 不发布后端端口。无登录令牌访问 /api/me 预期返回 HTTP 401。
