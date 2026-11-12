@@ -23,6 +23,7 @@ GitHub Issues #2—#16 共 15 票：当前范围 13 票、课程后续 2 票，2
 - **T09已合入**：工作树`D:\Codex\outputs\ooad-t09`，分支`codex/t09-role-permissions-local`，基线为T07合并提交`322e334`。五项角色接口、即时授权变化、回滚、与T07共用锁的并发保护已验证；完整回归166项失败/错误/跳过均0，打包/JAR实际HTTP通过。证据和复现见[计划4.8](RBAC整改计划与Chen-ER图.md#t09-validation)。已随[PR #24](https://github.com/minxuanbo/ooad-course-project/pull/24)合入共同基线`4e2b2a1`，实时状态见[Issue #10](https://github.com/minxuanbo/ooad-course-project/issues/10)。
 - **T11 PR复核及补修通过**：组员提交[PR #25](https://github.com/minxuanbo/ooad-course-project/pull/25)，按用户要求以两个skill审核并追加`cce0156`修复。原PR 11项补跑通过，新增5类行为回归复现后修复；最终190项全量失败/错误/跳过均0，打包/真实HTTP通过，Standards与Spec复核剩余各0。实现、修复及复现见[计划4.9](RBAC整改计划与Chen-ER图.md#49-t11-人员维护与-pr-25-复核)，2026-11-12用户已确认合入修复及清理完成分支，实际合入/关票记录见PR #25与Issue #12。
 - **T14/T15 待小组确认启动**：课程受控场景与双系统授权演示仍待落实。
+- **T12 PR复核及补修通过**：[PR #26](https://github.com/minxuanbo/ooad-course-project/pull/26)清理旧链路并切换产品默认入口。142项真实MySQL回归、6项前端测试及构建通过，干净万人初始化、首次五角色授权和两轮默认JAR验证完成，Standards/Spec最终剩余各0；证据、复现与未执行的容器部署范围见[计划4.10](RBAC整改计划与Chen-ER图.md#410-t12-收掉旧模型与旧功能并切换到整改数据链路)。用户授权复核无问题后合并，实际合入及关票见PR及Issue #13；未自动开始T13。
 
 ## 四组原型与契约的查看方法
 

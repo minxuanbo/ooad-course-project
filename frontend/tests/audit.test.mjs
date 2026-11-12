@@ -12,40 +12,59 @@ test('API unwraps the envelope and exposes business error and request ID', async
   response = { ok: true, status: 200, text: async () => '[]' }
   await assert.rejects(vm.runInContext("api('/users')", context), /格式/)
 })
-test('log pagination binds filters to the first page and archive errors remain visible', async () => {
-  const calls = []; let fail = false, unmount
+test('log pagination binds filters to the first page and resets after unmount', async () => {
+  const calls = []; let unmount
   const context = vm.createContext({ ref: value => ({ value }), URLSearchParams, onMounted() {}, onUnmounted: fn => { unmount = fn }, api: async (path, method, body) => {
     calls.push({ path, method, body })
-    if (fail) throw Error('archive failed')
-    if (method === 'POST') return { archived: 1, hasMore: false }
     return { items: [{ id: calls.length }], nextCursor: 'cursor-one', hasMore: true }
   } })
   const source = readFileSync(new URL('../src/pages/AuditLogs.vue', import.meta.url), 'utf8').match(/<script setup>([\s\S]*?)<\/script>/)[1].replace(/^import .*$/gm, '')
   vm.runInContext(source, context); const run = s => vm.runInContext(s, context)
   await run("filters.value.username='first';load()"); await run("filters.value.username='changed';load(true)")
   assert.match(calls[1].path, /username=first/); assert.match(calls[1].path, /cursor=cursor-one/); assert.equal(run('rows.value.length'), 2)
-  fail = true; await run("before.value='2026-01-01T00:00';archive()")
-  assert.equal(run('error.value'), 'archive failed'); assert.equal(calls.length, 3)
-  fail = false; await run('archive()'); assert.match(run('notice.value'), /1 条/)
   unmount(); await run('load()'); assert.equal(run('rows.value.length'), 0)
 })
-test('handover DTO null represents an employed user before starting a handover', () => {
-  const context = vm.createContext({ ref: value => ({ value }), reactive: x => x, computed: fn => ({ get value() { return fn() } }), defineProps: () => ({ target: { id: 1 } }), defineEmits: () => () => {}, onMounted() {} })
-  const source = readFileSync(new URL('../src/components/Handover.vue', import.meta.url), 'utf8').match(/<script setup>([\s\S]*?)<\/script>/)[1].replace(/^import .*$/gm, '')
-  vm.runInContext(source, context)
-  assert.equal(vm.runInContext('data.value={handover:null};state.value', context), 'EMPLOYED')
-  assert.equal(vm.runInContext("data.value={handover:{state:'HANDOVER'}};state.value", context), 'HANDOVER')
+test('archive requests and archived filters are removed from the log page', () => {
+  const source = readFileSync(new URL('../src/pages/AuditLogs.vue', import.meta.url), 'utf8')
+  assert(!source.includes('/authorization-logs/archive'))
+  assert(!source.includes('storage'))
 })
 
-test('organization edits use PATCH without changing company membership; creation uses POST', async () => {
+test('T12 navigation uses effective permissions and server-confirmed log scope', async () => {
+  let denied = false
+  let alternatePermission = false
   const calls = []
-  const context = vm.createContext({ ref: value => ({ value }), onMounted() {}, notify() {}, session: {}, api: async (path, method, body) => { calls.push({path,method,body}); return {companies:[],departments:[]} } })
-  const source = readFileSync(new URL('../src/pages/Organizations.vue', import.meta.url), 'utf8').match(/<script setup>([\s\S]*?)<\/script>/)[1].replace(/^import .*$/gm, '')
-  vm.runInContext(source,context)
-  await vm.runInContext("edit('departments',{id:12,code:'D12',name:'原名'});form.value.name='新名称';save()",context)
-  assert.equal(calls[0].method,'PATCH'); assert.equal(calls[0].path,'/organizations/departments/12')
-  assert.deepEqual(JSON.parse(JSON.stringify(calls[0].body)),{code:'D12',name:'新名称'})
-  calls.length=0
-  await vm.runInContext("edit('departments',null);form.value={code:'NEW',name:'新部门',companyId:2};save()",context)
-  assert.equal(calls[0].method,'POST'); assert.equal(calls[0].body.companyId,2)
+  const context = vm.createContext({ reactive: x => x, sessionStorage: { getItem: () => '', setItem() {}, removeItem() {} }, AbortSignal,
+    fetch: async path => {
+      calls.push(path)
+      const status = path.includes('/authorization-logs') && denied ? 403 : 200
+      const data = path === '/api/me' ? { user: { id: 1 } } : path === '/api/me/permissions' ? (alternatePermission ? [{ code: 'custom.logs' }] : [{ code: 'rbac.logs.read' }, { code: 'rbac.users.read' }]) : { items: [] }
+      return { ok: status === 200, status, text: async () => JSON.stringify({ code: status === 200 ? 'OK' : 'MANAGEMENT_SCOPE_DENIED', data }) }
+    } })
+  vm.runInContext(readFileSync(new URL('../src/api.js', import.meta.url), 'utf8').replace(/^import .*$/gm, '').replace(/export /g, ''), context)
+  const run = source => vm.runInContext(source, context)
+  await run('refreshSession()')
+  assert.equal(run("can('rbac.logs.read')"), true)
+  assert.equal(run("can('rbac.users.read')"), true)
+  assert.equal(run("can('rbac.roles.write')"), false)
+  denied = true
+  await run('refreshSession()')
+  assert.equal(run("can('rbac.logs.read')"), false)
+  assert.equal(run("can('rbac.users.read')"), true)
+  denied = false; alternatePermission = true
+  await run('refreshSession()')
+  assert.equal(run("can('rbac.logs.read')"), true)
+  run("setToken('')")
+  assert.equal(run("can('rbac.users.read')"), false)
+  assert(calls.includes('/api/authorization-logs?limit=1'))
+})
+
+test('T12 permitted department login reaches the shell without entering logs', async () => {
+  const routes = []
+  const context = vm.createContext({ ref: value => ({ value }), useRouter: () => ({ replace: async path => routes.push(path) }),
+    api: async () => ({ token: 'manager-token' }), setToken() {}, refreshSession: async () => {}, can: () => false })
+  const source = readFileSync(new URL('../src/pages/Login.vue', import.meta.url), 'utf8').match(/<script setup>([\s\S]*?)<\/script>/)[1].replace(/^import .*$/gm, '')
+  vm.runInContext(source, context)
+  await vm.runInContext('login()', context)
+  assert.deepEqual(routes, ['/'])
 })
