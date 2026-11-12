@@ -16,13 +16,13 @@ function referencePrototype() {
   return context.window.R
 }
 
-test('reference prototype retains four reviewed modules after documentation relocation', () => {
+test('R17/R18 reference prototype retains four reviewed modules after documentation relocation', () => {
   const model = referencePrototype()
   assert.deepEqual(Object.keys(model.views).sort(), ['t04', 't06', 't08', 't10'])
   assert.equal(model.state.departments.find(item => item.id === 2).parentId, 1)
 })
 
-test('reference prototype retains department scope and does not permit retired management scopes', () => {
+test('R02/R11/R16 reference prototype retains department scope and does not permit retired management scopes', () => {
   const model = referencePrototype()
   model.actorId = 3
   assert.equal(model.guard('rbac.users.read', { method: 'GET', path: '/api/users' }).id, 3)
@@ -34,7 +34,7 @@ test('reference prototype retains department scope and does not permit retired m
   assert.throws(() => model.guard('rbac.logs.read', { global: true, method: 'GET', path: '/api/authorization-logs' }), error => error.status === 403 && error.code === 'MANAGEMENT_SCOPE_DENIED')
 })
 
-test('reference prototype retains same-system mapping and current API authorization semantics', () => {
+test('R09/R14 reference prototype retains same-system mapping and current API authorization semantics', () => {
   const model = referencePrototype()
   model.actorId = 1
   const permission = model.state.permissions.find(item => item.code === 'rbac.logs.read')

@@ -49,4 +49,6 @@
 
 本次应核对：现行链接/锚点、HTML资源、OpenAPI合法及YAML/JSON等价、24操作/17项K、原件摘要、原型迁移测试、现有前端构建、git diff空白及生产文件无改动。真实完成结果写入草稿PR的验证摘要；未执行的数据库/云部署不得标为通过。
 
+2026-11-12实际检查：30份Markdown的190个本地链接/锚点及HTML资源通过；OpenAPI3.1校验、YAML/JSON等价、24操作与17项K通过；11个保留资产的Git内容摘要及3段Mermaid源码不变；npm test共8项通过，npm run build通过，git diff --check通过。生产Java、SQL、部署脚本与前端页未改；本轮未重跑数据库或云部署验收。
+
 代理按用户提供code-review skill分别做Standards/Spec复核，发现问题先修复；该结论只代表技术复核。用户仍须逐项审核并明确决定合并；未确认项保留，不自动推进后续任务。
