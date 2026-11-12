@@ -10,39 +10,41 @@
 
 ## 2. 当前基线与总体架构
 
-T13合入基线ffc7ceb仅有结构化业务代码，尚无service.structured/service.ddd目录或策略选择配置。本次不改Java/SQL或生产前端。现状及目标如下：
+文档PR #29已合入d1438d7；2026-11-13当前分支将现有后端归入backend，并将业务明确归入service.structured。共享Controller只调用service.port，持久化、认证、请求、日志及Excel归入infrastructure，config/bootstrap负责装配和启动。DDD目录及策略选择尚未实现。
 
-| 层/模块 | 当前责任 | 整理目标 |
-| --- | --- | --- |
-| api、dto、vo | HTTP、Bean Validation、Controller映射、部分参数解析前预检 | 共享API，只依赖用例端口 |
-| service | 事务脚本、授权/范围/可授予/根锁/K | 保留结构化实现，抽取明确端口，另写DDD行为 |
-| repository/model | Spring Data JPA与持久化实体 | 归入Infrastructure；DDD Entity与领域对象分开 |
-| security/logging | Bearer、实际API门禁、目录、最小日志与AOP | 认证与日志适配共用，业务判定留用例/领域 |
-| importing/bootstrap/runtime | Excel、首次清单、入口与环境守卫 | 来源端口及运行装配归类，离线初始化独立 |
-| com.municipal.rbac保留骨架 | 响应/异常/requestId、过滤器、日志端口、Excel读取 | 后续逐件迁移至明确层，不恢复旧JDBC业务 |
+| 实际模块 | 当前责任 |
+| --- | --- |
+| api.auth/user/role/resource/audit及shared | 共享HTTP、DTO/VO、输入校验、CloneFactory映射及响应/错误适配 |
+| service.port | 独立用例接口、Command/Query/Result与支撑抽象，无Entity/MVC/Spring依赖 |
+| service.structured | 事务脚本、范围/有效授权/可授予/根锁/K及初始化；直接使用JPA仓储 |
+| infrastructure.persistence.entity/repository | Entity/JpaRepository，保留表结构、关系与查询，不作为DDD聚合 |
+| infrastructure.security/web/logging/excel | BCrypt与身份索引、MVC预检/过滤器、最小日志、游标与来源读取 |
+| config / bootstrap | 扫描/数据源守卫/秘密装配，以及RbacApplication、ImportCommand、BootstrapAuthorizationCommand |
 
-请求主链：身份及requestId过滤→操作预检→DTO校验/Controller→实际AOP门禁→业务用例事务→仓储/适配器→MySQL。前置预检防止未授权枚举；真实门禁与写锁后重验仍须独立执行。日志记录通过独立支撑端口，不进入核心ER。
+原com.municipal.rbac骨架已分别归入API、用例支撑与基础设施，不保留第二份旧业务链路。当前结构化代码与测试的详细命名及映射见[代码归类](code-organization.md)。
 
-## 3. 目标分层与包结构
+请求主链：身份及requestId过滤→操作预检→DTO校验/Controller→实际AOP门禁→结构化用例事务→JPA/MySQL。请求追踪通过RequestContext端口传递；认证/密码通过IdentityTokenStore和PasswordHashing隔离技术。预检不替代实际门禁及写锁后重验。
+
+## 3. 当前分层与后续DDD位置
 
 ```text
 com.municipal.rbaccore
 ├── api                       Controller、dto、vo、HTTP异常适配
 ├── service
 │   ├── port                  公共用例接口、Command/Query/Result、共享错误
-│   ├── common                有明确共用责任的横切能力
+│   ├── common（后续按需要提取，当前无此包）
 │   ├── structured            结构化事务脚本与辅助规则
-│   └── ddd
+│   └── ddd（后续设计，当前不存在）
 │       ├── application       用例编排与事务
 │       └── domain
 │           ├── model         聚合/实体/有业务规则的值对象
 │           ├── policy        授权、范围、可授予、完整K
 │           └── repository    领域仓储端口
 ├── infrastructure            JPA Entity/Repository/Adapter、认证、日志、Excel
-└── config                    装配、基础设施配置、策略选择
+└── config                    装配、基础设施配置（策略选择待DDD阶段）
 ```
 
-API只依赖service.port；DDD application只依赖领域模型、领域仓储和用例抽象，不引用JpaRepository、JPA Entity或EntityManager。领域不依赖MVC/JPA/基础设施。Infrastructure实现端口并映射持久化模型；Repository不返回可由Controller序列化的JPA图。结构化实现可以经持久化端口完成事务脚本，不转调DDD；DDD也不包装旧Service冒充第二套实现。
+API只依赖service.port；DDD application只依赖领域模型、领域仓储和用例抽象，不引用JpaRepository、JPA Entity或EntityManager。领域不依赖MVC/JPA/基础设施。Infrastructure实现端口并映射持久化模型；Repository不返回可由Controller序列化的JPA图。当前结构化实现直接使用Infrastructure中的JPA仓储完成事务脚本，不转调DDD；DDD也不包装旧Service冒充第二套实现。
 
 ## 4. 双实现选择
 
@@ -52,7 +54,7 @@ API只依赖service.port；DDD application只依赖领域模型、领域仓储�
 
 ## 5. 公共用例与端口
 
-以下为职责设计名，不宣称现有接口已按此命名。Command/Query/Result是内部用例模型，与HTTP DTO/VO分开。
+以下按用例组说明职责；已抽取的实际接口名见代码归类。Command/Query/Result是内部用例模型，与HTTP DTO/VO分开。
 
 | 用例端口组 | 输入/输出 | 关键约束 |
 | --- | --- | --- |
@@ -70,7 +72,7 @@ API只依赖service.port；DDD application只依赖领域模型、领域仓储�
 
 按人员、角色、资源、认证、日志、初始化划分用例服务，Service负责业务判断和事务，Repository负责明确查询/持久化。候选Permission子集、范围过滤、total和分页在数据库完成，不先全量加载再截页。纯规则可提取有明确输入的辅助对象，不把角色名硬编码成权限判断。
 
-代码归类先保持HTTP和业务行为不变，再分批修格式/映射遗漏；归类提交与业务修复分开，逐批回归。所有类和关键方法写中文Javadoc，明确类型，不用var，不写压缩单行类或字面量换行。
+当前分支已拆分用例输入输出、迁移JPA/认证/日志等技术支撑，并按需求归类测试；在保持现有HTTP/数据库契约的前提下修复copyNotNull、API输入清洗/ID和日志判定职责。实际验证随阶段记录更新。所有类和关键方法写中文Javadoc，明确类型，不用var，不写压缩单行类或字面量换行。
 
 ## 7. DDD实现方案
 
@@ -122,31 +124,31 @@ OpenAPI定义24个既有操作；[业务约束](api-contract.md)解释实际API 
 
 ## 13. 待评审的设计决策
 
-已确认的业务口径不重复作为未决需求。用户本轮重点审核：目标包及端口划分、DDD聚合边界、根锁事实读取、完整前端交互、OpenAPI与现有契约一致性。后续实现前细化实际类/接口名、策略装配及切片顺序；不能因目标文档已写而宣称代码整理或新原型已获批。
+已确认的业务口径不重复作为未决需求。用户本轮重点审核：目标包及端口划分、DDD聚合边界、根锁事实读取、完整前端交互、OpenAPI与现有契约一致性。当前类/接口名已在代码归类中列明；未来DDD实施前再细化领域仓储、策略装配及切片顺序。代码分支仍交用户审核，新原型未开始。
 
 ## 14. CloneFactory映射方案
 
 采用老师spring-fundamentals的真实CloneFactory，版本0.0.1-SNAPSHOT并锁定源码提交237f49c52bdc72da30383571bb2f985ac54a514a。可复现安装唯一维护在[部署说明](../deploy/README.md#本机依赖安装)，不以ObjectMapper/BeanUtils替代。
 
-DTO→Command、Result→VO、同名同类型toResult优先CloneFactory.copy；PATCH共同非空字段优先copyNotNull，目标类用@CopyFrom/@CopyNotNullFrom。派生字段、多来源、集合元素变化、时间类型转换及id/系统归属/授权等受保护字段必须排除并显式处理。
+DTO→Command、Result→VO、同名同类型toResult优先CloneFactory.copy；PATCH共同非空字段优先copyNotNull。当前Entity→Result由Entity端@CopyTo声明，使纯用例模型不反向依赖持久化类型；角色和API状态PATCH用Entity端@CopyNotNullFrom。派生字段、多来源、集合元素变化、时间类型转换及id/系统归属/授权等受保护字段必须排除并显式处理。
 
 不能用copyNotNull表达parentId“缺省保留/显式null清父”的三态，应保留字段存在标记并显式调用业务行为；不能把Command整包复制进聚合绕过校验。修改注解后clean重编译并验证生成映射行为，不提交生成源码。
 
 ## 15. HTTP DTO与VO规范
 
-dto包以DTO结尾，vo包以VO结尾；请求@Valid，长度、范围、枚举、唯一数组、时间先后和JSON类型在API边界。Service负责授权、范围、状态、树及跨对象一致性，不承担请求格式清洗。
+api.<业务>.dto下的类以DTO结尾，api.<业务>.vo下的类以VO结尾；请求@Valid，长度、范围、枚举、唯一数组、时间先后和JSON类型在API边界。Service负责授权、范围、状态、树及跨对象一致性，不承担请求格式清洗。
 
 缺省与null、整数安全范围、page/size和日志cursor/limit沿OpenAPI，不照搬老师pageSize。VO只包含契约允许字段，不返回Entity、口令哈希、手机号或导入原文。Controller负责映射，不承担查询/持久化；持久化约束错误在Adapter/Service写边界转稳定业务错误，Advice只统一HTTP响应。
 
 ## 16. 运行与部署设计
 
-产品CoreRuntimeCommand、离线CoreImportCommand和首次CoreBootstrapCommand相互分离。显式rbac_core、ddl-auto=validate、sql.init.mode=never、旧初始化关闭；错库/测试profile组合失败关闭，不在启动时恢复旧表或重授角色。口令/数据库秘密通过环境或configtree提供。
+产品RbacApplication、离线ImportCommand和首次BootstrapAuthorizationCommand相互分离。显式rbac_core、ddl-auto=validate、sql.init.mode=never、旧初始化关闭；错库/测试profile组合失败关闭，不在启动时恢复旧表或重授角色。口令/数据库秘密通过环境或configtree提供。
 
-Java21多阶段镜像、独立MySQL8.4与Swarm部署沿[部署说明](../deploy/README.md)，初始化原件不入镜像。当前没有Docker/Swarm实测证据，不把T13本机默认jar结果写成云部署成功。结构变更涉及数据备份与迁移，不能仅回滚镜像；未来策略切换不创建第二套业务表。
+当前本地构建/测试/初始化命令见[后端说明](../backend/README.md)。用户明确部署先不处理，后续增加服务器再确定方案；原Dockerfile/Stack及容器测试脚本保留旧配置，未适配backend目录，不作为当前发布入口。本地MySQL/JAR结果不代表云部署成功。结构变更涉及数据备份与迁移，不能仅回滚镜像；未来策略切换不创建第二套业务表。
 
 ## 17. 当前实现UML与边界
 
-以下两图仅表达T12基线a79b668的CoreAuthService.require实际协作；T13与本次未改变其生产源码，不是DDD目标类图。省略无关访问器和构造，安全判断顺序不省略。
+以下两图表达当前StructuredAuthenticationService.require的实际协作，已随本轮代码归类重新生成，不是DDD目标类图。省略无关访问器和构造，安全判断顺序不省略。
 
 ![当前身份校验类图](design/current-auth-class.png)
 
@@ -154,4 +156,4 @@ Java21多阶段镜像、独立MySQL8.4与Swarm部署沿[部署说明](../deploy/
 
 ![当前身份校验顺序图](design/current-auth-sequence.png)
 
-[顺序图SVG](design/current-auth-sequence.svg)。caller为调用方，未捕获异常直接回复caller，HTTP转换在图外；静态RequestAuditFilter.actor以MetaClass表示。脚本及UML skill适用边界见[图件说明](design/README.md)。本次保留图件，不生成虚构DDD实现图。
+[顺序图SVG](design/current-auth-sequence.svg)。caller为调用方，未捕获异常直接回复caller，HTTP转换在图外；BusinessException.unauthorized的静态调用以MetaClass表示；RequestContext是普通端口对象，HttpRequestContext适配内部过滤器采集。脚本及UML skill适用边界见[图件说明](design/README.md)。本次保留图件，不生成虚构DDD实现图。
