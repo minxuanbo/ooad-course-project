@@ -212,7 +212,7 @@ def verify_login_and_queries(manager, admin_token):
     q = urllib.parse.quote(manager['username'])
     found = expect('GET', '/api/users?q=' + q + '&enabled=true&departmentId=' + str(manager['department']), token=mt)
     require(any(item['id'] == manager['id'] for item in found['items']), '姓名/工号状态部门组合筛选不符')
-    expect('GET', '/api/roles', 403, token=mt, code='MANAGEMENT_SCOPE_DENIED')
+    expect('GET', '/api/roles', 403, token=mt, code='PERMISSION_DENIED')
     expect('GET', '/api/authorization-logs', 403, token=mt)
     root = int(sql('SELECT department_id FROM users WHERE id=' + str(ADMIN_ID)))
     expect('GET', '/api/users?departmentId=' + str(root), 403, token=mt, code='MANAGEMENT_SCOPE_DENIED')
