@@ -47,7 +47,8 @@ public class CoreRuntimeConfiguration {
       Map.of(
           "core-http-test", "rbac_core_t05_test",
           "core-resource-test", "rbac_core_t07_test",
-          "core-role-test", "rbac_core_t09_test");
+          "core-role-test", "rbac_core_t09_test",
+          "core-user-test", "rbac_core_t11_test");
 
   /** 生产只接明确的整改库；测试建表仅允许对应profile下的本机专用测试库。 */
   @Bean
