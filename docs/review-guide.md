@@ -52,3 +52,7 @@
 2026-11-12实际检查：30份Markdown的190个本地链接/锚点及HTML资源通过；OpenAPI3.1校验、YAML/JSON等价、24操作与17项K通过；11个保留资产的Git内容摘要及3段Mermaid源码不变；npm test共8项通过，npm run build通过，git diff --check通过。生产Java、SQL、部署脚本与前端页未改；本轮未重跑数据库或云部署验收。
 
 代理按用户提供code-review skill分别做Standards/Spec复核，发现问题先修复；该结论只代表技术复核。用户仍须逐项审核并明确决定合并；未确认项保留，不自动推进后续任务。
+
+## 5. 用户审核中的需求补充（2026-11-12）
+
+按用户本轮确认，requirements第3.1节明确撤权事务提交后原身份后续请求立即按新授权判断、OR保留其他有效链及锁后重验；第3.2节明确鉴权日志信息、筛选和同快照total。同步api-contract的业务约束、testing-acceptance的预期场景及sources确认记录。未增加接口、字段、汇总报表或生产改动，后续有新要求再调整；仍保持草稿PR，不合并。
