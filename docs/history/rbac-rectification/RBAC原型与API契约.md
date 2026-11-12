@@ -1,17 +1,19 @@
 # RBAC 四组原型与 API 契约
 
-> 文档整理说明（2026-11-12）：正式规范正文已提取至[API契约](../api-contract.md)，页面对照见[API索引](../api-map.md)。本文件保留原型来源、历史评审和原锚点，不再作为另一份独立维护的现行规范。
+> 只读历史归档，非现行规范。需求/设计见[正式导航](../../README.md)，原相对链接已固定到T13基线；本次保留追溯证据，不新增实现或验收结论。
+
+> 文档整理说明（2026-11-12）：正式规范正文已提取至[API契约](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/api-contract.md)，页面对照见[API索引](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/api-map.md)。本文件保留原型来源、历史评审和原锚点，不再作为另一份独立维护的现行规范。
 
 > Refs #5、Refs #7、Refs #9、Refs #11。四票原范围于 2026-11-07 经用户确认并随 PR #19 合入；2026-11-08 双入口登录补充产物经技术复核并获用户确认，见 [8.1](#login-review)。本文交付交互原型与 API 契约，业务和正式界面按后续任务验收。
 
 ## 1. 入口、依据与前置核对
 
-下载完整目录，用 Edge/Chrome 打开 [prototype/index.html](prototype/index.html)，无需构建或后端。账号、部门、角色及资源 ID 均为虚构数据，演示口令为 `demo`，改动存于内存；刷新或“重置全部模拟数据”恢复初始状态。各页支持查询/保存、模拟响应及下一请求失败注入；请运行 HTML 查看交互。
+下载完整目录，用 Edge/Chrome 打开 [prototype/index.html](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/prototype/index.html)，无需构建或后端。账号、部门、角色及资源 ID 均为虚构数据，演示口令为 `demo`，改动存于内存；刷新或“重置全部模拟数据”恢复初始状态。各页支持查询/保存、模拟响应及下一请求失败注入；请运行 HTML 查看交互。
 
-依据[检查记录及复核说明](RBAC检查记录复核说明.md)、用户确认、[原版执行计划](RBAC整改计划与Chen-ER图.md)和[任务清单](RBAC整改任务清单.md)。
+依据[检查记录及复核说明](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%A3%80%E6%9F%A5%E8%AE%B0%E5%BD%95%E5%A4%8D%E6%A0%B8%E8%AF%B4%E6%98%8E.md)、用户确认、[原版执行计划](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%95%B4%E6%94%B9%E8%AE%A1%E5%88%92%E4%B8%8EChen-ER%E5%9B%BE.md)和[任务清单](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%95%B4%E6%94%B9%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md)。
 
 - 老师要求：先原型后 API，按部门搜索分页，菜单/按钮关联 API，JPA/AOP、分层、REST、读写事务及课程 CloneFactory。
-- 登录：工号/手机号按课堂要求；用户名即工号由用户明确，详见[计划 1.2](RBAC整改计划与Chen-ER图.md#login)及[来源 1.3](RBAC检查记录复核说明.md#13-登录要求与字段口径)。管理端拒绝普通员工和最小鉴权日志为用户补充。
+- 登录：工号/手机号按课堂要求；用户名即工号由用户明确，详见[计划 1.2](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%95%B4%E6%94%B9%E8%AE%A1%E5%88%92%E4%B8%8EChen-ER%E5%9B%BE.md#login)及[来源 1.3](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%A3%80%E6%9F%A5%E8%AE%B0%E5%BD%95%E5%A4%8D%E6%A0%B8%E8%AF%B4%E6%98%8E.md#13-登录要求与字段口径)。管理端拒绝普通员工和最小鉴权日志为用户补充。
 - 方案选择：全局共享角色、共同根维护、整体替换和分页默认值。旧资料及源码用于核对复用点与差异。
 
 2026-11-07 开工核对四票正文、评论和原生依赖，直接前置均为 T01/#2。PR #17 已合入，代理评审 `pullrequestreview-5731499420` 及计划 5.3 为前置证据；共同基线为 `c2e3adad3ce72934bc1000c7b9143d3131ab0c3e`。
@@ -99,7 +101,7 @@ T03 提供真实账号与共同根来源，T05 据经评审数据建立授权基
 
 ## 3. T04 / #5：准入、人员与最小日志
 
-原型源码为 [t04.js](prototype/t04.js)：登录后进入部门人员、本人信息或鉴权日志，查询结果显示模拟状态、字段与分页。按实际交互形成下表契约，评审记录见第 8 节。
+原型源码为 [t04.js](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/prototype/t04.js)：登录后进入部门人员、本人信息或鉴权日志，查询结果显示模拟状态、字段与分页。按实际交互形成下表契约，评审记录见第 8 节。
 
 ### 3.1 逐项契约
 
@@ -147,7 +149,7 @@ T03 提供真实账号与共同根来源，T05 据经评审数据建立授权基
 
 ## 4. T06 / #7：资源目录与 API 映射
 
-原型源码 [t06.js](prototype/t06.js)。树、系统归属、方法与路径模板、完整已选映射、候选分页和非法用例均可操作。code/name/systemId 与 API method/path 只读；必要维护仅权限 parentId/type/enabled、API enabled 和映射替换。
+原型源码 [t06.js](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/prototype/t06.js)。树、系统归属、方法与路径模板、完整已选映射、候选分页和非法用例均可操作。code/name/systemId 与 API method/path 只读；必要维护仅权限 parentId/type/enabled、API enabled 和映射替换。
 
 ### 4.1 原型场景
 
@@ -207,7 +209,7 @@ GET映射以ids为关联真值，items供展示状态/模板。API反向引用�
 
 ## 5. T08 / #9：角色定义与选权
 
-原型源码 [t08.js](prototype/t08.js)。角色全局共享，先通过列表选择角色，再在独立权限树核对直接选择与导航补全。
+原型源码 [t08.js](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/prototype/t08.js)。角色全局共享，先通过列表选择角色，再在独立权限树核对直接选择与导航补全。
 
 ### 5.1 原型场景
 
@@ -247,7 +249,7 @@ GET 只查询，不附带修改；POST 新建必要定义；PATCH 仅允许更�
 
 ## 6. T10 / #11：人员角色、停用与调动
 
-原型源码为 [t10.js](prototype/t10.js)。从 T04 人员行进入，分别核对当前角色、候选、草稿和保存结果；“下一请求”面板解释变更效果。独立有效权限来源页及代他人调用正式接口留在本票范围之外。
+原型源码为 [t10.js](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/prototype/t10.js)。从 T04 人员行进入，分别核对当前角色、候选、草稿和保存结果；“下一请求”面板解释变更效果。独立有效权限来源页及代他人调用正式接口留在本票范围之外。
 
 ### 6.1 原型场景
 
@@ -413,4 +415,4 @@ K 与 T06/T08 共用 [2.3](#common) 的完整方法/路径集合，可汇总本�
 
 四票原准备产物随 PR #19 合入；2026-11-08 T04 登录补充产物已按 8.1 获用户确认，合入证据见 Issue #5。T05已取得包含T03 PR #21和本次修订的共同基线70c3bef。T07/T09/T11 分别等待 T05 与对应 T06/T08/T10 契约。数据、课程技术及多系统缺项按上表交接；正式前端暂缓，业务及双系统按相应票验收。
 
-2026-11-10用户确认补充：本RBAC与Excel“系统管理后台”分别属于不同系统；原型权限名表示RBAC自身API，不能套用业务后台矩阵。首次五角色/工号清单与范围见[计划4.6](RBAC整改计划与Chen-ER图.md#46-t05-五角色首次授权与实际管理链路)，本次不改变已评审端点/DTO或扩大页面范围。
+2026-11-10用户确认补充：本RBAC与Excel“系统管理后台”分别属于不同系统；原型权限名表示RBAC自身API，不能套用业务后台矩阵。首次五角色/工号清单与范围见[计划4.6](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%95%B4%E6%94%B9%E8%AE%A1%E5%88%92%E4%B8%8EChen-ER%E5%9B%BE.md#46-t05-五角色首次授权与实际管理链路)，本次不改变已评审端点/DTO或扩大页面范围。

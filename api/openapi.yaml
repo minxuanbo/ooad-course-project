@@ -1,0 +1,2542 @@
+openapi: 3.1.0
+info:
+  title: 市政公司统一权限管理系统 API
+  version: 1.1.0-review
+  description: 本次文档整理评审稿。24个既有操作；共享structured/未来ddd契约，不表示DDD已实现。业务不变量见docs/requirements.md、docs/domain-model.md；跨字段/授权/范围规则见docs/api-contract.md。x-initial-permission-code只追溯初始映射，不能替代实际方法/模板的有效授权。
+servers:
+- url: /
+  description: 同源部署；路径已包含/api，避免重复拼接
+tags:
+- name: 认证与本人
+- name: 部门与人员
+- name: 人员授权
+- name: 角色与权限
+- name: 资源与映射
+- name: 鉴权日志
+security:
+- BearerAuth: []
+paths:
+  /api/auth/login:
+    post:
+      operationId: login
+      tags:
+      - 认证与本人
+      summary: 工号或手机号登录
+      description: 两种入口定位同一用户、共用口令/启用状态/有效管理API准入。跨用户歧义、未知、错口令、停用统一401 LOGIN_FAILED；无有效管理API为403 MANAGEMENT_ACCESS_DENIED。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginVOResponse'
+        '400':
+          description: 输入格式/关联/树或日志游标错误；无部分写入
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 账号/口令或可信身份失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 实际API权限/部门范围/管理准入拒绝
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 安全内部错误，requestId可追踪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginDTO'
+      security: []
+      x-management-scope: anonymous
+      x-maintenance-member: false
+  /api/auth/logout:
+    post:
+      operationId: logout
+      tags:
+      - 认证与本人
+      summary: 退出当前身份
+      description: Authorization可选；撤销所带Bearer，重复/未知/失效/缺失/非Bearer沿既有行为成功空操作。撤销后本人请求401。无必填body。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyResponse'
+        '500':
+          description: 安全内部错误，requestId可追踪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - {}
+      - BearerAuth: []
+      x-management-scope: logout
+      x-maintenance-member: false
+  /api/me:
+    get:
+      operationId: getMe
+      tags:
+      - 认证与本人
+      summary: 本人身份
+      description: 只要求有效身份，不以users.read作为前置；不能指定他人id。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeVOResponse'
+        '401':
+          description: 账号/口令或可信身份失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 安全内部错误，requestId可追踪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-management-scope: self
+      x-maintenance-member: false
+  /api/me/permissions:
+    get:
+      operationId: getMyPermissions
+      tags:
+      - 认证与本人
+      summary: 本人本系统有效权限
+      description: 只返回实际有效权限；不补导航祖先，不直接推断具体API可调用性。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionListResponse'
+        '401':
+          description: 账号/口令或可信身份失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 安全内部错误，requestId可追踪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-management-scope: self
+      x-maintenance-member: false
+  /api/departments/tree:
+    get:
+      operationId: listDepartments
+      tags:
+      - 部门与人员
+      summary: 可管理部门树
+      description: 扁平节点按parentId构树，只本人部门/后代；可见根parentId投影null。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentListResponse'
+        '401':
+          description: 账号/口令或可信身份失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 实际API权限/部门范围/管理准入拒绝
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 安全内部错误，requestId可追踪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-management-scope: subtree
+      x-initial-permission-code: rbac.users.read
+      x-maintenance-member: true
+  /api/users:
+    get:
+      operationId: listUsers
+      tags:
+      - 部门与人员
+      summary: 人员组合查询与分页
+      description: q匹配姓名或工号；数据库先范围再AND组合过滤、同条件计数、id升序分页。越末页items=[]，total保持。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPageVOResponse'
+        '400':
+          description: 输入格式/关联/树或日志游标错误；无部分写入
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 账号/口令或可信身份失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 实际API权限/部门范围/管理准入拒绝
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 已获可见范围内目标不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 安全内部错误，requestId可追踪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - $ref: '#/components/parameters/Q'
+      - $ref: '#/components/parameters/DepartmentId'
+      - $ref: '#/components/parameters/Enabled'
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      x-management-scope: subtree
+      x-initial-permission-code: rbac.users.read
+      x-maintenance-member: true
+  /api/users/{id}/roles:
+    get:
+      operationId: getUserRoles
+      tags:
+      - 人员授权
+      summary: 当前完整角色
+      description: 包含停用及当前不可再分配的已保存角色；非根未知人员统一范围403。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRolesVOResponse'
+        '400':
+          description: 输入格式/关联/树或日志游标错误；无部分写入
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 账号/口令或可信身份失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 实际API权限/部门范围/管理准入拒绝
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 已获可见范围内目标不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 安全内部错误，requestId可追踪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - $ref: '#/components/parameters/Id'
+      x-management-scope: subtree
+      x-initial-permission-code: rbac.users.read
+      x-maintenance-member: true
+    put:
+      operationId: replaceUserRoles
+      tags:
+      - 人员授权
+      summary: 整体替换人员角色
+      description: 整组重验，[]清空；不能提交过期/超权/停用角色；部门账号不能改自身或有效全局管理员。根锁后重验和完整K保护。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserWithRolesVOResponse'
+        '400':
+          description: 输入格式/关联/树或日志游标错误；无部分写入
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 账号/口令或可信身份失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 实际API权限/部门范围/管理准入拒绝
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 已获可见范围内目标不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 数据冲突或写后失去最后完整维护者；全回滚
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 安全内部错误，requestId可追踪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdsDTO'
+      x-management-scope: subtree
+      x-initial-permission-code: rbac.users.roles.write
+      x-maintenance-member: true
+  /api/users/{id}/assignable-roles:
+    get:
+      operationId: listAssignableRoles
+      tags:
+      - 人员授权
+      summary: 受限候选角色分页
+      description: q匹配角色名称/编码。只启用且全部有效Permission ID是本人集合子集的角色，外系统部分不得先过滤。先过滤再计数分页。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignableRolePageVOResponse'
+        '400':
+          description: 输入格式/关联/树或日志游标错误；无部分写入
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 账号/口令或可信身份失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 实际API权限/部门范围/管理准入拒绝
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 已获可见范围内目标不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 安全内部错误，requestId可追踪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - $ref: '#/components/parameters/Id'
+      - $ref: '#/components/parameters/Q'
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      x-management-scope: subtree
+      x-initial-permission-code: rbac.users.roles.write
+      x-maintenance-member: true
+  /api/users/{id}/status:
+    patch:
+      operationId: disableUser
+      tags:
+      - 人员授权
+      summary: 停用人员
+      description: 仅接受enabled:false；保留角色和部门。停用后旧身份401，再登录401 LOGIN_FAILED；共根锁及完整K保护。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserWithRolesVOResponse'
+        '400':
+          description: 输入格式/关联/树或日志游标错误；无部分写入
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 账号/口令或可信身份失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 实际API权限/部门范围/管理准入拒绝
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 已获可见范围内目标不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 数据冲突或写后失去最后完整维护者；全回滚
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 安全内部错误，requestId可追踪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserDisableDTO'
+      x-management-scope: subtree
+      x-initial-permission-code: rbac.users.disable
+      x-maintenance-member: false
+  /api/users/{id}/department:
+    put:
+      operationId: moveUser
+      tags:
+      - 人员授权
+      summary: 跨部门调动
+      description: 原/目标部门都须在本人子树，保持同一用户/角色，后续范围随归属变化；部门账号自身及全局管理员保护，根锁后重验。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserWithRolesVOResponse'
+        '400':
+          description: 输入格式/关联/树或日志游标错误；无部分写入
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 账号/口令或可信身份失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 实际API权限/部门范围/管理准入拒绝
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 已获可见范围内目标不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 数据冲突或写后失去最后完整维护者；全回滚
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 安全内部错误，requestId可追踪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserDepartmentDTO'
+      x-management-scope: subtree
+      x-initial-permission-code: rbac.users.department.write
+      x-maintenance-member: false
+  /api/roles:
+    get:
+      operationId: listRoles
+      tags:
+      - 角色与权限
+      summary: 角色组合查询
+      description: q匹配名称/编码，状态AND过滤；id升序、数据库分页/同条件total。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RolePageVOResponse'
+        '400':
+          description: 输入格式/关联/树或日志游标错误；无部分写入
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 账号/口令或可信身份失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 实际API权限/部门范围/管理准入拒绝
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 安全内部错误，requestId可追踪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - $ref: '#/components/parameters/Q'
+      - $ref: '#/components/parameters/Enabled'
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      x-management-scope: root
+      x-initial-permission-code: rbac.roles.read
+      x-maintenance-member: true
+    post:
+      operationId: createRole
+      tags:
+      - 角色与权限
+      summary: 新建空权限角色
+      description: 默认启用且无权限；编码按真实列排序规则判重，重复409 DATA_CONFLICT；编码创建后不可改。
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleVOResponse'
+        '400':
+          description: 输入格式/关联/树或日志游标错误；无部分写入
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 账号/口令或可信身份失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 实际API权限/部门范围/管理准入拒绝
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 数据冲突或写后失去最后完整维护者；全回滚
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 安全内部错误，requestId可追踪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleCreateDTO'
+      x-management-scope: root
+      x-initial-permission-code: rbac.roles.write
+      x-maintenance-member: true
+  /api/roles/{id}:
+    patch:
+      operationId: patchRole
+      tags:
+      - 角色与权限
+      summary: 改名或启停角色
+      description: 至少一个字段，缺省保留/显式null拒绝；停用保留关联。根锁、最新权限及完整K保护。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleVOResponse'
+        '400':
+          description: 输入格式/关联/树或日志游标错误；无部分写入
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 账号/口令或可信身份失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 实际API权限/部门范围/管理准入拒绝
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 已获可见范围内目标不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 数据冲突或写后失去最后完整维护者；全回滚
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 安全内部错误，requestId可追踪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RolePatchDTO'
+      x-management-scope: root
+      x-initial-permission-code: rbac.roles.write
+      x-maintenance-member: true
+  /api/roles/{id}/permissions:
+    get:
+      operationId: getRolePermissions
+      tags:
+      - 角色与权限
+      summary: 完整直接权限集合
+      description: 已保存直接ids；不自动补祖先/后代；完整读取不受树候选分页影响。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RolePermissionsVOResponse'
+        '400':
+          description: 输入格式/关联/树或日志游标错误；无部分写入
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 账号/口令或可信身份失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 实际API权限/部门范围/管理准入拒绝
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 已获可见范围内目标不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 安全内部错误，requestId可追踪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - $ref: '#/components/parameters/Id'
+      x-management-scope: root
+      x-initial-permission-code: rbac.roles.read
+      x-maintenance-member: true
+    put:
+      operationId: replaceRolePermissions
+      tags:
+      - 角色与权限
+      summary: 整体替换角色权限
+      description: 仅本系统启用权限，[]清空；整组校验，不静默保留/去重；修改后完整K至少保留一人。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RolePermissionsVOResponse'
+        '400':
+          description: 输入格式/关联/树或日志游标错误；无部分写入
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 账号/口令或可信身份失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 实际API权限/部门范围/管理准入拒绝
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 已获可见范围内目标不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 数据冲突或写后失去最后完整维护者；全回滚
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 安全内部错误，requestId可追踪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdsDTO'
+      x-management-scope: root
+      x-initial-permission-code: rbac.roles.permissions.write
+      x-maintenance-member: true
+  /api/systems:
+    get:
+      operationId: listSystems
+      tags:
+      - 资源与映射
+      summary: 本轮系统目录
+      description: 当前仅rbac，真实ID非固定1；不开放系统CRUD。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemListResponse'
+        '401':
+          description: 账号/口令或可信身份失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 实际API权限/部门范围/管理准入拒绝
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 安全内部错误，requestId可追踪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-management-scope: root
+      x-initial-permission-code: rbac.resources.read
+      x-maintenance-member: true
+  /api/permissions/tree:
+    get:
+      operationId: getPermissionTree
+      tags:
+      - 资源与映射
+      summary: 权限树目录
+      description: 返回嵌套children并保留停用节点便于维护；同系统id稳定排序，选择父级不隐含子API授权。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionTreeResponse'
+        '400':
+          description: 输入格式/关联/树或日志游标错误；无部分写入
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 账号/口令或可信身份失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 实际API权限/部门范围/管理准入拒绝
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 安全内部错误，requestId可追踪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - $ref: '#/components/parameters/SystemId'
+      x-management-scope: root
+      x-initial-permission-code: rbac.resources.read
+      x-maintenance-member: true
+  /api/api-resources:
+    get:
+      operationId: listApiResources
+      tags:
+      - 资源与映射
+      summary: API候选分页
+      description: q匹配method/path；过滤后id升序及同条件total；method/path只读。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiPageVOResponse'
+        '400':
+          description: 输入格式/关联/树或日志游标错误；无部分写入
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 账号/口令或可信身份失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 实际API权限/部门范围/管理准入拒绝
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 安全内部错误，requestId可追踪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - $ref: '#/components/parameters/SystemId'
+      - $ref: '#/components/parameters/Q'
+      - $ref: '#/components/parameters/Page'
+      - $ref: '#/components/parameters/Size'
+      x-management-scope: root
+      x-initial-permission-code: rbac.resources.read
+      x-maintenance-member: true
+  /api/permissions/{id}:
+    patch:
+      operationId: patchPermission
+      tags:
+      - 资源与映射
+      summary: 维护权限父级类型状态
+      description: parentId省略不改，显式null清父；type/enabled不能null。父子同系统/无环、BUTTON无子节点；系统/编码/名称不可改。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourcePermissionVOResponse'
+        '400':
+          description: 输入格式/关联/树或日志游标错误；无部分写入
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 账号/口令或可信身份失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 实际API权限/部门范围/管理准入拒绝
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 已获可见范围内目标不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 数据冲突或写后失去最后完整维护者；全回滚
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 安全内部错误，requestId可追踪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PermissionPatchDTO'
+      x-management-scope: root
+      x-initial-permission-code: rbac.resources.write
+      x-maintenance-member: true
+  /api/api-resources/{id}:
+    patch:
+      operationId: patchApiResource
+      tags:
+      - 资源与映射
+      summary: 启停API资源
+      description: 仅enabled；保留映射，影响所有引用；实际完整K保护，不编辑method/path/system。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiVOResponse'
+        '400':
+          description: 输入格式/关联/树或日志游标错误；无部分写入
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 账号/口令或可信身份失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 实际API权限/部门范围/管理准入拒绝
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 已获可见范围内目标不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 数据冲突或写后失去最后完整维护者；全回滚
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 安全内部错误，requestId可追踪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiPatchDTO'
+      x-management-scope: root
+      x-initial-permission-code: rbac.resources.write
+      x-maintenance-member: true
+  /api/permissions/{id}/apis:
+    get:
+      operationId: getPermissionApis
+      tags:
+      - 资源与映射
+      summary: 完整已保存API映射
+      description: ids为真值，items供状态/模板展示；含停用映射，不受候选分页截断。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionApisVOResponse'
+        '400':
+          description: 输入格式/关联/树或日志游标错误；无部分写入
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 账号/口令或可信身份失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 实际API权限/部门范围/管理准入拒绝
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 已获可见范围内目标不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 安全内部错误，requestId可追踪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - $ref: '#/components/parameters/Id'
+      x-management-scope: root
+      x-initial-permission-code: rbac.resources.read
+      x-maintenance-member: true
+    put:
+      operationId: replacePermissionApis
+      tags:
+      - 资源与映射
+      summary: 整体替换权限API映射
+      description: 只同系统API，可保存停用API但不贡献有效授权；直接外系统目标403、已获本系统目标的跨系统关联400。根锁及完整K保护。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionApisVOResponse'
+        '400':
+          description: 输入格式/关联/树或日志游标错误；无部分写入
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 账号/口令或可信身份失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 实际API权限/部门范围/管理准入拒绝
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 已获可见范围内目标不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 数据冲突或写后失去最后完整维护者；全回滚
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 安全内部错误，requestId可追踪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdsDTO'
+      x-management-scope: root
+      x-initial-permission-code: rbac.resources.write
+      x-maintenance-member: true
+  /api/authorization-logs:
+    get:
+      operationId: listAuthorizationLogs
+      tags:
+      - 鉴权日志
+      summary: 最小鉴权日志快照查询
+      description: 日志API+共同根，不要求完整K。部门即误授该API也403。ID降序快照/游标，total是同筛选快照总数；筛选或limit改变须清cursor，否则400 INVALID_CURSOR；无归档/导出。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogPageVOResponse'
+        '400':
+          description: 输入格式/关联/树或日志游标错误；无部分写入
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 账号/口令或可信身份失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 实际API权限/部门范围/管理准入拒绝
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 安全内部错误，requestId可追踪
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - $ref: '#/components/parameters/LogUserId'
+      - $ref: '#/components/parameters/LogUsername'
+      - $ref: '#/components/parameters/LogAppCode'
+      - $ref: '#/components/parameters/LogAllowed'
+      - $ref: '#/components/parameters/LogEvent'
+      - $ref: '#/components/parameters/LogFrom'
+      - $ref: '#/components/parameters/LogTo'
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Limit'
+      x-management-scope: root
+      x-initial-permission-code: rbac.logs.read
+      x-maintenance-member: false
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      description: 正安全整数；范围外与不存在的错误顺序见业务约束
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 9007199254740991
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 2147483647
+        default: 0
+    Size:
+      name: size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    Q:
+      name: q
+      in: query
+      description: 姓名/工号或名称/编码或方法/路径包含搜索，依接口说明；首尾空白不参与搜索，长度上限100
+      schema:
+        type: string
+        maxLength: 100
+    Enabled:
+      name: enabled
+      in: query
+      description: 省略表示全部；只接收字面true/false
+      schema:
+        type: string
+        enum:
+        - 'true'
+        - 'false'
+    DepartmentId:
+      name: departmentId
+      in: query
+      description: 省略表示本人范围；选择部门包含其后代，不能扩展操作者范围
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 9007199254740991
+    SystemId:
+      name: systemId
+      in: query
+      description: 省略为真实rbac系统ID；不固定为1，外系统目录403
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 9007199254740991
+    LogUserId:
+      name: userId
+      in: query
+      description: 正用户ID
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 9007199254740991
+    LogUsername:
+      name: username
+      in: query
+      description: 工号精确匹配
+      schema:
+        type: string
+        maxLength: 100
+    LogAppCode:
+      name: appCode
+      in: query
+      description: 系统编码精确匹配
+      schema:
+        type: string
+        maxLength: 191
+    LogAllowed:
+      name: allowed
+      in: query
+      description: 允许/拒绝
+      schema:
+        type: string
+        enum:
+        - 'true'
+        - 'false'
+    LogEvent:
+      name: event
+      in: query
+      description: 事件类型精确匹配
+      schema:
+        type: string
+        maxLength: 32
+    LogFrom:
+      name: from
+      in: query
+      description: UTC起点，含；同时提供to时必须from<to
+      schema:
+        type: string
+        format: date-time
+        pattern: Z$
+    LogTo:
+      name: to
+      in: query
+      description: UTC终点，不含；不接受时区偏移替代Z
+      schema:
+        type: string
+        format: date-time
+        pattern: Z$
+    Cursor:
+      name: cursor
+      in: query
+      description: 服务端不透明游标；筛选/limit绑定，变更后清空重查
+      schema:
+        type: string
+        maxLength: 4096
+    Limit:
+      name: limit
+      in: query
+      description: 日志每批条数
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 500
+        default: 100
+  schemas:
+    IdentityVO:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        username:
+          type: string
+          maxLength: 100
+          description: 工号，保留前导零；不另返回employeeNo或手机号
+        name:
+          type: string
+          maxLength: 100
+        departmentId:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        enabled:
+          type: boolean
+      required:
+      - id
+      - username
+      - name
+      - departmentId
+      - enabled
+    LoginVO:
+      type: object
+      additionalProperties: false
+      properties:
+        token:
+          type: string
+          minLength: 1
+          description: 沿现有基础设施的opaque Bearer，不承诺JWT格式
+        user:
+          $ref: '#/components/schemas/IdentityVO'
+        expiresIn:
+          type: integer
+          minimum: 1
+      required:
+      - token
+      - user
+      - expiresIn
+    MeVO:
+      type: object
+      additionalProperties: false
+      properties:
+        user:
+          $ref: '#/components/schemas/IdentityVO'
+      required:
+      - user
+    UserVO:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        username:
+          type: string
+          maxLength: 100
+        name:
+          type: string
+          maxLength: 100
+        departmentId:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        departmentName:
+          type: string
+          maxLength: 191
+        enabled:
+          type: boolean
+      required:
+      - id
+      - username
+      - name
+      - departmentId
+      - departmentName
+      - enabled
+    DepartmentVO:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        parentId:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+          maximum: 9007199254740991
+        name:
+          type: string
+          maxLength: 191
+          description: 范围外父节点不披露，可见根parentId投影null
+      required:
+      - id
+      - parentId
+      - name
+    PermissionVO:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        systemId:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        parentId:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+          maximum: 9007199254740991
+        type:
+          type: string
+          enum:
+          - MENU
+          - BUTTON
+        code:
+          type: string
+          maxLength: 100
+        name:
+          type: string
+          maxLength: 191
+      required:
+      - id
+      - systemId
+      - parentId
+      - type
+      - code
+      - name
+    ResourcePermissionVO:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        systemId:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        parentId:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+          maximum: 9007199254740991
+        type:
+          type: string
+          enum:
+          - MENU
+          - BUTTON
+        code:
+          type: string
+          maxLength: 100
+        name:
+          type: string
+          maxLength: 191
+        enabled:
+          type: boolean
+      required:
+      - id
+      - systemId
+      - parentId
+      - type
+      - code
+      - name
+      - enabled
+    PermissionTreeVO:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        systemId:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        parentId:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+          maximum: 9007199254740991
+        type:
+          type: string
+          enum:
+          - MENU
+          - BUTTON
+        code:
+          type: string
+          maxLength: 100
+        name:
+          type: string
+          maxLength: 191
+        enabled:
+          type: boolean
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/PermissionTreeVO'
+      required:
+      - id
+      - systemId
+      - parentId
+      - type
+      - code
+      - name
+      - enabled
+      - children
+    SystemVO:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        code:
+          type: string
+          maxLength: 100
+        name:
+          type: string
+          maxLength: 191
+        enabled:
+          type: boolean
+      required:
+      - id
+      - code
+      - name
+      - enabled
+    ApiVO:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        systemId:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        method:
+          type: string
+          maxLength: 16
+        path:
+          type: string
+          maxLength: 512
+        enabled:
+          type: boolean
+      required:
+      - id
+      - systemId
+      - method
+      - path
+      - enabled
+    RoleVO:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        code:
+          type: string
+          maxLength: 100
+        name:
+          type: string
+          maxLength: 100
+        enabled:
+          type: boolean
+      required:
+      - id
+      - code
+      - name
+      - enabled
+    UserWithRolesVO:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        username:
+          type: string
+          maxLength: 100
+          description: 工号，保留前导零；不另返回employeeNo或手机号
+        name:
+          type: string
+          maxLength: 100
+        departmentId:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        enabled:
+          type: boolean
+        roleIds:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+            maximum: 9007199254740991
+      required:
+      - id
+      - username
+      - name
+      - departmentId
+      - enabled
+      - roleIds
+    UserRolesVO:
+      type: object
+      additionalProperties: false
+      properties:
+        user:
+          $ref: '#/components/schemas/UserWithRolesVO'
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleVO'
+      required:
+      - user
+      - roles
+    RolePermissionsVO:
+      type: object
+      additionalProperties: false
+      properties:
+        roleId:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        ids:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+            maximum: 9007199254740991
+      required:
+      - roleId
+      - ids
+    PermissionApisVO:
+      type: object
+      additionalProperties: false
+      properties:
+        ids:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+            maximum: 9007199254740991
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApiVO'
+      required:
+      - ids
+      - items
+    UserPageVO:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserVO'
+        total:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+      required:
+      - items
+      - total
+      - page
+      - size
+    RolePageVO:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleVO'
+        total:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+      required:
+      - items
+      - total
+      - page
+      - size
+    AssignableRolePageVO:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleVO'
+        total:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+      required:
+      - items
+      - total
+      - page
+      - size
+    ApiPageVO:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApiVO'
+        total:
+          type: integer
+          minimum: 0
+        page:
+          type: integer
+          minimum: 0
+          maximum: 2147483647
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+      required:
+      - items
+      - total
+      - page
+      - size
+    LogEntryVO:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        occurredAt:
+          type: string
+          format: date-time
+          description: UTC ISO-8601
+        userId:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+          maximum: 9007199254740991
+        username:
+          type:
+          - string
+          - 'null'
+          maxLength: 100
+        appCode:
+          type: string
+          maxLength: 191
+        permissionCode:
+          type:
+          - string
+          - 'null'
+          maxLength: 191
+        allowed:
+          type: boolean
+        requestId:
+          type: string
+          maxLength: 64
+        reason:
+          type: string
+          maxLength: 64
+        eventType:
+          type: string
+          maxLength: 32
+        httpMethod:
+          type: string
+          maxLength: 16
+        requestPath:
+          type: string
+          maxLength: 512
+        httpStatus:
+          type: integer
+          minimum: 100
+          maximum: 599
+      required:
+      - id
+      - occurredAt
+      - userId
+      - username
+      - appCode
+      - permissionCode
+      - allowed
+      - requestId
+      - reason
+      - eventType
+      - httpMethod
+      - requestPath
+      - httpStatus
+    LogPageVO:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LogEntryVO'
+        nextCursor:
+          type:
+          - string
+          - 'null'
+          maxLength: 4096
+        hasMore:
+          type: boolean
+        snapshotId:
+          type: integer
+          minimum: 0
+        total:
+          type: integer
+          minimum: 0
+      required:
+      - items
+      - nextCursor
+      - hasMore
+      - snapshotId
+      - total
+    LoginDTO:
+      type: object
+      additionalProperties: false
+      properties:
+        account:
+          type: string
+          maxLength: 100
+          minLength: 1
+          pattern: \S
+          description: 一个工号或手机号输入；按字符串匹配，忽略首尾空白；输入上限100字符
+        password:
+          type: string
+          maxLength: 200
+          minLength: 1
+          writeOnly: true
+          description: 口令不trim，不回显、不记录
+      required:
+      - account
+      - password
+    IdsDTO:
+      type: object
+      additionalProperties: false
+      properties:
+        ids:
+          type: array
+          items:
+            type: integer
+            minimum: 1
+            maximum: 9007199254740991
+          uniqueItems: true
+          description: 明确完整集合；[]清空，重复/null/未知/越权项拒绝，整体成功或回滚
+      required:
+      - ids
+    RoleCreateDTO:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          maxLength: 100
+          minLength: 1
+          pattern: \S
+          description: 归一首尾空白，编码创建后不可改
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          pattern: \S
+      required:
+      - code
+      - name
+    RolePatchDTO:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          pattern: \S
+        enabled:
+          type: boolean
+      required: []
+      anyOf:
+      - required:
+        - name
+      - required:
+        - enabled
+    PermissionPatchDTO:
+      type: object
+      additionalProperties: false
+      properties:
+        parentId:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+          maximum: 9007199254740991
+        type:
+          type: string
+          enum:
+          - MENU
+          - BUTTON
+        enabled:
+          type: boolean
+      required: []
+      anyOf:
+      - required:
+        - parentId
+      - required:
+        - type
+      - required:
+        - enabled
+    ApiPatchDTO:
+      type: object
+      additionalProperties: false
+      properties:
+        enabled:
+          type: boolean
+      required:
+      - enabled
+    UserDisableDTO:
+      type: object
+      additionalProperties: false
+      properties:
+        enabled:
+          type: boolean
+          const: false
+          description: 当前仅停用，不提供恢复
+      required:
+      - enabled
+    UserDepartmentDTO:
+      type: object
+      additionalProperties: false
+      properties:
+        departmentId:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+      required:
+      - departmentId
+    Error:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - INVALID_ARGUMENT
+          - INVALID_CURSOR
+          - LOGIN_FAILED
+          - AUTHENTICATION_REQUIRED
+          - SESSION_INVALID
+          - MANAGEMENT_ACCESS_DENIED
+          - PERMISSION_DENIED
+          - MANAGEMENT_SCOPE_DENIED
+          - RESOURCE_NOT_FOUND
+          - DATA_CONFLICT
+          - LAST_ADMIN_REQUIRED
+          - INTERNAL_ERROR
+        message:
+          type: string
+          description: 安全的中文业务提示，不回显内部异常或秘密
+        data:
+          type: 'null'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    IdentityVOResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/IdentityVO'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    LoginVOResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LoginVO'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    MeVOResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/MeVO'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    UserVOResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/UserVO'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    DepartmentVOResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/DepartmentVO'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    PermissionVOResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/PermissionVO'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    ResourcePermissionVOResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/ResourcePermissionVO'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    PermissionTreeVOResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/PermissionTreeVO'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    SystemVOResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/SystemVO'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    ApiVOResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/ApiVO'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    RoleVOResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/RoleVO'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    UserWithRolesVOResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/UserWithRolesVO'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    UserRolesVOResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/UserRolesVO'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    RolePermissionsVOResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/RolePermissionsVO'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    PermissionApisVOResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/PermissionApisVO'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    UserPageVOResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/UserPageVO'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    RolePageVOResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/RolePageVO'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    AssignableRolePageVOResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/AssignableRolePageVO'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    ApiPageVOResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/ApiPageVO'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    LogEntryVOResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LogEntryVO'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    LogPageVOResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LogPageVO'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    PermissionListResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PermissionVO'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    DepartmentListResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/DepartmentVO'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    SystemListResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SystemVO'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    PermissionTreeResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PermissionTreeVO'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    EmptyResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+        data:
+          type: 'null'
+        requestId:
+          type: string
+          minLength: 1
+      required:
+      - code
+      - message
+      - data
+      - requestId

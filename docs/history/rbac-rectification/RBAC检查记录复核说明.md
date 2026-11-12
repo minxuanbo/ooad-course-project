@@ -1,6 +1,8 @@
 # RBAC 检查记录复核说明
 
-> 阅读说明（2026-11-12）：本文保留老师纪要摘录、原数据静态事实与用户补充的时间线；旧代码发现和待办是历史记录。现行规则见[需求说明](../requirements.md)，当前实现/验收状态见[验收说明](../testing-acceptance.md)。
+> 只读历史归档，非现行规范。需求/设计见[正式导航](../../README.md)，原相对链接已固定到T13基线；本次保留追溯证据，不新增实现或验收结论。
+
+> 阅读说明（2026-11-12）：本文保留老师纪要摘录、原数据静态事实与用户补充的时间线；旧代码发现和待办是历史记录。现行规则见[需求说明](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/requirements.md)，当前实现/验收状态见[验收说明](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/testing-acceptance.md)。
 
 以《2-9组检查记录》第一轮技术纪要为基础，结合补充检查图片和用户确认复核。原纪要摘录保持原文，图片、数据与用户补充分节注明来源。本文保留技术内容；原 DOCX 及人员、评分信息留在本地。
 
@@ -53,9 +55,9 @@ ER图应使用标准符号并只表达核心对象。User、Role、Permission及
 
 | 仓库原件 | 字节数 | SHA-256 |
 | --- | ---: | --- |
-| [员工信息表](../../市政公司员工信息表.xlsx) | 559511 | `66657800a5e2e252c9d1dedfee2dbd54b694e3a5912166c2bac79c8703b20516` |
-| [部门信息表](../../市政公司部门信息表.xlsx) | 71646 | `555ae8cb1a1569dda43cf53c47ee37f4ba4e8964f334ec8f2e1ef73699686c40` |
-| [应用软件功能权限清单](../../市政公司应用软件功能权限清单.xlsx) | 77004 | `13c18de30710cc2867588aa99843c6c388c0a8ee85029f3420f7b4c4c9fad655` |
+| [员工信息表](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/%E5%B8%82%E6%94%BF%E5%85%AC%E5%8F%B8%E5%91%98%E5%B7%A5%E4%BF%A1%E6%81%AF%E8%A1%A8.xlsx) | 559511 | `66657800a5e2e252c9d1dedfee2dbd54b694e3a5912166c2bac79c8703b20516` |
+| [部门信息表](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/%E5%B8%82%E6%94%BF%E5%85%AC%E5%8F%B8%E9%83%A8%E9%97%A8%E4%BF%A1%E6%81%AF%E8%A1%A8.xlsx) | 71646 | `555ae8cb1a1569dda43cf53c47ee37f4ba4e8964f334ec8f2e1ef73699686c40` |
+| [应用软件功能权限清单](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/%E5%B8%82%E6%94%BF%E5%85%AC%E5%8F%B8%E5%BA%94%E7%94%A8%E8%BD%AF%E4%BB%B6%E5%8A%9F%E8%83%BD%E6%9D%83%E9%99%90%E6%B8%85%E5%8D%95.xlsx) | 77004 | `13c18de30710cc2867588aa99843c6c388c0a8ee85029f3420f7b4c4c9fad655` |
 
 - 员工表“员工信息”有 10,000 条人员记录，六列为姓名、用户名、分公司、部门、岗位、电话号码，均无空值；用户名和电话各 10,000 个不同值，姓名仅 7,859 个不同值，不能按姓名定位唯一人员。源表没有另设标题为“工号”的列；按2026-11-08用户明确的同一概念，“用户名”列即工号来源，“电话号码”即手机号来源。原表没有口令哈希、有效状态或人员角色关系；旧初始化生成的口令/状态/授权不是老师原始值。
 - 部门表“部门信息”有 111 个不同节点，唯一根为“总公司”，无缺失上级、无环且连通，最大三级。10,000 人均能唯一归属：244 人按部门原名、9,756 人结合分公司前缀匹配。110 个节点有直属人员，根节点没有；根负责人对应的员工在“公司领导”，不能按姓名自动改归属或提权。导入后须核对真实父子外键和来源映射。
@@ -63,7 +65,7 @@ ER图应使用标准符号并只表达核心对象。User、Role、Permission及
 - 三份工作表的声明范围均为 `A1`，不能依此截断读取；权限表有 134 个合并范围，系统/模块分组须按实际合并范围恢复。权限表 `H117` 为 `view/新增`、`G310` 为 `view/编辑/审批`、`I340` 为空；另有“查看本人”“编辑本人”。选用条目时记录转换或拒绝理由，不擅自把空白当允许或丢弃本人范围。
 - 清单中的日志、密码重置、双因素认证及大量业务模块不因出现在原表就全部恢复。鉴权日志仅按最新用户要求复用最小能力；表中培训功能提到课程，不等于后续课程系统已确认或完成。别组 HTML 不作为需求或验收依据。
 
-上述数量和归属描述原表静态事实；2026-11-10用户确认的目标合并、独立账号及新项目初始化规则见1.4和[计划4.4](RBAC整改计划与Chen-ER图.md#44-原始数据复核与导入前置)，不再要求复用旧库哈希或状态。T03负责资料/账号，T05负责确认清单后的首次批量授权，两者分别验收。
+上述数量和归属描述原表静态事实；2026-11-10用户确认的目标合并、独立账号及新项目初始化规则见1.4和[计划4.4](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%95%B4%E6%94%B9%E8%AE%A1%E5%88%92%E4%B8%8EChen-ER%E5%9B%BE.md#44-原始数据复核与导入前置)，不再要求复用旧库哈希或状态。T03负责资料/账号，T05负责确认清单后的首次批量授权，两者分别验收。
 
 ### 1.3 登录要求与字段口径
 
@@ -71,7 +73,7 @@ ER图应使用标准符号并只表达核心对象。User、Role、Permission及
 
 **用户名就是工号，工号和手机号定位同一账号并使用同一口令。** Excel“用户名”映射 `users.username`，“电话号码”映射 `phone`；内部关联使用 `users.id`。第一轮清理独立统一标识/凭证模型，基本登录方式按此保留。
 
-原双工号字段及 username 单入口方案已由当前口径取代。T03 删除 `employee_no` 并核对唯一性/跨用户碰撞，T04 复核原型与契约，T05 实现，T12 清理调用/初始化/测试/配置/文档，T13 验证同身份同授权；登录歧义匹配统一拒绝。完整规则见[计划 1.2](RBAC整改计划与Chen-ER图.md#login)，认证机制沿原范围处理。
+原双工号字段及 username 单入口方案已由当前口径取代。T03 删除 `employee_no` 并核对唯一性/跨用户碰撞，T04 复核原型与契约，T05 实现，T12 清理调用/初始化/测试/配置/文档，T13 验证同身份同授权；登录歧义匹配统一拒绝。完整规则见[计划 1.2](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%95%B4%E6%94%B9%E8%AE%A1%E5%88%92%E4%B8%8EChen-ER%E5%9B%BE.md#login)，认证机制沿原范围处理。
 
 ### 1.4 新项目初始化与领导节点合并（2026-11-10用户确认）
 
@@ -82,7 +84,7 @@ ER图应使用标准符号并只表达核心对象。User、Role、Permission及
 - 全局管理员是单独创建的普通User，不增加全局账号实体或管理员字段。保留原六实体九核心表和“本人部门及后代”范围规则；总公司领导具有全组织范围仍须获得相应实际操作权限。
 - T03只导组织、账号及来源，独立`import_sources`为运行支撑，不进入核心ER。T05须依据确认的规则/工号—角色清单提供首次批量授权初始化、数量预检和重复执行/回滚保护，不要求一万人逐个点击；T11负责日常调整。岗位可供制定清单时参考，不能未经确认自动授予管理权限。
 
-实施与复现见[计划4.4—4.5](RBAC整改计划与Chen-ER图.md#44-原始数据复核与导入前置)。资料/账号建立不代表登录和授权初始化已经验收。
+实施与复现见[计划4.4—4.5](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%95%B4%E6%94%B9%E8%AE%A1%E5%88%92%E4%B8%8EChen-ER%E5%9B%BE.md#44-原始数据复核与导入前置)。资料/账号建立不代表登录和授权初始化已经验收。
 
 ## 2. 逐项对照与修正
 
@@ -121,15 +123,15 @@ ER图应使用标准符号并只表达核心对象。User、Role、Permission及
 
 任务粒度已确认：15 票、22 条直接依赖，13 票当前范围，2 票课程后续。已记录进度如下，实时状态见各 Issue。
 
-- T01 经 PR #17 合入，Issue #2 关闭；模型和规则评审见[计划 5.3](RBAC整改计划与Chen-ER图.md#53-t01-评审记录与未决项)。T02 经 PR #18 合入、Issue #3 关闭，独立模型测试和打包证据见[计划 4.3](RBAC整改计划与Chen-ER图.md#43-t02-独立模型与验证)。
+- T01 经 PR #17 合入，Issue #2 关闭；模型和规则评审见[计划 5.3](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%95%B4%E6%94%B9%E8%AE%A1%E5%88%92%E4%B8%8EChen-ER%E5%9B%BE.md#53-t01-评审记录与未决项)。T02 经 PR #18 合入、Issue #3 关闭，独立模型测试和打包证据见[计划 4.3](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%95%B4%E6%94%B9%E8%AE%A1%E5%88%92%E4%B8%8EChen-ER%E5%9B%BE.md#43-t02-独立模型与验证)。
 - T03前置已满足，用户已授权在独立分支实现单工号模型及真实数据导入，按1.4的新项目初始化规则替代旧来源缺项；最终评审、合入以Issue #4和PR为准。
-- T04/T06/T08/T10 的原型契约于 2026-11-07 获用户确认并随 PR #19 合入；2026-11-08 T04 双入口补充原型/契约经技术复核并获用户“推送合并完结”确认，见[契约8.1](RBAC原型与API契约.md#login-review)及Issue #5；T05仍需T03完成和包含本次修订的共同基线。
+- T04/T06/T08/T10 的原型契约于 2026-11-07 获用户确认并随 PR #19 合入；2026-11-08 T04 双入口补充原型/契约经技术复核并获用户“推送合并完结”确认，见[契约8.1](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E5%8E%9F%E5%9E%8B%E4%B8%8EAPI%E5%A5%91%E7%BA%A6.md#login-review)及Issue #5；T05仍需T03完成和包含本次修订的共同基线。
 - 产品查询、统一授权与 AOP、最小日志、CloneFactory、REST、读写事务及调动仍按业务票实现，真实数据集成、HTTP 和并发按票验收。
 - 正式前端暂缓；课程受控场景及双系统演示由 T14/T15 后续落实。
 
 ## 5. 项目资料使用规则
 
-[原版执行计划](RBAC整改计划与Chen-ER图.md)指导实施，[任务清单](RBAC整改任务清单.md)记录交付与依赖，Issue 记录认领及评审状态。方案变更回写执行计划并同步受影响票。
+[原版执行计划](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%95%B4%E6%94%B9%E8%AE%A1%E5%88%92%E4%B8%8EChen-ER%E5%9B%BE.md)指导实施，[任务清单](https://github.com/minxuanbo/ooad-course-project/blob/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification/RBAC%E6%95%B4%E6%94%B9%E4%BB%BB%E5%8A%A1%E6%B8%85%E5%8D%95.md)记录交付与依赖，Issue 记录认领及评审状态。方案变更回写执行计划并同步受影响票。
 
 历史需求、设计、原型和测试集中于 docs/legacy/，供差异核对。项目维护单份执行计划、任务清单及必要契约；讨论副本、单票镜像和生成报告留在 Git 之外，版本由 Git/PR 追踪。
 

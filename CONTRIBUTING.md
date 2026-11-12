@@ -1,36 +1,33 @@
-# 小组协作
+# 小组协作与文档维护
 
-正式资料从[文档导航](docs/README.md)阅读：需求、领域/数据库、前后端、API与验收各司其职；API规范正文为docs/api-contract.md。历史整改文档保留追溯路径，不再另写一份相互冲突的现行规范。
+现行规范从[文档导航](docs/README.md)进入。需求、领域、数据库、前后端、API、初始化与验收分别维护职责；历史整改过程放在docs/history，不再作为另一份当前规范。GitHub Issue/PR维护实时认领与合入状态。
 
-当前只有结构化业务实现；同仓库DDD方案属于目标设计。2026-11-12用户安排本次先整理文档、再完成T13后停止。不得借文档整理移动生产代码、启用不存在的策略配置或启动后续任务。
+## 1. 当前工作边界
 
-共同整改基线为 refactor/rbac-core-backend；现有文档 PR 尚未合入 main。整改任务从远端共同基线建立分支，不从旧 main 开工。任务范围与验收见[完整任务清单](docs/rbac-rectification/RBAC整改任务清单.md)。
+T13已合入共同基线，当前仅结构化实现。后续顺序见[开发计划](docs/development-plan.md)。本次仅文档清理/完善，迁移参考原型及必要路径测试；用户逐项审核后才决定合并。不得借整理移动生产代码、加入策略配置、重做UI或启动DDD/T14/T15。
 
-## 认领与开工
+## 2. 分支与工作树
 
-1. 打开目标 GitHub Issue，确认负责人，人工认领。核对全部 Blocked by，以及前置结论和所需产物是否进入共同基线；关闭 Issue 本身不替代证据。课程 T14/T15 另须小组确认启动。
-2. 新组员先克隆仓库；已有仓库先检查本地改动，再获取远端更新：
+共同基线为refactor/rbac-core-backend，main仍是历史工程。先确认本地改动，再获取远端；按本票范围使用独立codex/分支。示例：
 
 ```bash
 git status --short
 git fetch origin
+git worktree add -b codex/your-task ../ooad-your-task origin/refactor/rbac-core-backend
 ```
 
-3. 每票使用独立任务分支；多人或多对话写入时使用独立工作树。T03 示例：
+分支或目录存在时先核对，不覆盖或重置用户工作。每次开工读AGENTS.md、对应Issue、批准需求及依赖证据；不凭Issue关闭状态推断交付物已进入共同基线，不自动领取下游任务。
 
-```bash
-git worktree add -b task/t03-org-import ../ooad-t03 origin/refactor/rbac-core-backend
-```
+## 3. 编写与验证
 
-分支或目录已存在时，先核对所属任务后复用，不覆盖。打开新工作树后阅读 AGENTS.md 和对应 Issue；当前可开工范围及 [T03 指令](docs/rbac-rectification/README.md#t03-开工指令)见整改入口；前置票需有评审与合并证据。
+- 业务规则改需求正文，HTTP字段先改api/openapi.yaml并同源导出JSON，范围/事务等改api-contract；同步页面对照和受影响测试。
+- 目标设计用“应、拟、规划”等措辞；实际状态及验收分别说明，保留版本、环境、源提交与未验证范围。
+- 代码/测试按用户指定编码skill执行TDD、DTO/VO、CloneFactory、中文注释、真实换行与事务规范；RBAC本地身份等用户已确认规则优先。双轴审核按审核skill分别检查规范与需求。
+- UML实现图随实际代码更新；不虚构DDD实现图。图件同时交可编辑源、SVG/PNG及生成说明，生成后进行视觉检查。
+- 保留原Excel、旧库和本地资料；万人CSV、凭据、运行日志、构建产物和原始测试报告不提交。
 
-## 提交与评审
+## 4. 交付与审核
 
-- 只提交本票需要的改动；改动共享授权、AOP、事务、初始化和 DTO 前，与相关票负责人协调。
-- 原型/契约评审票交付具体产物、评审结论和未决项。正式接口实现先核对对应评审已完成；正式前端继续暂缓。
-- 保留原始 Excel、数据库及本地资料。本地小组文档放在已忽略的 .local/group-documents/；临时材料、报告和构建产物不提交。
-- 检查 git diff，按实际文件路径 git add，再提交和推送本票分支。不要批量添加未知文件。
-- 创建草稿 PR，base 指向 refactor/rbac-core-backend，正文使用 Refs #实际编号，列交付行为、验收证据、未验证项及共享模块影响。
-- 小组解决未决项、回写执行计划并评审合入共同基线后，由评审者更新/关闭 Issue。代理不自行合并、关闭票或领取下游。
+核对git diff和验证结果，按文件明确暂存。提交并推送任务分支，创建base为refactor/rbac-core-backend的草稿PR；关联实际Issue时用Refs，不用无关的自动关票语句。正文写问题、最终变更、证据、限制与待审核事项。
 
-GitHub 负责认领、评论及实时验收状态；任务清单保留批准的交付与依赖。调整范围或验收标准时，同步执行计划、任务清单和受影响 Issues，不新建重复票。
+用户要求先审时，不自行合并、删除在审分支或关闭Issue。文档审核以[逐项指南](docs/review-guide.md)为入口；用户批准后才进行后续动作。变更批准范围时同步计划与受影响Issue，不新建重复任务。本轮不向Apifox推送。

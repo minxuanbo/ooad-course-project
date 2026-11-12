@@ -1,21 +1,34 @@
-# 页面、用例与API对照
+# 页面与API对照
 
-接口字段、响应和错误的规范正文为[API契约](api-contract.md)；本表只建立索引，不维护第二份参数定义。当前24个操作：20个受控管理API及4个基础登录/本人操作。所有管理请求仍按服务端实际方法/模板鉴权，表中能力名不替代实际授权。
+> 接口字段与响应的唯一机器规范为[OpenAPI](../api/openapi.yaml)，JSON为同源派生；[业务约束](api-contract.md)解释鉴权、范围与原子性。此表只作24项操作索引。
 
-| 页面/用例 | 操作 | 范围/备注 |
-| --- | --- | --- |
-| 登录/退出 | POST /api/auth/login；POST /api/auth/logout | 单account入口；退出不新增会话落库 |
-| 共用外壳 | GET /api/me；GET /api/me/permissions | 有效身份；不要求人员查询权限 |
-| 部门人员 | GET /api/departments/tree；GET /api/users | 本部门及后代；人员唯一分页入口 |
-| 人员角色 | GET /api/users/{id}/roles；GET /api/users/{id}/assignable-roles；PUT /api/users/{id}/roles | 当前、候选、保存分别检查；范围及可授予权限子集 |
-| 人员停用/调动 | PATCH /api/users/{id}/status；PUT /api/users/{id}/department | 仅停用；调动双范围，保持同一用户 |
-| 角色管理 | GET /api/roles；POST /api/roles；PATCH /api/roles/{id} | 共同根及具体API；创建201，编码稳定 |
-| 角色选权 | GET /api/roles/{id}/permissions；PUT /api/roles/{id}/permissions | 完整已选ids及整体替换；树查询复用资源目录 |
-| 资源目录 | GET /api/systems；GET /api/permissions/tree；GET /api/api-resources | 共同根、本系统，API候选分页 |
-| 资源维护 | PATCH /api/permissions/{id}；PATCH /api/api-resources/{id} | 必要字段、树约束及启停 |
-| API映射 | GET /api/permissions/{id}/apis；PUT /api/permissions/{id}/apis | 完整映射与整体替换，同系统 |
-| 鉴权日志 | GET /api/authorization-logs | 日志API+共同根；快照游标，不要求完整K |
+| 页面/操作组 | 操作 | 用途 | 请求模型 | 成功data |
+| --- | --- | --- | --- | --- |
+| 认证与本人 | `POST /api/auth/login` | 工号或手机号登录 | LoginDTO | LoginVO |
+| 认证与本人 | `POST /api/auth/logout` | 退出当前身份 | 路径/query/无body，见规范 | null |
+| 认证与本人 | `GET /api/me` | 本人身份 | 路径/query/无body，见规范 | MeVO |
+| 认证与本人 | `GET /api/me/permissions` | 本人本系统有效权限 | 路径/query/无body，见规范 | 数组 |
+| 部门与人员 | `GET /api/departments/tree` | 可管理部门树 | 路径/query/无body，见规范 | 数组 |
+| 部门与人员 | `GET /api/users` | 人员组合查询与分页 | 路径/query/无body，见规范 | UserPageVO |
+| 人员授权 | `GET /api/users/{id}/roles` | 当前完整角色 | 路径/query/无body，见规范 | UserRolesVO |
+| 人员授权 | `GET /api/users/{id}/assignable-roles` | 受限候选角色分页 | 路径/query/无body，见规范 | AssignableRolePageVO |
+| 人员授权 | `PUT /api/users/{id}/roles` | 整体替换人员角色 | IdsDTO | UserWithRolesVO |
+| 人员授权 | `PATCH /api/users/{id}/status` | 停用人员 | UserDisableDTO | UserWithRolesVO |
+| 人员授权 | `PUT /api/users/{id}/department` | 跨部门调动 | UserDepartmentDTO | UserWithRolesVO |
+| 角色与权限 | `GET /api/roles` | 角色组合查询 | 路径/query/无body，见规范 | RolePageVO |
+| 角色与权限 | `POST /api/roles` | 新建空权限角色 | RoleCreateDTO | RoleVO |
+| 角色与权限 | `PATCH /api/roles/{id}` | 改名或启停角色 | RolePatchDTO | RoleVO |
+| 角色与权限 | `GET /api/roles/{id}/permissions` | 完整直接权限集合 | 路径/query/无body，见规范 | RolePermissionsVO |
+| 角色与权限 | `PUT /api/roles/{id}/permissions` | 整体替换角色权限 | IdsDTO | RolePermissionsVO |
+| 资源与映射 | `GET /api/systems` | 本轮系统目录 | 路径/query/无body，见规范 | 数组 |
+| 资源与映射 | `GET /api/permissions/tree` | 权限树目录 | 路径/query/无body，见规范 | 数组 |
+| 资源与映射 | `GET /api/api-resources` | API候选分页 | 路径/query/无body，见规范 | ApiPageVO |
+| 资源与映射 | `PATCH /api/permissions/{id}` | 维护权限父级类型状态 | PermissionPatchDTO | ResourcePermissionVO |
+| 资源与映射 | `PATCH /api/api-resources/{id}` | 启停API资源 | ApiPatchDTO | ApiVO |
+| 资源与映射 | `GET /api/permissions/{id}/apis` | 完整已保存API映射 | 路径/query/无body，见规范 | PermissionApisVO |
+| 资源与映射 | `PUT /api/permissions/{id}/apis` | 整体替换权限API映射 | IdsDTO | PermissionApisVO |
+| 鉴权日志 | `GET /api/authorization-logs` | 最小鉴权日志快照查询 | 路径/query/无body，见规范 | LogPageVO |
 
-初始化命令不属于HTTP API。旧/users/page、/users/filters、业务应用目录、模拟/authorize、交接、独立management权限、归档/导出不作为当前正式入口。课程系统接口未在本次启动，不能把测试/mock/foreign-resource加入正式目录。
+前端目标页面与状态见[前端设计](frontend-design.md)。当前参考原型见[prototype](../prototype/index.html)，只保留已评审交互供下一阶段重设计参考；不作为生产接口或完整界面验收。
 
-原型源码仍在[prototype](rbac-rectification/prototype/index.html)，真实前端设计见[frontend-design](frontend-design.md)。本次规范整理保留原型路径及既有评审链接，避免历史PR和Issue中的引用失效。
+初始化走离线命令，不新增HTTP初始化入口。课程系统及T14/T15等待老师要求，本次不加入课程路径、模拟外系统路径或旧应用/交接/归档接口。

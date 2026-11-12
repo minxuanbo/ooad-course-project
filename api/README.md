@@ -1,7 +1,20 @@
-# API契约入口
+# RBAC API文档
 
-当前规范正文为[docs/api-contract.md](../docs/api-contract.md)，页面/用例索引为[docs/api-map.md](../docs/api-map.md)。正式API为24个操作，保留已评审路径、字段、响应、错误及范围；structured与未来ddd必须共用同一契约。
+| 文件 | 职责 |
+| --- | --- |
+| [openapi.yaml](openapi.yaml) | OpenAPI3.1主文件；24个现有操作、20个路径、56个Schema，评审稿 |
+| [openapi.json](openapi.json) | 同一规范的JSON派生文件，不独立手改 |
+| [业务约束](../docs/api-contract.md) | 共享授权、范围、错误顺序、完整K、原子性及日志快照 |
+| [页面对照](../docs/api-map.md) | 24项操作与目标页面/用例索引 |
 
-本次从整改材料提取正式契约，不臆造新的HTTP接口，也不把老师示例项目的课程API导入本仓库。当前尚无经核对的OpenAPI机器规范；后续如生成openapi.yaml，应完整覆盖现有契约并验证一致性后再切换唯一规范来源，不同时维护相互冲突的两套正文。
+参照老师项目分开机器契约与业务说明，不移植课程系统接口。规范覆盖当前结构化实现与未来DDD应共同遵守的HTTP行为；x-initial-permission-code仅说明初始映射，不要求固定权限code才能调用API；x-maintenance-member标出17项K。
 
-未执行Apifox同步；只有用户明确要求并确认目标项目时才执行。旧契约评审及原型历史仍在[原记录](../docs/rbac-rectification/RBAC原型与API契约.md)。
+YAML为唯一机器规范。使用PyYAML时可在仓库根重新导出JSON：
+
+```bash
+python -c "import json,pathlib,yaml; p=pathlib.Path('api'); d=yaml.safe_load((p/'openapi.yaml').read_text(encoding='utf-8')); (p/'openapi.json').write_text(json.dumps(d,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')"
+```
+
+导出后核对YAML/JSON语义相等、24项操作、17项K、所有引用可解析，使用OpenAPI3.1校验器检查。类型/长度静态约束不能替代跨字段、归一化、状态、数据库、授权或范围验证。
+
+本次不修改服务、不上传Apifox、不改变契约。后续同步须用户明确确认目标项目和覆盖范围，不能沿用老师项目ID或凭据。
