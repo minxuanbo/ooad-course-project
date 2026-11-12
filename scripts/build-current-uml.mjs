@@ -3,7 +3,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
 
-// 当前实现图：只截取CoreAuthService.require相关成员，目标DDD设计不在此生成。
+// 当前实现图：只截取StructuredAuthenticationService.require相关成员，目标DDD设计不在此生成。
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const out = resolve(root, 'docs/design')
 const require = createRequire(import.meta.url)
@@ -22,22 +22,22 @@ function document(width, height, title, body) {
 }
 // 源码存在性检查防止改名或删方法后仍生成貌似有效的旧图；语义仍须人工复核。
 const sources = {
-  auth: 'src/main/java/com/municipal/rbaccore/service/CoreAuthService.java',
-  identities: 'src/main/java/com/municipal/rbaccore/security/BearerIdentityStore.java',
-  filter: 'src/main/java/com/municipal/rbac/RequestAuditFilter.java',
+  auth: 'backend/src/main/java/com/municipal/rbaccore/service/structured/auth/StructuredAuthenticationService.java',
+  identities: 'backend/src/main/java/com/municipal/rbaccore/service/port/security/IdentityTokenStore.java',
+  filter: 'backend/src/main/java/com/municipal/rbaccore/service/port/security/RequestContext.java',
 }
 for (const [key, path] of Object.entries(sources)) {
   const code = readFileSync(resolve(root, path), 'utf8')
-  const expected = key === 'auth' ? ['CurrentIdentity require(String header)', 'findById(identities.require(header))', 'filter(User::isEnabled)', 'orElseThrow(ApiException::unauthorized)'] : key === 'filter' ? ['static void actor('] : ['Long require(String header)']
+  const expected = key === 'auth' ? ['CurrentIdentity require(String header)', 'findById(identities.require(header))', 'filter(UserEntity::isEnabled)', 'orElseThrow(BusinessException::unauthorized)'] : key === 'filter' ? ['void actor('] : ['Long require(String header)']
   for (const text of expected) if (!code.includes(text)) throw Error(`${path}不再包含图中操作：${text}`)
 }
 
 const boxes = [
-  { id: 'auth', x: 600, y: 390, w: 500, h: 220, title: 'CoreAuthService', fields: ['- users: UserRepository', '- identities: BearerIdentityStore'], methods: ['+ require(header: String): CurrentIdentity'] },
-  { id: 'users', x: 40, y: 380, w: 440, h: 170, title: '«interface» UserRepository', fields: [], methods: ['+ findById(id: Long): Optional<User>', '  （继承JpaRepository的方法）'] },
-  { id: 'identities', x: 600, y: 105, w: 500, h: 170, title: 'BearerIdentityStore', fields: [], methods: ['+ require(header: String): Long'] },
-  { id: 'user', x: 1220, y: 380, w: 430, h: 190, title: 'User', fields: ['- enabled: boolean'], methods: ['+ isEnabled(): boolean', '+ getId(), getUsername(), getDepartment()'] },
-  { id: 'filter', x: 600, y: 800, w: 500, h: 160, title: 'RequestAuditFilter', fields: [], methods: ['+ actor(id: Long, username: String): void', '  {static}'] },
+  { id: 'auth', x: 600, y: 390, w: 500, h: 250, title: 'StructuredAuthenticationService', fields: ['- users: UserJpaRepository', '- identities: IdentityTokenStore', '- requestContext: RequestContext'], methods: ['+ require(header: String): CurrentIdentity'] },
+  { id: 'users', x: 40, y: 380, w: 440, h: 170, title: '«interface» UserJpaRepository', fields: [], methods: ['+ findById(id: Long): Optional<UserEntity>', '  （继承JpaRepository的方法）'] },
+  { id: 'identities', x: 600, y: 105, w: 500, h: 170, title: '«interface» IdentityTokenStore', fields: [], methods: ['+ require(header: String): Long'] },
+  { id: 'user', x: 1220, y: 380, w: 430, h: 190, title: 'UserEntity', fields: ['- enabled: boolean'], methods: ['+ isEnabled(): boolean', '+ getId(), getUsername(), getDepartment()'] },
+  { id: 'filter', x: 600, y: 800, w: 500, h: 160, title: '«interface» RequestContext', fields: [], methods: ['+ actor(id: Long, username: String): void'] },
   { id: 'identity', x: 1220, y: 770, w: 430, h: 190, title: '«record» CurrentIdentity', fields: ['id: Long', 'username: String', 'departmentId: Long'], methods: [] },
 ]
 function classBox(b) {
@@ -51,7 +51,7 @@ const edges = [
   { from: 'auth', to: 'users', points: [[600, 455], [480, 455]], role: [514, 440, 'users'] },
   { from: 'auth', to: 'identities', points: [[850, 390], [850, 275]], role: [735, 330, 'identities'] },
   { from: 'auth', to: 'user', points: [[1100, 470], [1220, 470]], dependency: true },
-  { from: 'auth', to: 'filter', points: [[850, 610], [850, 800]], dependency: true },
+  { from: 'auth', to: 'filter', points: [[850, 640], [850, 800]], role: [662, 725, 'requestContext'] },
   { from: 'auth', to: 'identity', points: [[1100, 575], [1160, 575], [1160, 850], [1220, 850]], dependency: true },
 ]
 function assertNoOverlap() {
@@ -70,12 +70,12 @@ function assertEdgesClearOfBoxes() {
   }
 }
 assertNoOverlap(); assertEdgesClearOfBoxes()
-const classBody = label(30, 77, '当前结构化实现 · 只展示require相关成员；users/identities为字段关联，虚线为局部对象、返回类型或静态调用依赖。', 18)
+const classBody = label(30, 77, '当前结构化实现 · 只展示require相关成员；users/identities/requestContext为字段关联，虚线为局部对象、返回类型或静态调用依赖。', 18)
   + edges.map(e => `<polyline points="${e.points.map(p => p.join(',')).join(' ')}" fill="none" stroke="${ink}" stroke-width="1.8" ${e.dependency ? 'stroke-dasharray="8 5"' : ''} marker-end="url(#open)"/>${e.role ? label(...e.role, 18) : ''}`).join('')
   + boxes.map(classBox).join('')
 
 const centers = [90, 410, 750, 1080, 1400, 1720, 2050]
-const names = ['obj: 调用者', 'auth: CoreAuthService', 'identities: BearerIdentityStore', 'users: UserRepository', 'user: User', 'ApiException', 'RequestAuditFilter']
+const names = ['obj: 调用者', 'auth: StructuredAuthenticationService', 'identities: IdentityTokenStore', 'users: UserJpaRepository', 'user: UserEntity', 'BusinessException', 'requestContext: RequestContext']
 const bars = [[0, 190, 1180], [1, 210, 1170], [2, 300, 355], [2, 475, 515], [3, 560, 600], [4, 690, 730], [5, 855, 895], [6, 1060, 1100]]
 const messages = [
   [0, 1, 210, '1 require(header)'],
@@ -93,13 +93,13 @@ function frame(x, y, width, height, kind, condition) {
   return `<rect x="${x}" y="${y}" width="${width}" height="${height}" fill="none" stroke="#8793a0"/><rect x="${x}" y="${y}" width="65" height="30" fill="#f0f3f7" stroke="#8793a0"/>${label(x + 10, y + 22, kind, 18)}${label(x + 82, y + 22, condition, 18)}`
 }
 // 控制框在消息与执行条下层，公共方法的外层执行条保持连续。
-let sequenceBody = label(30, 77, 'CoreAuthService.require · caller为调用该方法的Controller/门禁；省略简单get访问器及返回对象构造，异常未捕获不逐层转发。', 18)
+let sequenceBody = label(30, 77, 'StructuredAuthenticationService.require · caller为调用该方法的Controller/门禁；省略简单get访问器及返回对象构造，异常未捕获不逐层转发。', 18)
 sequenceBody += frame(25, 260, 2195, 950, 'alt', '[凭据缺失或失效]')
 sequenceBody += `<path d="M25,410H2220" stroke="#8793a0" stroke-dasharray="7 4"/>${label(110, 441, '[凭据有效]', 18)}`
-sequenceBody += frame(1000, 640, 1200, 125, 'opt', '[找到用户；Optional.filter调用User::isEnabled]')
+sequenceBody += frame(1000, 640, 1200, 125, 'opt', '[找到用户；Optional.filter调用UserEntity::isEnabled]')
 sequenceBody += frame(25, 800, 2195, 385, 'alt', '[用户不存在或已停用]')
 sequenceBody += `<path d="M25,960H2220" stroke="#8793a0" stroke-dasharray="7 4"/>${label(110, 990, '[用户存在且启用]', 18)}`
-sequenceBody += centers.map((x, i) => `<path d="M${x},158V1230" stroke="#9ba6b1" stroke-dasharray="7 6"/><rect x="${x - (i === 0 ? 75 : 145)}" y="100" width="${i === 0 ? 150 : 290}" height="58" fill="white" stroke="${ink}"/>${i >= 5 ? label(x, 123, '«MetaClass»', 17, 'middle') + label(x, 148, ': ' + names[i], 19, 'middle') : label(x, 136, names[i], names[i].length > 28 ? 17 : 19, 'middle')}`).join('')
+sequenceBody += centers.map((x, i) => `<path d="M${x},158V1230" stroke="#9ba6b1" stroke-dasharray="7 6"/><rect x="${x - (i === 0 ? 75 : 145)}" y="100" width="${i === 0 ? 150 : 290}" height="58" fill="white" stroke="${ink}"/>${i === 5 ? label(x, 123, '«MetaClass»', 17, 'middle') + label(x, 148, ': ' + names[i], 19, 'middle') : label(x, 136, names[i], names[i].length > 32 ? 15 : names[i].length > 28 ? 17 : 19, 'middle')}`).join('')
 sequenceBody += bars.map(([i, top, bottom]) => `<rect x="${centers[i] - 7}" y="${top}" width="14" height="${bottom - top}" fill="white" stroke="${ink}"/>`).join('')
 for (const [from, to, y, text, reply] of messages) {
   const right = centers[to] > centers[from]

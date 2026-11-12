@@ -1,8 +1,8 @@
 # UML图件来源与复现
 
-本目录图件只表达当前结构化实现CoreAuthService.require，依据T12基线a79b668的实际代码，不表示DDD已实现。类图截取相关字段/方法，顺序图省略简单get访问器及返回对象构造；Bearer内部异常沿当前代码在其生命线内部产生，公开方法未捕获时直接回复caller。
+本目录图件只表达当前结构化实现StructuredAuthenticationService.require，依据backend下当前实际代码，不表示DDD已实现。类图截取相关字段/方法，顺序图省略简单get访问器及返回对象构造；Bearer内部异常沿当前代码在其生命线内部产生，公开方法未捕获时直接回复caller。
 
-采用用户提供的uml-class-sequence-diagrams skill检查Service居中、字段关联/局部依赖、静态MetaClass、每次独立执行条及异常回复。该skill不用于ER图；既有Chen ER保持原件及评审路径。
+采用用户提供的uml-class-sequence-diagrams skill检查Service居中、字段关联/局部依赖、静态MetaClass、每次独立执行条及异常回复。该skill不用于ER图；既有Chen ER保持原件及评审路径。身份索引和请求上下文以实际字段类型IdentityTokenStore/RequestContext表示，静态异常工厂才使用MetaClass；不再画Service直接调用RequestAuditFilter。
 
 脚本为[scripts/build-current-uml.mjs](../../scripts/build-current-uml.mjs)，使用Node及sharp渲染SVG/PNG。使用已有工具环境或在仓库外安装sharp，不往生产前端添加绘图依赖；可通过UML_SHARP_MODULE指向其模块路径，随后在仓库根运行：
 

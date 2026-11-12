@@ -1,6 +1,6 @@
 # 本次文档清理与逐项审核指南
 
-本次分支：codex/docs-cleanup-and-design；目标共同分支：refactor/rbac-core-backend；固定整理基线ffc7ceb783dd71b069a41664b11c994b31da2371。状态为待用户审核，未批准前不合并，也不启动代码整理、新原型、正式前端、DDD或T14/T15。
+本次分支：codex/docs-cleanup-and-design；目标共同分支：refactor/rbac-core-backend；固定整理基线ffc7ceb783dd71b069a41664b11c994b31da2371。此为阶段1历史审核清单；用户已于2026-11-13同意并合入PR #29（d1438d7）。当前阶段2代码归类见[代码归类](code-organization.md)，后续验收另记。
 
 ## 1. 组织方式与阅读顺序
 

@@ -1,8 +1,10 @@
 # 构建、初始化与后端部署
 
+> 2026-11-13：用户确认将增加服务器，部署方案另行确定。本页云拓扑、根Dockerfile/Stack及旧容器测试脚本保留历史配置，尚未适配新的backend目录，不作为当前发布步骤。当前本地构建/初始化统一见[backend/README](../backend/README.md)。
+
 当前后端本机隔离验收及完整初始化复现见[T13记录](../docs/acceptance/T13.md)。该结果包含实际Java21、正式空库/五角色初始化及默认JAR两轮，不代表Docker镜像/Swarm已实测；本页仍分别说明部署步骤与尚未验证的云端状态。
 
-> 本页用于运行整改后工程（默认入口为 `com.municipal.rbaccore.runtime.CoreRuntimeCommand`）。数据库及业务代码切换后，须按实际实现复核部署步骤；历史上线结果不代表当前运行状态。
+> 本页用于运行整改后工程（当前本地默认入口为 `com.municipal.rbaccore.bootstrap.RbacApplication`）。数据库及业务代码切换后，须按实际实现复核部署步骤；历史上线结果不代表当前运行状态。
 
 旧发布说明已从当前树清理，原版本仍在Git历史；当前结构和默认入口按本页执行。现场测试见[现场说明](现场运行JaCoCo.md)。下文A/B/C/D为既有课程部署拓扑，公网地址仅为环境配置记录，不表示本分支已发布或地址当前健康。
 
@@ -84,25 +86,4 @@ Swarm 不保证 MySQL 先启动。后端初次连接失败时会自动重试启�
 
 ## 新库初始化约束
 
-首次建库由 DBA 在 MySQL 中创建 `rbac_core` 库（`utf8mb4`、`utf8mb4_0900_bin`）及仅有该库权限的账号，依次执行 `deploy/rbac-core-schema.sql` 与 `deploy/rbac-core-runtime.sql`；脚本只包含 `CREATE TABLE IF NOT EXISTS`，不清空或重建已有表。应用固定 `ddl-auto=validate`、`sql.init.mode=never`、`rbac.initialize=false`，不在启动时建表或导入。
-组织、人员与账号初始化使用离线命令，在仓库根目录或持有原始 Excel 的数据准备环境执行。通过环境或秘密配置设置 `RBAC_CORE_DB_URL`、`RBAC_CORE_DB_USER`、`RBAC_CORE_DB_PASSWORD`、`RBAC_CORE_SOURCE_DIR`，并分别提供必填的 `RBAC_CORE_EMPLOYEE_PASSWORD`（全体员工初始口令）与 `RBAC_CORE_ADMIN_PASSWORD`（独立管理员口令）。可选 `RBAC_CORE_ADMIN_USERNAME` 默认 `admin`。不要把口令写在命令参数、Git 或报告中。
-
-依次执行以下步骤；预览与实际授权是两个独立命令：
-
-```bash
-# 1. 导入组织、人员及账号，全部启用，此时不授予角色。
-java -Dloader.main=com.municipal.rbaccore.importing.CoreImportCommand -cp target/rbac0-0.1.0.jar org.springframework.boot.loader.launch.PropertiesLauncher
-
-# 2. 仅生成预检清单，不写授权；父目录须存在，CSV须为新文件。
-mkdir -p .local
-java -Dloader.main=com.municipal.rbaccore.runtime.CoreBootstrapCommand -cp target/rbac0-0.1.0.jar org.springframework.boot.loader.launch.PropertiesLauncher --rbac.core.preview-file=.local/initial-role-preview.csv
-
-# 3. 核对清单后，不带preview-file参数执行首次五角色授权。
-java -Dloader.main=com.municipal.rbaccore.runtime.CoreBootstrapCommand -cp target/rbac0-0.1.0.jar org.springframework.boot.loader.launch.PropertiesLauncher
-
-# 4. 以产品默认入口启动，不需要指定loader.main或测试profile。
-java -jar target/rbac0-0.1.0.jar
-```
-
-导入预期为110个部门、10000名员工及1个独立管理员。首次角色人数为系统管理员1、公司领导64、部门经理106、项目经理72、普通员工9758；普通员工不能登录管理端。重复导入/授权命令只核对既有来源与回执，不重置口令、状态或授权。再次启动后，应验证管理员、工号/手机号登录、部门人员查询、部门账号日志403、已删除入口不可执行业务；保留旧库与历史日志，不关联旧用户ID。
-后端入口是 D 的 http://120.46.86.147:8081/api，C 不发布后端端口。无登录令牌访问 /api/me 预期返回 HTTP 401。
+数据库与来源业务规则沿[初始化设计](../docs/initialization.md)。当前本地构建、必填秘密、离线导入、预检、首次授权及默认JAR命令统一维护在[后端说明](../backend/README.md#3-新项目本地初始化与运行)；不再维护第二份旧目录命令。云端新服务器方案确认后，再在本页同步适配部署路径和秘密装配。

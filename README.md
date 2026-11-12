@@ -19,17 +19,17 @@
 
 ## 当前基线与目标
 
-共同基线为refactor/rbac-core-backend，main仍保留历史工程。当前后端位于src/main/java/com/municipal/rbaccore，使用Java21、Boot3.5.6、JPA、MySQL8.4、AOP与老师真实CloneFactory。尚未整理成structured/ddd目录，没有DDD实现或策略开关；这些是后续设计目标。
+共同基线为refactor/rbac-core-backend，main仍保留历史工程。当前后端Maven项目位于backend，代码位于backend/src/main/java/com/municipal/rbaccore，使用Java21、Boot3.5.6、JPA、MySQL8.4、AOP与老师真实CloneFactory。业务层已按service/structured归类，共享API经service/port调用，持久化和认证/日志等归入infrastructure；没有DDD实现或策略开关。详见[代码归类](docs/code-organization.md)。
 
 生产前端frontend为Vue3/Vite，目前仅登录、最小日志兼容与登录成功外壳。完整人员、角色、资源及日志页面属于设计范围；顶层prototype保留原四组内存交互参考，新前端原型须单独审核。课程系统指老师Gitee课程项目，T14/T15等待老师进一步要求。
 
-T13历史验收记录142项后端回归、3项运行器安全单测、70次默认JAR真实HTTP及两轮启动，详见[原验收记录](docs/acceptance/T13.md)。本次文档分支不重新执行或冒称这些结果，也不代表完整前端、DDD或云端通过。
+T13历史验收记录142项后端回归、3项运行器安全单测、70次默认JAR真实HTTP及两轮启动，详见[原验收记录](docs/acceptance/T13.md)。当前结构化归类另取得156项后端回归、3项运行器安全单测、70次完整探针及最终产物3次真实HTTP检查通过的新证据，详见[本阶段记录](docs/acceptance/structured-organization.md)；这些结果不代表完整前端、DDD或云端通过。
 
-本次只清理/完善正式文档，独立分支供用户逐项审核，未经确认不合并。后续按文档→结构化归类→新原型→正式前端→DDD→双实现总验收推进，详见开发计划。
+文档阶段已审核并合入PR #29；当前进入结构化代码与测试归类，独立分支交付。后续按文档→结构化归类→新原型→正式前端→DDD→双实现总验收推进，详见开发计划。
 
 ## 运行入口
 
-先按部署说明安装固定来源CloneFactory、显式准备独立rbac_core及秘密配置，再执行离线导入、只读预览、实际五角色授权。默认jar为target/rbac0-0.1.0.jar；启动不建表、不导入、不重授角色。不能指向旧业务库。
+本地构建/初始化见[后端说明](backend/README.md)，先安装固定来源CloneFactory、显式准备独立rbac_core及秘密配置，再执行离线导入、只读预览、实际五角色授权。用户确认云部署待新增服务器方案确定后再整理，旧容器配置暂不适配本轮目录。默认jar为backend/target/rbac0-0.1.0.jar；启动不建表、不导入、不重授角色。不能指向旧业务库。
 
 现有前端在frontend执行npm ci、npm run dev，默认5173代理/api到后端8081；npm test和npm run build分别检查测试与构建。参考原型可直接打开prototype/index.html。
 
