@@ -241,3 +241,24 @@ test('R16 全部预置日志的登录事件、鉴权结果与HTTP状态一致', 
     }
   }
 });
+
+test('R16 匿名受控请求只记录一次未认证事件，登录失败仍单独分类', () => {
+  const model = createDemoModel();
+  let failure;
+  assert.throws(() => model.list(), error => { failure = error; return error.status === 401 && error.code === 'SESSION_INVALID'; });
+  assert.throws(() => model.login('未知账号', 'bad'), code('LOGIN_FAILED'));
+  login(model);
+  const anonymous = model.logs({ event: 'UNAUTHENTICATED', limit: 50 });
+  assert.equal(anonymous.total, 1);
+  const item = anonymous.items[0];
+  assert.equal(item.requestId, failure.requestId);
+  assert.equal(item.userId, null);
+  assert.equal(item.username, null);
+  assert.equal(item.allowed, false);
+  assert.equal(item.reason, 'SESSION_INVALID');
+  assert.equal(item.httpStatus, 401);
+  assert.equal(item.httpMethod, 'GET');
+  assert.equal(item.requestPath, '/api/users');
+  assert.equal(model.logs({ event: 'AUTHORIZATION', limit: 50 }).items.some(entry => entry.requestId === failure.requestId), false);
+  assert.ok(model.logs({ event: 'LOGIN_FAILED', limit: 50 }).items.some(entry => entry.reason === 'LOGIN_FAILED'));
+});

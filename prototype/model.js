@@ -543,7 +543,8 @@ function createDemoModel() {
       finally {
         auditDepth -= 1;
         const httpStatus = error?.status || (method === 'createRole' ? 201 : 200);
-        record({ actor, allowed: ![401, 403].includes(httpStatus), reason: error?.code || 'OK', httpStatus,
+        record({ actor, eventType: httpStatus === 401 ? 'UNAUTHENTICATED' : 'AUTHORIZATION',
+          allowed: ![401, 403].includes(httpStatus), reason: error?.code || 'OK', httpStatus,
           httpMethod: method === 'departments' ? 'GET' : api.method,
           requestPath: method === 'departments' ? '/api/departments' : api.path,
           permissionCode: permissionCatalog.find(item => item.key === key)?.code || null, requestId: error?.requestId });

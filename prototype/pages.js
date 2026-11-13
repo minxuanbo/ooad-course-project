@@ -138,12 +138,15 @@ function createScreens(context) {
     return { ...source, username: source.username.trim(), userId: source.userId.trim(),
       from: source.from ? new Date(source.from).toISOString() : '', to: source.to ? new Date(source.to).toISOString() : '', limit: current.limit };
   }
+  const logDraftSignature = current => JSON.stringify({ filters: current.filters, limit: current.limit });
   async function load(pageName = state().route, { more = false } = {}) {
+    if (pageName === 'logs' && more && view(pageName).filtersDirty) return;
     const current = view(pageName), sequence = ++current.sequence, epoch = state().epoch;
     current.busy = !more; current.loadingMore = more; current.error = null;
     context.render();
     try {
       const query = { q: current.q, enabled: current.enabled, page: current.page, size: 10, systemId: current.systemId };
+      const requestedLogDraft = pageName === 'logs' ? logDraftSignature(current) : null;
       const frozenLogQuery = pageName === 'logs' ? (more ? current.snapshotQuery : logQuery(current)) : null;
       if (more && !frozenLogQuery) throw new DemoError(400, 'INVALID_CURSOR', '请先重新查询');
       const result = await context.request(() => {
@@ -165,7 +168,10 @@ function createScreens(context) {
       });
       if (epoch !== state().epoch || sequence !== current.sequence) return;
       current.data = more ? { ...result.data, items: [...current.data.items, ...result.data.items] } : result.data;
-      if (pageName === 'logs' && !more) { current.snapshotQuery = frozenLogQuery; current.filtersDirty = false; }
+      if (pageName === 'logs' && !more) {
+        current.snapshotQuery = frozenLogQuery;
+        current.filtersDirty = logDraftSignature(current) !== requestedLogDraft;
+      }
       if (pageName === 'resources') current.selected = result.data.selected;
       if (result.tree !== null) state().tree = result.tree;
       state().session = result.session;
@@ -185,7 +191,9 @@ function createScreens(context) {
       + '<div class="' + (drawer ? 'drawer-body' : 'modal-body') + '">' + errorBox(modal.error) + content + '</div><footer class="' + (drawer ? 'drawer-footer' : 'modal-footer') + '">'
       + (drawer ? '<span class="hint">' + (!footer ? '只读查看' : dirty(modal) ? '有未保存的修改' : '取消不会保存修改') + '</span><div class="row">' : '')
       + btn(footer ? '取消' : '关闭', 'close-modal') + (footer ? '<button class="btn primary" data-act="screen-save" ' + (modal.loading || modal.candidateBusy || state().writeBusy || !canSave(modal) || !dirty(modal) ? 'disabled' : '') + '>' + (state().writeBusy ? busy() + '保存中' : saveLabel) + '</button>' : '') + (drawer ? '</div>' : '') + '</footer></div></dialog>';
+  const isCollectionEditor = modal => ['screen-role-permissions', 'screen-mapping'].includes(modal?.kind);
   function canSave(modal) {
+    if (!modal || (isCollectionEditor(modal) && !modal.initialReadComplete)) return false;
     return {
       'screen-rename': model().can('departments.rename'), 'screen-department-new': model().can('departments.create'), 'screen-role-new': globalCan('roles.create'),
       'screen-role-edit': globalCan('roles.patch'), 'screen-role-permissions': globalCan('roles.permissions.write') && !!modal.catalog?.length,
@@ -194,6 +202,7 @@ function createScreens(context) {
   }
   function dirty(modal) {
     if (!modal?.kind?.startsWith('screen-') || modal.loading) return false;
+    if (isCollectionEditor(modal) && !modal.initialReadComplete) return false;
     if (modal.kind === 'screen-role-permissions' || modal.kind === 'screen-mapping') return modal.savedIds.length !== modal.draft.size || modal.savedIds.some(id => !modal.draft.has(id));
     if (modal.kind === 'screen-role-new') return !!(modal.values.name || modal.values.code);
     if (modal.kind === 'screen-department-new') return !!modal.values.name;
@@ -220,6 +229,11 @@ function createScreens(context) {
   function modal(modal) {
     if (!modal?.kind?.startsWith('screen-')) return '';
     if (modal.loading) return modalShell(modal, modal.title, loader(), { drawer: true });
+    if (isCollectionEditor(modal) && !modal.initialReadComplete) {
+      return modalShell(modal, modal.kind === 'screen-role-permissions' ? '配置角色权限' : '配置API映射',
+        '<div class="empty-state"><h3>尚未取得完整配置</h3><p>原集合尚未读取，不能将其视为空集合编辑或保存。请重试完整读取。</p>'
+        + btn(icon('refresh') + '重新读取完整配置', 'screen-retry-initial') + '</div>', { drawer: true, footer: false });
+    }
     if (modal.kind === 'screen-department-new') return modalShell(modal, '新增下级部门', field('部门名称', 'edit-name', modal.values.name, 'maxlength="100"')
       + '<div class="field"><label for="department-parent">上级部门</label><select id="department-parent">' + modal.catalog.filter(item => item.canCreate).map(item => '<option value="' + item.id + '" ' + (item.id === modal.values.parentId ? 'selected' : '') + '>' + h(item.name) + ' · ID ' + item.id + '</option>').join('') + '</select></div>'
       + '<div class="field"><label for="department-type">组织类型</label><select id="department-type">' + (modal.catalog.find(item => item.id === modal.values.parentId)?.allowedChildTypes || []).map(type => '<option ' + (type === modal.values.type ? 'selected' : '') + '>' + type + '</option>').join('') + '</select></div><p class="hint">类型由上级限制，项目不能新增下级。创建后不支持调整层级，新节点初始无人。</p>', { saveLabel: '创建部门' });
@@ -254,12 +268,17 @@ function createScreens(context) {
     return '<dialog class="modal" id="confirm-dialog" aria-labelledby="confirm-title"><header class="modal-header"><h2 id="confirm-title">' + h(confirm.title) + '</h2></header><div class="modal-body"><div class="confirm-symbol">' + icon('warning') + '</div>' + (confirm.subject ? '<strong>' + h(confirm.subject) + '</strong>' : '') + '<p>' + h(confirm.message) + '</p>' + errorBox(confirm.error) + '</div><footer class="modal-footer"><button class="btn" data-act="cancel-confirm" ' + (state().writeBusy ? 'disabled' : '') + '>取消</button><button class="btn ' + (confirm.danger ? 'danger' : 'primary') + '" data-act="confirm" ' + (state().writeBusy ? 'disabled' : '') + '>' + (state().writeBusy ? busy() + '处理中' : h(confirm.button)) + '</button></footer></dialog>';
   }
   async function openModal(kind, id) {
-    let modal = { kind, id, error: null, loading: true, title: '读取配置', savedIds: [], draft: new Set(), labels: new Map(), catalog: [] };
+    const modal = { kind, id, error: null, loading: true, initialReadComplete: false, title: '读取配置',
+      savedIds: [], draft: new Set(), labels: new Map(), catalog: [], systems: [], candidates: null,
+      candidateBusy: false, page: 0, q: '', qDraft: '' };
     state().modal = modal; context.renderOverlays();
     try {
       const result = await context.request(() => {
         if (kind === 'screen-role-permissions') { const catalog = globalCan('permissions.tree') ? model().permissionCatalog() : { systems: [], permissions: [] }; return { current: model().rolePermissions(id), catalog: catalog.permissions, systems: catalog.systems }; }
-        if (kind === 'screen-mapping') return { current: model().permissionApis(id), candidates: globalCan('apis.list') ? model().apis({ page: 0, size: 6, systemId: view('resources').systemId }) : { items: [], total: 0 } };
+        if (kind === 'screen-mapping') {
+          const current = model().permissionApis(id);
+          return { current, candidates: globalCan('apis.list') ? model().apis({ page: 0, size: 6, systemId: current.permission.systemId }) : { items: [], total: 0 } };
+        }
       });
       if (state().modal !== modal) return;
       const saved = kind === 'screen-role-permissions' ? result.current.permissions : result.current.apis;
@@ -269,6 +288,7 @@ function createScreens(context) {
       modal.systems = result.systems || []; modal.systemId = kind === 'screen-mapping' ? result.current.permission.systemId : 1;
       [...saved, ...(result.candidates?.items || []), ...modal.catalog].forEach(item => modal.labels.set(item.id, item));
       modal.candidates = result.candidates; modal.page = 0; modal.q = ''; modal.qDraft = '';
+      modal.initialReadComplete = true;
     } catch (error) {
       if (error.name === 'AbortError' || state().modal !== modal || context.handleSessionError(error)) return;
       modal.error = error;
@@ -276,7 +296,7 @@ function createScreens(context) {
   }
   async function mappingCandidates() {
     const modal = state().modal;
-    if (modal?.kind !== 'screen-mapping') return;
+    if (modal?.kind !== 'screen-mapping' || !modal.initialReadComplete || modal.loading) return;
     const sequence = modal.sequence = (modal.sequence || 0) + 1;
     modal.candidateBusy = true; modal.error = null; context.renderOverlays();
     try {
@@ -307,7 +327,7 @@ function createScreens(context) {
       if (modal.kind === 'screen-permission') return model().patchPermission(modal.original.id, values);
       if (modal.kind === 'screen-mapping') return model().savePermissionApis(modal.id, ids);
     };
-    if (['screen-role-permissions', 'screen-mapping'].includes(modal.kind) && !confirmed) {
+    if (isCollectionEditor(modal) && !confirmed) {
       confirmScreen(modal.draft.size ? '确认替换完整配置？' : '确认清空全部配置？', '将以当前完整选择替换已保存集合，影响全部引用。失败不会部分生效。', () => saveModal(true), modal.targetName, modal.draft.size ? '确认保存' : '确认清空', !modal.draft.size);
     } else write(save, '修改已保存', confirmed);
   }
@@ -349,6 +369,11 @@ function createScreens(context) {
         return true;
       }
       case 'role-permissions': openModal('screen-role-permissions', id); return true;
+      case 'screen-retry-initial': {
+        const modal = state().modal;
+        if (isCollectionEditor(modal) && !modal.loading && !modal.initialReadComplete) openModal(modal.kind, modal.id);
+        return true;
+      }
       case 'selected-expand': state().modal.expandedTags = !state().modal.expandedTags; context.renderOverlays(); return true;
       case 'resource-mode': current.mode = button.dataset.mode; current.page = 0; load(); return true;
       case 'resource-select': current.selected = id; load(); return true;
@@ -359,7 +384,7 @@ function createScreens(context) {
         context.renderOverlays(); return true;
       }
       case 'permission-mapping': openModal('screen-mapping', id); return true;
-      case 'mapping-page': state().modal.page = Number(button.dataset.page); mappingCandidates(); return true;
+      case 'mapping-page': if (state().modal?.initialReadComplete) { state().modal.page = Number(button.dataset.page); mappingCandidates(); } return true;
       case 'api-toggle': {
         const item = current.data.apis.items.find(item => item.id === id);
         confirmScreen(item.enabled ? '停用这个API资源？' : '启用这个API资源？', '修改会即时影响所有映射到该API的有效授权，映射关系本身保留。', () => write(() => model().patchApi(id, !item.enabled), 'API状态已更新', true), item.method + ' ' + item.path, item.enabled ? '确认停用' : '确认启用', item.enabled);
@@ -377,7 +402,7 @@ function createScreens(context) {
     if (element.id === 'screen-search') view(state().route).qDraft = element.value;
     if (element.id === 'edit-name' && state().modal?.values) state().modal.values.name = element.value;
     if (element.id === 'edit-code' && state().modal?.kind === 'screen-role-new') state().modal.values.code = element.value;
-    if (element.id === 'mapping-search' && state().modal?.kind === 'screen-mapping') state().modal.qDraft = element.value;
+    if (element.id === 'mapping-search' && state().modal?.kind === 'screen-mapping' && state().modal.initialReadComplete) state().modal.qDraft = element.value;
     if (element.dataset.logFilter) { view('logs').filters[element.dataset.logFilter] = element.value; view('logs').filtersDirty = true; context.render(); }
     if (['edit-name', 'edit-code'].includes(element.id)) context.renderOverlays();
   }
@@ -391,13 +416,13 @@ function createScreens(context) {
     }
     if (element.id === 'department-type' && state().modal?.kind === 'screen-department-new') state().modal.values.type = element.value;
     if (element.id === 'resource-system') { const current = view('resources'); current.systemId = Number(element.value); current.selected = null; current.data = null; current.q = ''; current.qDraft = ''; current.page = 0; load(); }
-    if (element.id === 'role-permission-system') { state().modal.systemId = Number(element.value); state().modal.expandedTags = false; context.renderOverlays(); }
+    if (element.id === 'role-permission-system' && state().modal?.initialReadComplete) { state().modal.systemId = Number(element.value); state().modal.expandedTags = false; context.renderOverlays(); }
     if (element.id === 'screen-status') { const current = view(state().route); current.enabled = element.value; current.page = 0; load(); }
     if (element.id === 'mobile-navigation') context.navigate(element.value);
-    if (element.dataset.permissionId && state().modal?.kind === 'screen-role-permissions') {
+    if (element.dataset.permissionId && state().modal?.kind === 'screen-role-permissions' && canSave(state().modal)) {
       const id = Number(element.dataset.permissionId); if (element.checked) state().modal.draft.add(id); else state().modal.draft.delete(id); context.renderOverlays();
     }
-    if (element.dataset.apiId && state().modal?.kind === 'screen-mapping') {
+    if (element.dataset.apiId && state().modal?.kind === 'screen-mapping' && canSave(state().modal)) {
       const id = Number(element.dataset.apiId); if (element.checked) state().modal.draft.add(id); else state().modal.draft.delete(id); context.renderOverlays();
     }
     if (state().modal?.kind === 'screen-permission') {
@@ -412,7 +437,7 @@ function createScreens(context) {
   function submit(id) {
     if (id === 'screen-filter') { const current = view(state().route); current.q = current.qDraft.trim(); current.page = 0; load(); return true; }
     if (id === 'logs-filter') { load('logs'); return true; }
-    if (id === 'mapping-filter') { const modal = state().modal; modal.q = modal.qDraft.trim(); modal.page = 0; mappingCandidates(); return true; }
+    if (id === 'mapping-filter') { const modal = state().modal; if (modal?.kind === 'screen-mapping' && modal.initialReadComplete) { modal.q = modal.qDraft.trim(); modal.page = 0; mappingCandidates(); } return true; }
     return false;
   }
   return { navigation, page, load, modal, dirty, confirmation, handleAction, input, change, submit,

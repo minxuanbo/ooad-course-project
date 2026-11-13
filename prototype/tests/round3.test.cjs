@@ -156,19 +156,108 @@ test('R11/R28 完整Permission子集包含业务系统，角色选权保存保�
 });
 
 /** 不模拟DOM，仅检查工作区草稿、作用域和最终保存语义。 */
-function screensHarness() {
+function screensHarness({ request = operation => Promise.resolve().then(operation) } = {}) {
   const model = createDemoModel();
   const state = { route: 'roles', views: {}, epoch: 0, session: login(model) };
   const context = vm.createContext({ MunicipalPrototype: { DemoError: Error }, structuredClone, Set, Map });
   vm.runInContext(fs.readFileSync(path.resolve(__dirname, '../pages.js'), 'utf8'), context);
   const screens = context.MunicipalScreens.createScreens({
     state: () => state, model: () => model, h: value => String(value ?? ''), icon: () => '', busy: () => '', errorBox: () => '', pagination: () => '',
-    render() {}, renderOverlays() {}, request: operation => Promise.resolve().then(operation), handleSessionError: () => false,
+    render() {}, renderOverlays() {}, request, handleSessionError: () => false,
     writeOperation: operation => { operation(); state.modal = null; state.confirm = null; },
   });
   return { screens, state, model };
 }
 const settled = () => new Promise(resolve => setImmediate(resolve));
+
+for (const [status, code] of [[403, 'PERMISSION_DENIED'], [500, 'INTERNAL_ERROR'], [0, 'NETWORK_ERROR']]) {
+  test('R17/R18 角色权限首次读取失败可安全显示并完整重试：' + code, async () => {
+    let failRead = true;
+    const { screens, state, model } = screensHarness({ request: operation => failRead
+      ? Promise.reject(Object.assign(new Error('读取失败'), { status, code, requestId: 'review-read' }))
+      : Promise.resolve().then(operation) });
+    const saved = model.rolePermissions(2).permissions.map(item => item.id);
+    screens.handleAction('role-permissions', 2, {});
+    await settled();
+    let html;
+    assert.doesNotThrow(() => { html = screens.modal(state.modal); });
+    assert.match(html, /screen-retry-initial/);
+    assert.doesNotMatch(html, /data-permission-id=/);
+    screens.change({ id: 'permission-check-1', dataset: { permissionId: '1' }, checked: true });
+    screens.handleAction('screen-save', 0, {});
+    assert.equal(state.confirm, undefined);
+    assert.deepEqual(model.rolePermissions(2).permissions.map(item => item.id), saved);
+    failRead = false;
+    screens.handleAction('screen-retry-initial', 0, {});
+    await settled();
+    assert.equal(state.modal.initialReadComplete, true);
+    assert.deepEqual([...state.modal.draft], saved);
+    assert.match(screens.modal(state.modal), /role-permission-system/);
+  });
+}
+
+test('R14 首次映射读取失败时搜索不能变成空映射保存，重试保留原集合及跨页选择', async () => {
+  let failRead = true;
+  const { screens, state, model } = screensHarness({ request: operation => failRead
+    ? Promise.reject(Object.assign(new Error('原映射未读取'), { status: 500, code: 'INTERNAL_ERROR' }))
+    : Promise.resolve().then(operation) });
+  state.route = 'resources';
+  const before = model.permissionApis(19).apis.map(item => item.id);
+  screens.handleAction('permission-mapping', 19, {});
+  await settled();
+  failRead = false;
+  screens.input({ id: 'mapping-search', value: '/api/users', dataset: {} });
+  screens.submit('mapping-filter');
+  await settled();
+  screens.change({ id: 'api-check-2', dataset: { apiId: '2' }, checked: true });
+  screens.handleAction('screen-save', 0, {});
+  assert.equal(state.confirm, undefined);
+  assert.deepEqual(model.permissionApis(19).apis.map(item => item.id), before);
+  assert.match(screens.modal(state.modal), /screen-retry-initial/);
+  screens.handleAction('screen-retry-initial', 0, {});
+  await settled();
+  assert.equal(state.modal.initialReadComplete, true);
+  assert.deepEqual([...state.modal.draft], before);
+  screens.input({ id: 'mapping-search', value: '/api/users', dataset: {} });
+  screens.submit('mapping-filter');
+  await settled();
+  screens.change({ id: 'api-check-2', dataset: { apiId: '2' }, checked: true });
+  screens.handleAction('mapping-page', 0, { dataset: { page: '1' } });
+  await settled();
+  assert.deepEqual([...state.modal.draft], [...before, 2]);
+  screens.handleAction('screen-save', 0, {});
+  screens.confirmAction();
+  assert.deepEqual(model.permissionApis(19).apis.map(item => item.id), [...before, 2]);
+});
+
+for (const [field, value] of [['username', 'SG000003'], ['allowed', 'false'], ['from', '2026-11-01T00:00'], ['to', '2026-11-14T00:00'], ['limit', '24']]) {
+  test('R16 日志查询在途修改' + field + '时保留待查询状态，禁止旧快照继续加载', async () => {
+    const pending = [];
+    const { screens, state } = screensHarness({ request: operation => new Promise((resolve, reject) => {
+      pending.push(() => { try { resolve(operation()); } catch (error) { reject(error); } });
+    }) });
+    state.route = 'logs';
+    const firstLoad = screens.load();
+    if (field === 'limit') screens.change({ id: 'log-limit', value, dataset: {} });
+    else screens.input({ id: 'log-' + field, value, dataset: { logFilter: field } });
+    pending.shift()();
+    await firstLoad;
+    assert.equal(state.views.logs.filtersDirty, true);
+    assert.equal(state.views.logs.snapshotQuery.limit, 12);
+    const previous = state.views.logs.data;
+    screens.handleAction('logs-more', 0, {});
+    assert.equal(pending.length, 0);
+    assert.equal(state.views.logs.data, previous);
+    const secondLoad = screens.load();
+    pending.shift()();
+    await secondLoad;
+    assert.equal(state.views.logs.filtersDirty, false);
+    const query = state.views.logs.snapshotQuery;
+    if (field === 'limit') assert.equal(query.limit, 24);
+    else if (field === 'from' || field === 'to') assert.equal(query[field], new Date(value).toISOString());
+    else assert.equal(query[field], value);
+  });
+}
 
 test('R16 日志页面重新查询只纳入一条前次查询事件，不附带部门树读取', async () => {
   const { screens, state, model } = screensHarness();
