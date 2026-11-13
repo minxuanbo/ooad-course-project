@@ -1,23 +1,13 @@
 # RBAC项目协作
 
-2026-11-13最新范围澄清：当前正式产品仅登记并管理RBAC自身权限；Excel18业务系统及矩阵仅保留在原型演示，不进入正式目录、首次授权或人员授权子集。课程管理系统目前不接入、不设计其业务API。部署采用全新库，只维护首次初始化SQL，不交付旧库升级脚本。CloneFactory须逐处检查DTO/Command/Entity/Result/VO映射及实际生成代码，不能仅根据skill使用声明认定合规。
+当前正式工作在codex/rbac-vue-implementation（PR #32，基于已合入原型PR #31的bd72a34），尚未获准合并。阶段4已提交正式Vue及结构化后端，正在最终文档/共享边界核对；不自动推进DDD、T14/T15、课程接入或服务器部署。主目录main是历史工程，组员复现检出当前分支，见docs/reproduction.md。
 
-2026-11-13最新授权：用户确认原型可合并并开始阶段4。PR #31已合入bd72a34；阶段4在codex/rbac-vue-implementation独立工作树实施结构化后端与Vue正式前端，按获批prototype/index.html同步RBAC自身API、模型和文档。以下阶段3限制为历史记录，不再阻止本阶段生产代码修改。固定审核基线bd72a34；本阶段完成后提交待用户审核，不自动合并或启动DDD、课程接入、服务器部署。
+业务依据为老师说明、原始资料和用户确认形成的docs/requirements.md；老师Gitee仅提供组织和框架参考。当前正式系统只管理RBAC自身权限，18业务系统及矩阵仅在离线原型演示，不进入正式目录/初始化/授权子集。课程系统暂不考虑；采用全新库首次SQL，不交付升级脚本。历史原型讨论以其时间语境保留在docs/prototype-review.md及requirements/sources.md，不覆盖最新范围。
 
-现行资料从[文档导航](docs/README.md)进入，业务需求以老师说明、原始资料和用户确认形成的[需求说明](docs/requirements.md)为准；老师Gitee项目用于文档与架构参考。HTTP字段主规范为api/openapi.yaml，跨字段、授权、范围与事务语义见docs/api-contract.md。
+HTTP字段主规范为api/openapi.yaml，JSON同源；业务语义见docs/api-contract.md。结构化实现归service/structured；service/port是共享用例/模型/协议取值，不放具体实现依赖或组织层级策略。共享基础设施不调用结构化或DDD应用服务，未来DDD持久化适配器可以实现领域仓储并映射领域模型。DDD当前不存在或可用策略开关；后续必须独立业务链和互斥装配，见docs/ddd-boundary.md。
 
-2026-11-13用户已审核并授权合入文档PR #29和结构化整理PR #30；当前授权进入阶段3新交互原型。用户确认浅色蓝色企业后台、左侧导航/顶部身份栏、可重置模拟数据，先做登录/外壳/部门人员完整流程，要求直接双击HTML离线运行。按[评审记录](docs/prototype-review.md)在独立分支迭代，用户明确满意后才改造正式前端；不自动合并、启动DDD/T14/T15或调整服务器部署。T13历史记录见docs/acceptance/T13.md，后续边界沿[开发计划](docs/development-plan.md)。
+生产代码与测试按用户提供projectmgt-code-conventions和code-review skill执行；本RBAC保留本地口令，分页沿page/size。CloneFactory逐处核对同名同类型映射及实际生成代码，派生/转换字段显式处理，不能只因使用skill就认定无遗漏。Java真实换行、中文Javadoc、TDD、Service事务及根锁后重鉴权沿现规则。
 
-用户第三轮反馈覆盖早期仅管理员改名方案：部门支持新增、改名、删除空部门，无层级调整；局部管理员只能改删严格下级，可在本人/下级下新增。另要求同级/上级人员只读、原Excel18业务系统目录及矩阵、跨系统选权。见需求R23—R28；自定义默认仅管理员可授，职位只读。当前只改原型和设计，正式API/后端/数据库尚未加入新规则；后续实现先同步契约，不复用旧验收冒称新规则通过。
+当前只结构化，设计须标明未来DDD目标与实际状态。完整K保留原17项并要求有效基础级别5及可信根；人员目标/授予级别和部门规则见R23—R27。文档写目标职责，实际测试和限制独立记验收；不以历史成绩替代新版本通过。
 
-第四轮用户明确：总公司可建分公司/部门/项目，分公司建部门/项目，部门只建项目，项目为叶子；全部仅为原表该行其他角色操作并集，删除额外全部标记和参考角色套用入口；区分账号启用与角色停用。18系统未实现，仅演示RBAC跨系统能力，业务API为空正确，不设计/实现其API；后续实际仅课程管理系统接入，原型定稿只调整RBAC自身管理契约。
-
-第五轮确认四基础角色首次业务权须匹配原表对应列，必要祖先菜单显式授予；之后修改不被重读覆盖。原表权限不按职级逐级包含，候选继续完整跨系统子集判断，不因级别补权；普通员工仍无RBAC管理API。
-
-第六轮用户授权修正部门层级展示与人数口径、由当前原型覆盖旧四组原型，仅保留prototype/index.html一套入口，并提交推送codex/interactive-prototype供组员审核。人数口径为直属及含全部下级，项目按子树紧跟所属部门，搜索保留范围内祖先。允许同步原型加载测试和路径文档；不改正式产品代码/API，不合并，须等组员确认再启动阶段4前后端更新。
-
-当前结构化代码归于backend/src/main/java/com/municipal/rbaccore/service/structured，共享契约为service/port，尚无DDD代码或策略开关；设计必须区分目标和现状。完整前端属于设计范围，当前原型只是参考，不冒称新原型已获批。
-
-后续代码/测试改动遵循用户提供的projectmgt-code-conventions和code-review skill；本RBAC保留本地口令，分页沿既有page/size契约，不照搬课程系统外部身份或pageSize。UML skill只在其适用范围内使用，实际实现图须有源码依据。
-
-从origin/refactor/rbac-core-backend建立独立codex/分支及工作树，按[协作规范](CONTRIBUTING.md)执行。历史任务/依赖只从[历史索引](docs/history/README.md)追溯，实时状态核对GitHub Issue/PR。保留原Excel、用户本地DOCX/Markdown、旧库及历史日志；按文件暂存，临时材料和生成报告不提交。
+按CONTRIBUTING.md协作，保留原Excel、用户未跟踪DOCX/Markdown、原库及历史日志；临时凭据/CSV/数据库/日志/产物不提交。修复当前PR可在同一分支追加，按文件暂存并推送草稿PR待用户审核，不自行合并、关闭无关Issue或改变服务器。Apifox写入须用户明确要求。UML仅在适用范围使用用户skill，不生成虚构DDD实现图。

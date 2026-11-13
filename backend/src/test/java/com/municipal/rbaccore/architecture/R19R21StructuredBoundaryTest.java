@@ -53,6 +53,8 @@ class R19R21StructuredBoundaryTest {
       for (String forbidden :
           List.of(
               ".infrastructure.",
+              ".service.structured.",
+              ".service.ddd.",
               "jakarta.persistence",
               "jakarta.servlet",
               "org.springframework",
@@ -60,6 +62,30 @@ class R19R21StructuredBoundaryTest {
         assertFalse(source.contains(forbidden), file + " 不得包含 " + forbidden);
       }
       assertFalse(file.getFileName().toString().endsWith("Repository.java"), "持久化端口不混入用例契约");
+    }
+  }
+
+  /** 共享适配器不能调用业务编排，后续DDD持久化适配器仍可实现领域仓储并映射领域模型。 */
+  @Test
+  @DisplayName("R19/R21 共享基础设施不依赖结构化或DDD应用服务")
+  void R19R21_sharedInfrastructureDoesNotDependOnBusinessImplementation() throws Exception {
+    for (Path file : javaFiles(SOURCE.resolve("infrastructure"))) {
+      String source = Files.readString(file);
+      assertFalse(source.contains(".service.structured."), file + " 共享适配器不得引用结构化实现");
+      assertFalse(source.contains(".service.ddd.application."), file + " 共享适配器不得引用DDD应用服务");
+    }
+  }
+
+  /** 部门类型是HTTP与用例的共同取值，不承载必须由两种实现分别执行的层级策略。 */
+  @Test
+  @DisplayName("R19/R21 共享部门类型只声明取值，不携带层级策略")
+  void R19R21_departmentTypeContainsOnlyContractValues() {
+    for (java.lang.reflect.Method method :
+        com.municipal.rbaccore.service.port.department.DepartmentType.class.getDeclaredMethods()) {
+      if (method.isSynthetic()) continue;
+      assertTrue(
+          List.of("values", "valueOf").contains(method.getName()),
+          "层级判断应归具体业务实现，不能放在公共枚举：" + method.getName());
     }
   }
 

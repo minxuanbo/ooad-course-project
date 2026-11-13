@@ -8,6 +8,7 @@
 | 2 | [领域模型](domain-model.md) | 统一语言、核心不变量、目标聚合/行为/策略 |
 | 3 | [数据库设计](database-design.md)、[物理模型](database/physical-model.md)、[Chen源码](database/chen-er-source.md) | 六实体联系、九核心表与三支撑表，保留原ER |
 | 4 | [后端设计](backend-design.md)、[当前实现图](design/README.md) | 17章总体架构、模块、双实现、事务与技术约束；图仅表示当前结构化代码 |
+| 复现 | [组员复现](reproduction.md)、[DDD隔离边界](ddd-boundary.md)、[最终一致性核对](acceptance/final-alignment.md) | 正确分支、全新库、依赖/口令/命令、默认端口与共享边界 |
 | 代码 | [代码与测试归类](code-organization.md)、[本地后端说明](../backend/README.md) | 实际结构化目录、共享用例、测试需求编号及本地构建 |
 | 5 | [前端设计](frontend-design.md)、[新原型](../prototype/index.html)、[评审记录](prototype-review.md)、[历史参考](../prototype/README.md) | 正式Vue及获批离线原型；演示系统仅在原型，正式产品仅RBAC |
 | 6 | [API入口](../api/README.md)、[OpenAPI](../api/openapi.yaml)、[API业务约束](api-contract.md)、[页面对照](api-map.md) | Schema主规范与29项操作、授权/范围/事务语义 |

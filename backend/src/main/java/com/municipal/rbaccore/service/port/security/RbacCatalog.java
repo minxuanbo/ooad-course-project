@@ -78,7 +78,7 @@ public final class RbacCatalog {
         .collect(Collectors.toUnmodifiableSet());
   }
 
-  /** K不包含日志、停用人员和调动，其余已评审模板均须完整保留。 */
+  /** K保留原17项恢复维护模板，不包含日志、停用、调动及新增部门/总览操作。 */
   public static Set<Route> maintenanceRoutes() {
     return definitions().entrySet().stream()
         .filter(

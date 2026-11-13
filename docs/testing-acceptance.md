@@ -13,7 +13,7 @@
 | 文档阶段 | PR #29已于2026-11-13经用户批准合入 | 历史文件清单保留；阶段2也已合入，阶段4在独立分支实现与复验 |
 | 历史阶段2结构化归类 | 审核修复后代码5da102b：Java21/本轮私有MySQL完整package共156项通过，Failures/Errors/Skipped均0；3项Python环境安全单测、16adbcb的70次完整JAR HTTP及最终5da102b产物3次HTTP通过 | [本阶段记录](acceptance/structured-organization.md)保留源码/产物及失败诊断边界；不代表DDD/新前端/服务器部署完成 |
 
-本阶段结构化后端clean package：162项通过；全新首次SQL的隔离库及默认JAR47次真实HTTP通过，审核后再次162项通过。CloneFactory检查见[映射核对](acceptance/stage4-mapping-audit.md)，不沿用历史测试冒称新规则通过。
+阶段4结构化后端clean package原162项通过，并有全新首次SQL隔离库默认JAR47次真实HTTP及审核后5次HTTP证据；2026-11-14最终边界修复后完整回归164项通过，另重跑前端17项/构建及运行器3项单测，见[最终核对](acceptance/final-alignment.md)。CloneFactory检查见[映射核对](acceptance/stage4-mapping-audit.md)，不把历史JAR探针次数当作最终边界修复后的重跑证据。
 
 ## 2. 需求验证矩阵
 

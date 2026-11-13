@@ -4,10 +4,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.municipal.rbaccore.config.BootstrapCredentialsFactory;
 import com.municipal.rbaccore.config.ImportConfiguration;
+import com.municipal.rbaccore.infrastructure.excel.LoginIdentifiers;
 import com.municipal.rbaccore.infrastructure.excel.WorkbookImportPlanner;
 import com.municipal.rbaccore.service.port.error.ImportException;
 import com.municipal.rbaccore.service.port.importing.BootstrapCredentials;
-import com.municipal.rbaccore.service.structured.importing.LoginIdentifiers;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;

@@ -76,7 +76,7 @@ public class StructuredDepartmentService implements DepartmentUseCase {
         actor -> {
           DepartmentEntity parent = target(actor, command.getParentId());
           requireManager(actor);
-          if (!parent.getType().accepts(command.getType())
+          if (!allowsChild(parent.getType(), command.getType())
               || (parent.getType() == DepartmentType.HEADQUARTERS
                   && !parent.getId().equals(scope.trustedRootId()))) {
             throw BusinessException.bad("DEPARTMENT_TYPE_INVALID", "该层级不允许新增此类下级");
@@ -88,6 +88,19 @@ public class StructuredDepartmentService implements DepartmentUseCase {
           department.moveTo(parent);
           return result(actor, departments.saveAndFlush(department));
         });
+  }
+
+  /** 结构化组织层级规则不放进公共契约；后续DDD由领域对象独立表达同一业务要求。 */
+  private boolean allowsChild(DepartmentType parent, DepartmentType child) {
+    return switch (parent) {
+      case HEADQUARTERS ->
+          child == DepartmentType.COMPANY
+              || child == DepartmentType.DEPARTMENT
+              || child == DepartmentType.PROJECT;
+      case COMPANY -> child == DepartmentType.DEPARTMENT || child == DepartmentType.PROJECT;
+      case DEPARTMENT -> child == DepartmentType.PROJECT;
+      case PROJECT -> false;
+    };
   }
 
   /** 局部管理者只能修改严格下级；改名不改变可信根来源或原始Excel。 */

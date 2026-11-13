@@ -1972,7 +1972,7 @@
     },
     "/api/departments": {
       "get": {
-        "operationId": "listDepartments",
+        "operationId": "listDepartmentDirectory",
         "tags": [
           "部门与人员"
         ],

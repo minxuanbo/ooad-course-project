@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/** 人员列表输出不包含手机号、口令哈希或岗位原始资料。 */
+/** 人员列表包含只读职位和角色摘要，不包含手机号、口令哈希或完整原始资料。 */
 @Getter
 @Setter
 @NoArgsConstructor

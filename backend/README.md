@@ -2,6 +2,8 @@
 
 Java21、Spring Boot3.5.6、Spring Data JPA、MySQL8.4及老师真实CloneFactory。当前只有结构化业务实现，DDD后续单独编写；不提供尚未实现的策略开关。完整[代码与测试归类](../docs/code-organization.md)说明共享API、用例及基础设施边界。
 
+组员从[完整本地复现](../docs/reproduction.md)开始；当前分支未合并，默认main不是本轮代码。共享/结构化边界见[DDD隔离说明](../docs/ddd-boundary.md)。
+
 ## 1. 目录与构建
 
 ```text
@@ -60,7 +62,7 @@ java -Dloader.main=com.municipal.rbaccore.bootstrap.BootstrapAuthorizationComman
 java -jar backend/target/rbac0-0.1.0.jar
 ```
 
-HTTP默认8081，前端代理/api不变。后端原24个操作的机器契约见[OpenAPI](../api/openapi.yaml)。需要新空库端到端复现时，使用[accept-runtime.py](scripts/accept-runtime.py)并按[验收说明](../docs/testing-acceptance.md)提供实际私有datadir、MySQL客户端及JDK21；探针拒绝非空库和额外Spring/JVM覆盖，不提供清库开关。
+HTTP默认8081，前端代理/api不变。后端29个操作的机器契约见[OpenAPI](../api/openapi.yaml)。需要新空库端到端复现时，使用[accept-runtime.py](scripts/accept-runtime.py)并按[验收说明](../docs/testing-acceptance.md)提供实际私有datadir、MySQL客户端及JDK21；探针拒绝非空库和额外Spring/JVM覆盖，不提供清库开关。
 
 ## 4. 当前部署边界
 

@@ -1191,7 +1191,7 @@ paths:
       x-maintenance-member: false
   /api/departments:
     get:
-      operationId: listDepartments
+      operationId: listDepartmentDirectory
       tags:
       - 部门与人员
       summary: 范围内部门目录

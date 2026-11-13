@@ -6,7 +6,7 @@
 
 ## 1. 当前基线
 
-T13已随PR #28合入ffc7ceb，记录了当前结构化后端的验收。当前分支已将结构化代码迁入backend并按service/structured、service/port和infrastructure分层，没有DDD实现或策略开关；阶段2前端仅登录/日志兼容，阶段4正在补全正式Vue页面。此前T13是阶段基线，新改动仍需重新验证，不能沿用其结果宣称双实现/新前端通过。
+T13已随PR #28合入ffc7ceb，保留当时结构化后端的验收。当前分支已将结构化代码迁入backend并按service/structured、service/port和infrastructure分层，没有DDD实现或策略开关；阶段4正式Vue七工作区及后端增量在PR #32待审。当前结果见[阶段4验收](acceptance/stage4-vue.md)及[最终一致性核对](acceptance/final-alignment.md)，不沿用T13结果宣称双实现或全量UI通过。
 
 ## 2. 已确认顺序
 

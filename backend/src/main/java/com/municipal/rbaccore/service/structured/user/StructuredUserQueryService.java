@@ -2,7 +2,6 @@ package com.municipal.rbaccore.service.structured.user;
 
 import cn.edu.xmu.clonefactory.util.CloneFactory;
 import com.municipal.rbaccore.infrastructure.persistence.entity.UserEntity;
-import com.municipal.rbaccore.infrastructure.persistence.repository.DepartmentJpaRepository;
 import com.municipal.rbaccore.infrastructure.persistence.repository.UserJpaRepository;
 import com.municipal.rbaccore.service.port.security.CurrentIdentity;
 import com.municipal.rbaccore.service.port.user.DepartmentResult;
@@ -37,7 +36,6 @@ public class StructuredUserQueryService implements UserQueryUseCase {
       organization;
   private final com.municipal.rbaccore.service.structured.security.StructuredPersonnelAuthority
       authority;
-  private final DepartmentJpaRepository departments;
 
   /** 导航只投影可管理节点，范围根parentId为null而不修改实体。 */
   public List<DepartmentResult> tree(String header) {

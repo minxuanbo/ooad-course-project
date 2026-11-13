@@ -50,11 +50,13 @@ MySQL8.4、InnoDB、utf8mb4/utf8mb4_0900_bin。实体BIGINT主键自增，对外
 | code | VARCHAR(100) | 否 | 稳定业务编码 |
 | name | VARCHAR(100) | 否 | 显示名称 |
 | enabled | BIT | 否 | 是否启用，影响实际有效性 |
+| management_level | INT | 是 | 基础角色5/4/3/2/1，自定义NULL；HTTP不可修改 |
 
 现有约束/索引：
 
 - `PRIMARY KEY (id)`
 - `CONSTRAINT uk_role_code UNIQUE (code)`
+- `CONSTRAINT ck_role_level CHECK (management_level BETWEEN 1 AND 5)`
 
 角色补充字段management_level INT可空，CHECK范围1—5。首次五角色分别为5/4/3/2/1；自定义NULL。级别不参与HTTP PATCH复制，仅用于授予上限、目标保护及完整维护者资格；不能根据可变名称或职位重算。
 
@@ -101,9 +103,6 @@ MySQL8.4、InnoDB、utf8mb4/utf8mb4_0900_bin。实体BIGINT主键自增，对外
 | id | BIGINT | 否 | 新库内部标识，不是工号；数据库自增 |
 | system_id | BIGINT | 否 | 所属应用系统标识 |
 | parent_id | BIGINT | 是 | 直接上级标识；NULL为根/顶层 |
-| type | VARCHAR(20) | 否 | HEADQUARTERS/COMPANY/DEPARTMENT/PROJECT，服务端控制合法父子类型 |
-| deleted | BIT | 否 | 默认0；删除空节点后为1，保留来源外键 |
-| active_name | VARCHAR(191)生成列 | 是 | 有效节点TRIM(name)，删除节点NULL |
 | code | VARCHAR(100) | 否 | 稳定业务编码 |
 | name | VARCHAR(191) | 否 | 显示名称 |
 | type | ENUM('MENU','BUTTON') | 否 | MENU或BUTTON |
