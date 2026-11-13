@@ -40,15 +40,16 @@ test('R10 组合筛选total与分页保持一致，越末页保留total', () => 
   assert.equal(beyond.items.length, 0);
   assert.equal(beyond.total, first.total);
   assert.ok(first.items.every(person => !('phone' in person)));
-  assert.ok(first.items.every(person => !('roles' in person)));
+  assert.ok(first.items.every(person => Array.isArray(person.roles) && person.roles.every(role => !('permissions' in role))));
+  assert.ok(first.items.every(person => typeof person.position === 'string'));
 });
 test('R11 候选按完整Permission子集，不把外系统角色当空角色', () => {
   const model = createDemoModel();
   login(model, 'SG000002');
   const all = model.candidateRoles(5, { size: 100 }).items;
-  assert.ok(all.some(role => role.id === 10));
+  assert.ok(all.some(role => role.id === 3));
   assert.ok(all.some(role => role.id === 5));
-  assert.ok(!all.some(role => [1, 90, 91].includes(role.id)));
+  assert.ok(!all.some(role => [1, 2, 10, 90, 91].includes(role.id)));
   assert.throws(() => model.assign(5, [91]), errorCode('MANAGEMENT_SCOPE_DENIED'));
 });
 test('R11 跨页选择按完整ids保存，模型不依赖当前候选页', () => {
@@ -141,7 +142,7 @@ test('R09 移除一条授权链后，另一有效角色仍提供查询能力', (
   login(model);
   model.assign(6, [2, 10]);
   login(model, 'SG000005');
-  model.assign(6, [10]);
+  model.simulateRevocation([10]);
   assert.ok(model.list().total);
   assert.equal(model.can('assign'), false);
   assert.equal(model.can('users'), true);

@@ -4,6 +4,8 @@
 
 2026-11-13用户已审核并授权合入文档PR #29和结构化整理PR #30；当前授权进入阶段3新交互原型。用户确认浅色蓝色企业后台、左侧导航/顶部身份栏、可重置模拟数据，先做登录/外壳/部门人员完整流程，要求直接双击HTML离线运行。按[评审记录](docs/prototype-review.md)在独立分支迭代，用户明确满意后才改造正式前端；不自动合并、启动DDD/T14/T15或调整服务器部署。T13历史记录见docs/acceptance/T13.md，后续边界沿[开发计划](docs/development-plan.md)。
 
+用户第二轮反馈已授权完整管理员工作区、总览、人员角色/只读职位及仅管理员部门改名，并确认防越级授予矩阵；自定义角色默认仅管理员可授，职位不编辑。见需求R23—R26。当前只改原型和设计，正式API/后端/数据库尚未加入新字段和级别规则；后续实现先同步契约，不复用旧验收冒称新规则通过。
+
 当前结构化代码归于backend/src/main/java/com/municipal/rbaccore/service/structured，共享契约为service/port，尚无DDD代码或策略开关；设计必须区分目标和现状。完整前端属于设计范围，当前原型只是参考，不冒称新原型已获批。
 
 后续代码/测试改动遵循用户提供的projectmgt-code-conventions和code-review skill；本RBAC保留本地口令，分页沿既有page/size契约，不照搬课程系统外部身份或pageSize。UML skill只在其适用范围内使用，实际实现图须有源码依据。
