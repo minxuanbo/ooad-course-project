@@ -1,54 +1,36 @@
-# 市政公司统一权限管理系统（RBAC0）
+# 市政公司统一权限管理系统
 
-课程项目：Spring Boot 3 / Java 21 / JDBC / MySQL，前端 Vue 3 / Vite。业务权限采用用户—角色—权限；管理权限由角色操作与员工该角色的公司／部门范围共同决定。
+管理组织人员、角色、菜单/按钮及API的授权关系。用户名即工号，手机号是同一账号的另一个登录入口；有效授权决定可执行操作，本人部门及后代限定人员管理范围。
 
-## 功能
+## 文档与审核
 
-- 三份 Excel 首次导入组织、10,000 名员工、应用功能目录及五类角色。
-- 用户名／工号／手机号登录，统一标识空间跨字段唯一；BCrypt 密码，服务端会话摘要与集中撤销。
-- 应用准入、功能鉴权、角色权限和员工范围配置、精确部门、多范围、最后平台管理员保护、离职交接撤权。
-- 用户／系统／结果／事件／时间过滤、日志游标分页、逻辑归档；记录登录失败、未认证及拒绝请求。
-- 统一 `{code,message,data,requestId}` 响应，稳定业务错误码；Controller、Service、Repository、DTO 分层。
-- 组织采用公司—部门，数据库部门范围仅存部门 ID；完整结构为 18 表、23 外键。
+资料按老师[course-project-mgt](https://gitee.com/mingqcn/course-project-mgt)的职责组织；业务依据为老师说明、原Excel及用户后续确认，不以老师课程业务或旧需求规格说明书替代本RBAC需求。
 
-沿用系统管理员、公司领导、部门经理、项目经理、普通员工。部长／副部长使用部门经理，项目经理／项目副经理／项目总工程师使用项目经理，不增加独立审计员。只有系统管理员的 GLOBAL audit.read 可查看／归档全局日志。
+| 入口 | 内容 |
+| --- | --- |
+| [文档导航](docs/README.md) / [本次审核指南](docs/review-guide.md) | 正式目录、逐项阅读顺序、变更与待审点 |
+| [需求](docs/requirements.md) / [来源](docs/requirements/sources.md) | 项目范围、业务规则及确认依据 |
+| [领域](docs/domain-model.md) / [数据库](docs/database-design.md) | 核心对象、规则、Chen ER、12张物理表 |
+| [后端](docs/backend-design.md) / [前端](docs/frontend-design.md) | 同仓库双实现目标、完整RBAC前端设计 |
+| [API](api/README.md) / [参考原型](prototype/README.md) | OpenAPI、24项操作及原交互参考 |
+| [初始化](docs/initialization.md) / [部署](deploy/README.md) | 来源映射、五角色、依赖安装与运行 |
+| [测试验收](docs/testing-acceptance.md) / [开发计划](docs/development-plan.md) | 历史T13基线、当前检查及后续审核关口 |
+| [协作](CONTRIBUTING.md) / [历史](docs/history/README.md) | 分支、审核与只读整改追溯 |
 
-## 本地运行
+## 当前基线与目标
 
-需要 Java 21、Maven 3.9+、MySQL 8.0.16+（推荐 8.4）、Node 22.12+。从仓库根目录启动后端，Excel 保持原位置，或设置 RBAC_SOURCE_DIR。
-自行管理数据库时，通过 RBAC_DB_URL、RBAC_DB_USER、RBAC_DB_PASSWORD 提供连接；DBA 先执行 schema.sql 和 deploy/install-login-constraints.sql，应用不需要 SUPER 权限。
-项目私有 MySQL 辅助脚本 `python3 scripts/local_mysql.py` 面向支持 Unix socket 的本地 MySQL 环境，在 127.0.0.1:3307 建立独立开发／测试库；Windows 现场推荐使用构建服务器测试流程。凭据只写入忽略目录 .local/mysql，不提交 Git。
+共同基线为refactor/rbac-core-backend，main仍保留历史工程。当前后端Maven项目位于backend，代码位于backend/src/main/java/com/municipal/rbaccore，使用Java21、Boot3.5.6、JPA、MySQL8.4、AOP与老师真实CloneFactory。业务层已按service/structured归类，共享API经service/port调用，持久化和认证/日志等归入infrastructure；没有DDD实现或策略开关。详见[代码归类](docs/code-organization.md)。
 
-```bash
-mvn spring-boot:run
-```
+生产前端frontend为Vue3/Vite，目前仅登录、最小日志兼容与登录成功外壳。顶层prototype仅保留当前交互原型，旧四组和v2并行目录已按用户要求替换，历史从Git追溯。课程系统指老师Gitee课程项目，T14/T15等待老师进一步要求。
 
-另开终端：
+T13历史验收记录142项后端回归、3项运行器安全单测、70次默认JAR真实HTTP及两轮启动，详见[原验收记录](docs/acceptance/T13.md)。当前结构化归类另取得156项后端回归、3项运行器安全单测、70次完整探针及最终产物3次真实HTTP检查通过的新证据，详见[本阶段记录](docs/acceptance/structured-organization.md)；这些结果不代表完整前端、DDD或云端通过。
 
-```bash
-cd frontend
-npm ci
-npm run dev
-```
+文档PR #29及结构化整理PR #30均已审核合入。当前阶段3[唯一交互原型](prototype/index.html)可直接双击HTML运行，覆盖总览、层级部门、人员、角色、跨系统资源及日志，见[使用说明](prototype/README.md)及[评审记录](docs/prototype-review.md)。第六轮修正部门层级展示和人数说明，用户授权推送供组员审核；小组确认后再启动阶段4，统一同步RBAC契约、必要后端规则及正式前端，随后DDD及双实现总验收。
 
-浏览器打开 http://localhost:5173。Vite 代理 /api 到后端 8081；可用 API_TARGET 指定目标。前后端独立构建，前端资源不打入后端 JAR。当前云环境只部署后端，前端交付源码与离线原型。
-课程初始账号 admin/admin123、SG010000/123456 仅适用于初始化后的演示数据，实际状态以数据库为准。
+## 运行入口
 
-## API 与测试
+本地构建/初始化见[后端说明](backend/README.md)，先安装固定来源CloneFactory、显式准备独立rbac_core及秘密配置，再执行离线导入、只读预览、实际五角色授权。用户确认云部署待新增服务器方案确定后再整理，旧容器配置暂不适配本轮目录。默认jar为backend/target/rbac0-0.1.0.jar；启动不建表、不导入、不重授角色。不能指向旧业务库。
 
-所有路径以 /api 开头。POST /auth/login 返回 data.token；受保护接口使用 Authorization: Bearer <token>。GET 登录接口返回 405，浏览器访问 API 根路径不代表应用页面。
-成功 code=OK；列表放在 data 中；写操作 data=null。错误包含稳定 code、中文 message、data=null 和服务端 requestId；HTTP 状态仍区分 400/401/403/404/405/409/500。
+现有前端在frontend执行npm ci、npm run dev，默认5173代理/api到后端8081；npm test和npm run build分别检查测试与构建。参考原型可直接打开prototype/index.html。
 
-完整接口见 [API 设计](docs/课程设计/03-API设计文档.md)。GET /authorization-logs 返回游标页，POST /authorization-logs/archive 按截止时间逻辑归档；归档不会删除或移出数据库。
-
-[最新报告](reports/README.md)：59 项后端测试与六项 100% 结构覆盖率，13 项前端／原型逻辑测试通过。[口试现场操作](deploy/现场运行JaCoCo.md)会启动独立真实 MySQL，自动生成完整 HTML/XML/CSV/exec 报告，不能将测试连接指向业务库。
-测试包含故障模拟；100% 不代表所有输入、性能或安全无缺陷。历史未采集的认证事件不能事后补造。
-
-## 交付与边界
-
-- [文档导航](docs/README.md)、[数据库设计.adoc](docs/课程设计/04-数据库设计文档.adoc)、[详细设计.adoc](docs/课程设计/05-详细设计文档.adoc)、[完整 ER 图](docs/课程设计/图表/07-数据库ER图.md)。
-- [离线原型](docs/原型/06-界面原型.html)与四份配套 JS 同目录，不连接真实后台。
-- [部署说明](deploy/README.md)、[最新上线与备份记录](deploy/deployment-2026-10-27.md)。Excel 只在服务器本地只读挂载，不进入镜像或 SWR。
-
-本平台演示权限判断，不执行业务系统真实 CRUD。HR 持续同步、OA 自动审批、用户全量 CRUD、组织移动、密码重置、外部冷存储、HTTPS 和性能专项验证不在已交付能力内。
-从空 MySQL 数据库启动：schema.sql 建立最终表结构，DatabaseConstraints 建立外键与登录标识约束，DataInitializer 在同一事务导入 Excel 和默认角色范围。非空库不会重新授予默认权限。
+三份原Excel保持原件；目标为111组织来源合并到110部门、10000员工加独立admin共10001账号。新项目不复用旧ID/哈希/状态/授权，口令来自部署秘密。测试使用隔离MySQL专库；JaCoCo独立报告，当前不作为阻塞，不提交凭据或生成报告。

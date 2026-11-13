@@ -11,3 +11,10 @@ __pycache__/
 
 # Microsoft Office lock files are local editor state.
 ~$*.xlsx
+
+# Local authoring, generated reports and Office editor state.
+.scratch/
+/reports/
+/work/
+/outputs/
+~$*.docx

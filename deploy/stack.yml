@@ -4,7 +4,7 @@ services:
   mysql:
     image: ${RBAC_MYSQL_IMAGE}
     environment:
-      MYSQL_DATABASE: rbac
+      MYSQL_DATABASE: rbac_core
       MYSQL_USER: rbac
       MYSQL_PASSWORD_FILE: /run/secrets/rbac_db_password
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/rbac_mysql_root_password
@@ -46,19 +46,13 @@ services:
   backend:
     image: ${RBAC_BACKEND_IMAGE}
     environment:
-      RBAC_DB_URL: jdbc:mysql://mysql:3306/rbac?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&allowPublicKeyRetrieval=true&useSSL=false
-      RBAC_DB_USER: rbac
-      RBAC_INITIALIZE: "true"
+      RBAC_CORE_DB_URL: jdbc:mysql://mysql:3306/rbac_core?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&allowPublicKeyRetrieval=true&useSSL=false
+      RBAC_CORE_DB_USER: rbac
       SPRING_CONFIG_IMPORT: configtree:/run/secrets/
       JAVA_TOOL_OPTIONS: -Xms64m -Xmx256m -XX:MaxMetaspaceSize=160m -XX:ReservedCodeCacheSize=64m -XX:+ExitOnOutOfMemoryError
     secrets:
       - source: rbac_db_password
         target: spring.datasource.password
-    volumes:
-      - type: bind
-        source: /opt/course-rbac/source
-        target: /app/source
-        read_only: true
     networks:
       - backend
     ports:
