@@ -42,8 +42,8 @@ public class StructuredEffectivePermissionService implements ManagementAuthoriza
     return permissions.effectivePermissions(userId, RbacCatalog.SYSTEM_CODE);
   }
 
-  /** 授权子集独立于API可达性，覆盖全部登记系统。 */
-  public List<PermissionEntity> allPermissions(Long userId) {
-    return permissions.allEffectivePermissions(userId);
+  /** 当前RBAC授权子集独立于API可达性，包含无API映射的有效菜单和按钮。 */
+  public List<PermissionEntity> assignablePermissions(Long userId) {
+    return permissions.effectiveRbacPermissions(userId);
   }
 }

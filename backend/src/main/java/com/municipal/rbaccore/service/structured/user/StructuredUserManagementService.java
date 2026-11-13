@@ -215,7 +215,7 @@ public class StructuredUserManagementService implements UserManagementUseCase {
 
   /** 权限身份而不是API路径才是角色授权子集；同API可被不同权限复用。 */
   private Set<Long> ownPermissionIds(CurrentIdentity actor) {
-    return permissions.allPermissions(actor.id()).stream()
+    return permissions.assignablePermissions(actor.id()).stream()
         .map(PermissionEntity::getId)
         .collect(Collectors.toUnmodifiableSet());
   }

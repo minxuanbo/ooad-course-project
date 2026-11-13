@@ -25,6 +25,8 @@ import org.springframework.test.context.ActiveProfiles;
     properties = "spring.config.name=application-core-user-test")
 @ActiveProfiles("core-user-test")
 class R23PrototypeContractTest {
+  private static final String OVERVIEW = "/api/overview";
+  private static final String ME = "/api/me";
   private static final String LOGIN = "/api/auth/login";
   private static final String DEPARTMENTS = "/api/departments";
   private static final String USERS = "/api/users";
@@ -172,7 +174,7 @@ class R23PrototypeContractTest {
         200, call(HttpMethod.DELETE, DEPARTMENTS + "/" + id, token, null).getStatusCode().value());
     assertEquals(
         409, call(HttpMethod.DELETE, DEPARTMENTS + "/1", token, null).getStatusCode().value());
-    JsonNode overview = call(HttpMethod.GET, "/api/overview", token, null).getBody().path("data");
+    JsonNode overview = call(HttpMethod.GET, OVERVIEW, token, null).getBody().path("data");
     assertEquals(4, overview.path("totalUsers").asInt());
     assertEquals(3, overview.path("totalDepartments").asInt());
   }
@@ -195,8 +197,7 @@ class R23PrototypeContractTest {
     assertEquals(3, tree.get(1).path("totalUsers").asInt());
     assertEquals(3, tree.get(1).path("directUsers").asInt());
     assertEquals(0, tree.get(2).path("totalUsers").asInt());
-    JsonNode identity =
-        call(HttpMethod.GET, "/api/me", admin, null).getBody().path("data").path("user");
+    JsonNode identity = call(HttpMethod.GET, ME, admin, null).getBody().path("data").path("user");
     assertEquals(5, identity.path("managementLevel").asInt());
     assertTrue(identity.path("globalScope").asBoolean());
     assertEquals(25, identity.path("routes").size());

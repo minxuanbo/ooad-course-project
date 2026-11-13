@@ -16,15 +16,31 @@ const router = createRouter({
     { path: '/', component: Home, meta: { title: '工作总览' } },
     { path: '/login', component: Login },
     { path: '/users', component: Users, meta: { title: '人员管理', capability: '/users' } },
-    { path: '/departments', component: Departments, meta: { title: '部门管理', capability: '/departments' } },
-    { path: '/roles', component: Roles, meta: { title: '角色与权限', capability: '/roles', global: true } },
-    { path: '/resources', component: Resources, meta: { title: '资源与API', capability: '/systems', global: true } },
-    { path: '/logs', component: AuditLogs, meta: { title: '鉴权日志', capability: '/authorization-logs', global: true } },
-    { path: '/:pathMatch(.*)*', redirect: '/' }
-  ]
+    {
+      path: '/departments',
+      component: Departments,
+      meta: { title: '部门管理', capability: '/departments' },
+    },
+    {
+      path: '/roles',
+      component: Roles,
+      meta: { title: '角色与权限', capability: '/roles', global: true },
+    },
+    {
+      path: '/resources',
+      component: Resources,
+      meta: { title: '资源与API', capability: '/systems', global: true },
+    },
+    {
+      path: '/logs',
+      component: AuditLogs,
+      meta: { title: '鉴权日志', capability: '/authorization-logs', global: true },
+    },
+    { path: '/:pathMatch(.*)*', redirect: '/' },
+  ],
 })
 /** 每次工作区导航读取最新能力，直达URL仍须通过服务端能力及范围。 */
-router.beforeEach(async function(to) {
+router.beforeEach(async function (to) {
   if (to.path === '/login') return true
   if (!session.token) return '/login'
   try {
@@ -33,7 +49,10 @@ router.beforeEach(async function(to) {
       notify('当前账号没有该页面的访问权限。')
       return '/'
     }
-  } catch (error) { notify(error.message); return session.me ? false : '/login' }
+  } catch (error) {
+    notify(error.message)
+    return session.me ? false : '/login'
+  }
   return true
 })
 createApp(App).use(router).mount('#app')

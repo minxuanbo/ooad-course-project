@@ -69,3 +69,21 @@ test('T12 permitted department login reaches the shell without entering logs', a
   await vm.runInContext('login()', context)
   assert.deepEqual(routes, ['/'])
 })
+
+test('R17 实际请求403后刷新本人能力，隐藏已被撤销的菜单与按钮', async () => {
+  const calls = []
+  const context = vm.createContext({ reactive: x => x, sessionStorage: { getItem: () => 'current', setItem() {}, removeItem() {} }, AbortSignal,
+    fetch: async path => {
+      calls.push(path)
+      const denied = path.includes('/roles/2/permissions')
+      const data = path === '/api/me' ? { user: { id: 1, globalScope: true, routes: [] } } : []
+      return { ok: !denied, status: denied ? 403 : 200, text: async () => JSON.stringify({ code: denied ? 'PERMISSION_DENIED' : 'OK', message: '权限已变化', data, requestId: 'denied-request' }) }
+    } })
+  vm.runInContext(readFileSync(new URL('../src/api.js', import.meta.url), 'utf8').replace(/^import .*$/gm, '').replace(/export /g, ''), context)
+  const run = code => vm.runInContext(code, context)
+  run("session.me={user:{id:1,globalScope:true,routes:[{method:'PUT',path:'/api/roles/{id}/permissions'}]}}")
+  assert.equal(run("canRoute('PUT','/roles/{id}/permissions',true)"), true)
+  await assert.rejects(run("api('/roles/2/permissions','PUT',{ids:[7]})"), error => error.status === 403 && error.requestId === 'denied-request')
+  assert.equal(run("canRoute('PUT','/roles/{id}/permissions',true)"), false)
+  assert(calls.includes('/api/me') && calls.includes('/api/me/permissions'))
+})

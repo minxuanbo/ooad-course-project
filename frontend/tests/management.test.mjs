@@ -81,3 +81,30 @@ test('R23 空选保存需明确二次确认，候选翻页不代替已选集合'
   assert.equal(writes, 0); assert.equal(page.run('confirmEmpty.value'), true)
   await page.run('save()'); assert.equal(writes, 1)
 })
+
+test('R23 非空整体替换也必须确认对共享角色的影响', async () => {
+  let writes = 0
+  const page = editor(async (path, method) => {
+    if (method === 'PUT') { writes++; return {} }
+    if (path === '/roles/1/permissions') return { ids: [7] }
+    if (path === '/systems') return [{ id: 1, name: 'RBAC' }]
+    return []
+  })
+  await page.run('loadInitial()'); await page.run('save()')
+  assert.equal(writes, 0, '非空配置不能跳过确认直接修改全部持有者')
+  await page.run('save()'); assert.equal(writes, 1)
+})
+
+test('R17 保存403后保留草稿但禁重复提交失效操作', async () => {
+  let writes = 0
+  const page = editor(async (path, method) => {
+    if (method === 'PUT') { writes++; throw Object.assign(Error('权限已撤销'), { status: 403 }) }
+    if (path === '/roles/1/permissions') return { ids: [7] }
+    if (path === '/systems') return [{ id: 1, name: 'RBAC' }]
+    return []
+  })
+  await page.run('loadInitial()'); await page.run('save()'); await page.run('save()')
+  assert.equal(writes, 1)
+  await page.run('save()'); assert.equal(writes, 1)
+  assert.deepEqual([...page.run('selected.value')], [7])
+})
