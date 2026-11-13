@@ -86,6 +86,16 @@ test('R12 调动校验双范围，保留用户身份与全部角色', () => {
   assert.equal(after.departmentId, 6);
   assert.deepEqual(after.roles, before.roles);
 });
+test('R12 根直属领导调动本人后，应以新范围和新可见根继续查询', () => {
+  const model = createDemoModel();
+  login(model, 'SG000005');
+  assert.equal(model.me().departmentId, 1);
+  model.move(6, 3);
+  assert.equal(model.me().departmentId, 3);
+  assert.equal(model.tree().find(item => item.id === 3).parentId, null);
+  assert.throws(() => model.list({ departmentId: 1 }), errorCode('MANAGEMENT_SCOPE_DENIED'));
+  assert.ok(model.list({ departmentId: 3 }).total > 0);
+});
 test('R12 停用保留角色与部门，下一次登录统一失败', () => {
   const model = createDemoModel();
   login(model);

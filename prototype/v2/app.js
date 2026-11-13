@@ -86,10 +86,15 @@ function notify(message) {
 }
 function saveFocus() {
   const element = document.activeElement;
-  return element?.id ? { id: element.id, start: element.selectionStart, end: element.selectionEnd } : null;
+  return element?.id || element?.dataset?.act ? {
+    id: element.id, action: element.dataset.act, item: element.dataset.id, page: element.dataset.page,
+    start: element.selectionStart, end: element.selectionEnd,
+  } : null;
 }
 function restoreFocus(saved) {
-  const element = saved && document.getElementById(saved.id);
+  if (!saved) return;
+  const element = saved.id ? document.getElementById(saved.id) : [...document.querySelectorAll('[data-act]')].find(candidate =>
+    candidate.dataset.act === saved.action && candidate.dataset.id === saved.item && candidate.dataset.page === saved.page);
   if (!element) return;
   element.focus({ preventScroll: true });
   if (typeof element.setSelectionRange === 'function' && saved.start !== null) {
@@ -214,11 +219,19 @@ async function loadPeople() {
   render();
   const query = { departmentId: ui.departmentId, q: ui.q, enabled: ui.enabled, page: ui.page, size: ui.size };
   try {
-    const result = await request(() => ({ tree: model.tree(), data: model.list(query), session: model.me() }));
+    const result = await request(() => {
+      const session = model.me();
+      const tree = model.tree();
+      const departmentId = tree.some(item => item.id === query.departmentId) ? query.departmentId : session.departmentId;
+      const page = departmentId === query.departmentId ? query.page : 0;
+      return { tree, session, departmentId, data: model.list({ ...query, departmentId, page }) };
+    });
     if (sequence !== ui.listSequence || epoch !== ui.epoch) return;
     ui.tree = result.tree;
     ui.data = result.data;
     ui.session = result.session;
+    ui.departmentId = result.departmentId;
+    ui.page = result.data.page;
   } catch (error) {
     if (aborted(error) || sequence !== ui.listSequence || epoch !== ui.epoch || handleSessionError(error)) return;
     ui.pageError = error;
