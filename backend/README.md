@@ -8,13 +8,13 @@ Java21、Spring Boot3.5.6、Spring Data JPA、MySQL8.4及老师真实CloneFactor
 backend/
 ├── pom.xml
 ├── src/main/java/com/municipal/rbaccore/
-│   ├── api/{auth,user,role,resource,audit,shared}
-│   ├── service/port/{auth,user,role,resource,audit,security,importing,bootstrap,error}
-│   ├── service/structured/{auth,user,role,resource,audit,security,importing,bootstrap}
+│   ├── api/{auth,user,department,role,resource,audit,shared}
+│   ├── service/port/{auth,user,department,role,resource,audit,security,importing,bootstrap,error}
+│   ├── service/structured/{auth,user,department,role,resource,audit,security,importing,bootstrap}
 │   ├── infrastructure/{persistence,security,web,logging,excel}
 │   ├── config
 │   └── bootstrap
-├── src/test/java/com/municipal/rbaccore/{r01,r03,r04,r06,r07,r11,r13,r14,r18,r22,architecture,infrastructure,shared}
+├── src/test/java/com/municipal/rbaccore/{r01,r03,r04,r06,r07,r11,r13,r14,r18,r22,r23,architecture,infrastructure,shared}
 └── scripts/{accept-runtime.py,tests,test-backend.ps1}
 ```
 

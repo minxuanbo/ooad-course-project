@@ -12,6 +12,9 @@ public class UserResult {
   private Long id;
   private String username;
   private String name;
+  private String position;
+  private Boolean writable;
+  private java.util.List<com.municipal.rbaccore.service.port.role.RoleResult> roles;
   private Long departmentId;
   private String departmentName;
   private Boolean enabled;

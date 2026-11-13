@@ -20,8 +20,9 @@ test('log pagination binds filters to the first page and resets after unmount', 
   } })
   const source = readFileSync(new URL('../src/pages/AuditLogs.vue', import.meta.url), 'utf8').match(/<script setup>([\s\S]*?)<\/script>/)[1].replace(/^import .*$/gm, '')
   vm.runInContext(source, context); const run = s => vm.runInContext(s, context)
-  await run("filters.value.username='first';load()"); await run("filters.value.username='changed';load(true)")
+  await run("filters.value.username='first';load()"); await run('load(true)')
   assert.match(calls[1].path, /username=first/); assert.match(calls[1].path, /cursor=cursor-one/); assert.equal(run('rows.value.length'), 2)
+  await run("filters.value.username='changed';load(true)"); assert.equal(calls.length, 2, '修改条件后不能续查旧快照')
   unmount(); await run('load()'); assert.equal(run('rows.value.length'), 0)
 })
 test('archive requests and archived filters are removed from the log page', () => {
@@ -38,7 +39,7 @@ test('T12 navigation uses effective permissions and server-confirmed log scope',
     fetch: async path => {
       calls.push(path)
       const status = path.includes('/authorization-logs') && denied ? 403 : 200
-      const data = path === '/api/me' ? { user: { id: 1 } } : path === '/api/me/permissions' ? (alternatePermission ? [{ code: 'custom.logs' }] : [{ code: 'rbac.logs.read' }, { code: 'rbac.users.read' }]) : { items: [] }
+      const data = path === '/api/me' ? { user: { id: 1, globalScope: !denied, routes: [{ method: 'GET', path: '/api/authorization-logs' }, { method: 'GET', path: '/api/users' }] } } : path === '/api/me/permissions' ? (alternatePermission ? [{ code: 'custom.logs' }] : [{ code: 'rbac.logs.read' }, { code: 'rbac.users.read' }]) : { items: [] }
       return { ok: status === 200, status, text: async () => JSON.stringify({ code: status === 200 ? 'OK' : 'MANAGEMENT_SCOPE_DENIED', data }) }
     } })
   vm.runInContext(readFileSync(new URL('../src/api.js', import.meta.url), 'utf8').replace(/^import .*$/gm, '').replace(/export /g, ''), context)
@@ -56,7 +57,7 @@ test('T12 navigation uses effective permissions and server-confirmed log scope',
   assert.equal(run("can('rbac.logs.read')"), true)
   run("setToken('')")
   assert.equal(run("can('rbac.users.read')"), false)
-  assert(calls.includes('/api/authorization-logs?limit=1'))
+  assert(!calls.some(path => path.includes('/authorization-logs')), '能力已由本人接口返回，不应额外查询日志探测入口')
 })
 
 test('T12 permitted department login reaches the shell without entering logs', async () => {

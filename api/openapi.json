@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "市政公司统一权限管理系统 API",
-    "version": "1.1.0-review",
-    "description": "本次文档整理评审稿。24个既有操作；共享structured/未来ddd契约，不表示DDD已实现。业务不变量见docs/requirements.md、docs/domain-model.md；跨字段/授权/范围规则见docs/api-contract.md。x-initial-permission-code只追溯初始映射，不能替代实际方法/模板的有效授权。"
+    "version": "1.2.0",
+    "description": "阶段4正式Vue与结构化后端共享契约，共29个操作；当前仅管理RBAC自身权限。原型18业务系统仅作演示，不进入正式目录；课程接入及DDD尚未实施。x-initial-permission-code仅追溯首次映射，实际授权依服务端方法/模板与最新有效关系判定。"
   },
   "servers": [
     {
@@ -472,7 +472,7 @@
           "人员授权"
         ],
         "summary": "整体替换人员角色",
-        "description": "整组重验，[]清空；不能提交过期/超权/停用角色；部门账号不能改自身或有效全局管理员。根锁后重验和完整K保护。",
+        "description": "整组重验，[]清空；不能提交过期/超权/停用角色；部门账号不能改自身或有效全局管理员。根锁后重验和完整K保护。 同时检查固定授予级别、当前RBAC全部有效Permission子集（含无API菜单）；本人、同级、上级及仅管理员可授的自定义角色持有人对局部管理者只读，停用自定义角色不解除保护。",
         "responses": {
           "200": {
             "description": "成功",
@@ -572,7 +572,7 @@
           "人员授权"
         ],
         "summary": "受限候选角色分页",
-        "description": "q匹配角色名称/编码。只启用且全部有效Permission ID是本人集合子集的角色，外系统部分不得先过滤。先过滤再计数分页。",
+        "description": "q匹配角色名称/编码。只启用且全部有效Permission ID是本人集合子集的角色，外系统部分不得先过滤。先过滤再计数分页。 同时检查固定授予级别、当前RBAC全部有效Permission子集（含无API菜单）；本人、同级、上级及仅管理员可授的自定义角色持有人对局部管理者只读，停用自定义角色不解除保护。",
         "responses": {
           "200": {
             "description": "成功",
@@ -661,7 +661,7 @@
           "人员授权"
         ],
         "summary": "停用人员",
-        "description": "仅接受enabled:false；保留角色和部门。停用后旧身份401，再登录401 LOGIN_FAILED；共根锁及完整K保护。",
+        "description": "仅接受enabled:false；保留角色和部门。停用后旧身份401，再登录401 LOGIN_FAILED；共根锁及完整K保护。 同时检查固定授予级别、当前RBAC全部有效Permission子集（含无API菜单）；本人、同级、上级及仅管理员可授的自定义角色持有人对局部管理者只读，停用自定义角色不解除保护。",
         "responses": {
           "200": {
             "description": "成功",
@@ -761,7 +761,7 @@
           "人员授权"
         ],
         "summary": "跨部门调动",
-        "description": "原/目标部门都须在本人子树，保持同一用户/角色，后续范围随归属变化；部门账号自身及全局管理员保护，根锁后重验。",
+        "description": "原/目标部门都须在本人子树，保持同一用户/角色，后续范围随归属变化；部门账号自身及全局管理员保护，根锁后重验。 同时检查固定授予级别、当前RBAC全部有效Permission子集（含无API菜单）；本人、同级、上级及仅管理员可授的自定义角色持有人对局部管理者只读，停用自定义角色不解除保护。",
         "responses": {
           "200": {
             "description": "成功",
@@ -1969,6 +1969,457 @@
         "x-initial-permission-code": "rbac.logs.read",
         "x-maintenance-member": false
       }
+    },
+    "/api/departments": {
+      "get": {
+        "operationId": "listDepartments",
+        "tags": [
+          "部门与人员"
+        ],
+        "summary": "范围内部门目录",
+        "description": "返回完整层级导航及聚合人数，不加载员工明细；只投影授权范围根parentId为null，树按父节点及整棵子树连续排列。组织树为导航集合，不使用人员分页。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepartmentListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "输入格式/关联/树或日志游标错误；无部分写入",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "账号/口令或可信身份失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "实际API权限/部门范围/管理准入拒绝",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "已获可见范围内目标不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "安全内部错误，requestId可追踪",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "数据冲突或写后失去最后完整维护者；全回滚",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-management-scope": "subtree",
+        "x-initial-permission-code": "rbac.departments.read",
+        "x-maintenance-member": false
+      },
+      "post": {
+        "operationId": "createDepartment",
+        "tags": [
+          "部门与人员"
+        ],
+        "summary": "新增下级部门",
+        "description": "父级仅本人或下级。总公司建分公司/部门/项目，分公司建部门/项目，部门仅建项目，项目叶子；可信总公司不按名称认定，不允许第二个总公司。同父名称trim后重名409 DEPARTMENT_NAME_CONFLICT；类型不合法400 DEPARTMENT_TYPE_INVALID。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepartmentVOResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "输入格式/关联/树或日志游标错误；无部分写入",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "账号/口令或可信身份失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "实际API权限/部门范围/管理准入拒绝",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "已获可见范围内目标不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "安全内部错误，requestId可追踪",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "数据冲突或写后失去最后完整维护者；全回滚",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-management-scope": "subtree",
+        "x-initial-permission-code": "rbac.departments.write",
+        "x-maintenance-member": false,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepartmentCreateDTO"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/departments/{id}": {
+      "patch": {
+        "operationId": "renameDepartment",
+        "tags": [
+          "部门与人员"
+        ],
+        "summary": "修改部门名称",
+        "description": "系统管理员可改全公司；局部管理者只能改严格下级，不能改本人、上级或平级。不支持父级或类型修改。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepartmentVOResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "输入格式/关联/树或日志游标错误；无部分写入",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "账号/口令或可信身份失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "实际API权限/部门范围/管理准入拒绝",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "已获可见范围内目标不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "安全内部错误，requestId可追踪",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "数据冲突或写后失去最后完整维护者；全回滚",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-management-scope": "subtree",
+        "x-initial-permission-code": "rbac.departments.write",
+        "x-maintenance-member": false,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepartmentRenameDTO"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "deleteDepartment",
+        "tags": [
+          "部门与人员"
+        ],
+        "summary": "删除空部门",
+        "description": "根节点409 DEPARTMENT_ROOT_REQUIRED；有人员（含停用）或有效子节点409 DEPARTMENT_NOT_EMPTY。局部仅严格下级；删除后不再可见，内部保留来源墓碑，不复活或改变人员归属。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "输入格式/关联/树或日志游标错误；无部分写入",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "账号/口令或可信身份失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "实际API权限/部门范围/管理准入拒绝",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "已获可见范围内目标不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "安全内部错误，requestId可追踪",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "数据冲突或写后失去最后完整维护者；全回滚",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-management-scope": "subtree",
+        "x-initial-permission-code": "rbac.departments.write",
+        "x-maintenance-member": false,
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          }
+        ]
+      }
+    },
+    "/api/overview": {
+      "get": {
+        "operationId": "getOverview",
+        "tags": [
+          "部门与人员"
+        ],
+        "summary": "范围总览",
+        "description": "服务端同一快照统计本人部门及全部下级的人员启停、有效组织节点和直接下级分布。不包含全局日志；最近活动由具日志API及共同根的用户另行查询。",
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverviewVOResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "输入格式/关联/树或日志游标错误；无部分写入",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "账号/口令或可信身份失败",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "实际API权限/部门范围/管理准入拒绝",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "已获可见范围内目标不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "安全内部错误，requestId可追踪",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "数据冲突或写后失去最后完整维护者；全回滚",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-management-scope": "subtree",
+        "x-initial-permission-code": "rbac.overview.read",
+        "x-maintenance-member": false
+      }
     }
   },
   "components": {
@@ -2168,6 +2619,24 @@
           },
           "enabled": {
             "type": "boolean"
+          },
+          "departmentName": {
+            "type": "string"
+          },
+          "managementLevel": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "globalScope": {
+            "type": "boolean",
+            "description": "当前身份直属经来源核实且覆盖有效组织树的共同根"
+          },
+          "routes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ManagementRouteVO"
+            }
           }
         },
         "required": [
@@ -2175,7 +2644,11 @@
           "username",
           "name",
           "departmentId",
-          "enabled"
+          "enabled",
+          "departmentName",
+          "managementLevel",
+          "globalScope",
+          "routes"
         ]
       },
       "LoginVO": {
@@ -2241,6 +2714,25 @@
           },
           "enabled": {
             "type": "boolean"
+          },
+          "position": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 191,
+            "description": "只读岗位资料，不提供编辑"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleVO"
+            },
+            "description": "当前保存角色摘要，包含停用角色"
+          },
+          "writable": {
+            "type": "boolean",
+            "description": "满足目标人员级别保护；具体按钮仍须对应实际API权限"
           }
         },
         "required": [
@@ -2249,7 +2741,10 @@
           "name",
           "departmentId",
           "departmentName",
-          "enabled"
+          "enabled",
+          "position",
+          "roles",
+          "writable"
         ]
       },
       "DepartmentVO": {
@@ -2271,14 +2766,48 @@
           },
           "name": {
             "type": "string",
-            "maxLength": 191,
+            "maxLength": 100,
             "description": "范围外父节点不披露，可见根parentId投影null"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "HEADQUARTERS",
+              "COMPANY",
+              "DEPARTMENT",
+              "PROJECT"
+            ]
+          },
+          "directUsers": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalUsers": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "含全部后代及停用账号；直属人数加各直接子节点总人数"
+          },
+          "canCreate": {
+            "type": "boolean"
+          },
+          "canEdit": {
+            "type": "boolean"
+          },
+          "canDelete": {
+            "type": "boolean",
+            "description": "查询时满足范围、级别、实际API且节点为空；提交仍须重验"
           }
         },
         "required": [
           "id",
           "parentId",
-          "name"
+          "name",
+          "type",
+          "directUsers",
+          "totalUsers",
+          "canCreate",
+          "canEdit",
+          "canDelete"
         ]
       },
       "PermissionVO": {
@@ -2518,13 +3047,23 @@
           },
           "enabled": {
             "type": "boolean"
+          },
+          "managementLevel": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 5,
+            "description": "固定基础角色级别5/4/3/2/1，自定义为null；不可由HTTP编辑"
           }
         },
         "required": [
           "id",
           "code",
           "name",
-          "enabled"
+          "enabled",
+          "managementLevel"
         ]
       },
       "UserWithRolesVO": {
@@ -3780,6 +4319,142 @@
           },
           "data": {
             "type": "null"
+          },
+          "requestId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "data",
+          "requestId"
+        ]
+      },
+      "ManagementRouteVO": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "method": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string",
+            "description": "含/api的服务端路径模板，非客户端传入路径"
+          }
+        },
+        "required": [
+          "method",
+          "path"
+        ]
+      },
+      "DepartmentCreateDTO": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "parentId": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "先trim再验证"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "HEADQUARTERS",
+              "COMPANY",
+              "DEPARTMENT",
+              "PROJECT"
+            ],
+            "description": "总公司类型不可新建，由服务层拒绝"
+          }
+        },
+        "required": [
+          "parentId",
+          "name",
+          "type"
+        ]
+      },
+      "DepartmentRenameDTO": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "先trim再验证"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "OverviewVO": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "departmentId": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "departmentName": {
+            "type": "string"
+          },
+          "totalUsers": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "enabledUsers": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "disabledUsers": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalDepartments": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "distribution": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DepartmentVO"
+            },
+            "description": "范围根的直接子节点，每项总人数已含其子树；不重复列出孙节点参与加总"
+          }
+        },
+        "required": [
+          "departmentId",
+          "departmentName",
+          "totalUsers",
+          "enabledUsers",
+          "disabledUsers",
+          "totalDepartments",
+          "distribution"
+        ]
+      },
+      "OverviewVOResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "OK"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/OverviewVO"
           },
           "requestId": {
             "type": "string",

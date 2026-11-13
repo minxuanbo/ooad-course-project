@@ -1,6 +1,6 @@
 # MySQL物理模型与约束字典
 
-版本1.1评审稿；字段依据[核心/来源SQL](../../deploy/rbac-core-schema.sql)与[运行SQL](../../deploy/rbac-core-runtime.sql)，不新增DDL或迁移。概念模型见[数据库设计](../database-design.md)。
+版本1.2；字段依据[核心/来源SQL](../../deploy/rbac-core-schema.sql)与[运行SQL](../../deploy/rbac-core-runtime.sql)，按用户要求直接维护全新部署的首次初始化DDL，不提供旧库升级脚本。概念模型见[数据库设计](../database-design.md)。
 
 ## 1. 通用约定
 
@@ -16,12 +16,17 @@ MySQL8.4、InnoDB、utf8mb4/utf8mb4_0900_bin。实体BIGINT主键自增，对外
 | code | VARCHAR(100) | 否 | 稳定业务编码 |
 | name | VARCHAR(191) | 否 | 显示名称 |
 | parent_id | BIGINT | 是 | 直接上级标识；NULL为根/顶层 |
+| type | VARCHAR(20) | 否 | HEADQUARTERS/COMPANY/DEPARTMENT/PROJECT，服务端控制合法父子类型 |
+| deleted | BIT | 否 | 默认0；删除空节点后为1，保留来源外键 |
+| active_name | VARCHAR(191)生成列 | 是 | 有效节点TRIM(name)，删除节点NULL |
 
 现有约束/索引：
 
 - `PRIMARY KEY (id)`
 - `CONSTRAINT uk_department_code UNIQUE (code)`
 - `CONSTRAINT fk_department_parent FOREIGN KEY (parent_id) REFERENCES departments(id)`
+
+补充约束：uk_department_sibling_name(parent_id,active_name)约束有效同级名称；ck_department_type约束四种类型，ck_department_name约束trim后1—100字符。根唯一和父子类型由可信来源及共同根锁内服务规则保证，HTTP不接受第二个总公司或层级移动。删除不解除来源外键，不级联人员。
 
 ## 3. systems：应用系统
 
@@ -50,6 +55,8 @@ MySQL8.4、InnoDB、utf8mb4/utf8mb4_0900_bin。实体BIGINT主键自增，对外
 
 - `PRIMARY KEY (id)`
 - `CONSTRAINT uk_role_code UNIQUE (code)`
+
+角色补充字段management_level INT可空，CHECK范围1—5。首次五角色分别为5/4/3/2/1；自定义NULL。级别不参与HTTP PATCH复制，仅用于授予上限、目标保护及完整维护者资格；不能根据可变名称或职位重算。
 
 ## 5. users：人员与本地账号
 
@@ -94,6 +101,9 @@ MySQL8.4、InnoDB、utf8mb4/utf8mb4_0900_bin。实体BIGINT主键自增，对外
 | id | BIGINT | 否 | 新库内部标识，不是工号；数据库自增 |
 | system_id | BIGINT | 否 | 所属应用系统标识 |
 | parent_id | BIGINT | 是 | 直接上级标识；NULL为根/顶层 |
+| type | VARCHAR(20) | 否 | HEADQUARTERS/COMPANY/DEPARTMENT/PROJECT，服务端控制合法父子类型 |
+| deleted | BIT | 否 | 默认0；删除空节点后为1，保留来源外键 |
+| active_name | VARCHAR(191)生成列 | 是 | 有效节点TRIM(name)，删除节点NULL |
 | code | VARCHAR(100) | 否 | 稳定业务编码 |
 | name | VARCHAR(191) | 否 | 显示名称 |
 | type | ENUM('MENU','BUTTON') | 否 | MENU或BUTTON |

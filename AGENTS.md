@@ -1,5 +1,9 @@
 # RBAC项目协作
 
+2026-11-13最新范围澄清：当前正式产品仅登记并管理RBAC自身权限；Excel18业务系统及矩阵仅保留在原型演示，不进入正式目录、首次授权或人员授权子集。课程管理系统目前不接入、不设计其业务API。部署采用全新库，只维护首次初始化SQL，不交付旧库升级脚本。CloneFactory须逐处检查DTO/Command/Entity/Result/VO映射及实际生成代码，不能仅根据skill使用声明认定合规。
+
+2026-11-13最新授权：用户确认原型可合并并开始阶段4。PR #31已合入bd72a34；阶段4在codex/rbac-vue-implementation独立工作树实施结构化后端与Vue正式前端，按获批prototype/index.html同步RBAC自身API、模型和文档。以下阶段3限制为历史记录，不再阻止本阶段生产代码修改。固定审核基线bd72a34；本阶段完成后提交待用户审核，不自动合并或启动DDD、课程接入、服务器部署。
+
 现行资料从[文档导航](docs/README.md)进入，业务需求以老师说明、原始资料和用户确认形成的[需求说明](docs/requirements.md)为准；老师Gitee项目用于文档与架构参考。HTTP字段主规范为api/openapi.yaml，跨字段、授权、范围与事务语义见docs/api-contract.md。
 
 2026-11-13用户已审核并授权合入文档PR #29和结构化整理PR #30；当前授权进入阶段3新交互原型。用户确认浅色蓝色企业后台、左侧导航/顶部身份栏、可重置模拟数据，先做登录/外壳/部门人员完整流程，要求直接双击HTML离线运行。按[评审记录](docs/prototype-review.md)在独立分支迭代，用户明确满意后才改造正式前端；不自动合并、启动DDD/T14/T15或调整服务器部署。T13历史记录见docs/acceptance/T13.md，后续边界沿[开发计划](docs/development-plan.md)。

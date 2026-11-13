@@ -70,3 +70,7 @@ HTTP测试拆成可复用的抽象ContractSupport与当前Structured启动类，
 本地接口和数据库契约保留，当前只有结构化实现；前端未重做。根Dockerfile、.dockerignore、Stack与旧容器测试脚本按用户要求暂不适配，待新服务器方案统一整理，不能将本地JAR验收写成部署成功。
 
 代码整理在独立分支交付草稿PR，不自行推进新原型/DDD或T14/T15。后续每次编码同步更新需求、设计、实际路径和当阶段结果；历史验收固定版本/时间，避免旧结论代表当前状态。
+
+## 阶段4增量目录
+
+api/department提供部门及总览Controller和DTO/VO，service/port/department定义共享用例、命令、结果和类型，service/structured/department实现组织维护及范围聚合。StructuredPersonnelAuthority集中处理角色级别和目标保护，不属于DDD领域模型。真实数据库与HTTP增量测试归r23/R23PrototypeContractTest；原r11/r13/r14安全回归保留并按新增字段和规则更新夹具。正式Vue归frontend/src/pages，通用弹窗、分页和完整集合编辑器归components，不复制prototype/model.js。

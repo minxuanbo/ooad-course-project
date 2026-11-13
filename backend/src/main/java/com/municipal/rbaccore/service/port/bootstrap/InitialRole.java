@@ -7,12 +7,13 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum InitialRole {
-  SYSTEM_ADMIN("system-admin", "系统管理员"),
-  COMPANY_LEADER("company-leader", "公司领导"),
-  DEPARTMENT_MANAGER("department-manager", "部门经理"),
-  PROJECT_MANAGER("project-manager", "项目经理"),
-  EMPLOYEE("employee", "普通员工");
+  SYSTEM_ADMIN("system-admin", "系统管理员", 5),
+  COMPANY_LEADER("company-leader", "公司领导", 4),
+  DEPARTMENT_MANAGER("department-manager", "部门经理", 3),
+  PROJECT_MANAGER("project-manager", "项目经理", 2),
+  EMPLOYEE("employee", "普通员工", 1);
 
   private final String code;
   private final String name;
+  private final int managementLevel;
 }

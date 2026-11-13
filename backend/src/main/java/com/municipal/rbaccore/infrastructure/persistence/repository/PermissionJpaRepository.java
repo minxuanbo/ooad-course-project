@@ -8,6 +8,13 @@ import org.springframework.data.jpa.repository.Query;
 
 /** 本人有效权限只沿角色及同系统有效API计算，不补入导航祖先。 */
 public interface PermissionJpaRepository extends JpaRepository<PermissionEntity, Long> {
+  /** 跨系统授权子集比较包含没有API映射的菜单和业务按钮。 */
+  @Query(
+      "select distinct p from UserEntity u join u.roles r join r.permissions p where"
+          + " u.id=:userId and u.enabled=true and r.enabled=true and p.enabled=true"
+          + " and p.system.enabled=true and p.system.code='rbac' order by p.id")
+  List<PermissionEntity> allEffectivePermissions(Long userId);
+
   /** 受限系统的小型权限树一次读取，按ID稳定组装且保留停用节点。 */
   @EntityGraph(attributePaths = {"system", "parent"})
   List<PermissionEntity> findBySystemIdOrderByIdAsc(Long systemId);

@@ -163,7 +163,14 @@ abstract class R07AuthenticationContractSupport {
     assertEquals(10001, bootstrap.initialize(TestProjectPaths.sources()).createdAssignments());
     assertEquals(5, roles.count());
     assertEquals(10001, jdbc.queryForObject("SELECT count(*) FROM user_roles", Integer.class));
-    assertEquals(20, jdbc.queryForObject("SELECT count(*) FROM api_resources", Integer.class));
+    assertEquals(25, jdbc.queryForObject("SELECT count(*) FROM api_resources", Integer.class));
+    assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM systems", Integer.class));
+    assertEquals(
+        0,
+        jdbc.queryForObject(
+            "SELECT count(*) FROM role_permissions rp JOIN roles r ON r.id=rp.role_id WHERE"
+                + " r.code='employee'",
+            Integer.class));
     assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM bootstrap_receipts", Integer.class));
     rootId = jdbc.queryForObject("SELECT id FROM departments WHERE parent_id IS NULL", Long.class);
     departmentManager =
@@ -214,7 +221,7 @@ abstract class R07AuthenticationContractSupport {
         body(request("GET", TREE, numberToken, null)).get("data"),
         body(request("GET", TREE, phoneToken, null)).get("data"));
     assertEquals(43200, byNumber.get("expiresIn").asInt());
-    assertEquals(5, byNumber.get("user").size());
+    assertEquals(9, byNumber.get("user").size());
     assertFalse(byNumber.toString().contains("passwordHash"));
     assertFalse(byNumber.get("user").has("phone"));
     assertFalse(byNumber.get("user").has("employeeNo"));

@@ -1,7 +1,6 @@
 package com.municipal.rbaccore.service.structured.user;
 
 import cn.edu.xmu.clonefactory.util.CloneFactory;
-import com.municipal.rbaccore.infrastructure.persistence.entity.ApiResourceEntity;
 import com.municipal.rbaccore.infrastructure.persistence.entity.DepartmentEntity;
 import com.municipal.rbaccore.infrastructure.persistence.entity.PermissionEntity;
 import com.municipal.rbaccore.infrastructure.persistence.entity.RoleEntity;
@@ -58,6 +57,8 @@ public class StructuredUserManagementService implements UserManagementUseCase {
   private final StructuredDepartmentScopeService scope;
   private final StructuredMaintenanceGuard guard;
   private final UserJpaRepository users;
+  private final com.municipal.rbaccore.service.structured.security.StructuredPersonnelAuthority
+      authority;
   private final RoleJpaRepository roles;
   private final DepartmentJpaRepository departments;
 
@@ -73,9 +74,10 @@ public class StructuredUserManagementService implements UserManagementUseCase {
   public AssignableRolePageResult assignableRoles(
       String header, Long id, AssignableRoleQuery query) {
     CurrentIdentity actor = auth.require(header);
-    target(actor, id);
+    authority.requireManage(actor, target(actor, id));
     String search = query.getQ() == null ? "" : query.getQ().toLowerCase(Locale.ROOT);
-    Specification<RoleEntity> filter = assignableFilter(ownPermissionIds(actor), search);
+    Specification<RoleEntity> filter =
+        assignableFilter(ownPermissionIds(actor), authority.level(actor), search);
     long total = roles.count(filter);
     long offset = (long) query.getPage() * query.getSize();
     if (offset >= total) {
@@ -98,15 +100,14 @@ public class StructuredUserManagementService implements UserManagementUseCase {
         header,
         actor -> {
           UserEntity target = target(actor, id);
-          requireSelfProtection(actor, target);
-          requireGlobalAdministratorProtection(actor, target);
+          authority.requireManage(actor, target);
           Set<Long> wanted = new LinkedHashSet<>(command.getIds());
           List<RoleEntity> selected = roles.findAllById(wanted);
           if (selected.size() != wanted.size()) {
             throw BusinessException.bad("INVALID_ARGUMENT", "存在未知的角色ID");
           }
           Specification<RoleEntity> allowed =
-              assignableFilter(ownPermissionIds(actor), "")
+              assignableFilter(ownPermissionIds(actor), authority.level(actor), "")
                   .and((role, query, builder) -> role.get("id").in(wanted));
           if (!wanted.isEmpty() && roles.count(allowed) != wanted.size()) {
             throw BusinessException.scopeDenied();
@@ -127,7 +128,7 @@ public class StructuredUserManagementService implements UserManagementUseCase {
         header,
         actor -> {
           UserEntity target = target(actor, id);
-          requireGlobalAdministratorProtection(actor, target);
+          authority.requireManage(actor, target);
           target.setEnabled(false);
           users.saveAndFlush(target);
           return withRoles(target);
@@ -139,8 +140,7 @@ public class StructuredUserManagementService implements UserManagementUseCase {
     CurrentIdentity actor = reauthenticate(header);
     if (id == null) return;
     UserEntity target = target(actor, id);
-    if (protectSelf) requireSelfProtection(actor, target);
-    requireGlobalAdministratorProtection(actor, target);
+    if (protectSelf) authority.requireManage(actor, target);
   }
 
   /** 原部门与目标部门都必须在本部门及下级范围，失败保留原归属与授权。 */
@@ -150,8 +150,7 @@ public class StructuredUserManagementService implements UserManagementUseCase {
         header,
         actor -> {
           UserEntity target = target(actor, id);
-          requireSelfProtection(actor, target);
-          requireGlobalAdministratorProtection(actor, target);
+          authority.requireManage(actor, target);
           Long departmentId = command.getDepartmentId();
           requireInScope(actor, departmentId);
           DepartmentEntity department =
@@ -189,24 +188,6 @@ public class StructuredUserManagementService implements UserManagementUseCase {
     return actor;
   }
 
-  /** 部门管理员不能修改自己的授权或所属部门，共同根账号仍受完整K约束。 */
-  private void requireSelfProtection(CurrentIdentity actor, UserEntity target) {
-    if (actor.id().equals(target.getId()) && !scope.isGlobal(actor)) {
-      throw BusinessException.scopeDenied();
-    }
-  }
-
-  /** 部门管理员不能修改其他有效全局管理员，全局操作者的最后管理员保护由锁内K检查负责。 */
-  private void requireGlobalAdministratorProtection(CurrentIdentity actor, UserEntity target) {
-    if (actor.id().equals(target.getId()) || scope.isGlobal(actor)) return;
-    CurrentIdentity subject =
-        new CurrentIdentity(target.getId(), target.getUsername(), target.getDepartment().getId());
-    if (scope.isGlobal(subject)
-        && permissions.routes(target.getId()).containsAll(RbacCatalog.maintenanceRoutes())) {
-      throw BusinessException.scopeDenied();
-    }
-  }
-
   /** 范围外对象不暴露是否存在；已获共同根范围者请求未知目标返回404。 */
   private void requireInScope(CurrentIdentity actor, Long departmentId) {
     if (scope.allowedIds(actor).contains(departmentId)) return;
@@ -234,32 +215,37 @@ public class StructuredUserManagementService implements UserManagementUseCase {
 
   /** 权限身份而不是API路径才是角色授权子集；同API可被不同权限复用。 */
   private Set<Long> ownPermissionIds(CurrentIdentity actor) {
-    return permissions.permissions(actor.id()).stream()
+    return permissions.allPermissions(actor.id()).stream()
         .map(PermissionEntity::getId)
         .collect(Collectors.toUnmodifiableSet());
   }
 
   /** 数据库排除任何超出本人有效权限的角色，外系统权限不因过滤而变成空集。 */
-  private Specification<RoleEntity> assignableFilter(Set<Long> ownIds, String search) {
+  private Specification<RoleEntity> assignableFilter(Set<Long> ownIds, int level, String search) {
     String pattern =
         "%" + search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
     return (root, query, builder) -> {
       Subquery<Long> forbidden = query.subquery(Long.class);
       Root<RoleEntity> candidate = forbidden.correlate(root);
       Join<RoleEntity, PermissionEntity> permission = candidate.join("permissions");
-      Join<PermissionEntity, ApiResourceEntity> api = permission.join("apis");
       Predicate outside =
           ownIds.isEmpty() ? builder.conjunction() : builder.not(permission.get("id").in(ownIds));
       forbidden
           .select(permission.get("id"))
           .where(
-              builder.isTrue(permission.get("enabled")),
-              builder.isTrue(permission.get("system").get("enabled")),
-              builder.isTrue(api.get("enabled")),
-              builder.equal(permission.get("system").get("id"), api.get("system").get("id")),
-              outside);
+              builder.or(
+                  builder.notEqual(permission.get("system").get("code"), RbacCatalog.SYSTEM_CODE),
+                  builder.and(
+                      builder.isTrue(permission.get("enabled")),
+                      builder.isTrue(permission.get("system").get("enabled")),
+                      outside)));
       return builder.and(
           builder.isTrue(root.get("enabled")),
+          level == 5
+              ? builder.conjunction()
+              : builder.and(
+                  builder.isNotNull(root.get("managementLevel")),
+                  builder.le(root.get("managementLevel"), level)),
           builder.not(builder.exists(forbidden)),
           builder.or(
               builder.like(builder.lower(root.get("name")), pattern, '\\'),

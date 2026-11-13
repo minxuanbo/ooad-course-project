@@ -14,13 +14,24 @@ public final class RbacCatalog {
           "rbac.users.read",
           "rbac.users.roles.write",
           "rbac.users.disable",
-          "rbac.users.department.write");
+          "rbac.users.department.write",
+          "rbac.overview.read",
+          "rbac.departments.read",
+          "rbac.departments.write");
 
   private RbacCatalog() {}
 
   /** 只声明已评审的API模板；后续任务接入各自Controller，不生成通用CRUD。 */
   public static Map<String, List<Route>> definitions() {
     Map<String, List<Route>> definitions = new LinkedHashMap<>();
+    definitions.put("rbac.overview.read", List.of(route("GET", "/api/overview")));
+    definitions.put("rbac.departments.read", List.of(route("GET", "/api/departments")));
+    definitions.put(
+        "rbac.departments.write",
+        List.of(
+            route("POST", "/api/departments"),
+            route("PATCH", "/api/departments/{id}"),
+            route("DELETE", "/api/departments/{id}")));
     definitions.put(
         "rbac.users.read",
         List.of(
@@ -72,7 +83,13 @@ public final class RbacCatalog {
     return definitions().entrySet().stream()
         .filter(
             entry ->
-                !Set.of("rbac.logs.read", "rbac.users.disable", "rbac.users.department.write")
+                !Set.of(
+                        "rbac.logs.read",
+                        "rbac.users.disable",
+                        "rbac.users.department.write",
+                        "rbac.overview.read",
+                        "rbac.departments.read",
+                        "rbac.departments.write")
                     .contains(entry.getKey()))
         .flatMap(entry -> entry.getValue().stream())
         .collect(Collectors.toUnmodifiableSet());

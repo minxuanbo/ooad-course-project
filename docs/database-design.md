@@ -1,12 +1,12 @@
 # 数据库概念与关系设计
 
-版本：1.1评审稿。业务依据为[需求](requirements.md)和[领域模型](domain-model.md)。本次保留已评审核心ER及现有表结构，不因DDD规划新增重复模型。
+版本：1.1评审稿。业务依据为[需求](requirements.md)和[领域模型](domain-model.md)。本次保留已评审核心ER关系，首次建库结构增加角色级别、组织类型和删除墓碑，不因DDD规划新增重复模型。
 
 ## 1. Chen ER概念模型
 
 ![六实体核心Chen ER](database/chen-er-overview.png)
 
-[可编辑SVG](database/chen-er-overview.svg)；[三段关系源码及既有评审](database/chen-er-source.md)。原图与源码保持不变。图中仅六个核心实体，账号认证支撑、日志、导入来源及回执不进入核心ER；全局管理员是User的当前授权状态。
+[可编辑SVG](database/chen-er-overview.svg)；[三段关系源码及既有评审](database/chen-er-source.md)。原图与源码保持不变。图中仅六个核心实体，账号认证支撑、日志、导入来源及回执不进入核心ER；全局管理员使用独立初始化User，具备有效基础级别5、可信根范围与实际维护权限，不单列实体。
 
 | 联系 | 基数及参与约束 |
 | --- | --- |

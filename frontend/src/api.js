@@ -48,15 +48,18 @@ export async function refreshSession() {
   const me = await api('/me')
   const permissions = await api('/me/permissions')
   const codes = (permissions || []).map(item => item.code)
-  let logAccess = false
-  try { await api('/authorization-logs?limit=1'); logAccess = true }
-  catch (error) { if (error.status !== 403) throw error }
+  const logAccess = me.user.globalScope === true && me.user.routes?.some(item => item.method === 'GET' && item.path === '/api/authorization-logs')
   if (session.token === token) {
     session.me = me
     session.permissions = codes
     session.logAccess = logAccess
   }
   return me
+}
+/** 页面入口及按钮按服务端实际API能力显示，角色名和职位不参与判断。 */
+export function canRoute(method, path, global = false) {
+  return !!session.me && (!global || session.me.user.globalScope === true)
+    && session.me.user.routes?.some(item => item.method === method && item.path === '/api' + path)
 }
 // 日志还要求共同根范围，入口使用服务端实际查询结果，不按角色名推断。
 export function can(permission) {

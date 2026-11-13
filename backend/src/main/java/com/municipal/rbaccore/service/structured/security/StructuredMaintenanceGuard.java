@@ -18,6 +18,7 @@ public class StructuredMaintenanceGuard implements MaintenanceProtection {
   private final StructuredDepartmentScopeService scope;
   private final DepartmentJpaRepository departments;
   private final UserJpaRepository users;
+  private final StructuredPersonnelAuthority authority;
   private final StructuredEffectivePermissionService permissions;
 
   /** 必须在调用方写事务中先锁同一个已核实根，避免各票使用不同锁点。 */
@@ -30,7 +31,8 @@ public class StructuredMaintenanceGuard implements MaintenanceProtection {
   @Transactional(propagation = Propagation.MANDATORY)
   public void retainOne() {
     for (UserEntity user : users.findByDepartmentIdAndEnabledTrue(scope.trustedRootId())) {
-      if (permissions.routes(user.getId()).containsAll(RbacCatalog.maintenanceRoutes())) {
+      if (authority.level(user) == 5
+          && permissions.routes(user.getId()).containsAll(RbacCatalog.maintenanceRoutes())) {
         return;
       }
     }

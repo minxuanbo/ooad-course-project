@@ -52,7 +52,14 @@ public class UserController {
     UserPageResult result = service.list(header, command);
     UserPageVO view = CloneFactory.copy(new UserPageVO(), result);
     view.setItems(
-        result.getItems().stream().map(item -> CloneFactory.copy(new UserVO(), item)).toList());
+        result.getItems().stream()
+            .map(
+                item -> {
+                  UserVO row = CloneFactory.copy(new UserVO(), item);
+                  row.setRoles(item.getRoles().stream().map(this::roleView).toList());
+                  return row;
+                })
+            .toList());
     return view;
   }
 

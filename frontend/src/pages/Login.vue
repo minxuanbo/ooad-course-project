@@ -10,7 +10,7 @@ async function login() {
     const result = await api('/auth/login', 'POST', { account: account.value.trim(), password: password.value })
     setToken(result.token)
     await refreshSession()
-    await router.replace(can('rbac.logs.read') ? '/logs' : '/')
+    await router.replace('/')
   } catch (e) { error.value = e.message }
   finally { busy.value = false }
 }
