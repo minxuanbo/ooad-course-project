@@ -48,8 +48,6 @@ def extract(source):
                     tokens.append(token)
             normalized.append(tokens)
         operations = list(dict.fromkeys(token for tokens in normalized for token in tokens))
-        if '全部' in rights:
-            operations.append('全部（原表，待接口细化）')
         features.append({'row': row, 'systemId': current_system['id'], 'module': current_module,
                          'name': cells['C' + str(row)], 'description': cells.get('D' + str(row), ''),
                          'roleRights': rights, 'operations': operations,
@@ -65,7 +63,7 @@ if __name__ == '__main__':
     repository = Path(__file__).resolve().parents[1]
     parser = ArgumentParser()
     parser.add_argument('--source', type=Path, default=repository / '市政公司应用软件功能权限清单.xlsx')
-    parser.add_argument('--output', type=Path, default=repository / 'prototype/v2/applications.js')
+    parser.add_argument('--output', type=Path, default=repository / 'prototype/applications.js')
     arguments = parser.parse_args()
     data = extract(arguments.source)
     content = '/** 由scripts/build-prototype-applications.py只读提取；来源摘要和原始矩阵保留在数据中。 */\n'

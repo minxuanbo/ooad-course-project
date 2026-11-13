@@ -24,7 +24,7 @@
 | [ ] | [testing-acceptance.md](testing-acceptance.md)，修改 | 需求矩阵、当前/后续验证，T13为历史基线；不复用旧结果声称本分支运行过 |
 | [ ] | [development-plan.md](development-plan.md)，新增 | 六阶段顺序，当前只阶段1，课程系统及T14/T15等老师要求 |
 | [ ] | [README](../README.md)、[docs导航](README.md)、[AGENTS](../AGENTS.md)、[CONTRIBUTING](../CONTRIBUTING.md)，修改 | 当前入口、协作/分支/审核边界，删除旧“T13后停止”现行指令 |
-| [ ] | [prototype/README](../prototype/README.md)、[index](../prototype/index.html)，新增/迁移 | 原四组参考原型搬顶层；HTML仅改说明/链接，5个JS及CSS原逻辑不变 |
+| [ ] | [阶段1原型目录](https://github.com/minxuanbo/ooad-course-project/tree/d1438d7ff1a42f87aa4bbd097fbab0db15747960/prototype)，新增/迁移 | 阶段1原四组参考原型搬顶层；当时HTML仅改说明/链接。阶段3现已由[唯一原型](../prototype/index.html)替换，旧内容从Git追溯 |
 | [ ] | [history/README](history/README.md)及5份归档 | 保留追溯证据、头注只读历史，原链接固定到基线，不作为现行规范 |
 
 ## 2. 删除、迁移与保留
@@ -41,7 +41,7 @@
 
 ## 3. 必要的测试配套改动
 
-仅改[frontend/tests/prototype.test.mjs](../frontend/tests/prototype.test.mjs)：旧测试针对已淘汰门户/范围/归档原型，改为加载迁移后的真实四组参考原型，检查加载、人员范围拒绝和资源同系统拒绝。先确认新路径不存在时行为RED，再搬迁并回归；未改生产前端/Java/SQL。
+阶段1仅改[当时的原型测试](https://github.com/minxuanbo/ooad-course-project/blob/d1438d7ff1a42f87aa4bbd097fbab0db15747960/frontend/tests/prototype.test.mjs)：旧测试针对已淘汰门户/范围/归档原型，改为加载迁移后的四组参考原型，检查加载、范围及同系统拒绝。阶段3用户随后授权由[当前测试](../frontend/tests/prototype.test.mjs)验证唯一新原型；两次结果按版本区分，均不代表正式页面验收。
 
 这项改动只维护迁移后的可验证入口，不代表新前端原型设计或正式页面实现。未来阶段不得用该内存原型测试替代真实HTTP/数据库或UI验收。
 

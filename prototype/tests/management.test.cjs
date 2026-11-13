@@ -3,9 +3,17 @@ const assert = require('node:assert/strict');
 const { createDemoModel, DEMO_PASSWORD, PEOPLE } = require('../model.js');
 const login = (model, name = 'admin') => model.login(name, DEMO_PASSWORD);
 const code = expected => error => error.code === expected;
+/** 此组隔离授予级别，业务矩阵完整子集由initial-business-roles单独验证。 */
+function rankOnlyFixture(model) {
+  login(model);
+  for (const id of [2, 3, 4, 5]) {
+    model.saveRolePermissions(id, model.rolePermissions(id).permissions.filter(item => item.systemId === 1).map(item => item.id));
+  }
+}
 
 test('R23 项目经理只能授予项目经理和普通员工，直接提交越级集合也拒绝', () => {
   const model = createDemoModel();
+  rankOnlyFixture(model);
   login(model, 'SG000003');
   assert.deepEqual(model.candidateRoles(5, { size: 100 }).items.map(role => role.id), [4, 5]);
   for (const ids of [[2], [3], [10]]) assert.throws(() => model.assign(5, ids), code('MANAGEMENT_SCOPE_DENIED'));
@@ -13,6 +21,7 @@ test('R23 项目经理只能授予项目经理和普通员工，直接提交越�
 });
 test('R23 部门经理与公司领导分别受到三级/四级限制，多个角色按有效最高级别', () => {
   const model = createDemoModel();
+  rankOnlyFixture(model);
   login(model, 'SG000002');
   assert.deepEqual(model.candidateRoles(5, { size: 100 }).items.map(role => role.id), [3, 4, 5]);
   login(model, 'SG000001');

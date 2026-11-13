@@ -156,8 +156,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -170,9 +169,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -193,8 +189,7 @@ const source = {
         "查看",
         "审批",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -216,9 +211,6 @@ const source = {
         [
           0,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -237,8 +229,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "审批",
-        "全部（原表，待接口细化）"
+        "审批"
       ],
       "operationRoles": [
         [
@@ -250,9 +241,6 @@ const source = {
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -271,8 +259,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -284,9 +271,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -304,16 +288,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -331,16 +311,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -361,8 +337,7 @@ const source = {
         "查看",
         "审批",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -386,9 +361,6 @@ const source = {
           0,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -406,8 +378,7 @@ const source = {
         "查看"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
@@ -416,9 +387,6 @@ const source = {
           2,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -437,8 +405,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -451,9 +418,6 @@ const source = {
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -473,8 +437,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -492,9 +455,6 @@ const source = {
           0,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -513,8 +473,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -527,9 +486,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -548,8 +504,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -561,9 +516,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -583,8 +535,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -600,9 +551,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -622,8 +570,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -640,9 +587,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -661,8 +605,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -673,9 +616,6 @@ const source = {
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -693,16 +633,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -723,8 +659,7 @@ const source = {
         "查看",
         "审批",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -747,9 +682,6 @@ const source = {
           0,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -769,8 +701,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -788,9 +719,6 @@ const source = {
           0,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -808,8 +736,7 @@ const source = {
         "查看"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
@@ -818,9 +745,6 @@ const source = {
           2,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -838,8 +762,7 @@ const source = {
         "查看"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
@@ -848,9 +771,6 @@ const source = {
           2,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -869,8 +789,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -883,9 +802,6 @@ const source = {
         [
           0,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -905,8 +821,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -924,9 +839,6 @@ const source = {
           0,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -945,8 +857,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -959,9 +870,6 @@ const source = {
         [
           0,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -981,8 +889,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -1000,9 +907,6 @@ const source = {
           0,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1022,8 +926,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -1041,9 +944,6 @@ const source = {
           0,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1063,8 +963,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -1082,9 +981,6 @@ const source = {
           0,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1102,8 +998,7 @@ const source = {
         "查看"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
@@ -1112,9 +1007,6 @@ const source = {
           2,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1134,8 +1026,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -1154,9 +1045,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1176,8 +1064,7 @@ const source = {
       "operations": [
         "查看",
         "导出",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -1194,9 +1081,6 @@ const source = {
         [
           0,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1214,8 +1098,7 @@ const source = {
         "查看"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
@@ -1224,9 +1107,6 @@ const source = {
           2,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1244,16 +1124,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1272,8 +1148,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -1286,9 +1161,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1307,8 +1179,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -1321,9 +1192,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1343,8 +1211,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -1363,9 +1230,6 @@ const source = {
           0,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1385,8 +1249,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -1403,9 +1266,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1423,16 +1283,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1450,8 +1306,7 @@ const source = {
         "查看"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
@@ -1460,9 +1315,6 @@ const source = {
           2,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1482,8 +1334,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -1501,9 +1352,6 @@ const source = {
           0,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1522,8 +1370,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -1536,9 +1383,6 @@ const source = {
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1556,8 +1400,7 @@ const source = {
         "查看"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
@@ -1566,9 +1409,6 @@ const source = {
           2,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1588,8 +1428,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -1606,9 +1445,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1626,8 +1462,7 @@ const source = {
         "查看"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
@@ -1636,9 +1471,6 @@ const source = {
           2,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1656,16 +1488,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1684,8 +1512,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -1696,9 +1523,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1717,8 +1541,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -1729,9 +1552,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1751,8 +1571,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "编辑本人",
-        "全部（原表，待接口细化）"
+        "编辑本人"
       ],
       "operationRoles": [
         [
@@ -1769,9 +1588,6 @@ const source = {
         [
           0,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1792,8 +1608,7 @@ const source = {
         "查看",
         "审批",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -1814,9 +1629,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1834,16 +1646,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1864,8 +1672,7 @@ const source = {
         "查看",
         "审批",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -1885,9 +1692,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1906,8 +1710,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -1919,9 +1722,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1940,8 +1740,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -1953,9 +1752,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -1975,8 +1771,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "编辑本人",
-        "全部（原表，待接口细化）"
+        "编辑本人"
       ],
       "operationRoles": [
         [
@@ -1993,9 +1788,6 @@ const source = {
         [
           0,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2015,8 +1807,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -2034,9 +1825,6 @@ const source = {
           0,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2056,8 +1844,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -2075,9 +1862,6 @@ const source = {
           0,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2096,8 +1880,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "查看本人",
-        "全部（原表，待接口细化）"
+        "查看本人"
       ],
       "operationRoles": [
         [
@@ -2107,9 +1890,6 @@ const source = {
         [
           0,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2128,8 +1908,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "查看本人",
-        "全部（原表，待接口细化）"
+        "查看本人"
       ],
       "operationRoles": [
         [
@@ -2139,9 +1918,6 @@ const source = {
         [
           0,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2160,8 +1936,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -2173,9 +1948,6 @@ const source = {
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2193,16 +1965,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2223,8 +1991,7 @@ const source = {
         "查看",
         "审批",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -2247,9 +2014,6 @@ const source = {
           0,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2268,8 +2032,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "查看本人",
-        "全部（原表，待接口细化）"
+        "查看本人"
       ],
       "operationRoles": [
         [
@@ -2280,9 +2043,6 @@ const source = {
         [
           0,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2302,8 +2062,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -2319,9 +2078,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2341,8 +2097,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -2360,9 +2115,6 @@ const source = {
           0,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2382,8 +2134,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "编辑本人",
-        "全部（原表，待接口细化）"
+        "编辑本人"
       ],
       "operationRoles": [
         [
@@ -2400,9 +2151,6 @@ const source = {
         [
           0,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2420,16 +2168,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2448,8 +2192,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -2459,9 +2202,6 @@ const source = {
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2479,16 +2219,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2507,8 +2243,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -2520,9 +2255,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2541,8 +2273,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -2554,9 +2285,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2574,16 +2302,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2602,8 +2326,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -2615,9 +2338,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2638,8 +2358,7 @@ const source = {
         "查看",
         "审批",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -2660,9 +2379,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2681,8 +2397,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -2694,9 +2409,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2716,8 +2428,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -2733,9 +2444,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2754,8 +2462,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -2767,9 +2474,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2788,8 +2492,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -2802,9 +2505,6 @@ const source = {
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2825,8 +2525,7 @@ const source = {
         "查看",
         "审批",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -2846,9 +2545,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2867,8 +2563,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -2880,9 +2575,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2901,8 +2593,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -2914,9 +2605,6 @@ const source = {
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2934,16 +2622,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2962,8 +2646,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "审批",
-        "全部（原表，待接口细化）"
+        "审批"
       ],
       "operationRoles": [
         [
@@ -2973,9 +2656,6 @@ const source = {
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -2994,8 +2674,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -3005,9 +2684,6 @@ const source = {
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3026,8 +2702,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -3038,9 +2713,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3058,16 +2730,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3086,8 +2754,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -3098,9 +2765,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3118,16 +2782,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3146,8 +2806,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -3158,9 +2817,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3178,16 +2834,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3206,8 +2858,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -3217,9 +2868,6 @@ const source = {
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3238,8 +2886,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -3252,9 +2899,6 @@ const source = {
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3273,8 +2917,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -3284,9 +2927,6 @@ const source = {
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3307,8 +2947,7 @@ const source = {
         "查看",
         "审批",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -3328,9 +2967,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3349,8 +2985,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "审批",
-        "全部（原表，待接口细化）"
+        "审批"
       ],
       "operationRoles": [
         [
@@ -3362,9 +2997,6 @@ const source = {
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3383,8 +3015,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -3396,9 +3027,6 @@ const source = {
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3418,8 +3046,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -3436,9 +3063,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3457,8 +3081,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -3470,9 +3093,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3492,8 +3112,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -3509,9 +3128,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3530,8 +3146,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -3543,9 +3158,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3564,8 +3176,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -3577,9 +3188,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3600,8 +3208,7 @@ const source = {
         "查看",
         "审批",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -3622,9 +3229,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3644,8 +3248,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -3662,9 +3265,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3684,8 +3284,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -3701,9 +3300,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3722,8 +3318,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -3736,9 +3331,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3758,8 +3350,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -3776,9 +3367,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3796,8 +3384,7 @@ const source = {
         "查看"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
@@ -3806,9 +3393,6 @@ const source = {
           2,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3828,8 +3412,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -3846,9 +3429,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3868,8 +3448,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -3886,9 +3465,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3909,8 +3485,7 @@ const source = {
         "查看",
         "审批",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -3931,9 +3506,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3952,8 +3524,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -3966,9 +3537,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -3988,8 +3556,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -4006,9 +3573,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4028,8 +3592,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -4045,9 +3608,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4068,8 +3628,7 @@ const source = {
         "查看",
         "审批",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -4090,9 +3649,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4112,8 +3668,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -4130,9 +3685,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4152,8 +3704,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -4169,9 +3720,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4190,8 +3738,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -4203,9 +3750,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4226,8 +3770,7 @@ const source = {
         "查看",
         "审批",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -4248,9 +3791,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4269,8 +3809,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -4283,9 +3822,6 @@ const source = {
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4304,8 +3840,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -4316,9 +3851,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4337,8 +3869,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -4350,9 +3881,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4372,8 +3900,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -4389,9 +3916,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4411,8 +3935,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -4428,9 +3951,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4450,8 +3970,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -4468,9 +3987,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4490,8 +4006,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -4506,9 +4021,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4526,8 +4038,7 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
@@ -4535,9 +4046,6 @@ const source = {
           1,
           2,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4556,8 +4064,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -4569,9 +4076,6 @@ const source = {
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4592,8 +4096,7 @@ const source = {
         "查看",
         "导出",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -4614,9 +4117,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4637,8 +4137,7 @@ const source = {
         "查看",
         "审批",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -4658,9 +4157,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4680,8 +4176,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -4698,9 +4193,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4719,8 +4211,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -4732,9 +4223,6 @@ const source = {
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4754,8 +4242,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -4771,9 +4258,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4793,8 +4277,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -4810,9 +4293,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4831,8 +4311,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -4843,9 +4322,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4864,8 +4340,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -4876,9 +4351,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4898,8 +4370,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -4915,9 +4386,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4937,8 +4405,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -4954,9 +4421,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -4975,8 +4439,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -4987,9 +4450,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5009,8 +4469,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -5025,9 +4484,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5046,8 +4502,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -5058,9 +4513,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5079,8 +4531,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -5091,9 +4542,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5112,8 +4560,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -5124,9 +4571,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5145,8 +4589,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -5157,9 +4600,6 @@ const source = {
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5178,8 +4618,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -5190,9 +4629,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5211,8 +4647,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -5223,9 +4658,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5243,16 +4675,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5271,8 +4699,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -5283,9 +4710,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5304,8 +4728,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -5316,9 +4739,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5337,8 +4757,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -5349,9 +4768,6 @@ const source = {
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5372,8 +4788,7 @@ const source = {
         "查看",
         "审批",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -5393,9 +4808,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5415,8 +4827,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -5432,9 +4843,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5453,8 +4861,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -5466,9 +4873,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5488,8 +4892,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -5504,9 +4907,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5525,8 +4925,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -5537,9 +4936,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5559,8 +4955,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -5576,9 +4971,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5598,8 +4990,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -5615,9 +5006,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5637,8 +5025,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -5655,9 +5042,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5676,8 +5060,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -5689,9 +5072,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5711,8 +5091,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -5727,9 +5106,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5747,8 +5123,7 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
@@ -5756,9 +5131,6 @@ const source = {
           1,
           2,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5777,8 +5149,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -5791,9 +5162,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5812,8 +5180,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -5824,9 +5191,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5845,8 +5209,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -5857,9 +5220,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5880,8 +5240,7 @@ const source = {
         "查看",
         "审批",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -5901,9 +5260,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5923,8 +5279,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -5941,9 +5296,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -5963,8 +5315,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -5980,9 +5331,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6002,8 +5350,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -6018,9 +5365,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6040,8 +5384,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -6057,9 +5400,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6079,8 +5419,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -6097,9 +5436,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6118,8 +5454,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -6131,9 +5466,6 @@ const source = {
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6153,8 +5485,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -6169,9 +5500,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6190,8 +5518,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -6202,9 +5529,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6223,8 +5547,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -6236,9 +5559,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6257,8 +5577,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -6269,9 +5588,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6290,8 +5606,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -6305,9 +5620,6 @@ const source = {
           0,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6327,8 +5639,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -6345,9 +5656,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6367,8 +5675,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -6386,9 +5693,6 @@ const source = {
           0,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6408,8 +5712,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -6425,9 +5728,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6446,8 +5746,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -6459,9 +5758,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6481,8 +5777,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -6500,9 +5795,6 @@ const source = {
           0,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6523,8 +5815,7 @@ const source = {
         "查看",
         "审批",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -6545,9 +5836,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6566,8 +5854,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -6579,9 +5866,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6602,8 +5886,7 @@ const source = {
         "查看",
         "审批",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -6625,9 +5908,6 @@ const source = {
           0,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6645,8 +5925,7 @@ const source = {
         "查看"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
@@ -6655,9 +5934,6 @@ const source = {
           2,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6676,8 +5952,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -6688,9 +5963,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6708,8 +5980,7 @@ const source = {
         "查看"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
@@ -6718,9 +5989,6 @@ const source = {
           2,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6739,8 +6007,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "审批",
-        "全部（原表，待接口细化）"
+        "审批"
       ],
       "operationRoles": [
         [
@@ -6754,9 +6021,6 @@ const source = {
           0,
           2,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6776,8 +6040,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -6795,9 +6058,6 @@ const source = {
           0,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6815,8 +6075,7 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
@@ -6824,9 +6083,6 @@ const source = {
           1,
           2,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6845,8 +6101,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -6857,9 +6112,6 @@ const source = {
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6877,16 +6129,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6904,8 +6152,7 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
@@ -6913,9 +6160,6 @@ const source = {
           1,
           2,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6933,17 +6177,13 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6961,17 +6201,13 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -6989,16 +6225,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7016,8 +6248,7 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
@@ -7025,9 +6256,6 @@ const source = {
           1,
           2,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7047,8 +6275,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -7064,9 +6291,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7085,8 +6309,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -7098,9 +6321,6 @@ const source = {
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7119,8 +6339,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -7131,9 +6350,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7153,8 +6369,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -7170,9 +6385,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7191,8 +6403,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -7203,9 +6414,6 @@ const source = {
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7224,8 +6432,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -7236,9 +6443,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7257,8 +6461,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -7269,9 +6472,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7290,8 +6490,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -7302,9 +6501,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7322,16 +6518,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7349,16 +6541,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7376,16 +6564,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7404,8 +6588,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -7416,9 +6599,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7437,8 +6617,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -7449,9 +6628,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7470,8 +6646,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -7482,9 +6657,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7502,8 +6674,7 @@ const source = {
         "查看"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
@@ -7512,9 +6683,6 @@ const source = {
           2,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7533,8 +6701,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -7546,9 +6713,6 @@ const source = {
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7567,8 +6731,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -7579,9 +6742,6 @@ const source = {
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7599,17 +6759,13 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7628,8 +6784,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -7640,9 +6795,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7661,8 +6813,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -7673,9 +6824,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7693,17 +6841,13 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7722,8 +6866,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -7734,9 +6877,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7755,8 +6895,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -7768,9 +6907,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7790,8 +6926,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -7807,9 +6942,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7828,8 +6960,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -7840,9 +6971,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7861,8 +6989,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -7873,9 +7000,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7894,8 +7018,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -7906,9 +7029,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7926,16 +7046,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7953,16 +7069,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -7980,16 +7092,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8007,16 +7115,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8034,16 +7138,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8062,8 +7162,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -8074,9 +7173,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8096,8 +7192,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -8113,9 +7208,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8135,8 +7227,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -8152,9 +7243,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8173,8 +7261,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -8185,9 +7272,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8207,8 +7291,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -8226,9 +7309,6 @@ const source = {
           0,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8248,8 +7328,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -8265,9 +7344,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8286,8 +7362,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -8298,9 +7373,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8319,8 +7391,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -8331,9 +7402,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8351,16 +7419,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8380,8 +7444,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -8396,9 +7459,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8418,8 +7478,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -8435,9 +7494,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8456,8 +7512,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "审批",
-        "全部（原表，待接口细化）"
+        "审批"
       ],
       "operationRoles": [
         [
@@ -8467,9 +7522,6 @@ const source = {
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8488,8 +7540,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -8501,9 +7552,6 @@ const source = {
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8524,8 +7572,7 @@ const source = {
         "查看",
         "审批",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -8545,9 +7592,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8567,8 +7611,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -8584,9 +7627,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8604,16 +7644,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8632,8 +7668,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -8644,9 +7679,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8665,8 +7697,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -8677,9 +7708,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8698,8 +7726,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -8710,9 +7737,6 @@ const source = {
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8732,8 +7756,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -8751,9 +7774,6 @@ const source = {
           0,
           3,
           4
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8773,8 +7793,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -8790,9 +7809,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8812,8 +7828,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -8829,9 +7844,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8849,17 +7861,13 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8878,8 +7886,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -8890,9 +7897,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8912,8 +7916,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -8929,9 +7932,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8950,8 +7950,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -8962,9 +7961,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -8985,8 +7981,7 @@ const source = {
         "查看",
         "审批",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -9006,9 +8001,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9027,8 +8019,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -9039,9 +8030,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9060,8 +8048,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -9072,9 +8059,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9093,8 +8077,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -9105,9 +8088,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9128,8 +8108,7 @@ const source = {
         "查看",
         "审批",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -9149,9 +8128,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9171,8 +8147,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -9187,9 +8162,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9209,8 +8181,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -9225,9 +8196,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9246,8 +8214,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -9258,9 +8225,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9278,16 +8242,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9307,8 +8267,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -9324,9 +8283,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9346,8 +8302,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -9363,9 +8318,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9385,8 +8337,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -9402,9 +8353,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9423,8 +8371,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -9435,9 +8382,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9455,17 +8399,13 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9484,8 +8424,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -9496,9 +8435,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9518,8 +8454,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -9535,9 +8470,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9557,8 +8489,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -9574,9 +8505,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9595,8 +8523,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -9607,9 +8534,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9628,8 +8552,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -9640,9 +8563,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9661,8 +8581,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -9673,9 +8592,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9694,8 +8610,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -9706,9 +8621,6 @@ const source = {
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9727,8 +8639,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -9739,9 +8650,6 @@ const source = {
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9760,8 +8668,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -9772,9 +8679,6 @@ const source = {
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9792,16 +8696,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9819,16 +8719,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9846,16 +8742,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9875,8 +8767,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -9891,9 +8782,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9912,8 +8800,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -9924,9 +8811,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9946,8 +8830,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -9962,9 +8845,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -9984,8 +8864,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -10000,9 +8879,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10022,8 +8898,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -10040,9 +8915,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10062,8 +8934,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -10080,9 +8951,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10101,8 +8969,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -10114,9 +8981,6 @@ const source = {
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10136,8 +9000,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -10153,9 +9016,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10175,8 +9035,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -10192,9 +9051,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10214,8 +9070,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -10231,9 +9086,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10253,8 +9105,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -10269,9 +9120,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10291,8 +9139,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -10309,9 +9156,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10330,8 +9174,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -10342,9 +9185,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10365,8 +9205,7 @@ const source = {
         "查看",
         "审批",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -10387,9 +9226,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10409,8 +9245,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -10426,9 +9261,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10447,8 +9279,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -10460,9 +9291,6 @@ const source = {
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10482,8 +9310,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -10498,9 +9325,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10519,8 +9343,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -10531,9 +9354,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10552,8 +9372,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -10564,9 +9383,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10586,8 +9402,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -10602,9 +9417,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10624,8 +9436,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -10640,9 +9451,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10661,8 +9469,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -10673,9 +9480,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10694,8 +9498,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -10706,9 +9509,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10727,8 +9527,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -10739,9 +9538,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10760,8 +9556,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -10772,9 +9567,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10794,8 +9586,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -10811,9 +9602,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10833,8 +9621,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -10850,9 +9637,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10871,8 +9655,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -10883,9 +9666,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10904,8 +9684,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -10917,9 +9696,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10939,8 +9715,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -10956,9 +9731,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -10979,8 +9751,7 @@ const source = {
         "查看",
         "审批",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -11001,9 +9772,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11023,8 +9791,7 @@ const source = {
       "operations": [
         "查看",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -11040,9 +9807,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11062,8 +9826,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -11079,9 +9842,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11100,8 +9860,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -11112,9 +9871,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11133,8 +9889,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -11146,9 +9901,6 @@ const source = {
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11167,8 +9919,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -11180,9 +9931,6 @@ const source = {
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11201,8 +9949,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -11214,9 +9961,6 @@ const source = {
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11235,8 +9979,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -11247,9 +9990,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11268,8 +10008,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -11280,9 +10019,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11302,8 +10038,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -11318,9 +10053,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11339,8 +10071,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -11351,9 +10082,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11372,8 +10100,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -11384,9 +10111,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11404,16 +10128,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11433,8 +10153,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -11450,9 +10169,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11471,8 +10187,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -11484,9 +10199,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11505,8 +10217,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -11517,9 +10228,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11538,8 +10246,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -11550,9 +10257,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11571,8 +10275,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -11583,9 +10286,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11604,8 +10304,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -11616,9 +10315,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11639,8 +10335,7 @@ const source = {
         "查看",
         "审批",
         "编辑",
-        "新增",
-        "全部（原表，待接口细化）"
+        "新增"
       ],
       "operationRoles": [
         [
@@ -11661,9 +10356,6 @@ const source = {
         [
           0,
           3
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11682,8 +10374,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -11695,9 +10386,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11716,8 +10404,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -11728,9 +10415,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11749,8 +10433,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -11763,9 +10446,6 @@ const source = {
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11784,8 +10464,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -11797,9 +10476,6 @@ const source = {
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11818,8 +10494,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -11830,9 +10505,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11850,16 +10522,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11879,8 +10547,7 @@ const source = {
       "operations": [
         "查看",
         "审批",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -11895,9 +10562,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11915,17 +10579,13 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11944,8 +10604,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -11956,9 +10615,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -11978,8 +10634,7 @@ const source = {
       "operations": [
         "查看",
         "导出",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -11995,9 +10650,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -12016,8 +10668,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -12027,9 +10678,6 @@ const source = {
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -12047,16 +10695,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -12074,16 +10718,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -12101,16 +10741,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -12128,16 +10764,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -12155,16 +10787,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -12182,16 +10810,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -12210,8 +10834,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -12222,9 +10845,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -12242,16 +10862,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -12270,8 +10886,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "编辑",
-        "全部（原表，待接口细化）"
+        "编辑"
       ],
       "operationRoles": [
         [
@@ -12282,9 +10897,6 @@ const source = {
         [
           0,
           2
-        ],
-        [
-          0
         ]
       ]
     },
@@ -12303,8 +10915,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -12314,9 +10925,6 @@ const source = {
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -12335,8 +10943,7 @@ const source = {
       ],
       "operations": [
         "查看",
-        "导出",
-        "全部（原表，待接口细化）"
+        "导出"
       ],
       "operationRoles": [
         [
@@ -12346,9 +10953,6 @@ const source = {
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -12366,16 +10970,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -12393,16 +10993,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -12420,16 +11016,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -12447,16 +11039,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -12474,16 +11062,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -12501,16 +11085,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -12528,16 +11108,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -12555,16 +11131,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -12582,16 +11154,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     },
@@ -12609,16 +11177,12 @@ const source = {
         "无"
       ],
       "operations": [
-        "查看",
-        "全部（原表，待接口细化）"
+        "查看"
       ],
       "operationRoles": [
         [
           0,
           1
-        ],
-        [
-          0
         ]
       ]
     }

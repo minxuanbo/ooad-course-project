@@ -48,7 +48,7 @@ test('R11 候选按完整Permission子集，不把外系统角色当空角色', 
   login(model, 'SG000002');
   const all = model.candidateRoles(5, { size: 100 }).items;
   assert.ok(all.some(role => role.id === 3));
-  assert.ok(all.some(role => role.id === 5));
+  assert.ok(!all.some(role => role.id === 5));
   assert.ok(!all.some(role => [1, 2, 10, 90, 91].includes(role.id)));
   assert.throws(() => model.assign(5, [91]), errorCode('MANAGEMENT_SCOPE_DENIED'));
 });

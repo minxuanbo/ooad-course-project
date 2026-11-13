@@ -2,7 +2,7 @@
 (function () {
 'use strict';
 const { createCatalog } = typeof module !== 'undefined' && module.exports ? require('./catalog.js') : globalThis.MunicipalCatalog;
-/** 仅用于原型的内存业务模型；数据全部虚构，不调用后端或持久化浏览器存储。 */
+/** 原型内存模型：人员/组织虚构，业务矩阵取自原Excel；不调用后端或持久化存储。 */
 const PEOPLE = ['tree', 'users', 'currentRoles', 'candidates', 'assign', 'disable', 'move', 'departments.list', 'departments.rename', 'departments.create', 'departments.delete'];
 /** 与现行17项维护恢复操作对应；日志、停用和调动不属于完整K。 */
 const MAINTENANCE = [
@@ -33,6 +33,15 @@ const fail = (status, code, message) => { throw new DemoError(status, code, mess
 
 function createDemoModel() {
   const { permissions: permissionCatalog, apis: apiCatalog, systems, applicationSource } = createCatalog();
+  const permissionIndex = new Map(permissionCatalog.flatMap(item => [[item.key, item], [item.id, item]]));
+  /** 基础角色初始业务按钮按Excel列取值，显式加入所需祖先菜单，不产生权限继承。 */
+  const initialBusinessPermissions = roleIndex => {
+    const keys = new Set();
+    for (const item of permissionCatalog.filter(item => item.sourceKind === 'operation' && item.referenceRoleIndices.includes(roleIndex))) {
+      for (let current = item; current; current = permissionIndex.get(current.parentId)) keys.add(current.key);
+    }
+    return [...keys];
+  };
   const departments = [
     { id: 1, parentId: null, name: '总公司', type: '公司' },
     { id: 2, parentId: 1, name: '综合管理部', type: '部门' },
@@ -54,10 +63,10 @@ function createDemoModel() {
     { id: 1, name: '系统管理员', code: 'SYSTEM_ADMIN', enabled: true, permissions: [...MAINTENANCE, 'disable', 'move', 'logs',
       'departments.rename', 'departments.list', 'departments.create', 'departments.delete',
       ...permissionCatalog.filter(item => item.systemId !== 1).map(item => item.key)], description: '完整系统维护与日志查询' },
-    { id: 2, name: '公司领导', code: 'COMPANY_LEADER', enabled: true, permissions: [...PEOPLE], description: '本人部门及下级的人员管理' },
-    { id: 3, name: '部门经理', code: 'DEPARTMENT_MANAGER', enabled: true, permissions: [...PEOPLE], description: '本人部门及下级的人员管理' },
-    { id: 4, name: '项目经理', code: 'PROJECT_MANAGER', enabled: true, permissions: [...PEOPLE], description: '本人部门及下级的人员管理' },
-    { id: 5, name: '普通员工', code: 'EMPLOYEE', enabled: true, permissions: [], description: '基础员工角色，无本管理端操作权限' },
+    { id: 2, name: '公司领导', code: 'COMPANY_LEADER', enabled: true, permissions: [...PEOPLE, ...initialBusinessPermissions(1)], description: '范围内人员/部门管理，业务权限初始按Excel公司领导列' },
+    { id: 3, name: '部门经理', code: 'DEPARTMENT_MANAGER', enabled: true, permissions: [...PEOPLE, ...initialBusinessPermissions(2)], description: '范围内人员/部门管理，业务权限初始按Excel部门经理列' },
+    { id: 4, name: '项目经理', code: 'PROJECT_MANAGER', enabled: true, permissions: [...PEOPLE, ...initialBusinessPermissions(3)], description: '范围内人员/部门管理，业务权限初始按Excel项目经理列' },
+    { id: 5, name: '普通员工', code: 'EMPLOYEE', enabled: true, permissions: initialBusinessPermissions(4), description: '业务权限初始按Excel普通员工列，无本RBAC管理操作权限' },
   ];
   const extraRoles = ['人员查询', '组织信息查阅', '项目人员联络', '工程人员协同', '综合事务协同',
     '资料审核协同', '项目现场协同', '质量人员协同', '合同人员协同', '安全人员协同',
@@ -114,7 +123,6 @@ function createDemoModel() {
     }
     return selected;
   };
-  const permissionIndex = new Map(permissionCatalog.flatMap(item => [[item.key, item], [item.id, item]]));
   const apiIndex = new Map(apiCatalog.map(item => [item.id, item]));
   const systemIndex = new Map(systems.map(item => [item.id, item]));
   const permission = key => permissionIndex.get(key);
@@ -188,6 +196,9 @@ function createDemoModel() {
     if (actor.departmentId !== 1) fail(403, 'MANAGEMENT_SCOPE_DENIED', '该操作仅对全公司维护范围开放');
     return actor;
   };
+  /** 共同根可建分公司；部门只可建项目，项目必须为叶子。 */
+  const childTypes = node => node.id === 1 ? ['分公司', '部门', '项目']
+    : ['公司', '分公司'].includes(node.type) ? ['部门', '项目'] : node.type === '部门' ? ['项目'] : [];
   const departmentAccess = (actor, id, key, parentSelection = false) => {
     if (!effective(actor).has(key) || authority(actor) < 2) return false;
     const node = department(id);
@@ -333,15 +344,31 @@ function createDemoModel() {
       const actor = authorize('departments.list');
       if (authority(actor) < 2) fail(403, 'MANAGEMENT_SCOPE_DENIED', '当前角色没有部门维护级别');
       const visible = descendants(actor.departmentId);
-      return departments.filter(item => visible.has(item.id)).map(item => {
+      const rows = departments.filter(item => visible.has(item.id)).map(item => {
         const direct = users.filter(person => person.departmentId === item.id).length;
         const children = departments.filter(node => node.parentId === item.id).length;
         return { ...item, parentId: visible.has(item.parentId) ? item.parentId : null, direct, children, isOwn: item.id === actor.departmentId,
           total: users.filter(person => descendants(item.id).has(person.departmentId)).length,
-          canRename: departmentAccess(actor, item.id, 'departments.rename'), canCreate: departmentAccess(actor, item.id, 'departments.create', true),
+          allowedChildTypes: childTypes(item),
+          canRename: departmentAccess(actor, item.id, 'departments.rename'), canCreate: departmentAccess(actor, item.id, 'departments.create', true) && childTypes(item).length > 0,
           canDelete: departmentAccess(actor, item.id, 'departments.delete') && !direct && !children,
           deleteReason: item.id === 1 ? '共同根不能删除' : !departmentAccess(actor, item.id, 'departments.delete') ? '本人、上级或平级部门不可删除' : direct || children ? '有人员或下级，不能删除' : '' };
       });
+      // 先展示父部门，再紧接其整棵子树，不能沿初始化数组顺序平铺。
+      const childrenByParent = new Map();
+      rows.forEach(item => {
+        if (!childrenByParent.has(item.parentId)) childrenByParent.set(item.parentId, []);
+        childrenByParent.get(item.parentId).push(item);
+      });
+      const ordered = [];
+      const visit = (parentId, depth) => {
+        for (const item of childrenByParent.get(parentId) || []) {
+          ordered.push({ ...item, depth });
+          visit(item.id, depth + 1);
+        }
+      };
+      visit(null, 0);
+      return ordered;
     },
     renameDepartment(id, name) {
       const selected = departmentTarget(Number(id), 'departments.rename');
@@ -355,6 +382,7 @@ function createDemoModel() {
       const name = named(command.name, '部门名称');
       const type = command.type || '部门';
       if (!['部门', '项目', '分公司'].includes(type)) fail(400, 'INVALID_ARGUMENT', '组织类型无效');
+      if (!childTypes(parent).includes(type)) fail(400, 'INVALID_ARGUMENT', '当前上级不允许该组织类型：部门只能新增项目，项目不能新增下级，分公司只能由总公司创建');
       if (departments.some(item => item.parentId === parent.id && item.name === name)) fail(409, 'DATA_CONFLICT', '同一上级部门下已有该名称');
       const selected = { id: nextDepartmentId++, parentId: parent.id, name, type };
       departments.push(selected);
@@ -416,11 +444,6 @@ function createDemoModel() {
     permissionCatalog() {
       globalAuthorize('permissions.tree');
       return { systems: structuredClone(systems), permissions: structuredClone(permissionCatalog) };
-    },
-    referencePermissions(systemId, roleIndex) {
-      globalAuthorize('permissions.tree');
-      if (!Number.isInteger(roleIndex) || roleIndex < 0 || roleIndex > 4) fail(400, 'INVALID_ARGUMENT', '请选择有效参考角色');
-      return permissionCatalog.filter(item => item.systemId === Number(systemId) && item.sourceKind === 'operation' && item.referenceRoleIndices.includes(roleIndex)).map(item => item.id);
     },
     apis(query = {}) {
       globalAuthorize('apis.list');
@@ -498,7 +521,7 @@ function createDemoModel() {
     tree: 'tree', list: 'users', currentRoles: 'currentRoles', candidateRoles: 'candidates', assign: 'assign', disable: 'disable', move: 'move',
     departments: 'departments.list', renameDepartment: 'departments.rename', createDepartment: 'departments.create', deleteDepartment: 'departments.delete',
     roles: 'roles.list', createRole: 'roles.create', patchRole: 'roles.patch', rolePermissions: 'roles.permissions.read', saveRolePermissions: 'roles.permissions.write',
-    resources: 'permissions.tree', permissionCatalog: 'permissions.tree', referencePermissions: 'permissions.tree', apis: 'apis.list', patchPermission: 'permissions.patch', patchApi: 'apis.patch',
+    resources: 'permissions.tree', permissionCatalog: 'permissions.tree', apis: 'apis.list', patchPermission: 'permissions.patch', patchApi: 'apis.patch',
     permissionApis: 'permissions.apis.read', savePermissionApis: 'permissions.apis.write', logs: 'logs',
   };
   let auditDepth = 0;

@@ -125,7 +125,7 @@ function canWrite(person, action) {
   return model.canManageUser(person.id, action);
 }
 function roleTags(roles = []) {
-  return roles.length ? roles.slice(0, 2).map(role => '<span class="badge ' + (role.enabled ? 'blue' : 'gray') + '" title="' + h(role.code) + '">' + h(role.name) + (!role.enabled ? ' · 停用' : '') + '</span>').join('')
+  return roles.length ? roles.slice(0, 2).map(role => '<span class="badge ' + (role.enabled ? 'blue' : 'gray') + '" title="' + h(role.code) + '">' + h(role.name) + (!role.enabled ? ' · 角色已停用' : '') + '</span>').join('')
     + (roles.length > 2 ? '<span class="badge gray" title="' + h(roles.slice(2).map(role => role.name).join('、')) + '">+' + (roles.length - 2) + '</span>' : '')
     : '<span class="muted">未分配角色</span>';
 }
@@ -144,7 +144,7 @@ function loginPage() {
     <section class="login-story">${logo()}<div class="story-copy"><span class="eyebrow">Connected people. Clear access.</span><h1>管理有界，<br>协作有序。</h1><p>让组织、人员与权限各归其位，<br>为每一次协作建立清晰的边界。</p></div>${illustration()}
       <div class="story-chips"><span>${icon('building')}统一组织</span><span>${icon('users')}高效协作</span><span>${icon('shield')}权限可控</span></div>
     </section>
-    <section class="login-main"><span class="prototype-tag">交互原型 · 第三轮</span><form class="login-form" id="login-form" novalidate aria-busy="${ui.loginBusy}">
+    <section class="login-main"><span class="prototype-tag">交互原型 · 第六轮</span><form class="login-form" id="login-form" novalidate aria-busy="${ui.loginBusy}">
       <span class="eyebrow">Municipal workspace</span><h2>欢迎登录</h2><p>登录市政公司统一权限管理系统</p>
       <div class="field"><label for="login-account">工号或手机号</label><div class="input-shell">${icon('user')}<input id="login-account" name="account" type="text" autocomplete="username" maxlength="100" placeholder="请输入工号或手机号" value="${h(ui.account)}" aria-invalid="${!!ui.loginError}" ${ui.loginBusy ? 'disabled' : ''}></div></div>
       <div class="field"><label for="login-password">登录密码</label><div class="input-shell">${icon('lock')}<input id="login-password" name="password" type="${ui.showPassword ? 'text' : 'password'}" autocomplete="current-password" maxlength="200" placeholder="请输入密码" value="${h(ui.password)}" ${ui.loginBusy ? 'disabled' : ''}><button class="icon-button" type="button" data-act="password" aria-label="${ui.showPassword ? '隐藏密码' : '显示密码'}">${icon(ui.showPassword ? 'eyeOff' : 'eye')}</button></div></div>
@@ -174,7 +174,7 @@ function workspace() {
     <div class="workspace-main"><header class="topbar"><div class="breadcrumb"><span>${h(current.group)}</span>${icon('chevron')}<strong>${h(current.title)}</strong></div><select id="mobile-navigation" class="mobile-page-select" aria-label="切换工作区">${navigation.map(item => '<option value="' + item.page + '" ' + (ui.route === item.page ? 'selected' : '') + '>' + item.title + '</option>').join('')}</select>
       <div class="topbar-right"><button class="review-entry" data-act="review">原型评审</button><div class="identity"><button id="identity-trigger" data-act="identity" aria-haspopup="menu" aria-expanded="${ui.menu === 'identity'}">${avatar(ui.session)}<span><span class="identity-name">${h(ui.session.name)}</span><span class="identity-role">${h(ui.session.username)}</span></span>${icon('down')}</button></div></div>
     </header>
-    <main class="page-content" aria-busy="${ui.route === 'people' ? ui.listBusy : !!ui.views[ui.route]?.busy}">${ui.route === 'people' ? peopleContent() : screens.page(ui.route)}<footer class="page-foot"><span>市政公司统一权限管理系统</span><span>第三轮原型 · 虚构模拟数据 · 可离线运行</span></footer></main></div>
+    <main class="page-content" aria-busy="${ui.route === 'people' ? ui.listBusy : !!ui.views[ui.route]?.busy}">${ui.route === 'people' ? peopleContent() : screens.page(ui.route)}<footer class="page-foot"><span>市政公司统一权限管理系统</span><span>第六轮原型 · 虚构模拟数据 · 可离线运行</span></footer></main></div>
   </div>`;
 }
 function peopleContent() {
@@ -188,13 +188,13 @@ function peopleContent() {
       <section class="panel personnel-panel" aria-label="人员列表" aria-busy="${ui.listBusy}">
         <div class="table-heading"><h2>${h(root?.name || scopeName())}</h2><span class="badge">含下级部门</span></div>
         <form class="filter-row" id="people-filter"><div class="input-shell">${icon('search')}<input id="people-search" name="q" placeholder="搜索姓名或工号" aria-label="搜索姓名或工号" maxlength="100" value="${h(ui.qDraft)}"></div>
-          <select id="people-status" aria-label="人员状态"><option value="" ${ui.enabled === '' ? 'selected' : ''}>全部状态</option><option value="true" ${ui.enabled === 'true' ? 'selected' : ''}>启用</option><option value="false" ${ui.enabled === 'false' ? 'selected' : ''}>已停用</option></select>
+          <select id="people-status" aria-label="账号状态"><option value="" ${ui.enabled === '' ? 'selected' : ''}>全部状态</option><option value="true" ${ui.enabled === 'true' ? 'selected' : ''}>启用</option><option value="false" ${ui.enabled === 'false' ? 'selected' : ''}>已停用</option></select>
           <button class="btn primary" type="submit">查询</button><button class="btn quiet" type="button" data-act="reset-filter">重置</button>
         </form>
         <div class="table-wrap">${tableMarkup()}</div>
         <div class="pagination"><span>共 <strong>${ui.data?.total ?? '—'}</strong> 名人员${ui.q ? ' · 当前搜索“' + h(ui.q) + '”' : ''}</span>${pagination(ui.data?.total ?? 0, ui.page, ui.size, 'people-page', true)}</div>
       </section></div>
-      <div class="personnel-footnote">${icon('info')}职位为只读岗位信息，不参与运行时鉴权。角色授予同时受级别、权限子集及部门范围限制。</div>`;
+      <div class="personnel-footnote">${icon('info')}账号状态与角色状态独立；停用角色保留关联但不贡献权限。职位只读，人员写受级别、权限子集及范围限制。</div>`;
 }
 function treeMarkup() {
   if (!ui.tree.length) return '<div class="empty-state"><p>' + (ui.listBusy ? '正在加载组织' : '暂无可用组织') + '</p></div>';
@@ -220,7 +220,7 @@ function tableMarkup() {
   if (ui.listBusy) return Array.from({ length: 7 }, () => '<div class="skeleton-row"><span class="skeleton avatar"></span><span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span></div>').join('');
   if (!ui.data) return '<div class="empty-state"><div class="empty-icon">' + icon('shield') + '</div><h3>暂时无法加载人员</h3><p>请核对当前权限或重试</p><button class="btn small" data-act="refresh">重新加载</button></div>';
   if (!ui.data.items.length) return '<div class="empty-state"><div class="empty-icon">' + icon('search') + '</div><h3>' + (ui.page > 0 ? '这一页暂无人员' : '没有符合条件的人员') + '</h3><p>' + (ui.page > 0 ? '人员数据可能已变化，可返回第一页查看。' : '试试其他关键词、状态或部门。') + '</p><button class="btn small" data-act="' + (ui.page > 0 ? 'first-page' : 'reset-filter') + '">' + (ui.page > 0 ? '返回第一页' : '清空筛选') + '</button></div>';
-  return '<table><thead><tr><th scope="col">人员</th><th scope="col">工号</th><th scope="col">所属部门</th><th scope="col">职位</th><th scope="col">已授角色</th><th scope="col">状态</th><th scope="col">操作</th></tr></thead><tbody>' + ui.data.items.map(person => {
+  return '<table><thead><tr><th scope="col">人员</th><th scope="col">工号</th><th scope="col">所属部门</th><th scope="col">职位</th><th scope="col">已授角色</th><th scope="col">账号状态</th><th scope="col">操作</th></tr></thead><tbody>' + ui.data.items.map(person => {
     const path = visiblePath(person.departmentId);
     if (!path.length) path.push(person.departmentName || '当前部门');
     const assignable = canWrite(person, 'assign') && model.can('currentRoles') && model.can('candidates');
@@ -299,7 +299,7 @@ function roleDrawer(modal) {
       <div class="section-title"><h3>已选角色 <span class="muted">${selected.length}</span></h3><button class="link-button text-small" data-act="clear-roles" ${!selected.length || ui.writeBusy ? 'disabled' : ''}>清空选择</button></div>
       <div class="selected-tags">${selected.length ? selected.map(id => {
         const role = modal.roleMap.get(id);
-        return '<span class="badge ' + (role?.enabled === false ? 'amber' : 'blue') + '">' + h(role?.name || '角色 ' + id) + (role?.enabled === false ? ' · 已停用' : '') + '<button id="remove-role-' + id + '" data-act="remove-role" data-id="' + id + '" aria-label="移除' + h(role?.name) + '" ' + (ui.writeBusy ? 'disabled' : '') + '>' + icon('close') + '</button></span>';
+        return '<span class="badge ' + (role?.enabled === false ? 'amber' : 'blue') + '">' + h(role?.name || '角色 ' + id) + (role?.enabled === false ? ' · 角色已停用' : '') + '<button id="remove-role-' + id + '" data-act="remove-role" data-id="' + id + '" aria-label="移除' + h(role?.name) + '" ' + (ui.writeBusy ? 'disabled' : '') + '>' + icon('close') + '</button></span>';
       }).join('') : '<span class="hint">尚未选择角色</span>'}</div>
       ${inactive.length ? '<p class="hint warning">' + icon('info') + '<span>当前保留了已停用角色。它不会出现在候选中，提交前需明确移除；系统不会替你静默删除。</span></p>' : '<p class="hint">跨页勾选会保留。点击“保存更改”后，才替换该人员的角色。</p>'}
       <div class="divider"></div><div class="section-title"><h3>可分配角色</h3><span class="hint">同时满足授予级别与权限子集</span></div>
@@ -316,7 +316,7 @@ function moveDialog(modal) {
     <footer class="modal-footer"><button class="btn" data-act="close-modal" ${ui.writeBusy ? 'disabled' : ''}>取消</button><button class="btn primary" data-act="save-move" ${!modal.destination || ui.writeBusy ? 'disabled' : ''}>${ui.writeBusy ? busy() + '提交中' : '确认调动'}</button></footer></dialog>`;
 }
 function detailsDialog(modal) {
-  return `<dialog class="modal" id="main-dialog" aria-labelledby="details-title"><header class="modal-header"><h2 id="details-title">人员信息</h2><button class="icon-button" data-act="close-modal" aria-label="关闭人员信息">${icon('close')}</button></header><div class="modal-body">${targetCard(modal.person)}<dl class="detail-list"><dt>工号</dt><dd class="mono">${h(modal.person.username)}</dd><dt>所属部门</dt><dd>${h(visiblePath(modal.person.departmentId).join(' / '))}</dd><dt>账号状态</dt><dd>${status(modal.person)}</dd><dt>当前角色</dt><dd><div class="selected-tags">${modal.loading ? '<span class="hint">' + busy() + ' 正在读取角色</span>' : modal.person.roles ? modal.person.roles.map(role => '<span class="badge ' + (role.enabled ? 'blue' : 'gray') + '">' + h(role.name) + (!role.enabled ? ' · 已停用' : '') + '</span>').join('') || '<span class="muted">未分配角色</span>' : '<span class="muted">暂时无法读取角色</span>'}</div></dd></dl>${errorBox(modal.error)}<p class="hint">人员基本信息只读，角色及部门调整请使用列表中的对应操作。</p></div><footer class="modal-footer"><button class="btn primary" data-act="close-modal">知道了</button></footer></dialog>`;
+  return `<dialog class="modal" id="main-dialog" aria-labelledby="details-title"><header class="modal-header"><h2 id="details-title">人员信息</h2><button class="icon-button" data-act="close-modal" aria-label="关闭人员信息">${icon('close')}</button></header><div class="modal-body">${targetCard(modal.person)}<dl class="detail-list"><dt>工号</dt><dd class="mono">${h(modal.person.username)}</dd><dt>所属部门</dt><dd>${h(visiblePath(modal.person.departmentId).join(' / '))}</dd><dt>账号状态</dt><dd>${status(modal.person)}</dd><dt>当前角色</dt><dd><div class="selected-tags">${modal.loading ? '<span class="hint">' + busy() + ' 正在读取角色</span>' : modal.person.roles ? modal.person.roles.map(role => '<span class="badge ' + (role.enabled ? 'blue' : 'gray') + '">' + h(role.name) + (!role.enabled ? ' · 角色已停用' : '') + '</span>').join('') || '<span class="muted">未分配角色</span>' : '<span class="muted">暂时无法读取角色</span>'}</div></dd></dl>${errorBox(modal.error)}<p class="hint">人员基本信息只读，角色及部门调整请使用列表中的对应操作。</p></div><footer class="modal-footer"><button class="btn primary" data-act="close-modal">知道了</button></footer></dialog>`;
 }
 function confirmation() {
   const custom = screens.confirmation(ui.confirm);
@@ -335,7 +335,7 @@ function confirmation() {
 }
 function reviewDialog() {
   return `<dialog class="modal review-modal" id="review-dialog" aria-labelledby="review-title"><header class="modal-header"><h2 id="review-title">原型评审工具</h2><button class="icon-button" data-act="close-review" aria-label="关闭评审工具">${icon('close')}</button></header><div class="modal-body">
-    <div class="review-info">${icon('info')}<span>第三轮评审：部门增删改名、同级人员只读、跨系统资源与原表矩阵。168名虚构人员、15个初始部门；SG000001与SG000008为同分公司领导，可核对同级保护。</span></div>
+    <div class="review-info">${icon('info')}<span>第六轮评审：部门增删改名、同级人员只读、跨系统资源与原表矩阵。168名虚构人员、15个初始部门；SG000001与SG000008为同分公司领导，可核对同级保护。</span></div>
     ${errorBox(ui.reviewError)}<div class="section-title"><h3>切换演示身份</h3><span class="hint">保留本次模拟数据</span></div>
     <div class="review-accounts">${DEMOS.map(demo => '<button class="review-account ' + (demo.id === ui.session.id ? 'current' : '') + '" data-act="switch-demo" data-id="' + demo.id + '"><strong>' + h(demo.label) + (demo.id === ui.session.id ? ' · 当前' : '') + '</strong><span>' + h(demo.note) + '</span></button>').join('')}</div>
     <div class="review-setting"><div><strong>下一次操作反馈</strong><p>失败不写入数据，草稿会保留。</p></div><select id="review-failure" aria-label="下一次模拟请求反馈">${[['', '正常响应'], ['network', '网络故障'], ['forbidden', '403 无权限'], ['missing', '404 不存在'], ['conflict', '409 冲突'], ['server', '500 服务故障'], ['session', '401 身份失效']].map(([value, label]) => '<option value="' + value + '" ' + (ui.nextFailure === value ? 'selected' : '') + '>' + label + '</option>').join('')}</select></div>
