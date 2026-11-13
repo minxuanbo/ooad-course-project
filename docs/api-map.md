@@ -29,6 +29,6 @@
 | 资源与映射 | `PUT /api/permissions/{id}/apis` | 整体替换权限API映射 | IdsDTO | PermissionApisVO |
 | 鉴权日志 | `GET /api/authorization-logs` | 最小鉴权日志快照查询 | 路径/query/无body，见规范 | LogPageVO |
 
-前端目标页面与状态见[前端设计](frontend-design.md)。当前参考原型见[prototype](../prototype/index.html)，只保留已评审交互供下一阶段重设计参考；不作为生产接口或完整界面验收。
+前端目标页面与状态见[前端设计](frontend-design.md)。当前唯一交互原型见[prototype](../prototype/index.html)，替换旧四组原型并供小组审核；批准后先调整RBAC自身契约，再统一更新前后端，不实现其他系统的业务API。原型不作为真实HTTP或完整界面验收。
 
 初始化走离线命令，不新增HTTP初始化入口。课程系统及T14/T15等待老师要求，本次不加入课程路径、模拟外系统路径或旧应用/交接/归档接口。

@@ -58,7 +58,9 @@ DDD仓储接口位于领域/用例端口，Infrastructure实现JPA适配与装�
 | 可授予角色 | 启用角色的全部有效Permission ID为操作者本系统有效Permission ID的子集 |
 | 完整维护者 | 启用、直属已核实共同根且一个人覆盖完整K的User，不由名称或初始来源推断 |
 
-记D(u)为u部门子树，P(u)为u在本系统的有效Permission ID集合，A(u)为同系统实际API集合。目标人员v的管理须先具具体操作API，再检查department(v)∈D(u)。候选角色r满足P_all(r)⊆P(u)，其中P_all保留其他启用系统的有效权限，不能先过滤成空集合。
+记D(u)为u部门子树，P_all(u)为u在所有启用系统的有效Permission ID集合，A(u)为本RBAC同系统实际API集合。目标人员v的管理须先具具体操作API，再检查department(v)∈D(u)。候选角色r满足P_all(r)⊆P_all(u)，其中保留其他启用系统的有效权限，不能先过滤成空集合；逐系统权限映射只贡献该系统API，不跨系统拼接。
+
+阶段3新增需求R23—R28的目标规则：非系统管理员还须满足目标级别严格低于本人；本人、同级、上级只读，系统管理员仍受实际API和完整维护者保护。部门新增的父级∈D(u)，局部改名/删除目标∈D(u)且非本人部门；删除仅空部门且非根，无层级调整。自定义角色不会提升操作者级别，默认仅管理员可授及维护其持有者。业务系统矩阵是参考，查看本人/编辑本人不变成无条件权限；实际数据约束和API集成仍待业务系统契约。以上当前仅在原型演示，正式服务尚未同步。
 
 若M为启用且直属可信根的用户集合，则必须存在u∈M使K⊆A(u)。不能把M全体API并集覆盖K视为满足；日志读取则只检查该用户的日志API及根条件，不附加完整K。
 
@@ -69,7 +71,7 @@ DDD仓储接口位于领域/用例端口，Infrastructure实现JPA适配与装�
 | ReplaceUserRoles | 替换明确roleIds集合 | 人员范围、逐角色有效Permission子集、自身/管理员限制、根锁和K |
 | DisableUser / TransferUser | 停用；改变departmentId并保持身份与角色 | 原/目标双范围，最新操作者资格及K |
 | CreateRole / UpdateRole | 创建空角色、改名、启停 | 编码唯一、共同根、实际API、共享影响与K |
-| ReplaceRolePermissions | 独立替换permissionIds | 本系统/启用/存在性、共同根、根锁与K |
+| ReplaceRolePermissions | 独立替换完整跨系统permissionIds | 已登记系统/启用/存在性、共同根、根锁与K；切换显示不清空其他系统 |
 | UpdatePermission / UpdateApi | 改允许字段或启停 | 跨节点同系统、无环、按钮无子及K |
 | ReplacePermissionApis | 替换明确apiIds集合 | 同系统、可保留停用项，根锁与K |
 

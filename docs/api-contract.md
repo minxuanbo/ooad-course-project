@@ -2,6 +2,8 @@
 
 版本1.1评审稿。接口字段、方法、路径、必填、分页和响应模型的唯一机器规范为[api/openapi.yaml](../api/openapi.yaml)，[JSON](../api/openapi.json)由同一内容派生。24个现有操作、20个路径，未增加课程接口或改变生产代码。本文解释Schema不能独立表达的授权、范围、原子性和交互语义；[页面对照](api-map.md)只作索引。
 
+2026-11-13原型评审新增R23—R26：授予级别、部门改名、总览及只读职位/角色摘要。以下仍是当前正式API口径，尚未包含这些接口/模型调整；原型差异见[评审记录](prototype-review.md)，原型满意后再统一修订契约与实现，不能把下文仅有的Permission子集校验当新增授予规则的全部要求。
+
 ## 1. 共用HTTP约定
 
 所有成功/失败包含code、message、data、requestId；成功code=OK，失败data=null。POST创建角色201，其余成功200；退出200/data=null。可信用户ID、权限、范围由服务端读取，不接受客户端actor/admin/scope字段。请求JSON类型严格，未知字段拒绝；DTO与VO分开，不返回JPA关系、哈希、手机号或原始导入资料。
