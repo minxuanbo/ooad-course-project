@@ -64,6 +64,16 @@ test('R24 部门改名校验空值、同级重名；根改名不改变可信根�
   model.renameDepartment(1, '市政总公司');
   assert.equal(model.canGlobal('roles.list'), true);
 });
+test('R24 根直属领导即使误授部门改名API，也不能成为部门维护管理员', () => {
+  const model = createDemoModel();
+  login(model);
+  const leader = model.rolePermissions(2).permissions.map(item => item.id);
+  model.saveRolePermissions(2, [...leader, 21]);
+  login(model, 'SG000005');
+  assert.equal(model.can('departments.rename'), true);
+  assert.equal(model.canGlobal('departments.rename'), false);
+  assert.throws(() => model.renameDepartment(3, '越权名称'), code('MANAGEMENT_SCOPE_DENIED'));
+});
 test('R13 新建空权限角色、编码唯一、修改名称不允许改编码', () => {
   const model = createDemoModel();
   login(model);

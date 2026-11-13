@@ -165,6 +165,7 @@ function createDemoModel() {
   const globalAuthorize = key => {
     const actor = authorize(key);
     if (actor.departmentId !== 1) fail(403, 'MANAGEMENT_SCOPE_DENIED', '该操作仅对全公司维护范围开放');
+    if (key === 'departments.rename' && authority(actor) !== 5) fail(403, 'MANAGEMENT_SCOPE_DENIED', '部门名称仅由系统管理员维护');
     return actor;
   };
   const named = (value, label) => {
@@ -204,7 +205,7 @@ function createDemoModel() {
     login(account, password) {
       const matches = users.filter(person => person.username === String(account).trim() || person.phone === String(account).trim());
       if (matches.length !== 1 || !matches[0].enabled || password !== DEMO_PASSWORD) fail(401, 'LOGIN_FAILED', '账号或密码错误');
-      if (![...effective(matches[0])].some(key => [...MAINTENANCE, 'disable', 'move', 'logs'].includes(key))) {
+      if (![...effective(matches[0])].some(key => [...MAINTENANCE, 'disable', 'move', 'logs', 'departments.rename'].includes(key))) {
         fail(403, 'MANAGEMENT_ACCESS_DENIED', '该账号没有本权限系统的有效管理权限');
       }
       currentId = matches[0].id;
@@ -213,7 +214,7 @@ function createDemoModel() {
     logout() { currentId = null; },
     me() { return publicUser(requireIdentity()); },
     can(key) { return currentId !== null && user(currentId)?.enabled && effective(user(currentId)).has(key); },
-    canGlobal(key) { return currentId !== null && user(currentId)?.enabled && user(currentId).departmentId === 1 && effective(user(currentId)).has(key); },
+    canGlobal(key) { return currentId !== null && user(currentId)?.enabled && user(currentId).departmentId === 1 && effective(user(currentId)).has(key) && (key !== 'departments.rename' || authority(user(currentId)) === 5); },
     department(id) { const item = department(id); return item ? { ...item } : null; },
     tree() {
       const actor = authorize('tree');
