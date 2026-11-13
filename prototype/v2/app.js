@@ -94,8 +94,8 @@ function saveFocus() {
 function restoreFocus(saved) {
   if (!saved) return;
   const element = saved.id ? document.getElementById(saved.id) : [...document.querySelectorAll('[data-act]')].find(candidate =>
-    candidate.dataset.act === saved.action && candidate.dataset.id === saved.item && candidate.dataset.page === saved.page);
-  if (!element) return;
+    !candidate.disabled && candidate.dataset.act === saved.action && candidate.dataset.id === saved.item && candidate.dataset.page === saved.page);
+  if (!element || element.disabled) return;
   element.focus({ preventScroll: true });
   if (typeof element.setSelectionRange === 'function' && saved.start !== null) {
     try { element.setSelectionRange(saved.start, saved.end); } catch { /* select不支持文本选区。 */ }
