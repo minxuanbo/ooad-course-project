@@ -290,6 +290,19 @@ test('R16 日志继续加载仍实时检查日志权限，不依赖部门树或�
   assert.equal(state.views.logs.data, previous);
 });
 
+test('R16 总览最近活动将未认证访问与登录失败区分显示', async () => {
+  const { screens, state, model } = screensHarness();
+  model.logout();
+  assert.throws(() => model.list(), error => error.status === 401);
+  login(model);
+  state.route = 'overview';
+  state.session = model.me();
+  await screens.load();
+  const html = screens.page('overview');
+  assert.match(html, /未认证访问 · GET \/api\/users/);
+  assert.doesNotMatch(html, /登录失败 · GET \/api\/users/);
+});
+
 test('R28 工作区仅正常选权，跨系统切换保留草稿并整体保存', async () => {
   const { screens, state, model } = screensHarness();
   const role = model.createRole({ name: '跨系统草稿', code: 'CROSS_SYSTEM_DRAFT' });
