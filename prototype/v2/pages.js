@@ -157,7 +157,7 @@ function createScreens(context) {
   const modalShell = (modal, title, content, { drawer = false, footer = true, saveLabel = '保存更改' } = {}) =>
     '<dialog class="' + (drawer ? 'drawer' : 'modal') + '" id="main-dialog" aria-labelledby="screen-modal-title"><div class="' + (drawer ? 'drawer-shell' : '') + '"><header class="' + (drawer ? 'drawer-header' : 'modal-header') + '"><div><h2 id="screen-modal-title">' + h(title) + '</h2>' + (modal.targetName ? '<p>' + h(modal.targetName) + '</p>' : '') + '</div><button class="icon-button" data-act="close-modal" aria-label="关闭' + h(title) + '" ' + (state().writeBusy ? 'disabled' : '') + '>' + icon('close') + '</button></header>'
       + '<div class="' + (drawer ? 'drawer-body' : 'modal-body') + '">' + errorBox(modal.error) + content + '</div><footer class="' + (drawer ? 'drawer-footer' : 'modal-footer') + '">'
-      + (drawer ? '<span class="hint">' + (dirty(modal) ? '有未保存的修改' : '取消不会保存修改') + '</span><div class="row">' : '')
+      + (drawer ? '<span class="hint">' + (!footer ? '只读查看' : dirty(modal) ? '有未保存的修改' : '取消不会保存修改') + '</span><div class="row">' : '')
       + btn(footer ? '取消' : '关闭', 'close-modal') + (footer ? '<button class="btn primary" data-act="screen-save" ' + (modal.loading || modal.candidateBusy || state().writeBusy || !canSave(modal) || !dirty(modal) ? 'disabled' : '') + '>' + (state().writeBusy ? busy() + '保存中' : saveLabel) + '</button>' : '') + (drawer ? '</div>' : '') + '</footer></div></dialog>';
   function canSave(modal) {
     return {

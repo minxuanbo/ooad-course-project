@@ -111,6 +111,10 @@ function restoreFocus(saved) {
     try { element.setSelectionRange(saved.start, saved.end); } catch { /* select不支持文本选区。 */ }
   }
 }
+function restoreOriginFocus() {
+  if (typeof focusReturn === 'string') document.getElementById(focusReturn)?.focus({ preventScroll: true });
+  else restoreFocus(focusReturn);
+}
 function visiblePath(id) {
   const names = [];
   for (let current = ui.tree.find(item => item.id === id); current; current = ui.tree.find(item => item.id === current.parentId)) names.unshift(current.name);
@@ -493,7 +497,7 @@ function closeModal() {
   if (draftChanged(ui.modal)) { ui.confirm = { kind: 'discard' }; renderOverlays(); return; }
   ui.modal = null;
   renderOverlays();
-  document.getElementById(focusReturn)?.focus({ preventScroll: true });
+  restoreOriginFocus();
 }
 async function writeOperation(operation, successMessage, { confirmation = false, refresh = null } = {}) {
   if (ui.writeBusy) return;
@@ -510,7 +514,7 @@ async function writeOperation(operation, successMessage, { confirmation = false,
     ui.writeBusy = false;
     notify(successMessage);
     await (refresh ? refresh() : loadPeople());
-    document.getElementById(focusReturn)?.focus({ preventScroll: true });
+    restoreOriginFocus();
   } catch (error) {
     if (aborted(error) || handleSessionError(error)) return;
     if (confirmation && ui.confirm === confirm && confirm) confirm.error = error;
@@ -543,7 +547,7 @@ function confirmAction() {
       break;
     }
     case 'clearDraft': ui.modal.draft.clear(); ui.confirm = null; renderOverlays(); break;
-    case 'discard': ui.modal = null; ui.confirm = null; renderOverlays(); document.getElementById(focusReturn)?.focus(); break;
+    case 'discard': ui.modal = null; ui.confirm = null; renderOverlays(); restoreOriginFocus(); break;
     case 'logout': signOut(); break;
     case 'reset': {
       const epoch = ui.epoch + 1;
@@ -598,7 +602,12 @@ document.addEventListener('click', event => {
   const id = Number(button.dataset.id);
   const person = ui.data?.items.find(item => item.id === id);
   if (!['more', 'identity'].includes(action)) ui.menu = null;
-  if (screens.handleAction(action, id, button)) return;
+  const origin = saveFocus();
+  const hadOverlay = !!(ui.modal || ui.confirm || ui.review);
+  if (screens.handleAction(action, id, button)) {
+    if (!hadOverlay && (ui.modal || ui.confirm)) focusReturn = origin;
+    return;
+  }
   switch (action) {
     case 'fill-demo': {
       const demo = DEMOS.find(item => item.id === id);

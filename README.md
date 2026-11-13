@@ -25,7 +25,7 @@
 
 T13历史验收记录142项后端回归、3项运行器安全单测、70次默认JAR真实HTTP及两轮启动，详见[原验收记录](docs/acceptance/T13.md)。当前结构化归类另取得156项后端回归、3项运行器安全单测、70次完整探针及最终产物3次真实HTTP检查通过的新证据，详见[本阶段记录](docs/acceptance/structured-organization.md)；这些结果不代表完整前端、DDD或云端通过。
 
-文档PR #29及结构化整理PR #30均已审核合入。当前阶段3在独立分支迭代[新交互原型](prototype/v2/index.html)，直接双击HTML运行；先审登录、外壳和部门人员，见[使用说明](prototype/v2/README.md)及[评审记录](docs/prototype-review.md)。用户满意后才改造正式前端，随后DDD及双实现总验收，详见开发计划。
+文档PR #29及结构化整理PR #30均已审核合入。当前阶段3在独立分支迭代[新交互原型](prototype/v2/index.html)，直接双击HTML运行；第二轮按用户反馈补齐总览、部门改名、人员只读职位/角色、管理员各工作区及防越级授予，见[使用说明](prototype/v2/README.md)及[评审记录](docs/prototype-review.md)。用户满意后先同步新增契约/必要后端规则，再改造正式前端，随后DDD及双实现总验收。
 
 ## 运行入口
 
