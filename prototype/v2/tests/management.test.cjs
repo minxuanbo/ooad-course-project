@@ -151,3 +151,41 @@ test('R25 总览严格限制在当前组织范围，未授权全局日志不混�
   assert.equal(overview.latestLogs, null);
   assert.equal(overview.departments, 1);
 });
+test('R15 已授权的角色权限写入成功后不重新要求被撤回的读取权限', () => {
+  const model = createDemoModel();
+  login(model);
+  const current = model.rolePermissions(2).permissions.map(item => item.id);
+  model.saveRolePermissions(2, [...current, 9, 10]);
+  login(model, 'SG000005');
+  const result = model.saveRolePermissions(2, [...current, 10]);
+  assert.ok(!result.permissions.some(item => item.id === 9));
+  assert.throws(() => model.rolePermissions(2), code('PERMISSION_DENIED'));
+  login(model);
+  assert.ok(!model.rolePermissions(2).permissions.some(item => item.id === 9));
+});
+test('R15 映射写入撤掉本人读取能力时仍返回本次成功结果，不产生伪403', () => {
+  const model = createDemoModel();
+  login(model);
+  model.savePermissionApis(1000, [16]);
+  const admin = model.rolePermissions(1).permissions.map(item => item.id);
+  model.saveRolePermissions(1, [...admin, 1000]);
+  const current = model.rolePermissions(2).permissions.map(item => item.id);
+  model.saveRolePermissions(2, [...current, 16, 17]);
+  login(model, 'SG000005');
+  const result = model.savePermissionApis(16, []);
+  assert.deepEqual(result.apis, []);
+  assert.throws(() => model.permissionApis(16), code('PERMISSION_DENIED'));
+  login(model);
+  assert.deepEqual(model.permissionApis(16).apis, []);
+});
+test('R16 登录及业务错误日志复用页面错误的requestId', () => {
+  const model = createDemoModel();
+  let loginFailure;
+  try { login(model, 'unknown'); } catch (error) { loginFailure = error; }
+  login(model);
+  let conflict;
+  try { model.renameDepartment(3, '财务管理部'); } catch (error) { conflict = error; }
+  const entries = model.logs({ limit: 50 }).items;
+  assert.equal(entries.find(item => item.reason === 'DATA_CONFLICT').requestId, conflict.requestId);
+  assert.equal(entries.find(item => item.eventType === 'LOGIN_FAILED').requestId, loginFailure.requestId);
+});

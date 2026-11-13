@@ -184,10 +184,12 @@ function createDemoModel() {
     if (item.systemId !== 1) fail(403, 'MANAGEMENT_SCOPE_DENIED', '只能维护本系统资源');
     return item;
   };
+  const rolePermissionResult = selected => ({ role: structuredClone(selected), permissions: structuredClone(selected.permissions.map(permission).filter(Boolean)) });
+  const permissionApiResult = selected => ({ permission: structuredClone(selected), apis: structuredClone(selected.apiIds.map(id => apiCatalog.find(item => item.id === id)).filter(Boolean)) });
   const logs = [];
   const cursorIndex = new Map();
-  const record = ({ actor = null, eventType = 'AUTHORIZATION', allowed = true, reason = 'OK', httpMethod = 'GET', requestPath = '/api/users', httpStatus = 200, permissionCode = null, occurredAt = new Date().toISOString() } = {}) => {
-    const entry = { id: logs.length + 1, occurredAt, userId: actor?.id ?? null, username: actor?.username ?? null, eventType, allowed, reason, httpMethod, requestPath, httpStatus, permissionCode, appCode: 'RBAC', requestId: 'demo-' + globalThis.crypto.randomUUID().slice(0, 8) };
+  const record = ({ actor = null, eventType = 'AUTHORIZATION', allowed = true, reason = 'OK', httpMethod = 'GET', requestPath = '/api/users', httpStatus = 200, permissionCode = null, occurredAt = new Date().toISOString(), requestId = 'demo-' + globalThis.crypto.randomUUID().slice(0, 8) } = {}) => {
+    const entry = { id: logs.length + 1, occurredAt, userId: actor?.id ?? null, username: actor?.username ?? null, eventType, allowed, reason, httpMethod, requestPath, httpStatus, permissionCode, appCode: 'RBAC', requestId };
     logs.push(entry);
     return entry;
   };
@@ -330,14 +332,14 @@ function createDemoModel() {
     rolePermissions(id) {
       globalAuthorize('roles.permissions.read');
       const selected = requireRole(id);
-      return { role: structuredClone(selected), permissions: structuredClone(selected.permissions.map(permission).filter(Boolean)) };
+      return rolePermissionResult(selected);
     },
     saveRolePermissions(id, ids) {
       globalAuthorize('roles.permissions.write');
       const selected = requireRole(id);
       if (!Array.isArray(ids) || new Set(ids).size !== ids.length || ids.some(value => !permission(value) || permission(value).systemId !== 1 || !permission(value).enabled)) fail(400, 'INVALID_ARGUMENT', '请选择本系统已启用的权限，不能包含重复或未知项目');
       preserveMaintenance(selected, () => { selected.permissions = ids.map(value => permission(value).key); });
-      return model.rolePermissions(id);
+      return rolePermissionResult(selected);
     },
     resources() {
       globalAuthorize('permissions.tree');
@@ -377,14 +379,14 @@ function createDemoModel() {
     permissionApis(id) {
       globalAuthorize('permissions.apis.read');
       const selected = localPermission(id);
-      return { permission: structuredClone(selected), apis: structuredClone(selected.apiIds.map(value => apiCatalog.find(item => item.id === value)).filter(Boolean)) };
+      return permissionApiResult(selected);
     },
     savePermissionApis(id, ids) {
       globalAuthorize('permissions.apis.write');
       const selected = localPermission(id);
       if (!Array.isArray(ids) || new Set(ids).size !== ids.length || ids.some(value => !apiCatalog.some(item => item.id === value && item.systemId === selected.systemId))) fail(400, 'INVALID_ARGUMENT', 'API映射必须为本系统存在且不重复的项目');
       preserveMaintenance(selected, () => { selected.apiIds = [...ids]; });
-      return model.permissionApis(id);
+      return permissionApiResult(selected);
     },
     logs(query = {}) {
       globalAuthorize('logs');
@@ -439,7 +441,7 @@ function createDemoModel() {
         record({ actor, allowed: ![401, 403].includes(httpStatus), reason: error?.code || 'OK', httpStatus,
           httpMethod: method === 'departments' ? 'GET' : api.method,
           requestPath: method === 'departments' ? '/api/departments' : api.path,
-          permissionCode: permissionCatalog.find(item => item.key === key)?.code || null });
+          permissionCode: permissionCatalog.find(item => item.key === key)?.code || null, requestId: error?.requestId });
       }
     };
   }
@@ -450,7 +452,7 @@ function createDemoModel() {
       record({ actor: user(currentId), eventType: 'LOGIN_SUCCESS', httpMethod: 'POST', requestPath: '/api/auth/login' });
       return result;
     } catch (error) {
-      record({ eventType: 'LOGIN_FAILED', allowed: false, reason: error.code, httpStatus: error.status, httpMethod: 'POST', requestPath: '/api/auth/login' });
+      record({ eventType: 'LOGIN_FAILED', allowed: false, reason: error.code, httpStatus: error.status, httpMethod: 'POST', requestPath: '/api/auth/login', requestId: error.requestId });
       throw error;
     }
   };
