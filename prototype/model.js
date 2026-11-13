@@ -242,10 +242,15 @@ function createDemoModel() {
   };
   for (let index = 0; index < 76; index += 1) {
     const actor = users[[0, 1, 2, 3, 5][index % 5]];
-    record({ actor: index % 13 === 0 ? null : actor, eventType: index % 13 === 0 ? 'LOGIN_FAILED' : index % 7 === 0 ? 'LOGIN_SUCCESS' : 'AUTHORIZATION',
-      allowed: index % 13 !== 0 && index % 9 !== 0, reason: index % 13 === 0 ? 'LOGIN_FAILED' : index % 9 === 0 ? 'PERMISSION_DENIED' : 'OK',
-      httpStatus: index % 13 === 0 ? 401 : index % 9 === 0 ? 403 : 200, httpMethod: index % 13 === 0 || index % 7 === 0 ? 'POST' : 'GET',
-      requestPath: index % 13 === 0 || index % 7 === 0 ? '/api/auth/login' : '/api/users', occurredAt: new Date(Date.now() - (80 - index) * 180000).toISOString() });
+    const eventType = index % 13 === 0 ? 'LOGIN_FAILED' : index % 7 === 0 ? 'LOGIN_SUCCESS' : 'AUTHORIZATION';
+    const loginFailed = eventType === 'LOGIN_FAILED';
+    const loginEvent = loginFailed || eventType === 'LOGIN_SUCCESS';
+    const permissionDenied = eventType === 'AUTHORIZATION' && index % 9 === 0;
+    // 样例先确定事件，再生成一致的结果，不能将登录成功与拒绝状态独立拼接。
+    record({ actor: loginFailed ? null : actor, eventType,
+      allowed: !loginFailed && !permissionDenied, reason: loginFailed ? 'LOGIN_FAILED' : permissionDenied ? 'PERMISSION_DENIED' : 'OK',
+      httpStatus: loginFailed ? 401 : permissionDenied ? 403 : 200, httpMethod: loginEvent ? 'POST' : 'GET',
+      requestPath: loginEvent ? '/api/auth/login' : '/api/users', occurredAt: new Date(Date.now() - (80 - index) * 180000).toISOString() });
   }
   const model = {
     login(account, password) {

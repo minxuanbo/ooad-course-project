@@ -208,3 +208,36 @@ test('R16 登录及业务错误日志复用页面错误的requestId', () => {
   assert.equal(entries.find(item => item.reason === 'DATA_CONFLICT').requestId, conflict.requestId);
   assert.equal(entries.find(item => item.eventType === 'LOGIN_FAILED').requestId, loginFailure.requestId);
 });
+
+test('R16 全部预置日志的登录事件、鉴权结果与HTTP状态一致', () => {
+  const model = createDemoModel();
+  login(model);
+  const first = model.logs({ limit: 50 });
+  const entries = [...first.items];
+  let page = first;
+  while (page.hasMore) {
+    page = model.logs({ limit: 50, cursor: page.nextCursor });
+    entries.push(...page.items);
+  }
+  assert.ok(entries.length > 50);
+  assert.equal(entries.length, first.total);
+  for (const item of entries) {
+    if (item.eventType === 'LOGIN_SUCCESS') {
+      assert.equal(item.allowed, true, '登录成功事件不得标记拒绝，日志ID ' + item.id);
+      assert.equal(item.reason, 'OK');
+      assert.equal(item.httpStatus, 200);
+      assert.equal(item.httpMethod, 'POST');
+      assert.equal(item.requestPath, '/api/auth/login');
+    } else if (item.eventType === 'LOGIN_FAILED') {
+      assert.equal(item.allowed, false);
+      assert.ok([401, 403].includes(item.httpStatus));
+      assert.equal(item.reason, item.httpStatus === 401 ? 'LOGIN_FAILED' : 'MANAGEMENT_ACCESS_DENIED');
+      assert.equal(item.requestPath, '/api/auth/login');
+    } else if (item.reason === 'PERMISSION_DENIED') {
+      assert.equal(item.eventType, 'AUTHORIZATION');
+      assert.equal(item.allowed, false);
+      assert.equal(item.httpStatus, 403);
+      assert.equal(item.requestPath, '/api/users');
+    }
+  }
+});
