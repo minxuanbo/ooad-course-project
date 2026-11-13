@@ -9,6 +9,30 @@ const source = require('../applications.js');
 const login = (model, account = 'admin') => model.login(account, DEMO_PASSWORD);
 const code = expected => error => error.code === expected;
 
+test('R27 停用自定义角色仍保留管理员目标保护，局部不可撤回、停用或调动', () => {
+  const model = createDemoModel();
+  login(model, 'SG000002');
+  assert.ok(model.currentRoles(7).roles.some(item => item.id === 90 && !item.enabled));
+  assert.equal(model.canManageUser(7, 'assign'), false);
+  assert.throws(() => model.assign(7, [5]), code('MANAGEMENT_SCOPE_DENIED'));
+  assert.throws(() => model.disable(7), code('MANAGEMENT_SCOPE_DENIED'));
+  assert.throws(() => model.move(7, 5), code('MANAGEMENT_SCOPE_DENIED'));
+  login(model);
+  model.assign(7, [5]);
+  assert.deepEqual(model.currentRoles(7).roles.map(item => item.id), [5]);
+});
+
+test('R08/R24 单独持有任一新部门管理API也可按有效管理权限准入', () => {
+  for (const key of ['departments.list', 'departments.create', 'departments.delete']) {
+    const model = createDemoModel();
+    login(model);
+    const id = model.permissionCatalog().permissions.find(item => item.key === key).id;
+    model.saveRolePermissions(3, [id]);
+    assert.equal(login(model, 'SG000002').id, 3);
+    assert.equal(model.can(key), true);
+  }
+});
+
 test('R27 同公司领导、本人与上级三种写操作均拒绝，允许查看', () => {
   const model = createDemoModel();
   login(model, 'SG000001');

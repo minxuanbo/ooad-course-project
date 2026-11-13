@@ -131,13 +131,18 @@ function createDemoModel() {
     return item.apiIds.map(id => apiIndex.get(id)).filter(api => api?.enabled && api.systemId === item.systemId).map(api => api.key);
   }));
   const authority = person => Math.max(0, ...person.roleIds.map(id => role(id)?.enabled ? role(id).authorityLevel : 0));
-  const protectionLevel = person => Math.max(0, ...person.roleIds.map(id => role(id)?.enabled ? (role(id).authorityLevel || role(id).requiredGrantLevel) : 0));
+  const protectionLevel = person => Math.max(0, ...person.roleIds.map(id => {
+    const item = role(id);
+    return item ? (item.authorityLevel ? (item.enabled ? item.authorityLevel : 0) : item.requiredGrantLevel) : 0;
+  }));
   const systemAdministrator = person => person.departmentId === 1 && authority(person) === 5;
   const complete = person => {
     if (!person.enabled || person.departmentId !== 1 || authority(person) !== 5) return false;
     const keys = effective(person);
     return MAINTENANCE.every(key => keys.has(key));
   };
+  const targetWritable = (actor, selected) => systemAdministrator(actor)
+    || (actor.id !== selected.id && protectionLevel(selected) < authority(actor) && !complete(selected));
   const requireIdentity = () => {
     const actor = user(currentId);
     if (!actor?.enabled) fail(401, 'SESSION_INVALID', '登录身份已失效，请重新登录');
@@ -156,7 +161,7 @@ function createDemoModel() {
       fail(404, 'RESOURCE_NOT_FOUND', '该人员不存在，请刷新列表');
     }
     if (!descendants(actor.departmentId).has(selected.departmentId)) fail(403, 'MANAGEMENT_SCOPE_DENIED', '该人员不在你的管理范围内');
-    if (write && !systemAdministrator(actor) && (actor.id === selected.id || protectionLevel(selected) >= authority(actor) || complete(selected))) {
+    if (write && !targetWritable(actor, selected)) {
       fail(403, 'MANAGEMENT_SCOPE_DENIED', '仅能修改级别严格低于本人的人员；本人、同级和上级只读');
     }
     return { actor, selected };
@@ -209,7 +214,7 @@ function createDemoModel() {
     if (!selected) fail(404, 'RESOURCE_NOT_FOUND', '该角色不存在');
     return selected;
   };
-  const localPermission = id => {
+  const registeredPermission = id => {
     const item = permission(Number(id));
     if (!item) fail(404, 'RESOURCE_NOT_FOUND', '该权限不存在');
     if (!systems.some(system => system.id === item.systemId)) fail(403, 'MANAGEMENT_SCOPE_DENIED', '只能维护已登记系统的资源');
@@ -235,7 +240,7 @@ function createDemoModel() {
     login(account, password) {
       const matches = users.filter(person => person.username === String(account).trim() || person.phone === String(account).trim());
       if (matches.length !== 1 || !matches[0].enabled || password !== DEMO_PASSWORD) fail(401, 'LOGIN_FAILED', '账号或密码错误');
-      if (![...effective(matches[0])].some(key => [...MAINTENANCE, 'disable', 'move', 'logs', 'departments.rename'].includes(key))) {
+      if (![...effective(matches[0])].some(key => apiCatalog.some(api => api.key === key && api.systemId === 1))) {
         fail(403, 'MANAGEMENT_ACCESS_DENIED', '该账号没有本权限系统的有效管理权限');
       }
       currentId = matches[0].id;
@@ -248,7 +253,7 @@ function createDemoModel() {
     canManageUser(id, key) {
       const actor = user(currentId), selected = user(id);
       return !!(actor?.enabled && selected && effective(actor).has(key) && descendants(actor.departmentId).has(selected.departmentId)
-        && (systemAdministrator(actor) || (selected.id !== actor.id && protectionLevel(selected) < authority(actor) && !complete(selected))));
+        && targetWritable(actor, selected));
     },
     canManageDepartments() { const actor = user(currentId); return !!(actor?.enabled && authority(actor) >= 2 && effective(actor).has('departments.list')); },
     department(id) { const item = department(id); return item ? { ...item } : null; },
@@ -425,7 +430,7 @@ function createDemoModel() {
     },
     patchPermission(id, command) {
       globalAuthorize('permissions.patch');
-      const selected = localPermission(id);
+      const selected = registeredPermission(id);
       if (!Object.keys(command).length || Object.keys(command).some(key => !['parentId', 'type', 'enabled'].includes(key))) fail(400, 'INVALID_ARGUMENT', '仅能维护权限父级、类型与状态');
       const next = { ...selected, ...command };
       if (!['MENU', 'BUTTON'].includes(next.type) || typeof next.enabled !== 'boolean') fail(400, 'INVALID_ARGUMENT', '权限类型或状态无效');
@@ -450,12 +455,12 @@ function createDemoModel() {
     },
     permissionApis(id) {
       globalAuthorize('permissions.apis.read');
-      const selected = localPermission(id);
+      const selected = registeredPermission(id);
       return permissionApiResult(selected);
     },
     savePermissionApis(id, ids) {
       globalAuthorize('permissions.apis.write');
-      const selected = localPermission(id);
+      const selected = registeredPermission(id);
       if (!Array.isArray(ids) || new Set(ids).size !== ids.length || ids.some(value => !apiCatalog.some(item => item.id === value && item.systemId === selected.systemId))) fail(400, 'INVALID_ARGUMENT', 'API映射必须为本系统存在且不重复的项目');
       preserveMaintenance(selected, () => { selected.apiIds = [...ids]; });
       return permissionApiResult(selected);

@@ -199,7 +199,12 @@ function createScreens(context) {
   function selectedTags(modal) {
     const ids = [...modal.draft].filter(id => modal.kind !== 'screen-role-permissions' || !modal.labels.has(id) || modal.labels.get(id).systemId === modal.systemId);
     const visible = modal.expandedTags ? ids : ids.slice(0, 12);
-    return '<div class="selected-tags">' + (visible.map(id => '<span class="badge blue">' + h(modal.labels.get(id)?.name || modal.labels.get(id)?.path || '项目 ' + id) + '<button data-act="screen-remove" data-id="' + id + '" aria-label="移除已选' + h(modal.labels.get(id)?.name || id) + '" ' + (!canSave(modal) ? 'disabled' : '') + '>' + icon('close') + '</button></span>').join('') || '<span class="hint">当前系统尚未选择</span>') + '</div>'
+    const label = id => {
+      const item = modal.labels.get(id);
+      const parent = item?.sourceKind === 'operation' ? modal.labels.get(item.parentId) : null;
+      return (parent ? parent.name + ' · ' : '') + (item?.name || item?.path || '项目 ' + id);
+    };
+    return '<div class="selected-tags">' + (visible.map(id => '<span class="badge blue">' + h(label(id)) + '<button data-act="screen-remove" data-id="' + id + '" aria-label="移除已选' + h(label(id)) + '" ' + (!canSave(modal) ? 'disabled' : '') + '>' + icon('close') + '</button></span>').join('') || '<span class="hint">当前系统尚未选择</span>') + '</div>'
       + (ids.length > 12 ? '<button class="link-button" data-act="selected-expand">' + (modal.expandedTags ? '收起' : '展开全部' + ids.length + '项') + '</button>' : '');
   }
   function modal(modal) {
@@ -385,7 +390,7 @@ function createScreens(context) {
   function change(element) {
     if (element.id === 'department-parent' && state().modal?.kind === 'screen-department-new') state().modal.values.parentId = Number(element.value);
     if (element.id === 'department-type' && state().modal?.kind === 'screen-department-new') state().modal.values.type = element.value;
-    if (element.id === 'resource-system') { const current = view('resources'); current.systemId = Number(element.value); current.selected = null; current.q = ''; current.qDraft = ''; current.page = 0; load(); }
+    if (element.id === 'resource-system') { const current = view('resources'); current.systemId = Number(element.value); current.selected = null; current.data = null; current.q = ''; current.qDraft = ''; current.page = 0; load(); }
     if (element.id === 'role-permission-system') { state().modal.systemId = Number(element.value); state().modal.expandedTags = false; context.renderOverlays(); }
     if (element.id === 'reference-role') state().modal.referenceRole = Number(element.value);
     if (element.id === 'screen-status') { const current = view(state().route); current.enabled = element.value; current.page = 0; load(); }
