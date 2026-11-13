@@ -1,6 +1,7 @@
 /** 原型目录数据；全部为演示条目，正式API及新增提案另在评审文档核对。 */
 (function () {
 'use strict';
+const applicationSource = typeof module !== 'undefined' && module.exports ? require('./applications.js') : globalThis.MunicipalApplicationSource;
 function createCatalog() {
   const definitions = [
     ['tree', '查看部门树', 'GET', '/api/departments/tree', 1000],
@@ -24,6 +25,9 @@ function createCatalog() {
     ['move', '调动部门归属', 'PUT', '/api/users/{id}/department', 1000],
     ['logs', '查询鉴权日志', 'GET', '/api/authorization-logs', 1003],
     ['departments.rename', '修改部门名称', 'PATCH', '/api/departments/{id}', 1004],
+    ['departments.list', '查看部门目录', 'GET', '/api/departments', 1004],
+    ['departments.create', '新增下级部门', 'POST', '/api/departments', 1004],
+    ['departments.delete', '删除空部门', 'DELETE', '/api/departments/{id}', 1004],
   ];
   const apis = definitions.map(([key, name, method, path], index) => ({
     id: index + 1, key, name, method, path, enabled: true, systemId: 1,
@@ -35,11 +39,29 @@ function createCatalog() {
   [['人员管理', 'people'], ['角色与权限', 'roles'], ['资源与API', 'resources'], ['鉴权日志', 'audit'], ['部门管理', 'organization']].forEach(([name, key], index) => {
     permissions.push({ id: 1000 + index, key: 'menu.' + key, code: 'MENU_' + key.toUpperCase(), name, parentId: null, type: 'MENU', enabled: true, systemId: 1, apiIds: [] });
   });
-  permissions.push({ id: 2000, key: 'external.review', code: 'EXTERNAL_REVIEW', name: '外系统业务审核', parentId: null, type: 'BUTTON', enabled: true, systemId: 2, apiIds: [2000] });
-  apis.push({ id: 2000, key: 'external.review', name: '外系统业务审核', method: 'GET', path: '/external/reviews', enabled: true, systemId: 2 });
+  let nextPermissionId = 2000;
+  const modules = new Map();
+  for (const feature of applicationSource.features) {
+    const system = applicationSource.systems.find(item => item.id === feature.systemId);
+    const moduleKey = system.id + ':' + feature.module;
+    if (!modules.has(moduleKey)) {
+      const item = { id: nextPermissionId++, key: 'business.module.' + moduleKey, code: system.code + '_M' + (modules.size + 1),
+        name: feature.module, parentId: null, type: 'MENU', enabled: true, systemId: system.id, apiIds: [], sourceKind: 'module' };
+      modules.set(moduleKey, item.id); permissions.push(item);
+    }
+    const parent = { id: nextPermissionId++, key: 'business.feature.' + feature.row, code: system.code + '_F' + feature.row,
+      name: feature.name, description: feature.description, parentId: modules.get(moduleKey), type: 'MENU', enabled: true,
+      systemId: system.id, apiIds: [], sourceRow: feature.row, sourceKind: 'feature' };
+    permissions.push(parent);
+    feature.operations.forEach((operation, index) => permissions.push({
+      id: nextPermissionId++, key: 'business.operation.' + feature.row + '.' + index,
+      code: system.code + '_F' + feature.row + '_A' + (index + 1), name: operation, parentId: parent.id, type: 'BUTTON', enabled: true,
+      systemId: system.id, apiIds: [], sourceRow: feature.row, sourceKind: 'operation', referenceRoleIndices: [...feature.operationRoles[index]],
+    }));
+  }
   return {
-    permissions, apis,
-    systems: [{ id: 1, code: 'RBAC', name: '统一权限管理系统', enabled: true }, { id: 2, code: 'EXTERNAL', name: '业务协同系统', enabled: true }],
+    permissions, apis, applicationSource,
+    systems: [{ id: 1, code: 'RBAC', name: '统一权限管理系统', enabled: true }, ...structuredClone(applicationSource.systems)],
   };
 }
 const api = { createCatalog };

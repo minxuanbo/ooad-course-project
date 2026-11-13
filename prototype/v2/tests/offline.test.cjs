@@ -7,6 +7,7 @@ const directory = path.resolve(__dirname, '..');
 
 test('R18/R22 普通浏览器脚本模式无需模块加载器即可运行内存业务', () => {
   const context = vm.createContext({ crypto: globalThis.crypto, structuredClone });
+  vm.runInContext(fs.readFileSync(path.join(directory, 'applications.js'), 'utf8'), context);
   vm.runInContext(fs.readFileSync(path.join(directory, 'catalog.js'), 'utf8'), context);
   vm.runInContext(fs.readFileSync(path.join(directory, 'model.js'), 'utf8'), context);
   const model = context.MunicipalPrototype.createDemoModel();
@@ -17,7 +18,7 @@ test('R18/R22 普通浏览器脚本模式无需模块加载器即可运行内存
 test('R18 离线入口仅加载同目录普通脚本和样式，无模块或远端依赖', () => {
   const html = fs.readFileSync(path.join(directory, 'index.html'), 'utf8');
   const scripts = [...html.matchAll(/<script\b([^>]+)>/g)].map(match => match[1]);
-  assert.equal(scripts.length, 4);
+  assert.equal(scripts.length, 5);
   scripts.forEach(attributes => {
     assert.doesNotMatch(attributes, /type\s*=\s*["']module/);
     const asset = attributes.match(/src="([^"]+)"/)[1];
@@ -25,7 +26,7 @@ test('R18 离线入口仅加载同目录普通脚本和样式，无模块或远�
     assert.ok(fs.existsSync(path.join(directory, asset)));
   });
   assert.ok(fs.existsSync(path.join(directory, 'styles.css')));
-  for (const name of ['catalog.js', 'pages.js', 'app.js', 'model.js', 'styles.css']) {
+  for (const name of ['applications.js', 'catalog.js', 'pages.js', 'app.js', 'model.js', 'styles.css']) {
     const source = fs.readFileSync(path.join(directory, name), 'utf8');
     assert.doesNotMatch(source, /\b(?:fetch|XMLHttpRequest|WebSocket|EventSource|sendBeacon|localStorage|sessionStorage)\s*[.(]/);
     assert.doesNotMatch(source, /(?:@import|url\()\s*["']?https?:\/\//);

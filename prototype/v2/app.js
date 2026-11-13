@@ -122,7 +122,7 @@ function visiblePath(id) {
 }
 const scopeName = () => model.department(ui.session.departmentId)?.name || '当前部门';
 function canWrite(person, action) {
-  return !!model.can(action) && (ui.session.departmentId === 1 || person.id !== ui.session.id);
+  return model.canManageUser(person.id, action);
 }
 function roleTags(roles = []) {
   return roles.length ? roles.slice(0, 2).map(role => '<span class="badge ' + (role.enabled ? 'blue' : 'gray') + '" title="' + h(role.code) + '">' + h(role.name) + (!role.enabled ? ' · 停用' : '') + '</span>').join('')
@@ -144,7 +144,7 @@ function loginPage() {
     <section class="login-story">${logo()}<div class="story-copy"><span class="eyebrow">Connected people. Clear access.</span><h1>管理有界，<br>协作有序。</h1><p>让组织、人员与权限各归其位，<br>为每一次协作建立清晰的边界。</p></div>${illustration()}
       <div class="story-chips"><span>${icon('building')}统一组织</span><span>${icon('users')}高效协作</span><span>${icon('shield')}权限可控</span></div>
     </section>
-    <section class="login-main"><span class="prototype-tag">交互原型 · 第二轮</span><form class="login-form" id="login-form" novalidate aria-busy="${ui.loginBusy}">
+    <section class="login-main"><span class="prototype-tag">交互原型 · 第三轮</span><form class="login-form" id="login-form" novalidate aria-busy="${ui.loginBusy}">
       <span class="eyebrow">Municipal workspace</span><h2>欢迎登录</h2><p>登录市政公司统一权限管理系统</p>
       <div class="field"><label for="login-account">工号或手机号</label><div class="input-shell">${icon('user')}<input id="login-account" name="account" type="text" autocomplete="username" maxlength="100" placeholder="请输入工号或手机号" value="${h(ui.account)}" aria-invalid="${!!ui.loginError}" ${ui.loginBusy ? 'disabled' : ''}></div></div>
       <div class="field"><label for="login-password">登录密码</label><div class="input-shell">${icon('lock')}<input id="login-password" name="password" type="${ui.showPassword ? 'text' : 'password'}" autocomplete="current-password" maxlength="200" placeholder="请输入密码" value="${h(ui.password)}" ${ui.loginBusy ? 'disabled' : ''}><button class="icon-button" type="button" data-act="password" aria-label="${ui.showPassword ? '隐藏密码' : '显示密码'}">${icon(ui.showPassword ? 'eyeOff' : 'eye')}</button></div></div>
@@ -174,7 +174,7 @@ function workspace() {
     <div class="workspace-main"><header class="topbar"><div class="breadcrumb"><span>${h(current.group)}</span>${icon('chevron')}<strong>${h(current.title)}</strong></div><select id="mobile-navigation" class="mobile-page-select" aria-label="切换工作区">${navigation.map(item => '<option value="' + item.page + '" ' + (ui.route === item.page ? 'selected' : '') + '>' + item.title + '</option>').join('')}</select>
       <div class="topbar-right"><button class="review-entry" data-act="review">原型评审</button><div class="identity"><button id="identity-trigger" data-act="identity" aria-haspopup="menu" aria-expanded="${ui.menu === 'identity'}">${avatar(ui.session)}<span><span class="identity-name">${h(ui.session.name)}</span><span class="identity-role">${h(ui.session.username)}</span></span>${icon('down')}</button></div></div>
     </header>
-    <main class="page-content" aria-busy="${ui.route === 'people' ? ui.listBusy : !!ui.views[ui.route]?.busy}">${ui.route === 'people' ? peopleContent() : screens.page(ui.route)}<footer class="page-foot"><span>市政公司统一权限管理系统</span><span>第二轮原型 · 虚构模拟数据 · 可离线运行</span></footer></main></div>
+    <main class="page-content" aria-busy="${ui.route === 'people' ? ui.listBusy : !!ui.views[ui.route]?.busy}">${ui.route === 'people' ? peopleContent() : screens.page(ui.route)}<footer class="page-foot"><span>市政公司统一权限管理系统</span><span>第三轮原型 · 虚构模拟数据 · 可离线运行</span></footer></main></div>
   </div>`;
 }
 function peopleContent() {
@@ -226,7 +226,7 @@ function tableMarkup() {
     const assignable = canWrite(person, 'assign') && model.can('currentRoles') && model.can('candidates');
     return '<tr><td><button class="person-button" id="person-' + person.id + '" data-act="person" data-id="' + person.id + '" aria-label="查看' + h(person.name) + '的人员信息">' + avatar(person) + '<strong>' + h(person.name) + (person.id === ui.session.id ? '<span class="self-label">本人</span>' : '') + '</strong></button></td>'
       + '<td><span class="mono muted">' + h(person.username) + '</span></td><td><span class="department-cell"><span>' + h(path.at(-1)) + '</span>' + (path.length > 1 ? '<small>' + h(path.slice(0, -1).join(' / ')) + '</small>' : '') + '</span></td>'
-      + '<td class="position-cell">' + h(person.position || '未提供') + '</td><td><div class="role-tags">' + roleTags(person.roles) + '</div></td><td>' + status(person) + '</td><td><div class="row-actions"><button class="link-button" id="assign-' + person.id + '" data-act="roles" data-id="' + person.id + '" ' + (!assignable ? 'disabled title="当前权限或本人保护规则不允许此操作"' : '') + '>分配角色</button><button class="icon-button" id="more-' + person.id + '" data-act="more" data-id="' + person.id + '" aria-label="' + h(person.name) + '的更多操作" aria-haspopup="menu">' + icon('more') + '</button></div></td></tr>';
+      + '<td class="position-cell">' + h(person.position || '未提供') + '</td><td><div class="role-tags">' + roleTags(person.roles) + '</div></td><td>' + status(person) + '</td><td><div class="row-actions"><button class="link-button" id="assign-' + person.id + '" data-act="roles" data-id="' + person.id + '" ' + (!assignable ? 'disabled title="本人、同级、上级或当前权限不允许此操作"' : '') + '>分配角色</button><button class="icon-button" id="more-' + person.id + '" data-act="more" data-id="' + person.id + '" aria-label="' + h(person.name) + '的更多操作" aria-haspopup="menu">' + icon('more') + '</button></div></td></tr>';
   }).join('') + '</tbody></table>';
 }
 function pagination(total, page, size, action, sizeSelector = false) {
@@ -335,7 +335,7 @@ function confirmation() {
 }
 function reviewDialog() {
   return `<dialog class="modal review-modal" id="review-dialog" aria-labelledby="review-title"><header class="modal-header"><h2 id="review-title">原型评审工具</h2><button class="icon-button" data-act="close-review" aria-label="关闭评审工具">${icon('close')}</button></header><div class="modal-body">
-    <div class="review-info">${icon('info')}<span>第二轮评审：总览、部门改名、人员职位/角色、角色权限、资源映射与鉴权日志。168名虚构人员、15个示例部门。公司领导、部门经理、项目经理的授予级别不同。</span></div>
+    <div class="review-info">${icon('info')}<span>第三轮评审：部门增删改名、同级人员只读、跨系统资源与原表矩阵。168名虚构人员、15个初始部门；SG000001与SG000008为同分公司领导，可核对同级保护。</span></div>
     ${errorBox(ui.reviewError)}<div class="section-title"><h3>切换演示身份</h3><span class="hint">保留本次模拟数据</span></div>
     <div class="review-accounts">${DEMOS.map(demo => '<button class="review-account ' + (demo.id === ui.session.id ? 'current' : '') + '" data-act="switch-demo" data-id="' + demo.id + '"><strong>' + h(demo.label) + (demo.id === ui.session.id ? ' · 当前' : '') + '</strong><span>' + h(demo.note) + '</span></button>').join('')}</div>
     <div class="review-setting"><div><strong>下一次操作反馈</strong><p>失败不写入数据，草稿会保留。</p></div><select id="review-failure" aria-label="下一次模拟请求反馈">${[['', '正常响应'], ['network', '网络故障'], ['forbidden', '403 无权限'], ['missing', '404 不存在'], ['conflict', '409 冲突'], ['server', '500 服务故障'], ['session', '401 身份失效']].map(([value, label]) => '<option value="' + value + '" ' + (ui.nextFailure === value ? 'selected' : '') + '>' + label + '</option>').join('')}</select></div>
@@ -382,7 +382,7 @@ function renderMenu() {
   menu.style.top = Math.min(box.bottom + 6, window.innerHeight - 160) + 'px';
   menu.innerHTML = identity ? '<button role="menuitem" data-act="logout">' + icon('logout') + '退出登录</button>'
     : '<button role="menuitem" data-act="person" data-id="' + person.id + '">' + icon('user') + '查看人员信息</button>'
-    + '<button role="menuitem" data-act="move" data-id="' + person.id + '" ' + (!canWrite(person, 'move') ? 'disabled title="当前权限或本人保护规则不允许此操作"' : '') + '>' + icon('move') + '调动部门</button>'
+    + '<button role="menuitem" data-act="move" data-id="' + person.id + '" ' + (!canWrite(person, 'move') ? 'disabled title="本人、同级、上级或当前权限不允许此操作"' : '') + '>' + icon('move') + '调动部门</button>'
     + '<button class="danger" role="menuitem" data-act="disable" data-id="' + person.id + '" ' + (!canWrite(person, 'disable') || !person.enabled ? 'disabled' : '') + '>' + icon('ban') + (person.enabled ? '停用账号' : '账号已停用') + '</button>';
   overlays.append(menu);
   menu.querySelector('button:not(:disabled)')?.focus();

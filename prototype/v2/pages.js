@@ -1,4 +1,4 @@
-/** 第二轮工作区：与人员页面共用会话、模拟请求、模态框和写入反馈。 */
+/** 离线工作区：与人员页面共用会话、模拟请求、模态框和写入反馈。 */
 (function () {
 'use strict';
 const { DemoError } = globalThis.MunicipalPrototype;
@@ -7,7 +7,7 @@ function createScreens(context) {
   const state = () => context.state();
   const model = () => context.model();
   const globalCan = key => model().canGlobal(key);
-  const view = page => state().views[page] ||= { data: null, busy: false, error: null, sequence: 0, q: '', qDraft: '', enabled: '', page: 0, mode: 'permissions', selected: 1000, filters: { userId: '', username: '', allowed: '', event: '', appCode: '', from: '', to: '' }, limit: 12 };
+  const view = page => state().views[page] ||= { data: null, busy: false, error: null, sequence: 0, q: '', qDraft: '', enabled: '', page: 0, systemId: 1, mode: 'permissions', selected: 1000, filters: { userId: '', username: '', allowed: '', event: '', appCode: '', from: '', to: '' }, limit: 12 };
   const rankNames = { 0: '自定义 · 仅管理员可授', 1: '普通员工', 2: '项目经理', 3: '部门经理', 4: '公司领导', 5: '系统管理员' };
   const dateTime = value => new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(new Date(value));
   const enabledTag = enabled => '<span class="status ' + (enabled ? 'on' : 'off') + '">' + (enabled ? '启用' : '已停用') + '</span>';
@@ -18,7 +18,7 @@ function createScreens(context) {
   function navigation() {
     return [
       { page: 'overview', title: '总览', group: '工作台', icon: 'overview', visible: model().can('users') },
-      { page: 'departments', title: '部门管理', group: '组织管理', icon: 'building', visible: globalCan('departments.rename') },
+      { page: 'departments', title: '部门管理', group: '组织管理', icon: 'building', visible: model().canManageDepartments() },
       { page: 'people', title: '人员管理', group: '组织管理', icon: 'users', visible: model().can('users') },
       { page: 'roles', title: '角色与权限', group: '权限管理', icon: 'shield', visible: globalCan('roles.list') },
       { page: 'resources', title: '资源与API', group: '权限管理', icon: 'resource', visible: globalCan('permissions.tree') || globalCan('apis.list') },
@@ -52,8 +52,8 @@ function createScreens(context) {
     const name = id => data.find(item => item.id === id)?.name || '—';
     const depth = item => { let value = 0; for (let parent = data.find(node => node.id === item.parentId); parent; parent = data.find(node => node.id === parent.parentId)) value += 1; return value; };
     return '<section class="panel">' + filterForm('departments', '搜索部门名称', false) + '<div class="table-wrap management-table"><table><thead><tr><th>部门名称</th><th>组织类型</th><th>上级部门</th><th>直属人员</th><th>含下级人员</th><th>操作</th></tr></thead><tbody>'
-      + list.map(item => '<tr><td><span class="department-name" style="padding-left:' + (current.q ? 0 : depth(item) * 17) + 'px">' + icon(item.type === '公司' || item.type === '分公司' ? 'building' : 'folder') + h(item.name) + '</span></td><td><span class="badge gray">' + h(item.type) + '</span></td><td>' + h(name(item.parentId)) + '</td><td>' + item.direct + ' 人</td><td>' + item.total + ' 人</td><td><button class="link-button" data-act="department-rename" data-id="' + item.id + '">修改名称</button></td></tr>').join('')
-      + '</tbody></table>' + (!list.length ? empty('没有匹配的部门') : '') + '</div><div class="panel-note">' + icon('info') + '名称修改同步到组织树、人员列表与总览。人员归属、职位、角色和部门层级保持不变。</div></section>';
+      + list.map(item => '<tr><td><span class="department-name" style="padding-left:' + (current.q ? 0 : depth(item) * 17) + 'px">' + icon(item.type === '公司' || item.type === '分公司' ? 'building' : 'folder') + h(item.name) + '</span>' + (item.isOwn ? '<small class="cell-sub">本人直属部门</small>' : '') + '</td><td><span class="badge gray">' + h(item.type) + '</span></td><td>' + h(name(item.parentId)) + '</td><td>' + item.direct + ' 人</td><td>' + item.total + ' 人</td><td><div class="row-actions"><button class="link-button" data-act="department-create" data-id="' + item.id + '" ' + (!item.canCreate ? 'disabled' : '') + '>新增下级</button><button class="link-button" data-act="department-rename" data-id="' + item.id + '" ' + (!item.canRename ? 'disabled title="本人部门只读"' : '') + '>修改名称</button><button class="link-button text-danger" data-act="department-delete" data-id="' + item.id + '" ' + (!item.canDelete ? 'disabled title="' + h(item.deleteReason) + '"' : '') + '>删除</button></div></td></tr>').join('')
+      + '</tbody></table>' + (!list.length ? empty('没有匹配的部门') : '') + '</div><div class="panel-note">' + icon('info') + '局部管理员仅维护本人部门的下级；可在本人部门或下级下新增。仅无人且无下级的空部门可删除，根不可删。不提供调整层级。</div></section>';
   }
   function rolePage(data) {
     return '<section class="panel">' + filterForm('roles', '搜索角色名称或编码') + '<div class="table-wrap management-table"><table><thead><tr><th>角色名称</th><th>角色编码</th><th>授予级别</th><th>状态</th><th>操作</th></tr></thead><tbody>'
@@ -66,17 +66,33 @@ function createScreens(context) {
   function resourcePage(data) {
     const current = view('resources');
     const selected = data.resources?.permissions.find(item => item.id === current.selected);
+    const systemName = data.resources?.systems.find(item => item.id === current.systemId)?.name || '统一权限管理系统';
+    const systemSelector = '<div class="system-picker"><label for="resource-system">所属系统</label><select id="resource-system">' + (data.resources?.systems || [{ id: 1, name: systemName }]).map(item => '<option value="' + item.id + '" ' + (current.systemId === item.id ? 'selected' : '') + '>' + h(item.name) + '</option>').join('') + '</select></div>';
     const tabs = '<div class="workspace-tabs">' + (data.resources ? '<button class="' + (current.mode === 'permissions' ? 'active' : '') + '" data-act="resource-mode" data-mode="permissions">菜单与按钮</button>' : '')
-      + (globalCan('apis.list') ? '<button class="' + (current.mode === 'apis' ? 'active' : '') + '" data-act="resource-mode" data-mode="apis">API资源</button>' : '') + '<span class="system-label">' + icon('building') + '统一权限管理系统</span></div>';
-    if (current.mode === 'apis' || !data.resources) return tabs + '<section class="panel">' + filterForm('resources', '搜索HTTP方法或API路径') + '<div class="table-wrap management-table"><table><thead><tr><th>HTTP方法</th><th>API路径</th><th>说明</th><th>状态</th><th>操作</th></tr></thead><tbody>'
+      + (globalCan('apis.list') ? '<button class="' + (current.mode === 'apis' ? 'active' : '') + '" data-act="resource-mode" data-mode="apis">API资源</button>' : '')
+      + (data.resources && current.systemId !== 1 ? '<button class="' + (current.mode === 'matrix' ? 'active' : '') + '" data-act="resource-mode" data-mode="matrix">原表角色矩阵</button>' : '') + '</div>';
+    const prefix = systemSelector + tabs;
+    if (current.mode === 'matrix' && current.systemId !== 1) return prefix + matrixPage(data.resources, current);
+    if (current.mode === 'apis' && current.systemId !== 1) return prefix + '<section class="panel">' + empty('该系统尚未提供API资料', 'Excel仅规定功能权限；可配置角色的菜单/按钮，实际API映射待业务系统提供接口后确认。') + '</section>';
+    if (current.mode === 'apis' || !data.resources) return prefix + '<section class="panel">' + filterForm('resources', '搜索HTTP方法或API路径') + '<div class="table-wrap management-table"><table><thead><tr><th>HTTP方法</th><th>API路径</th><th>说明</th><th>状态</th><th>操作</th></tr></thead><tbody>'
       + (data.apis?.items || []).map(item => '<tr><td><span class="method ' + item.method.toLowerCase() + '">' + item.method + '</span></td><td class="mono">' + h(item.path) + '</td><td>' + h(item.name) + '</td><td>' + enabledTag(item.enabled) + '</td><td><button class="link-button ' + (item.enabled ? 'text-danger' : '') + '" data-act="api-toggle" data-id="' + item.id + '" ' + (!globalCan('apis.patch') ? 'disabled' : '') + '>' + (item.enabled ? '停用' : '启用') + '</button></td></tr>').join('')
       + '</tbody></table>' + (!data.apis?.items.length ? empty('没有匹配的API资源') : '') + '</div>' + itemsPage(data.apis, 'screen-page', '项API') + '<div class="panel-note">' + icon('info') + '方法与路径只读；启停会影响全部引用该API的有效授权。</div></section>';
-    return tabs + '<div class="resource-layout"><section class="panel"><div class="panel-heading"><h2>权限目录</h2><span class="count">' + data.resources.permissions.length + '</span></div><div class="resource-tree">' + resourceTree(data.resources.permissions) + '</div></section>'
+    return prefix + '<div class="resource-layout"><section class="panel"><div class="panel-heading"><h2>权限目录</h2><span class="count">' + data.resources.permissions.length + '</span></div><div class="resource-tree">' + resourceTree(data.resources.permissions) + '</div></section>'
       + '<section class="panel resource-detail"><div class="panel-heading"><h2>' + h(selected?.name) + '</h2>' + (selected ? '<span class="badge blue">' + (selected.type === 'MENU' ? '菜单' : '按钮') + '</span>' : '') + '</div>'
-      + (selected ? '<div class="resource-info"><dl class="detail-list"><dt>权限编码</dt><dd class="mono">' + h(selected.code) + '</dd><dt>所属系统</dt><dd>统一权限管理系统</dd><dt>上级权限</dt><dd>' + h(data.resources.permissions.find(item => item.id === selected.parentId)?.name || '无上级') + '</dd><dt>启用状态</dt><dd>' + enabledTag(selected.enabled) + '</dd></dl>' + btn('编辑属性', 'permission-edit', selected.id, !globalCan('permissions.patch') ? 'unavailable' : '')
+      + (selected ? '<div class="resource-info"><dl class="detail-list"><dt>权限编码</dt><dd class="mono">' + h(selected.code) + '</dd><dt>所属系统</dt><dd>' + h(systemName) + '</dd><dt>上级权限</dt><dd>' + h(data.resources.permissions.find(item => item.id === selected.parentId)?.name || '无上级') + '</dd><dt>启用状态</dt><dd>' + enabledTag(selected.enabled) + '</dd>' + (selected.sourceRow ? '<dt>原表位置</dt><dd>第' + selected.sourceRow + '行 · 全部权限仍需细化接口</dd>' : '') + '</dl>' + btn('编辑属性', 'permission-edit', selected.id, !globalCan('permissions.patch') ? 'unavailable' : '')
         + '<div class="divider"></div><div class="section-title"><h3>已映射API <span class="muted">' + (data.mapping?.apis.length ?? '—') + '</span></h3><button class="link-button" data-act="permission-mapping" data-id="' + selected.id + '" ' + (!globalCan('permissions.apis.read') ? 'disabled' : '') + '>配置映射</button></div>'
-        + (data.mapping ? data.mapping.apis.length ? data.mapping.apis.map(item => '<div class="mapped-api"><span class="method ' + item.method.toLowerCase() + '">' + item.method + '</span><span class="mono grow">' + h(item.path) + '</span>' + enabledTag(item.enabled) + '</div>').join('') : empty('尚未关联API', '菜单选择和子权限相互独立，不会自动继承API。') : '<p class="hint">当前没有读取映射的权限。</p>')
+        + (data.mapping ? data.mapping.apis.length ? data.mapping.apis.map(item => '<div class="mapped-api"><span class="method ' + item.method.toLowerCase() + '">' + item.method + '</span><span class="mono grow">' + h(item.path) + '</span>' + enabledTag(item.enabled) + '</div>').join('') : empty('尚未关联API', current.systemId === 1 ? '菜单选择和子权限相互独立，不会自动继承API。' : '原表未提供API，不代表拥有本RBAC管理能力。') : '<p class="hint">当前没有读取映射的权限。</p>')
         + '<p class="hint">停用父菜单不会级联停用直接授予的子权限。</p></div>' : empty('请选择一个权限节点')) + '</section></div>';
+  }
+  /** 保留五角色原始单元格，不把职级当权限继承。 */
+  function matrixPage(resources, current) {
+    const rows = resources.matrix.filter(item => [item.module, item.name, item.description].some(value => value.toLowerCase().includes(current.q.toLowerCase())));
+    const visible = rows.slice(current.page * 10, (current.page + 1) * 10);
+    return '<section class="panel">' + filterForm('resources', '搜索模块或功能点', false)
+      + '<div class="table-wrap management-table"><table class="matrix-table"><thead><tr><th>模块 / 功能点</th>' + resources.roleNames.map(name => '<th>' + h(name) + '</th>').join('') + '</tr></thead><tbody>'
+      + visible.map(item => '<tr><td><small class="cell-sub">' + h(item.module) + ' · 行' + item.row + '</small><strong>' + h(item.name) + '</strong><small class="cell-sub">' + h(item.description) + '</small></td>' + item.roleRights.map(value => '<td><span class="badge ' + (value === null ? 'amber' : value === '无' ? 'gray' : 'blue') + '">' + h(value === null ? '未规定' : value) + '</span></td>').join('') + '</tr>').join('')
+      + '</tbody></table>' + (!rows.length ? empty('没有匹配的功能点') : '') + '</div>' + itemsPage({ total: rows.length, page: current.page, size: 10 }, 'screen-page', '个功能点')
+      + '<div class="panel-note">' + icon('info') + '来源：' + h(resources.source.file) + '。矩阵是原表参考；角色实际配置请到“角色与权限”。view显示原文，配置中按查看处理；空白为未规定。全部仍需接口细化，查看本人/编辑本人保持限定。</div></section>';
   }
   function logRows(items) {
     return items.map(item => '<tr><td class="log-time">' + dateTime(item.occurredAt) + '<small>北京时间</small></td><td><strong>' + h(item.username || '未识别主体') + '</strong><small class="cell-sub">' + (item.userId ? '用户ID ' + item.userId : '主体未知') + '</small></td><td><span class="badge gray">' + (item.eventType === 'AUTHORIZATION' ? '请求鉴权' : item.eventType === 'LOGIN_SUCCESS' ? '登录成功' : item.eventType === 'LOGIN_FAILED' ? '登录失败' : '未认证访问') + '</span></td><td><span class="status ' + (item.allowed ? 'on' : 'off') + '">' + (item.allowed ? '允许' : '拒绝') + '</span></td><td><span class="mono">' + item.httpMethod + '</span><small class="cell-sub mono">' + h(item.requestPath) + '</small></td><td><span class="mono">' + h(item.reason) + '</span><small class="cell-sub">HTTP ' + item.httpStatus + '</small></td><td><button class="link-button" data-act="log-detail" data-id="' + item.id + '">查看详情</button></td></tr>').join('');
@@ -97,7 +113,7 @@ function createScreens(context) {
     const current = view(pageName);
     const descriptions = {
       overview: ['总览', '查看组织概况，从当前管理范围开始。'],
-      departments: ['部门管理', '维护组织名称，保持人员归属与组织层级稳定。'],
+      departments: ['部门管理', '新增下级、修改名称、删除空部门，按组织范围维护。'],
       roles: ['角色与权限', '维护共享角色，明确每一项可执行能力。'],
       resources: ['资源与API', '连接菜单、按钮与实际受控接口。'],
       logs: ['鉴权日志', '检索登录与鉴权事件，追踪每一次访问判断。'],
@@ -119,7 +135,7 @@ function createScreens(context) {
     current.busy = !more; current.loadingMore = more; current.error = null;
     context.render();
     try {
-      const query = { q: current.q, enabled: current.enabled, page: current.page, size: 10 };
+      const query = { q: current.q, enabled: current.enabled, page: current.page, size: 10, systemId: current.systemId };
       const frozenLogQuery = pageName === 'logs' ? (more ? current.snapshotQuery : logQuery(current)) : null;
       if (more && !frozenLogQuery) throw new DemoError(400, 'INVALID_CURSOR', '请先重新查询');
       const result = await context.request(() => {
@@ -131,7 +147,7 @@ function createScreens(context) {
         if (pageName === 'roles') data = model().roles(query);
         if (pageName === 'logs') data = model().logs({ ...frozenLogQuery, cursor: more ? current.data.nextCursor : null });
         if (pageName === 'resources') {
-          const resources = globalCan('permissions.tree') ? model().resources() : null;
+          const resources = globalCan('permissions.tree') ? model().resources({ systemId: current.systemId }) : null;
           const selected = resources?.permissions.some(item => item.id === current.selected) ? current.selected : resources?.permissions[0]?.id;
           data = { resources, selected, apis: globalCan('apis.list') ? model().apis(query) : null,
             mapping: selected && globalCan('permissions.apis.read') ? model().permissionApis(selected) : null };
@@ -161,7 +177,7 @@ function createScreens(context) {
       + btn(footer ? '取消' : '关闭', 'close-modal') + (footer ? '<button class="btn primary" data-act="screen-save" ' + (modal.loading || modal.candidateBusy || state().writeBusy || !canSave(modal) || !dirty(modal) ? 'disabled' : '') + '>' + (state().writeBusy ? busy() + '保存中' : saveLabel) + '</button>' : '') + (drawer ? '</div>' : '') + '</footer></div></dialog>';
   function canSave(modal) {
     return {
-      'screen-rename': globalCan('departments.rename'), 'screen-role-new': globalCan('roles.create'),
+      'screen-rename': model().can('departments.rename'), 'screen-department-new': model().can('departments.create'), 'screen-role-new': globalCan('roles.create'),
       'screen-role-edit': globalCan('roles.patch'), 'screen-role-permissions': globalCan('roles.permissions.write') && !!modal.catalog?.length,
       'screen-permission': globalCan('permissions.patch'), 'screen-mapping': globalCan('permissions.apis.write') && globalCan('apis.list'),
     }[modal.kind] || false;
@@ -170,6 +186,7 @@ function createScreens(context) {
     if (!modal?.kind?.startsWith('screen-') || modal.loading) return false;
     if (modal.kind === 'screen-role-permissions' || modal.kind === 'screen-mapping') return modal.savedIds.length !== modal.draft.size || modal.savedIds.some(id => !modal.draft.has(id));
     if (modal.kind === 'screen-role-new') return !!(modal.values.name || modal.values.code);
+    if (modal.kind === 'screen-department-new') return !!modal.values.name;
     if (modal.kind === 'screen-rename') return modal.values.name !== modal.original.name;
     if (modal.kind === 'screen-role-edit') return modal.values.name !== modal.original.name;
     if (modal.kind === 'screen-permission') return ['parentId', 'type', 'enabled'].some(key => modal.values[key] !== modal.original[key]);
@@ -180,18 +197,26 @@ function createScreens(context) {
     return items.filter(item => item.parentId === parent).map(item => '<label class="permission-checkbox" style="padding-left:' + (14 + depth * 22) + 'px"><input type="checkbox" id="permission-check-' + item.id + '" data-permission-id="' + item.id + '" ' + (modal.draft.has(item.id) ? 'checked ' : '') + (!item.enabled || !globalCan('roles.permissions.write') ? 'disabled ' : '') + '><span class="grow"><strong>' + h(item.name) + '</strong><small>' + h(item.code) + '</small></span><span class="badge ' + (item.enabled ? 'gray' : 'amber') + '">' + (!item.enabled ? '已停用' : item.type === 'MENU' ? '菜单' : '按钮') + '</span></label>' + permissionCheckboxTree(modal, items, item.id, depth + 1)).join('');
   }
   function selectedTags(modal) {
-    return '<div class="selected-tags">' + ([...modal.draft].map(id => '<span class="badge blue">' + h(modal.labels.get(id)?.name || modal.labels.get(id)?.path || '项目 ' + id) + '<button data-act="screen-remove" data-id="' + id + '" aria-label="移除已选' + h(modal.labels.get(id)?.name || id) + '" ' + (!canSave(modal) ? 'disabled' : '') + '>' + icon('close') + '</button></span>').join('') || '<span class="hint">尚未选择</span>') + '</div>';
+    const ids = [...modal.draft].filter(id => modal.kind !== 'screen-role-permissions' || !modal.labels.has(id) || modal.labels.get(id).systemId === modal.systemId);
+    const visible = modal.expandedTags ? ids : ids.slice(0, 12);
+    return '<div class="selected-tags">' + (visible.map(id => '<span class="badge blue">' + h(modal.labels.get(id)?.name || modal.labels.get(id)?.path || '项目 ' + id) + '<button data-act="screen-remove" data-id="' + id + '" aria-label="移除已选' + h(modal.labels.get(id)?.name || id) + '" ' + (!canSave(modal) ? 'disabled' : '') + '>' + icon('close') + '</button></span>').join('') || '<span class="hint">当前系统尚未选择</span>') + '</div>'
+      + (ids.length > 12 ? '<button class="link-button" data-act="selected-expand">' + (modal.expandedTags ? '收起' : '展开全部' + ids.length + '项') + '</button>' : '');
   }
   function modal(modal) {
     if (!modal?.kind?.startsWith('screen-')) return '';
     if (modal.loading) return modalShell(modal, modal.title, loader(), { drawer: true });
+    if (modal.kind === 'screen-department-new') return modalShell(modal, '新增下级部门', field('部门名称', 'edit-name', modal.values.name, 'maxlength="100"')
+      + '<div class="field"><label for="department-parent">上级部门</label><select id="department-parent">' + modal.catalog.filter(item => item.canCreate).map(item => '<option value="' + item.id + '" ' + (item.id === modal.values.parentId ? 'selected' : '') + '>' + h(item.name) + ' · ID ' + item.id + '</option>').join('') + '</select></div>'
+      + '<div class="field"><label for="department-type">组织类型</label><select id="department-type">' + ['部门', '项目', '分公司'].map(type => '<option ' + (type === modal.values.type ? 'selected' : '') + '>' + type + '</option>').join('') + '</select></div><p class="hint">创建后不支持调整层级。新部门初始无人，不自动授予角色。</p>', { saveLabel: '创建部门' });
     if (modal.kind === 'screen-rename') return modalShell(modal, '修改部门名称', '<p>只更新名称，不改变层级、人员归属或授权范围。</p>' + field('部门名称', 'edit-name', modal.values.name, 'maxlength="100"') + '<p class="hint">上级部门：' + h(modal.parentName) + ' · ID ' + modal.original.id + '</p>');
     if (modal.kind === 'screen-role-new' || modal.kind === 'screen-role-edit') return modalShell(modal, modal.kind === 'screen-role-new' ? '新建角色' : '编辑角色', '<div class="form-stack">'
       + field('角色名称', 'edit-name', modal.values.name, 'maxlength="100"')
       + field('角色编码', 'edit-code', modal.values.code, (modal.kind === 'screen-role-edit' ? 'readonly ' : '') + 'maxlength="100"')
       + '<div class="readonly-note">' + icon('shield') + '<span>' + (modal.kind === 'screen-role-new' ? '新建角色初始无权限；默认仅系统管理员可授予。' : h(rankNames[modal.original.authorityLevel]) + ' · 改名不改变授予级别') + '</span></div><p class="hint">' + (modal.kind === 'screen-role-new' ? '创建后再显式配置权限，不自动继承其他角色。' : '角色名称会同步到全部已授予人员。编码不可修改。') + '</p></div>', { saveLabel: modal.kind === 'screen-role-new' ? '创建角色' : '保存更改' });
-    if (modal.kind === 'screen-role-permissions') return modalShell(modal, '配置角色权限', '<p class="hint">每个权限独立勾选。父菜单不会自动勾选子项，也不会替代子项API。</p><div class="section-title"><h3>已选直接权限 ' + modal.draft.size + '</h3></div>' + selectedTags(modal) + '<div class="divider"></div>'
-      + (modal.catalog.length ? '<div class="permission-checkbox-tree">' + permissionCheckboxTree(modal, modal.catalog) + '</div>' : '<p class="hint">当前无权限树查询能力，只能查看已授集合。</p>') + '<p class="hint">保存会影响全部持有该角色的人员。停用或其他系统项目须明确移除后再保存。</p>', { drawer: true });
+    if (modal.kind === 'screen-role-permissions') return modalShell(modal, '配置角色权限', '<div class="system-picker"><label for="role-permission-system">配置系统</label><select id="role-permission-system">' + modal.systems.map(item => '<option value="' + item.id + '" ' + (modal.systemId === item.id ? 'selected' : '') + '>' + h(item.name) + '</option>').join('') + '</select></div><p class="hint">切换系统保留全部选择。每个权限独立勾选，父菜单不自动包含子项。</p>'
+      + (modal.systemId !== 1 ? '<div class="reference-picker"><label for="reference-role">原表参考角色</label><select id="reference-role">' + ['系统管理员', '公司领导', '部门经理', '项目经理', '普通员工'].map((name, index) => '<option value="' + index + '" ' + (modal.referenceRole === index ? 'selected' : '') + '>' + name + '</option>').join('') + '</select><button class="btn" data-act="role-reference" ' + (!canSave(modal) || modal.candidateBusy ? 'disabled' : '') + '>应用到当前系统草稿</button></div><p class="hint">只替换当前系统，保存后生效。“全部”保留待细化标记，不推测API；成本管控第340行普通员工为空，不自动勾选。查看本人/编辑本人保持限定。模板不按职级继承。</p>' : '')
+      + '<div class="section-title"><h3>全部系统已选 ' + modal.draft.size + ' 项</h3><span class="hint">下方仅显示当前系统</span></div>' + selectedTags(modal) + '<div class="divider"></div>'
+      + (modal.catalog.length ? '<div class="permission-checkbox-tree">' + permissionCheckboxTree(modal, modal.catalog.filter(item => item.systemId === modal.systemId)) + '</div>' : '<p class="hint">当前无权限树查询能力，只能查看已授集合。</p>') + '<p class="hint">保存影响全部持有该角色的人员。停用项须明确移除，其他系统选择一并保留。</p>', { drawer: true });
     if (modal.kind === 'screen-permission') return modalShell(modal, '编辑权限属性', '<div class="form-stack">' + field('权限名称', 'permission-name', modal.original.name, 'readonly') + field('权限编码', 'permission-code', modal.original.code, 'readonly')
       + '<div class="field"><label for="permission-parent">上级权限</label><select id="permission-parent"><option value="">无上级</option>' + modal.catalog.filter(item => item.type === 'MENU' && item.id !== modal.original.id).map(item => '<option value="' + item.id + '" ' + (item.id === modal.values.parentId ? 'selected' : '') + '>' + h(item.name) + '</option>').join('') + '</select></div>'
       + '<div class="field"><label for="permission-type">权限类型</label><select id="permission-type"><option value="MENU" ' + (modal.values.type === 'MENU' ? 'selected' : '') + '>菜单</option><option value="BUTTON" ' + (modal.values.type === 'BUTTON' ? 'selected' : '') + '>按钮</option></select></div><label class="toggle-line"><span>启用该权限</span><input type="checkbox" id="permission-enabled" ' + (modal.values.enabled ? 'checked' : '') + '></label><p class="hint">按钮不能有子节点；父子同系统、无环。修改会影响全部引用。</p></div>');
@@ -218,14 +243,15 @@ function createScreens(context) {
     state().modal = modal; context.renderOverlays();
     try {
       const result = await context.request(() => {
-        if (kind === 'screen-role-permissions') return { current: model().rolePermissions(id), catalog: globalCan('permissions.tree') ? model().resources().permissions : [] };
-        if (kind === 'screen-mapping') return { current: model().permissionApis(id), candidates: globalCan('apis.list') ? model().apis({ page: 0, size: 6 }) : { items: [], total: 0 } };
+        if (kind === 'screen-role-permissions') { const catalog = globalCan('permissions.tree') ? model().permissionCatalog() : { systems: [], permissions: [] }; return { current: model().rolePermissions(id), catalog: catalog.permissions, systems: catalog.systems }; }
+        if (kind === 'screen-mapping') return { current: model().permissionApis(id), candidates: globalCan('apis.list') ? model().apis({ page: 0, size: 6, systemId: view('resources').systemId }) : { items: [], total: 0 } };
       });
       if (state().modal !== modal) return;
       const saved = kind === 'screen-role-permissions' ? result.current.permissions : result.current.apis;
       modal.targetName = kind === 'screen-role-permissions' ? result.current.role.name : result.current.permission.name;
       modal.savedIds = saved.map(item => item.id); modal.draft = new Set(modal.savedIds);
       modal.original = result.current; modal.catalog = result.catalog || [];
+      modal.systems = result.systems || []; modal.systemId = kind === 'screen-mapping' ? result.current.permission.systemId : 1; modal.referenceRole = 4;
       [...saved, ...(result.candidates?.items || []), ...modal.catalog].forEach(item => modal.labels.set(item.id, item));
       modal.candidates = result.candidates; modal.page = 0; modal.q = ''; modal.qDraft = '';
     } catch (error) {
@@ -239,7 +265,7 @@ function createScreens(context) {
     const sequence = modal.sequence = (modal.sequence || 0) + 1;
     modal.candidateBusy = true; modal.error = null; context.renderOverlays();
     try {
-      const result = await context.request(() => model().apis({ q: modal.q, page: modal.page, size: 6 }));
+      const result = await context.request(() => model().apis({ q: modal.q, page: modal.page, size: 6, systemId: modal.systemId }));
       if (state().modal === modal && sequence === modal.sequence) { modal.candidates = result; result.items.forEach(item => modal.labels.set(item.id, item)); }
     } catch (error) {
       if (error.name !== 'AbortError' && state().modal === modal && !context.handleSessionError(error)) modal.error = error;
@@ -248,6 +274,21 @@ function createScreens(context) {
   function write(operation, message, confirmed = false) {
     return context.writeOperation(operation, message, { confirmation: confirmed, refresh: () => load(state().route) });
   }
+  /** 只替换当前系统草稿，其他系统和未知已选项保留，直到显式保存。 */
+  async function applyReference() {
+    const modal = state().modal;
+    if (modal?.kind !== 'screen-role-permissions' || modal.systemId === 1 || !canSave(modal) || modal.candidateBusy) return;
+    const systemId = modal.systemId, roleIndex = modal.referenceRole;
+    modal.candidateBusy = true; modal.error = null; context.renderOverlays();
+    try {
+      const ids = await context.request(() => model().referencePermissions(systemId, roleIndex));
+      if (state().modal !== modal) return;
+      modal.draft = new Set([...modal.draft].filter(id => modal.labels.get(id)?.systemId !== systemId));
+      ids.filter(id => modal.labels.get(id)?.enabled).forEach(id => modal.draft.add(id));
+    } catch (error) {
+      if (error.name !== 'AbortError' && state().modal === modal && !context.handleSessionError(error)) modal.error = error;
+    } finally { if (state().modal === modal) { modal.candidateBusy = false; context.renderOverlays(); } }
+  }
   function saveModal(confirmed = false) {
     const modal = state().modal;
     if (!dirty(modal) || state().writeBusy || !canSave(modal)) return;
@@ -255,6 +296,7 @@ function createScreens(context) {
     const ids = modal.draft ? [...modal.draft] : null;
     const save = () => {
       if (modal.kind === 'screen-rename') return model().renameDepartment(modal.original.id, values.name);
+      if (modal.kind === 'screen-department-new') return model().createDepartment(values);
       if (modal.kind === 'screen-role-new') {
         const result = model().createRole(values);
         const current = view('roles'); current.q = result.code; current.qDraft = result.code; current.enabled = ''; current.page = 0;
@@ -279,8 +321,21 @@ function createScreens(context) {
       case 'screen-page': current.page = Number(button.dataset.page); load(); return true;
       case 'department-rename': {
         const item = current.data.find(item => item.id === id);
+        if (!item?.canRename) return true;
         state().modal = { kind: 'screen-rename', original: item, values: { name: item.name }, parentName: current.data.find(node => node.id === item.parentId)?.name || '无上级', targetName: item.name };
         context.renderOverlays(); return true;
+      }
+      case 'department-create': {
+        const item = current.data.find(item => item.id === id);
+        if (!item?.canCreate) return true;
+        state().modal = { kind: 'screen-department-new', catalog: current.data, values: { name: '', parentId: id, type: '部门' } };
+        context.renderOverlays(); return true;
+      }
+      case 'department-delete': {
+        const item = current.data.find(item => item.id === id);
+        if (!item?.canDelete) return true;
+        confirmScreen('删除这个空部门？', '仅删除当前空部门，不调整其他部门层级。删除后无法撤销，可重新新增。', () => write(() => model().deleteDepartment(id), '部门已删除', true), item.name, '确认删除', true);
+        return true;
       }
       case 'role-new': state().modal = { kind: 'screen-role-new', values: { name: '', code: '' } }; context.renderOverlays(); return true;
       case 'role-edit': {
@@ -294,6 +349,8 @@ function createScreens(context) {
         return true;
       }
       case 'role-permissions': openModal('screen-role-permissions', id); return true;
+      case 'role-reference': applyReference(); return true;
+      case 'selected-expand': state().modal.expandedTags = !state().modal.expandedTags; context.renderOverlays(); return true;
       case 'resource-mode': current.mode = button.dataset.mode; current.page = 0; load(); return true;
       case 'resource-select': current.selected = id; load(); return true;
       case 'permission-edit': {
@@ -326,6 +383,11 @@ function createScreens(context) {
     if (['edit-name', 'edit-code'].includes(element.id)) context.renderOverlays();
   }
   function change(element) {
+    if (element.id === 'department-parent' && state().modal?.kind === 'screen-department-new') state().modal.values.parentId = Number(element.value);
+    if (element.id === 'department-type' && state().modal?.kind === 'screen-department-new') state().modal.values.type = element.value;
+    if (element.id === 'resource-system') { const current = view('resources'); current.systemId = Number(element.value); current.selected = null; current.q = ''; current.qDraft = ''; current.page = 0; load(); }
+    if (element.id === 'role-permission-system') { state().modal.systemId = Number(element.value); state().modal.expandedTags = false; context.renderOverlays(); }
+    if (element.id === 'reference-role') state().modal.referenceRole = Number(element.value);
     if (element.id === 'screen-status') { const current = view(state().route); current.enabled = element.value; current.page = 0; load(); }
     if (element.id === 'mobile-navigation') context.navigate(element.value);
     if (element.dataset.permissionId && state().modal?.kind === 'screen-role-permissions') {

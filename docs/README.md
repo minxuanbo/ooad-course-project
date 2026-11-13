@@ -9,7 +9,7 @@
 | 3 | [数据库设计](database-design.md)、[物理模型](database/physical-model.md)、[Chen源码](database/chen-er-source.md) | 六实体联系、九核心表与三支撑表，保留原ER |
 | 4 | [后端设计](backend-design.md)、[当前实现图](design/README.md) | 17章总体架构、模块、双实现、事务与技术约束；图仅表示当前结构化代码 |
 | 代码 | [代码与测试归类](code-organization.md)、[本地后端说明](../backend/README.md) | 实际结构化目录、共享用例、测试需求编号及本地构建 |
-| 5 | [前端设计](frontend-design.md)、[新原型](../prototype/v2/index.html)、[评审记录](prototype-review.md)、[历史参考](../prototype/README.md) | 完整RBAC目标；阶段3先审登录/外壳/部门人员，满意后才改正式前端 |
+| 5 | [前端设计](frontend-design.md)、[新原型](../prototype/v2/index.html)、[评审记录](prototype-review.md)、[历史参考](../prototype/README.md) | 完整RBAC目标；第三轮含部门增删改名、同级保护及跨系统矩阵/配置，满意后才改正式前端 |
 | 6 | [API入口](../api/README.md)、[OpenAPI](../api/openapi.yaml)、[API业务约束](api-contract.md)、[页面对照](api-map.md) | Schema主规范与24项操作、授权/范围/事务语义 |
 | 7 | [初始化](initialization.md)、[部署说明](../deploy/README.md) | 数据转换、五角色、依赖与唯一运行命令 |
 | 8 | [测试验收](testing-acceptance.md)、[结构化归类验收](acceptance/structured-organization.md)、[T13历史结果](acceptance/T13.md) | 需求验证矩阵、隔离、证据及实际限制 |

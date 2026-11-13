@@ -44,7 +44,7 @@ test('R11/R23 即使实际API相同也须比较完整Permission集合', () => {
   login(model, 'SG000001');
   assert.ok(!model.candidateRoles(8, { size: 100 }).items.some(role => role.id === 3));
 });
-test('R24 部门改名仅管理员可做，名称更新不改变归属、职位或角色', () => {
+test('R24 部门改名保留归属、职位或角色，根直属领导可维护下级', () => {
   const model = createDemoModel();
   login(model);
   const before = model.currentRoles(5);
@@ -54,7 +54,8 @@ test('R24 部门改名仅管理员可做，名称更新不改变归属、职位�
   assert.equal(model.currentRoles(5).position, before.position);
   assert.deepEqual(model.currentRoles(5).roles, before.roles);
   login(model, 'SG000005');
-  assert.throws(() => model.renameDepartment(3, '新名称'), code('PERMISSION_DENIED'));
+  assert.equal(model.renameDepartment(3, '新名称').name, '新名称');
+  assert.throws(() => model.renameDepartment(1, '越权名称'), code('MANAGEMENT_SCOPE_DENIED'));
 });
 test('R24 部门改名校验空值、同级重名；根改名不改变可信根资格', () => {
   const model = createDemoModel();
@@ -64,15 +65,14 @@ test('R24 部门改名校验空值、同级重名；根改名不改变可信根�
   model.renameDepartment(1, '市政总公司');
   assert.equal(model.canGlobal('roles.list'), true);
 });
-test('R24 根直属领导即使误授部门改名API，也不能成为部门维护管理员', () => {
+test('R24 局部部门经理可改严格下级，不可修改本人、上级或平级', () => {
   const model = createDemoModel();
   login(model);
-  const leader = model.rolePermissions(2).permissions.map(item => item.id);
-  model.saveRolePermissions(2, [...leader, 21]);
-  login(model, 'SG000005');
+  login(model, 'SG000002');
   assert.equal(model.can('departments.rename'), true);
   assert.equal(model.canGlobal('departments.rename'), false);
-  assert.throws(() => model.renameDepartment(3, '越权名称'), code('MANAGEMENT_SCOPE_DENIED'));
+  for (const id of [1, 2, 3, 10, 12]) assert.throws(() => model.renameDepartment(id, '越权名称'), code('MANAGEMENT_SCOPE_DENIED'));
+  assert.equal(model.renameDepartment(5, '新项目部').name, '新项目部');
 });
 test('R13 新建空权限角色、编码唯一、修改名称不允许改编码', () => {
   const model = createDemoModel();

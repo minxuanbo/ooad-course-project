@@ -3,7 +3,7 @@
 'use strict';
 const { createCatalog } = typeof module !== 'undefined' && module.exports ? require('./catalog.js') : globalThis.MunicipalCatalog;
 /** 仅用于原型的内存业务模型；数据全部虚构，不调用后端或持久化浏览器存储。 */
-const PEOPLE = ['tree', 'users', 'currentRoles', 'candidates', 'assign', 'disable', 'move'];
+const PEOPLE = ['tree', 'users', 'currentRoles', 'candidates', 'assign', 'disable', 'move', 'departments.list', 'departments.rename', 'departments.create', 'departments.delete'];
 /** 与现行17项维护恢复操作对应；日志、停用和调动不属于完整K。 */
 const MAINTENANCE = [
   'tree', 'users', 'currentRoles', 'candidates', 'assign',
@@ -32,7 +32,7 @@ class DemoError extends Error {
 const fail = (status, code, message) => { throw new DemoError(status, code, message); };
 
 function createDemoModel() {
-  const { permissions: permissionCatalog, apis: apiCatalog, systems } = createCatalog();
+  const { permissions: permissionCatalog, apis: apiCatalog, systems, applicationSource } = createCatalog();
   const departments = [
     { id: 1, parentId: null, name: '总公司', type: '公司' },
     { id: 2, parentId: 1, name: '综合管理部', type: '部门' },
@@ -51,7 +51,9 @@ function createDemoModel() {
     { id: 23, parentId: 22, name: '新城项目部', type: '项目' },
   ];
   const roles = [
-    { id: 1, name: '系统管理员', code: 'SYSTEM_ADMIN', enabled: true, permissions: [...MAINTENANCE, 'disable', 'move', 'logs', 'departments.rename'], description: '完整系统维护与日志查询' },
+    { id: 1, name: '系统管理员', code: 'SYSTEM_ADMIN', enabled: true, permissions: [...MAINTENANCE, 'disable', 'move', 'logs',
+      'departments.rename', 'departments.list', 'departments.create', 'departments.delete',
+      ...permissionCatalog.filter(item => item.systemId !== 1).map(item => item.key)], description: '完整系统维护与日志查询' },
     { id: 2, name: '公司领导', code: 'COMPANY_LEADER', enabled: true, permissions: [...PEOPLE], description: '本人部门及下级的人员管理' },
     { id: 3, name: '部门经理', code: 'DEPARTMENT_MANAGER', enabled: true, permissions: [...PEOPLE], description: '本人部门及下级的人员管理' },
     { id: 4, name: '项目经理', code: 'PROJECT_MANAGER', enabled: true, permissions: [...PEOPLE], description: '本人部门及下级的人员管理' },
@@ -66,7 +68,8 @@ function createDemoModel() {
     description: index % 3 === 0 ? '查看范围内组织与人员，不含写操作' : '演示候选分页，无本管理端操作权限',
   }));
   roles.push({ id: 90, name: '历史项目审阅', code: 'LEGACY_REVIEW', enabled: false, permissions: ['users'], description: '已停用，仅在当前已授角色中保留' });
-  roles.push({ id: 91, name: '外系统业务审核', code: 'EXTERNAL_REVIEW', enabled: true, permissions: ['external.review'], description: '含外系统权限，不属于本管理端可授予集合' });
+  roles.push({ id: 91, name: 'OA业务查看示例', code: 'OA_VIEW_SAMPLE', enabled: true,
+    permissions: [permissionCatalog.find(item => item.systemId === 2 && item.type === 'BUTTON').key], description: '业务权限不等于RBAC管理端准入；默认仅管理员可授' });
   roles.forEach(item => {
     item.authorityLevel = item.id <= 5 ? 6 - item.id : 0;
     item.requiredGrantLevel = item.id <= 5 ? 6 - item.id : 5;
@@ -95,9 +98,11 @@ function createDemoModel() {
     });
   }
   const positions = ['技术员', '工程师', '资料员', '预算员', '安全员', '施工员', '会计', '综合办事员'];
-  const principalPositions = { 1: '系统维护岗', 2: '分公司经理', 3: '部长', 4: '项目经理', 5: '工程师', 6: '副总经理', 7: '资料员', 8: '副部长' };
+  Object.assign(users.find(person => person.id === 9), { name: '李沐晨', departmentId: 10, roleIds: [2] });
+  const principalPositions = { 1: '系统维护岗', 2: '分公司经理', 3: '部长', 4: '项目经理', 5: '工程师', 6: '副总经理', 7: '资料员', 8: '副部长', 9: '分公司副经理' };
   users.forEach(person => { person.position = principalPositions[person.id] || positions[(person.id - 9) % positions.length]; });
   let currentId = null;
+  let nextDepartmentId = Math.max(...departments.map(item => item.id)) + 1;
   const department = id => departments.find(item => item.id === Number(id));
   const user = id => users.find(item => item.id === Number(id));
   const role = id => roles.find(item => item.id === Number(id));
@@ -109,10 +114,13 @@ function createDemoModel() {
     }
     return selected;
   };
-  const permission = key => permissionCatalog.find(item => item.key === key || item.id === key);
+  const permissionIndex = new Map(permissionCatalog.flatMap(item => [[item.key, item], [item.id, item]]));
+  const apiIndex = new Map(apiCatalog.map(item => [item.id, item]));
+  const systemIndex = new Map(systems.map(item => [item.id, item]));
+  const permission = key => permissionIndex.get(key);
   const validPermission = key => {
     const item = permission(key);
-    return item?.enabled && systems.find(system => system.id === item.systemId)?.enabled;
+    return item?.enabled && systemIndex.get(item.systemId)?.enabled;
   };
   const effectivePermissionKeys = (person, localOnly = false) => new Set(person.roleIds.flatMap(id => {
     const item = role(id);
@@ -120,10 +128,16 @@ function createDemoModel() {
   }));
   const effective = person => new Set([...effectivePermissionKeys(person)].flatMap(key => {
     const item = permission(key);
-    return item.apiIds.map(id => apiCatalog.find(api => api.id === id)).filter(api => api?.enabled && api.systemId === item.systemId).map(api => api.key);
+    return item.apiIds.map(id => apiIndex.get(id)).filter(api => api?.enabled && api.systemId === item.systemId).map(api => api.key);
   }));
   const authority = person => Math.max(0, ...person.roleIds.map(id => role(id)?.enabled ? role(id).authorityLevel : 0));
-  const complete = person => person.enabled && person.departmentId === 1 && authority(person) === 5 && MAINTENANCE.every(key => effective(person).has(key));
+  const protectionLevel = person => Math.max(0, ...person.roleIds.map(id => role(id)?.enabled ? (role(id).authorityLevel || role(id).requiredGrantLevel) : 0));
+  const systemAdministrator = person => person.departmentId === 1 && authority(person) === 5;
+  const complete = person => {
+    if (!person.enabled || person.departmentId !== 1 || authority(person) !== 5) return false;
+    const keys = effective(person);
+    return MAINTENANCE.every(key => keys.has(key));
+  };
   const requireIdentity = () => {
     const actor = user(currentId);
     if (!actor?.enabled) fail(401, 'SESSION_INVALID', '登录身份已失效，请重新登录');
@@ -142,14 +156,16 @@ function createDemoModel() {
       fail(404, 'RESOURCE_NOT_FOUND', '该人员不存在，请刷新列表');
     }
     if (!descendants(actor.departmentId).has(selected.departmentId)) fail(403, 'MANAGEMENT_SCOPE_DENIED', '该人员不在你的管理范围内');
-    if (write && actor.departmentId !== 1 && (actor.id === selected.id || complete(selected))) {
-      fail(403, 'MANAGEMENT_SCOPE_DENIED', '不能调整本人的授权或部门，也不能修改有效全局管理员');
+    if (write && !systemAdministrator(actor) && (actor.id === selected.id || protectionLevel(selected) >= authority(actor) || complete(selected))) {
+      fail(403, 'MANAGEMENT_SCOPE_DENIED', '仅能修改级别严格低于本人的人员；本人、同级和上级只读');
     }
     return { actor, selected };
   };
-  const candidates = actor => roles.filter(item => item.enabled
-    && item.requiredGrantLevel <= authority(actor)
-    && item.permissions.filter(validPermission).every(key => effectivePermissionKeys(actor, true).has(key)));
+  const candidates = actor => {
+    const keys = effectivePermissionKeys(actor), level = authority(actor);
+    return roles.filter(item => item.enabled && item.requiredGrantLevel <= level
+      && item.permissions.filter(validPermission).every(key => keys.has(key)));
+  };
   const preserveMaintenance = (selected, change) => {
     const previous = structuredClone(selected);
     change();
@@ -165,8 +181,22 @@ function createDemoModel() {
   const globalAuthorize = key => {
     const actor = authorize(key);
     if (actor.departmentId !== 1) fail(403, 'MANAGEMENT_SCOPE_DENIED', '该操作仅对全公司维护范围开放');
-    if (key === 'departments.rename' && authority(actor) !== 5) fail(403, 'MANAGEMENT_SCOPE_DENIED', '部门名称仅由系统管理员维护');
     return actor;
+  };
+  const departmentAccess = (actor, id, key, parentSelection = false) => {
+    if (!effective(actor).has(key) || authority(actor) < 2) return false;
+    const node = department(id);
+    if (!node || !descendants(actor.departmentId).has(node.id)) return false;
+    if (parentSelection) return true;
+    if (key === 'departments.delete' && node.id === 1) return false;
+    return systemAdministrator(actor) || node.id !== actor.departmentId;
+  };
+  const departmentTarget = (id, key, parentSelection = false) => {
+    const actor = authorize(key);
+    const selected = department(id);
+    if (!selected) fail(404, 'RESOURCE_NOT_FOUND', '该部门不存在');
+    if (!departmentAccess(actor, id, key, parentSelection)) fail(403, 'MANAGEMENT_SCOPE_DENIED', '只能维护本人部门的下级，不能修改本人部门、上级或平级');
+    return selected;
   };
   const named = (value, label) => {
     const text = String(value ?? '').trim();
@@ -182,7 +212,7 @@ function createDemoModel() {
   const localPermission = id => {
     const item = permission(Number(id));
     if (!item) fail(404, 'RESOURCE_NOT_FOUND', '该权限不存在');
-    if (item.systemId !== 1) fail(403, 'MANAGEMENT_SCOPE_DENIED', '只能维护本系统资源');
+    if (!systems.some(system => system.id === item.systemId)) fail(403, 'MANAGEMENT_SCOPE_DENIED', '只能维护已登记系统的资源');
     return item;
   };
   const rolePermissionResult = selected => ({ role: structuredClone(selected), permissions: structuredClone(selected.permissions.map(permission).filter(Boolean)) });
@@ -214,7 +244,13 @@ function createDemoModel() {
     logout() { currentId = null; },
     me() { return publicUser(requireIdentity()); },
     can(key) { return currentId !== null && user(currentId)?.enabled && effective(user(currentId)).has(key); },
-    canGlobal(key) { return currentId !== null && user(currentId)?.enabled && user(currentId).departmentId === 1 && effective(user(currentId)).has(key) && (key !== 'departments.rename' || authority(user(currentId)) === 5); },
+    canGlobal(key) { return currentId !== null && user(currentId)?.enabled && user(currentId).departmentId === 1 && effective(user(currentId)).has(key); },
+    canManageUser(id, key) {
+      const actor = user(currentId), selected = user(id);
+      return !!(actor?.enabled && selected && effective(actor).has(key) && descendants(actor.departmentId).has(selected.departmentId)
+        && (systemAdministrator(actor) || (selected.id !== actor.id && protectionLevel(selected) < authority(actor) && !complete(selected))));
+    },
+    canManageDepartments() { const actor = user(currentId); return !!(actor?.enabled && authority(actor) >= 2 && effective(actor).has('departments.list')); },
     department(id) { const item = department(id); return item ? { ...item } : null; },
     tree() {
       const actor = authorize('tree');
@@ -289,18 +325,41 @@ function createDemoModel() {
         scope: { ...department(actor.departmentId) }, latestLogs: model.canGlobal('logs') ? structuredClone(logs.slice(-4).reverse()) : null };
     },
     departments() {
-      globalAuthorize('departments.rename');
-      return departments.map(item => ({ ...item, direct: users.filter(person => person.departmentId === item.id).length,
-        total: users.filter(person => descendants(item.id).has(person.departmentId)).length }));
+      const actor = authorize('departments.list');
+      if (authority(actor) < 2) fail(403, 'MANAGEMENT_SCOPE_DENIED', '当前角色没有部门维护级别');
+      const visible = descendants(actor.departmentId);
+      return departments.filter(item => visible.has(item.id)).map(item => {
+        const direct = users.filter(person => person.departmentId === item.id).length;
+        const children = departments.filter(node => node.parentId === item.id).length;
+        return { ...item, parentId: visible.has(item.parentId) ? item.parentId : null, direct, children, isOwn: item.id === actor.departmentId,
+          total: users.filter(person => descendants(item.id).has(person.departmentId)).length,
+          canRename: departmentAccess(actor, item.id, 'departments.rename'), canCreate: departmentAccess(actor, item.id, 'departments.create', true),
+          canDelete: departmentAccess(actor, item.id, 'departments.delete') && !direct && !children,
+          deleteReason: item.id === 1 ? '共同根不能删除' : !departmentAccess(actor, item.id, 'departments.delete') ? '本人、上级或平级部门不可删除' : direct || children ? '有人员或下级，不能删除' : '' };
+      });
     },
     renameDepartment(id, name) {
-      globalAuthorize('departments.rename');
-      const selected = department(Number(id));
-      if (!selected) fail(404, 'RESOURCE_NOT_FOUND', '该部门不存在');
+      const selected = departmentTarget(Number(id), 'departments.rename');
       const value = named(name, '部门名称');
       if (departments.some(item => item.id !== selected.id && item.parentId === selected.parentId && item.name === value)) fail(409, 'DATA_CONFLICT', '同一上级部门下已有该名称');
       selected.name = value;
       return { ...selected };
+    },
+    createDepartment(command) {
+      const parent = departmentTarget(Number(command.parentId), 'departments.create', true);
+      const name = named(command.name, '部门名称');
+      const type = command.type || '部门';
+      if (!['部门', '项目', '分公司'].includes(type)) fail(400, 'INVALID_ARGUMENT', '组织类型无效');
+      if (departments.some(item => item.parentId === parent.id && item.name === name)) fail(409, 'DATA_CONFLICT', '同一上级部门下已有该名称');
+      const selected = { id: nextDepartmentId++, parentId: parent.id, name, type };
+      departments.push(selected);
+      return { ...selected };
+    },
+    deleteDepartment(id) {
+      const selected = departmentTarget(Number(id), 'departments.delete');
+      if (users.some(person => person.departmentId === selected.id) || departments.some(item => item.parentId === selected.id)) fail(409, 'DEPARTMENT_NOT_EMPTY', '部门仍有人员或下级，请先处理关联后再删除');
+      departments.splice(departments.indexOf(selected), 1);
+      return { id: selected.id, name: selected.name };
     },
     roles(query = {}) {
       globalAuthorize('roles.list');
@@ -338,18 +397,30 @@ function createDemoModel() {
     saveRolePermissions(id, ids) {
       globalAuthorize('roles.permissions.write');
       const selected = requireRole(id);
-      if (!Array.isArray(ids) || new Set(ids).size !== ids.length || ids.some(value => !permission(value) || permission(value).systemId !== 1 || !permission(value).enabled)) fail(400, 'INVALID_ARGUMENT', '请选择本系统已启用的权限，不能包含重复或未知项目');
+      if (!Array.isArray(ids) || new Set(ids).size !== ids.length || ids.some(value => !permission(value) || !systems.some(system => system.id === permission(value).systemId) || !permission(value).enabled)) fail(400, 'INVALID_ARGUMENT', '请选择已登记系统的启用权限，不能包含重复或未知项目');
       preserveMaintenance(selected, () => { selected.permissions = ids.map(value => permission(value).key); });
       return rolePermissionResult(selected);
     },
-    resources() {
+    resources({ systemId = 1 } = {}) {
       globalAuthorize('permissions.tree');
-      return { systems: structuredClone(systems.filter(item => item.id === 1)), permissions: structuredClone(permissionCatalog.filter(item => item.systemId === 1)) };
+      if (!systems.some(item => item.id === Number(systemId))) fail(403, 'MANAGEMENT_SCOPE_DENIED', '该业务系统未登记');
+      return { systems: structuredClone(systems), permissions: structuredClone(permissionCatalog.filter(item => item.systemId === Number(systemId))),
+        matrix: structuredClone(applicationSource.features.filter(item => item.systemId === Number(systemId))),
+        roleNames: [...applicationSource.roleNames], source: { file: applicationSource.sourceFile, sha256: applicationSource.sourceSha256, missingRights: structuredClone(applicationSource.missingRights), normalizations: structuredClone(applicationSource.normalizations) } };
+    },
+    permissionCatalog() {
+      globalAuthorize('permissions.tree');
+      return { systems: structuredClone(systems), permissions: structuredClone(permissionCatalog) };
+    },
+    referencePermissions(systemId, roleIndex) {
+      globalAuthorize('permissions.tree');
+      if (!Number.isInteger(roleIndex) || roleIndex < 0 || roleIndex > 4) fail(400, 'INVALID_ARGUMENT', '请选择有效参考角色');
+      return permissionCatalog.filter(item => item.systemId === Number(systemId) && item.sourceKind === 'operation' && item.referenceRoleIndices.includes(roleIndex)).map(item => item.id);
     },
     apis(query = {}) {
       globalAuthorize('apis.list');
       const q = String(query.q || '').trim().toLowerCase();
-      return paged(apiCatalog.filter(item => item.systemId === 1 && [item.method, item.path].some(value => value.toLowerCase().includes(q))
+      return paged(apiCatalog.filter(item => item.systemId === Number(query.systemId || 1) && [item.method, item.path].some(value => value.toLowerCase().includes(q))
         && (query.enabled === '' || query.enabled === undefined || item.enabled === (query.enabled === 'true'))), query);
     },
     patchPermission(id, command) {
@@ -372,7 +443,7 @@ function createDemoModel() {
       globalAuthorize('apis.patch');
       const selected = apiCatalog.find(item => item.id === Number(id));
       if (!selected) fail(404, 'RESOURCE_NOT_FOUND', '该API资源不存在');
-      if (selected.systemId !== 1) fail(403, 'MANAGEMENT_SCOPE_DENIED', '只能维护本系统API');
+      if (!systems.some(item => item.id === selected.systemId)) fail(403, 'MANAGEMENT_SCOPE_DENIED', '该API所属系统未登记');
       if (typeof enabled !== 'boolean') fail(400, 'INVALID_ARGUMENT', 'API状态无效');
       preserveMaintenance(selected, () => { selected.enabled = enabled; });
       return { ...selected };
@@ -420,9 +491,9 @@ function createDemoModel() {
   /** 每个受控模拟方法记录一个鉴权事件；业务失败与鉴权失败分别记录。 */
   const audited = {
     tree: 'tree', list: 'users', currentRoles: 'currentRoles', candidateRoles: 'candidates', assign: 'assign', disable: 'disable', move: 'move',
-    departments: 'departments.rename', renameDepartment: 'departments.rename',
+    departments: 'departments.list', renameDepartment: 'departments.rename', createDepartment: 'departments.create', deleteDepartment: 'departments.delete',
     roles: 'roles.list', createRole: 'roles.create', patchRole: 'roles.patch', rolePermissions: 'roles.permissions.read', saveRolePermissions: 'roles.permissions.write',
-    resources: 'permissions.tree', apis: 'apis.list', patchPermission: 'permissions.patch', patchApi: 'apis.patch',
+    resources: 'permissions.tree', permissionCatalog: 'permissions.tree', referencePermissions: 'permissions.tree', apis: 'apis.list', patchPermission: 'permissions.patch', patchApi: 'apis.patch',
     permissionApis: 'permissions.apis.read', savePermissionApis: 'permissions.apis.write', logs: 'logs',
   };
   let auditDepth = 0;

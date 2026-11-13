@@ -87,11 +87,11 @@ test('R12 调动校验双范围，保留用户身份与全部角色', () => {
   assert.equal(after.departmentId, 6);
   assert.deepEqual(after.roles, before.roles);
 });
-test('R12 根直属领导调动本人后，应以新范围和新可见根继续查询', () => {
+test('R12 管理员调动根直属领导后，该领导按新范围继续查询', () => {
   const model = createDemoModel();
-  login(model, 'SG000005');
-  assert.equal(model.me().departmentId, 1);
+  login(model);
   model.move(6, 3);
+  login(model, 'SG000005');
   assert.equal(model.me().departmentId, 3);
   assert.equal(model.tree().find(item => item.id === 3).parentId, null);
   assert.throws(() => model.list({ departmentId: 1 }), errorCode('MANAGEMENT_SCOPE_DENIED'));
