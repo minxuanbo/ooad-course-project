@@ -2,7 +2,7 @@
 
 现行资料从[文档导航](docs/README.md)进入，业务需求以老师说明、原始资料和用户确认形成的[需求说明](docs/requirements.md)为准；老师Gitee项目用于文档与架构参考。HTTP字段主规范为api/openapi.yaml，跨字段、授权、范围与事务语义见docs/api-contract.md。
 
-2026-11-13用户已审核并授权合入文档PR #29；当前授权进入结构化代码/测试归类，确定共享API、用例及基础设施边界，修复格式、CloneFactory和职责，并同步文档。使用独立分支交付，不自动合并或推进新前端原型、正式前端、DDD或T14/T15。用户补充部署先不处理，待增加服务器后确定新方案。T13已完成，记录见docs/acceptance/T13.md；旧“T13后停止”是当时边界，不代替最新[开发计划](docs/development-plan.md)。
+2026-11-13用户已审核并授权合入文档PR #29和结构化整理PR #30；当前授权进入阶段3新交互原型。用户确认浅色蓝色企业后台、左侧导航/顶部身份栏、可重置模拟数据，先做登录/外壳/部门人员完整流程，要求直接双击HTML离线运行。按[评审记录](docs/prototype-review.md)在独立分支迭代，用户明确满意后才改造正式前端；不自动合并、启动DDD/T14/T15或调整服务器部署。T13历史记录见docs/acceptance/T13.md，后续边界沿[开发计划](docs/development-plan.md)。
 
 当前结构化代码归于backend/src/main/java/com/municipal/rbaccore/service/structured，共享契约为service/port，尚无DDD代码或策略开关；设计必须区分目标和现状。完整前端属于设计范围，当前原型只是参考，不冒称新原型已获批。
 
