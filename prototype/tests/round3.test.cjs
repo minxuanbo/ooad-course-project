@@ -170,6 +170,37 @@ function screensHarness() {
 }
 const settled = () => new Promise(resolve => setImmediate(resolve));
 
+test('R16 日志页面重新查询只纳入一条前次查询事件，不附带部门树读取', async () => {
+  const { screens, state, model } = screensHarness();
+  state.tree = model.tree();
+  const cachedTree = state.tree;
+  state.route = 'logs';
+  await screens.load();
+  const first = state.views.logs.data;
+  screens.change({ id: 'log-limit', value: '6', dataset: {} });
+  screens.submit('logs-filter');
+  await settled();
+  const second = state.views.logs.data;
+  assert.equal(second.total, first.total + 1);
+  assert.deepEqual(second.items.filter(item => item.id > first.snapshotId).map(item => item.requestPath), ['/api/authorization-logs']);
+  assert.equal(state.tree, cachedTree);
+  await screens.load('logs', { more: true });
+  assert.equal(state.views.logs.data.total, second.total);
+  assert.equal(state.views.logs.data.snapshotId, second.snapshotId);
+  assert.equal(state.views.logs.data.items.length, 12);
+});
+
+test('R16 日志继续加载仍实时检查日志权限，不依赖部门树或缓存准入', async () => {
+  const { screens, state, model } = screensHarness();
+  state.route = 'logs';
+  await screens.load();
+  const previous = state.views.logs.data;
+  model.saveRolePermissions(1, model.rolePermissions(1).permissions.filter(item => item.key !== 'logs').map(item => item.id));
+  await screens.load('logs', { more: true });
+  assert.equal(state.views.logs.error.code, 'PERMISSION_DENIED');
+  assert.equal(state.views.logs.data, previous);
+});
+
 test('R28 工作区仅正常选权，跨系统切换保留草稿并整体保存', async () => {
   const { screens, state, model } = screensHarness();
   const role = model.createRole({ name: '跨系统草稿', code: 'CROSS_SYSTEM_DRAFT' });

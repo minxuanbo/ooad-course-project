@@ -148,7 +148,8 @@ function createScreens(context) {
       if (more && !frozenLogQuery) throw new DemoError(400, 'INVALID_CURSOR', '请先重新查询');
       const result = await context.request(() => {
         const session = model().me();
-        const tree = model().can('tree') ? model().tree() : [];
+        // 日志页不使用部门树；进入人员页时由其自身重读，日志查询不附带无关受控请求。
+        const tree = pageName === 'logs' ? null : model().can('tree') ? model().tree() : [];
         let data;
         if (pageName === 'overview') data = model().overview();
         if (pageName === 'departments') data = model().departments();
@@ -166,7 +167,8 @@ function createScreens(context) {
       current.data = more ? { ...result.data, items: [...current.data.items, ...result.data.items] } : result.data;
       if (pageName === 'logs' && !more) { current.snapshotQuery = frozenLogQuery; current.filtersDirty = false; }
       if (pageName === 'resources') current.selected = result.data.selected;
-      state().tree = result.tree; state().session = result.session;
+      if (result.tree !== null) state().tree = result.tree;
+      state().session = result.session;
     } catch (error) {
       if (error.name === 'AbortError' || epoch !== state().epoch || sequence !== current.sequence || context.handleSessionError(error)) return;
       current.error = error;
