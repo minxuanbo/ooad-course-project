@@ -31,7 +31,7 @@ public class StructuredDepartmentScopeService {
             .orElseThrow(BusinessException::scopeDenied);
     return source.getDepartment().getParent() == null
         && source.getDepartment().getId().equals(actor.departmentId())
-        && departments.subtreeIds(actor.departmentId()).size() == departments.count();
+        && departments.subtreeIds(actor.departmentId()).size() == departments.countByDeletedFalse();
   }
 
   /** 只有T03来源映射可指定共同根；后续写票使用同一根行作为稳定锁点。 */

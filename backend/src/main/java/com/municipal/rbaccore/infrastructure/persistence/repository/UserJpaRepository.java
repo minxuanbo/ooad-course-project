@@ -14,6 +14,23 @@ import org.springframework.data.jpa.repository.Query;
 public interface UserJpaRepository
     extends JpaRepository<UserEntity, Long>, JpaSpecificationExecutor<UserEntity> {
 
+  /** 范围内启用人员聚合，不载入人员实体。 */
+  long countByDepartmentIdInAndEnabledTrue(List<Long> ids);
+
+  /** 部门删除需要同时包含启用和停用人员。 */
+  boolean existsByDepartmentId(Long id);
+
+  /** 范围内按部门聚合全部人员，不在浏览器或Service下载万人后统计。 */
+  @Query(
+      "select u.department.id,count(u) from UserEntity u where u.department.id in :ids group by"
+          + " u.department.id")
+  List<Object[]> departmentCounts(List<Long> ids);
+
+  /** 一次读取当前页的角色摘要，避免逐人员加载角色造成N+1。 */
+  @EntityGraph(attributePaths = "roles")
+  @Query("select distinct u from UserEntity u where u.id in :ids")
+  List<UserEntity> withRoles(List<Long> ids);
+
   /** 数据库完成范围、搜索、计数和分页，并在事务内加载输出所需部门。 */
   @Override
   @EntityGraph(attributePaths = "department")

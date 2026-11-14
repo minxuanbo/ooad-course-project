@@ -12,4 +12,10 @@ public class DepartmentResult {
   private Long id;
   private Long parentId;
   private String name;
+  private com.municipal.rbaccore.service.port.department.DepartmentType type;
+  private long directUsers;
+  private long totalUsers;
+  private Boolean canCreate;
+  private Boolean canEdit;
+  private Boolean canDelete;
 }

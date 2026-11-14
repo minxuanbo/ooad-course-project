@@ -15,6 +15,12 @@ public class UserVO {
   private Long id;
   private String username;
   private String name;
+  private String position;
+  private Boolean writable;
+
+  @CopyFrom.Exclude(UserResult.class)
+  private java.util.List<com.municipal.rbaccore.api.role.vo.RoleVO> roles;
+
   private Long departmentId;
   private String departmentName;
   private boolean enabled;

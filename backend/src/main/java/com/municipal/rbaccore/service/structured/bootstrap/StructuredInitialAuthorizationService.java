@@ -111,9 +111,7 @@ public class StructuredInitialAuthorizationService implements AuthorizationBoots
   /** 核对原件摘要和源行；来源支撑记录损坏不能据其推导授权。 */
   private void validateSources(RoleBootstrapPlan plan) {
     List<ImportSourceEntity> records = sources.findAll();
-    if (records.size() != 10112
-        || departments.count() != 110
-        || users.countBinaryLoginColumns() != 2) {
+    if (records.size() != 10112 || users.countBinaryLoginColumns() != 2) {
       throw conflict("T03完整导入或账号比较规则尚未就绪");
     }
     Map<String, ImportSourceEntity> indexed =
@@ -152,7 +150,8 @@ public class StructuredInitialAuthorizationService implements AuthorizationBoots
     }
     ImportSourceEntity root = rootSource();
     if (root.getDepartment().getParent() != null
-        || departments.subtreeIds(root.getDepartment().getId()).size() != departments.count()) {
+        || departments.subtreeIds(root.getDepartment().getId()).size()
+            != departments.countByDeletedFalse()) {
       throw conflict("共同根没有覆盖全部目标组织");
     }
     adminSource();
@@ -212,6 +211,7 @@ public class StructuredInitialAuthorizationService implements AuthorizationBoots
     Map<InitialRole, RoleEntity> initialRoles = new EnumMap<>(InitialRole.class);
     for (InitialRole initial : InitialRole.values()) {
       RoleEntity role = new RoleEntity(initial.getCode(), initial.getName());
+      role.setManagementLevel(initial.getManagementLevel());
       if (initial != InitialRole.EMPLOYEE) {
         role.grantPermission(workspace);
         resourcePermissions.forEach(

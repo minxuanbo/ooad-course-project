@@ -8,11 +8,12 @@
 | 2 | [领域模型](domain-model.md) | 统一语言、核心不变量、目标聚合/行为/策略 |
 | 3 | [数据库设计](database-design.md)、[物理模型](database/physical-model.md)、[Chen源码](database/chen-er-source.md) | 六实体联系、九核心表与三支撑表，保留原ER |
 | 4 | [后端设计](backend-design.md)、[当前实现图](design/README.md) | 17章总体架构、模块、双实现、事务与技术约束；图仅表示当前结构化代码 |
+| 复现 | [组员复现](reproduction.md)、[DDD隔离边界](ddd-boundary.md)、[最终一致性核对](acceptance/final-alignment.md) | 正确分支、全新库、依赖/口令/命令、默认端口与共享边界 |
 | 代码 | [代码与测试归类](code-organization.md)、[本地后端说明](../backend/README.md) | 实际结构化目录、共享用例、测试需求编号及本地构建 |
-| 5 | [前端设计](frontend-design.md)、[新原型](../prototype/index.html)、[评审记录](prototype-review.md)、[历史参考](../prototype/README.md) | 完整RBAC目标；第五轮含部门增删改名、同级保护及跨系统矩阵/配置，满意后才改正式前端 |
-| 6 | [API入口](../api/README.md)、[OpenAPI](../api/openapi.yaml)、[API业务约束](api-contract.md)、[页面对照](api-map.md) | Schema主规范与24项操作、授权/范围/事务语义 |
+| 5 | [前端设计](frontend-design.md)、[新原型](../prototype/index.html)、[评审记录](prototype-review.md)、[历史参考](../prototype/README.md) | 正式Vue及获批离线原型；演示系统仅在原型，正式产品仅RBAC |
+| 6 | [API入口](../api/README.md)、[OpenAPI](../api/openapi.yaml)、[API业务约束](api-contract.md)、[页面对照](api-map.md) | Schema主规范与29项操作、授权/范围/事务语义 |
 | 7 | [初始化](initialization.md)、[部署说明](../deploy/README.md) | 数据转换、五角色、依赖与唯一运行命令 |
-| 8 | [测试验收](testing-acceptance.md)、[结构化归类验收](acceptance/structured-organization.md)、[T13历史结果](acceptance/T13.md) | 需求验证矩阵、隔离、证据及实际限制 |
+| 8 | [测试验收](testing-acceptance.md)、[组员审核后修复](acceptance/peer-followup.md)、[阶段4验收](acceptance/stage4-vue.md)、[映射核对](acceptance/stage4-mapping-audit.md)、[结构化归类验收](acceptance/structured-organization.md)、[T13历史结果](acceptance/T13.md) | 需求验证矩阵、隔离、证据及实际限制 |
 | 9 | [开发计划](development-plan.md)、[协作规范](../CONTRIBUTING.md) | 六阶段顺序、分支与审核关口 |
 | 追溯 | [历史索引](history/README.md) | 只读整改记录，不作为第二份当前规范 |
 
@@ -22,4 +23,4 @@ requirements定义业务规则；domain-model定义行为与不变量；数据�
 
 变更业务、模型或接口时同步受影响规范与测试，保留同一个需求编号。历史摘录保留时间语境，新结论以现行正文为准。原Excel、用户本地设计文档及数据库不清理；已淘汰资料从当前树删除后仍可在Git历史追溯。
 
-结构化整理PR #30已由用户批准合入，当前进入阶段3离线交互原型迭代；T13及阶段2保留各自历史证据。正式前端须等原型满意后另行启动，DDD/T14/T15及服务器部署沿后续计划。文档阶段的修改、迁移、归档和删除清单仍见原审核指南。
+结构化整理PR #30已由用户批准合入，原型PR #31也已获批合入，当前进入阶段4正式Vue与结构化后端更新；T13及阶段2保留各自历史证据。阶段4交付另待用户审核，DDD/T14/T15及服务器部署沿后续计划。文档阶段的修改、迁移、归档和删除清单仍见原审核指南。

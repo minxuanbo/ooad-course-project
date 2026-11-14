@@ -8,11 +8,11 @@
 
 | 入口 | 内容 |
 | --- | --- |
-| [文档导航](docs/README.md) / [本次审核指南](docs/review-guide.md) | 正式目录、逐项阅读顺序、变更与待审点 |
+| [文档导航](docs/README.md) / [阶段4审核记录](docs/acceptance/stage4-vue.md) | 正式目录、逐项阅读顺序、变更与待审点 |
 | [需求](docs/requirements.md) / [来源](docs/requirements/sources.md) | 项目范围、业务规则及确认依据 |
 | [领域](docs/domain-model.md) / [数据库](docs/database-design.md) | 核心对象、规则、Chen ER、12张物理表 |
 | [后端](docs/backend-design.md) / [前端](docs/frontend-design.md) | 同仓库双实现目标、完整RBAC前端设计 |
-| [API](api/README.md) / [参考原型](prototype/README.md) | OpenAPI、24项操作及原交互参考 |
+| [API](api/README.md) / [参考原型](prototype/README.md) | OpenAPI、29项操作及原交互参考 |
 | [初始化](docs/initialization.md) / [部署](deploy/README.md) | 来源映射、五角色、依赖安装与运行 |
 | [测试验收](docs/testing-acceptance.md) / [开发计划](docs/development-plan.md) | 历史T13基线、当前检查及后续审核关口 |
 | [协作](CONTRIBUTING.md) / [历史](docs/history/README.md) | 分支、审核与只读整改追溯 |
@@ -21,11 +21,17 @@
 
 共同基线为refactor/rbac-core-backend，main仍保留历史工程。当前后端Maven项目位于backend，代码位于backend/src/main/java/com/municipal/rbaccore，使用Java21、Boot3.5.6、JPA、MySQL8.4、AOP与老师真实CloneFactory。业务层已按service/structured归类，共享API经service/port调用，持久化和认证/日志等归入infrastructure；没有DDD实现或策略开关。详见[代码归类](docs/code-organization.md)。
 
-生产前端frontend为Vue3/Vite，目前仅登录、最小日志兼容与登录成功外壳。顶层prototype仅保留当前交互原型，旧四组和v2并行目录已按用户要求替换，历史从Git追溯。课程系统指老师Gitee课程项目，T14/T15等待老师进一步要求。
+正式前端frontend为Vue3/Vite，阶段4包含登录、总览、部门、人员、角色、资源与日志，全部对接真实RBAC接口，使用说明见[前端README](frontend/README.md)。顶层prototype仅保留当前交互原型，旧四组和v2并行目录已按用户要求替换，历史从Git追溯。课程系统指老师Gitee课程项目，T14/T15等待老师进一步要求。
 
 T13历史验收记录142项后端回归、3项运行器安全单测、70次默认JAR真实HTTP及两轮启动，详见[原验收记录](docs/acceptance/T13.md)。当前结构化归类另取得156项后端回归、3项运行器安全单测、70次完整探针及最终产物3次真实HTTP检查通过的新证据，详见[本阶段记录](docs/acceptance/structured-organization.md)；这些结果不代表完整前端、DDD或云端通过。
 
-文档PR #29及结构化整理PR #30均已审核合入。当前阶段3[唯一交互原型](prototype/index.html)可直接双击HTML运行，覆盖总览、层级部门、人员、角色、跨系统资源及日志，见[使用说明](prototype/README.md)及[评审记录](docs/prototype-review.md)。第六轮修正部门层级展示和人数说明，用户授权推送供组员审核；小组确认后再启动阶段4，统一同步RBAC契约、必要后端规则及正式前端，随后DDD及双实现总验收。
+文档PR #29、结构化整理PR #30及原型PR #31均已获批合入。阶段4在独立codex/rbac-vue-implementation分支交付正式前后端，当前仅管理RBAC自身权限，18业务系统只在离线原型演示，课程系统暂不考虑接入。首次SQL直接适用于全新库，不提供旧库升级脚本；本轮不操作服务器。
+
+阶段4已有后端162项、前端17项及构建、全新隔离库默认JAR47次HTTP证据；最终边界修复后完整回归164项通过，前端17项及构建再次通过，见[最终一致性核对](docs/acceptance/final-alignment.md)。CloneFactory逐处及真实生成代码已核对。完整浏览器验证仍有明确限制，沿[阶段4记录](docs/acceptance/stage4-vue.md)，不把组件/接口成绩冒称全量UI通过。分支待用户审核，不自动合并或推进DDD。
+
+组员先按[复现指南](docs/reproduction.md)检出PR #32分支，公共代码与后续DDD边界见[隔离说明](docs/ddd-boundary.md)。
+
+组员审核后补齐HTTP错误码、总览活动独立降级、页面重复请求与字节码架构守卫；最新完整回归167项、前端26项及构建、运行器3项安全单测通过，见[本轮修复记录](docs/acceptance/peer-followup.md)。此前阶段结果保留各自版本，浏览器/窄屏复验限制不变。
 
 ## 运行入口
 

@@ -1,9 +1,7 @@
 package com.municipal.rbaccore.service.structured.user;
 
 import cn.edu.xmu.clonefactory.util.CloneFactory;
-import com.municipal.rbaccore.infrastructure.persistence.entity.DepartmentEntity;
 import com.municipal.rbaccore.infrastructure.persistence.entity.UserEntity;
-import com.municipal.rbaccore.infrastructure.persistence.repository.DepartmentJpaRepository;
 import com.municipal.rbaccore.infrastructure.persistence.repository.UserJpaRepository;
 import com.municipal.rbaccore.service.port.security.CurrentIdentity;
 import com.municipal.rbaccore.service.port.user.DepartmentResult;
@@ -34,23 +32,14 @@ public class StructuredUserQueryService implements UserQueryUseCase {
   private final StructuredAuthenticationService auth;
   private final StructuredDepartmentScopeService scope;
   private final UserJpaRepository users;
-  private final DepartmentJpaRepository departments;
+  private final com.municipal.rbaccore.service.structured.department.StructuredDepartmentService
+      organization;
+  private final com.municipal.rbaccore.service.structured.security.StructuredPersonnelAuthority
+      authority;
 
   /** 导航只投影可管理节点，范围根parentId为null而不修改实体。 */
   public List<DepartmentResult> tree(String header) {
-    CurrentIdentity actor = auth.require(header);
-    return departments.findAllById(scope.allowedIds(actor)).stream()
-        .sorted(Comparator.comparing(DepartmentEntity::getId))
-        .map(
-            department -> {
-              DepartmentResult result = CloneFactory.copy(new DepartmentResult(), department);
-              result.setParentId(
-                  department.getId().equals(actor.departmentId()) || department.getParent() == null
-                      ? null
-                      : department.getParent().getId());
-              return result;
-            })
-        .toList();
+    return organization.list(header);
   }
 
   /** 同一谓词负责列表与总数，用户不能用查询条件扩张授权范围。 */
@@ -84,6 +73,14 @@ public class StructuredUserQueryService implements UserQueryUseCase {
         users.findAll(
             specification,
             PageRequest.of(query.getPage(), query.getSize(), Sort.by("id").ascending()));
+    java.util.Map<Long, UserEntity> pageUsers =
+        users.withRoles(page.getContent().stream().map(UserEntity::getId).toList()).stream()
+            .collect(
+                java.util.stream.Collectors.toMap(
+                    UserEntity::getId, java.util.function.Function.identity()));
+    com.municipal.rbaccore.service.structured.security.StructuredPersonnelAuthority
+            .AuthoritySnapshot
+        actorAuthority = authority.snapshot(actor);
     List<UserResult> items =
         page.getContent().stream()
             .map(
@@ -92,6 +89,25 @@ public class StructuredUserQueryService implements UserQueryUseCase {
                   result.setEnabled(user.isEnabled());
                   result.setDepartmentId(user.getDepartment().getId());
                   result.setDepartmentName(user.getDepartment().getName());
+                  UserEntity assigned = pageUsers.get(user.getId());
+                  result.setWritable(authority.canManage(actorAuthority, assigned));
+                  result.setRoles(
+                      assigned.getRoles().stream()
+                          .sorted(
+                              Comparator.comparing(
+                                  com.municipal.rbaccore.infrastructure.persistence.entity
+                                          .RoleEntity
+                                      ::getId))
+                          .map(
+                              role -> {
+                                com.municipal.rbaccore.service.port.role.RoleResult summary =
+                                    CloneFactory.copy(
+                                        new com.municipal.rbaccore.service.port.role.RoleResult(),
+                                        role);
+                                summary.setEnabled(role.isEnabled());
+                                return summary;
+                              })
+                          .toList());
                   return result;
                 })
             .toList();

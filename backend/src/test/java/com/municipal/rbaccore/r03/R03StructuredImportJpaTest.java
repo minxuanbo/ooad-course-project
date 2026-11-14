@@ -252,6 +252,14 @@ class R03StructuredImportJpaTest {
     String unchangedHash =
         jdbc.queryForObject(
             "SELECT password_hash FROM users WHERE username='SG000211'", String.class);
+    Long renamed =
+        jdbc.queryForObject(
+            "SELECT id FROM departments WHERE parent_id IS NOT NULL ORDER BY id LIMIT 1",
+            Long.class);
+    jdbc.update("UPDATE departments SET name='后续已改名部门' WHERE id=?", renamed);
+    jdbc.update(
+        "INSERT INTO departments(code,name,parent_id,type,deleted) SELECT"
+            + " 't03-later','后续删除的项目',id,'PROJECT',1 FROM departments WHERE parent_id IS NULL");
     ImportReport rerun =
         service.importDirectory(
             TestProjectPaths.sources(),
@@ -259,6 +267,13 @@ class R03StructuredImportJpaTest {
     assertEquals(0, rerun.createdUsers());
     assertEquals(10001, rerun.existingUsers());
     assertEquals(10112, sources.count());
+    assertEquals(
+        "后续已改名部门",
+        jdbc.queryForObject("SELECT name FROM departments WHERE id=?", String.class, renamed));
+    assertEquals(
+        true,
+        jdbc.queryForObject(
+            "SELECT deleted FROM departments WHERE code='t03-later'", Boolean.class));
     assertEquals(
         unchangedHash,
         jdbc.queryForObject(

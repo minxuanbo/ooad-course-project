@@ -17,6 +17,8 @@ public class ManagementWebConfiguration implements WebMvcConfigurer {
     registry
         .addInterceptor(preflight)
         .addPathPatterns(
+            "/api/departments",
+            "/api/departments/*",
             "/api/systems",
             "/api/permissions/**",
             "/api/api-resources/**",

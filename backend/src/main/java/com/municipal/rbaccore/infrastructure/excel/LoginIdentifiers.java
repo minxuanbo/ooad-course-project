@@ -1,11 +1,11 @@
-package com.municipal.rbaccore.service.structured.importing;
+package com.municipal.rbaccore.infrastructure.excel;
 
 import com.municipal.rbaccore.service.port.error.ImportException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/** 工号和手机号使用与 MySQL utf8mb4_0900_bin 一致的精确比较，不猜测标识类型。 */
+/** 离线资料准备的标识碰撞校验，按MySQL二进制规则比较，不依赖任一业务实现或请求时鉴权。 */
 public final class LoginIdentifiers {
   private LoginIdentifiers() {}
 

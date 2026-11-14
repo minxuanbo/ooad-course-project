@@ -72,6 +72,7 @@ public class UserEntity {
           @JoinColumn(name = "user_id", foreignKey = @ForeignKey(name = "fk_user_role_user")),
       inverseJoinColumns =
           @JoinColumn(name = "role_id", foreignKey = @ForeignKey(name = "fk_user_role_role")))
+  @cn.edu.xmu.clonefactory.CopyTo.Exclude(com.municipal.rbaccore.service.port.user.UserResult.class)
   private Set<RoleEntity> roles = new LinkedHashSet<>();
 
   /** 创建账号时明确提供哈希、所属部门和状态，不生成另一份工号。 */

@@ -2,6 +2,7 @@ package com.municipal.rbaccore.service.structured.importing;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.municipal.rbaccore.infrastructure.excel.LoginIdentifiers;
 import com.municipal.rbaccore.infrastructure.excel.WorkbookImportPlanner;
 import com.municipal.rbaccore.infrastructure.persistence.entity.DepartmentEntity;
 import com.municipal.rbaccore.infrastructure.persistence.entity.ImportSourceEntity;
@@ -128,6 +129,14 @@ public class StructuredImportService implements ImportUseCase {
           continue;
         }
         DepartmentEntity department = new DepartmentEntity(organization.targetCode(), name);
+        department.setType(
+            name.equals(WorkbookImportPlanner.ROOT_NAME)
+                ? com.municipal.rbaccore.service.port.department.DepartmentType.HEADQUARTERS
+                : name.endsWith("分公司")
+                    ? com.municipal.rbaccore.service.port.department.DepartmentType.COMPANY
+                    : name.contains("项目")
+                        ? com.municipal.rbaccore.service.port.department.DepartmentType.PROJECT
+                        : com.municipal.rbaccore.service.port.department.DepartmentType.DEPARTMENT);
         department.moveTo(targets.get(parentName));
         targets.put(name, departments.save(department));
         pending.remove(name);
@@ -187,32 +196,27 @@ public class StructuredImportService implements ImportUseCase {
     return report(plan, storedDepartments.size(), 0, currentUsers.size(), admin.getUser().getId());
   }
 
-  /** 部门结构与稳定来源一致，避免重复执行掩盖根节点、父引用或映射损坏。 */
+  /** 按稳定编码和父ID验证原始节点，保留后续改名、新增及删除墓碑，不按名称重新认领。 */
   private Map<String, DepartmentEntity> verifyStoredDepartments(ImportPlan plan) {
+    Map<String, DepartmentEntity> byCode = new HashMap<>();
+    for (DepartmentEntity department : departments.findAll())
+      byCode.put(department.getCode(), department);
     Map<String, DepartmentEntity> stored = new HashMap<>();
-    for (DepartmentEntity department : departments.findAll()) {
-      if (stored.putIfAbsent(department.getName(), department) != null) {
-        throw new ImportException("TARGET_TREE_CHANGED", "目标组织名称不唯一");
+    for (ImportPlan.Organization organization : plan.organizations()) {
+      DepartmentEntity department = byCode.get(organization.targetCode());
+      if (department == null) {
+        throw new ImportException("TARGET_TREE_CHANGED", "目标组织稳定编码与来源不一致");
       }
-    }
-    long expectedCount =
-        plan.organizations().stream().map(ImportPlan.Organization::targetName).distinct().count();
-    if (stored.size() != expectedCount) {
-      throw new ImportException("TARGET_TREE_CHANGED", "目标组织数量与已确认的来源映射不一致");
+      stored.put(organization.targetName(), department);
     }
     for (ImportPlan.Organization organization : plan.organizations()) {
-      if (!organization.name().trim().equals(organization.targetName())) {
-        continue;
-      }
+      if (!organization.name().trim().equals(organization.targetName())) continue;
       DepartmentEntity department = stored.get(organization.targetName());
-      String parentName =
-          department == null || department.getParent() == null
-              ? ""
-              : department.getParent().getName();
-      if (department == null
-          || !department.getCode().equals(organization.targetCode())
-          || !parentName.equals(organization.parent().trim())) {
-        throw new ImportException("TARGET_TREE_CHANGED", "目标组织编码或层级与来源不一致");
+      DepartmentEntity expectedParent = stored.get(organization.parent().trim());
+      Long expectedId = expectedParent == null ? null : expectedParent.getId();
+      Long actualId = department.getParent() == null ? null : department.getParent().getId();
+      if (!Objects.equals(expectedId, actualId)) {
+        throw new ImportException("TARGET_TREE_CHANGED", "目标组织原有层级与来源不一致");
       }
     }
     return stored;

@@ -132,6 +132,7 @@ abstract class R14ResourceContractSupport {
                   systems.save(new ApplicationSystemEntity("rbac", "RBAC权限管理系统"));
               systemId = system.getId();
               RoleEntity admin = roles.save(new RoleEntity("t07-admin", "可改名的完整维护者"));
+              admin.setManagementLevel(5);
               PermissionEntity menu =
                   permissions.save(
                       new PermissionEntity(system, "rbac.workspace", "导航容器", PermissionType.MENU));
@@ -175,7 +176,7 @@ abstract class R14ResourceContractSupport {
     assertEquals(systemId, data.get(0).get("id").asLong());
     assertEquals("rbac", data.get(0).get("code").asText());
     JsonNode first = data(request("GET", APIS + "?size=1", token, null));
-    assertEquals(20, first.get("total").asLong());
+    assertEquals(25, first.get("total").asLong());
     assertEquals(1, first.get("items").size());
     assertTrue(first.get("items").get(0).has("method"));
     assertTrue(first.get("items").get(0).has("path"));
@@ -188,17 +189,17 @@ abstract class R14ResourceContractSupport {
     String token = token("t07-admin");
     JsonNode roots = data(request("GET", TREE, token, null));
     assertEquals(1, roots.size());
-    assertEquals(10, roots.get(0).get("children").size());
+    assertEquals(13, roots.get(0).get("children").size());
     assertTrue(roots.get(0).get("parentId").isNull());
     JsonNode second = data(request("GET", APIS + "?size=1&page=1", token, null));
     JsonNode first = data(request("GET", APIS + "?size=1", token, null));
     assertTrue(
         first.get("items").get(0).get("id").asLong()
             < second.get("items").get(0).get("id").asLong());
-    assertEquals(20, second.get("total").asLong());
+    assertEquals(25, second.get("total").asLong());
     JsonNode beyond = data(request("GET", APIS + "?page=2147483647&size=100", token, null));
     assertEquals(0, beyond.get("items").size());
-    assertEquals(20, beyond.get("total").asLong());
+    assertEquals(25, beyond.get("total").asLong());
     assertEquals(
         apiIds.keySet().stream().filter(route -> route.method().equals("GET")).count(),
         data(request("GET", APIS + "?q=gEt", token, null)).get("total").asLong());
@@ -612,7 +613,7 @@ abstract class R14ResourceContractSupport {
                         apis.saveAndFlush(
                             new ApiResourceEntity(
                                 systems.findById(systemId).orElseThrow(), "GET", USERS))));
-    assertEquals(20, apis.count());
+    assertEquals(25, apis.count());
   }
 
   /** 两名维护者同时失去各自关键能力时，共同根锁只允许一次不会清零的提交。 */
@@ -746,6 +747,7 @@ abstract class R14ResourceContractSupport {
         .executeWithoutResult(
             status -> {
               RoleEntity role = roles.save(new RoleEntity(username, username));
+              role.setManagementLevel(5);
               for (Long id : ids) role.grantPermission(permissions.findById(id).orElseThrow());
               UserEntity user =
                   new UserEntity(
