@@ -2,25 +2,15 @@ import { readFileSync } from 'node:fs'
 import vm from 'node:vm'
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { createApiClient } from './helpers/api-client.mjs'
 test('API unwraps the envelope and exposes business error and request ID', async () => {
   let response = {
     ok: true,
     status: 200,
     text: async () => JSON.stringify({ code: 'OK', data: null, requestId: 'one' }),
   }
-  const context = vm.createContext({
-    reactive: (x) => x,
-    sessionStorage: { getItem: () => '' },
-    fetch: async () => response,
-    AbortSignal,
-  })
-  vm.runInContext(
-    readFileSync(new URL('../src/api.js', import.meta.url), 'utf8')
-      .replace(/^import .*$/gm, '')
-      .replace(/export /g, ''),
-    context,
-  )
-  assert.equal(await vm.runInContext("api('/auth/logout','POST')", context), null)
+  const run = createApiClient(async () => response, '')
+  assert.equal(await run("api('/auth/logout','POST')"), null)
   response = {
     ok: false,
     status: 403,
@@ -33,11 +23,11 @@ test('API unwraps the envelope and exposes business error and request ID', async
       }),
   }
   await assert.rejects(
-    vm.runInContext("api('/users')", context),
+    run("api('/users')"),
     (e) => e.code === 'MANAGEMENT_SCOPE_DENIED' && e.requestId === 'two' && e.status === 403,
   )
   response = { ok: true, status: 200, text: async () => '[]' }
-  await assert.rejects(vm.runInContext("api('/users')", context), /格式/)
+  await assert.rejects(run("api('/users')"), /格式/)
 })
 test('log pagination binds filters to the first page and resets after unmount', async () => {
   const calls = []
@@ -83,44 +73,32 @@ test('archive requests and archived filters are removed from the log page', () =
 test('T12 navigation uses effective permissions and server-confirmed log scope', async () => {
   let denied = false
   const calls = []
-  const context = vm.createContext({
-    reactive: (x) => x,
-    sessionStorage: { getItem: () => '', setItem() {}, removeItem() {} },
-    AbortSignal,
-    fetch: async (path) => {
-      calls.push(path)
-      const status = path.includes('/authorization-logs') && denied ? 403 : 200
-      const data =
-        path === '/api/me'
-          ? {
-              user: {
-                id: 1,
-                globalScope: !denied,
-                routes: [
-                  { method: 'GET', path: '/api/authorization-logs' },
-                  { method: 'GET', path: '/api/users' },
-                ],
-              },
-            }
-          : { items: [] }
-      return {
-        ok: status === 200,
-        status,
-        text: async () =>
-          JSON.stringify({
-            code: status === 200 ? 'OK' : 'MANAGEMENT_SCOPE_DENIED',
-            data,
-          }),
-      }
-    },
-  })
-  vm.runInContext(
-    readFileSync(new URL('../src/api.js', import.meta.url), 'utf8')
-      .replace(/^import .*$/gm, '')
-      .replace(/export /g, ''),
-    context,
-  )
-  const run = (source) => vm.runInContext(source, context)
+  const run = createApiClient(async (path) => {
+    calls.push(path)
+    const status = path.includes('/authorization-logs') && denied ? 403 : 200
+    const data =
+      path === '/api/me'
+        ? {
+            user: {
+              id: 1,
+              globalScope: !denied,
+              routes: [
+                { method: 'GET', path: '/api/authorization-logs' },
+                { method: 'GET', path: '/api/users' },
+              ],
+            },
+          }
+        : { items: [] }
+    return {
+      ok: status === 200,
+      status,
+      text: async () =>
+        JSON.stringify({
+          code: status === 200 ? 'OK' : 'MANAGEMENT_SCOPE_DENIED',
+          data,
+        }),
+    }
+  }, '')
   await run('refreshSession()')
   assert.equal(run("canRoute('GET','/authorization-logs',true)"), true)
   assert.equal(run("canRoute('GET','/users')"), true)
@@ -164,34 +142,22 @@ test('T12 permitted department login reaches the shell without entering logs', a
 
 test('R17 实际请求403后刷新本人能力，隐藏已被撤销的菜单与按钮', async () => {
   const calls = []
-  const context = vm.createContext({
-    reactive: (x) => x,
-    sessionStorage: { getItem: () => 'current', setItem() {}, removeItem() {} },
-    AbortSignal,
-    fetch: async (path) => {
-      calls.push(path)
-      const denied = path.includes('/roles/2/permissions')
-      const data = path === '/api/me' ? { user: { id: 1, globalScope: true, routes: [] } } : []
-      return {
-        ok: !denied,
-        status: denied ? 403 : 200,
-        text: async () =>
-          JSON.stringify({
-            code: denied ? 'PERMISSION_DENIED' : 'OK',
-            message: '权限已变化',
-            data,
-            requestId: 'denied-request',
-          }),
-      }
-    },
+  const run = createApiClient(async (path) => {
+    calls.push(path)
+    const denied = path.includes('/roles/2/permissions')
+    const data = path === '/api/me' ? { user: { id: 1, globalScope: true, routes: [] } } : []
+    return {
+      ok: !denied,
+      status: denied ? 403 : 200,
+      text: async () =>
+        JSON.stringify({
+          code: denied ? 'PERMISSION_DENIED' : 'OK',
+          message: '权限已变化',
+          data,
+          requestId: 'denied-request',
+        }),
+    }
   })
-  vm.runInContext(
-    readFileSync(new URL('../src/api.js', import.meta.url), 'utf8')
-      .replace(/^import .*$/gm, '')
-      .replace(/export /g, ''),
-    context,
-  )
-  const run = (code) => vm.runInContext(code, context)
   run(
     "session.me={user:{id:1,globalScope:true,routes:[{method:'PUT',path:'/api/roles/{id}/permissions'}]}}",
   )

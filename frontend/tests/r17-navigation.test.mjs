@@ -1,29 +1,11 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import vm from 'node:vm'
-import { readFileSync } from 'node:fs'
-
-/** 直接运行共享HTTP客户端，响应来自可控服务端，不复制能力计算逻辑。 */
-function client(fetch) {
-  const context = vm.createContext({
-    reactive: (x) => x,
-    sessionStorage: { getItem: () => 'current', setItem() {}, removeItem() {} },
-    fetch,
-    AbortSignal,
-  })
-  vm.runInContext(
-    readFileSync(new URL('../src/api.js', import.meta.url), 'utf8')
-      .replace(/^import .*$/gm, '')
-      .replace(/export /g, ''),
-    context,
-  )
-  return (code) => vm.runInContext(code, context)
-}
+import { createApiClient } from './helpers/api-client.mjs'
 
 test('R17 导航仅请求一次本人能力，下一导航仍读取最新撤权结果', async () => {
   let allowed = true
   const calls = []
-  const run = client(async (path) => {
+  const run = createApiClient(async (path) => {
     calls.push(path)
     return {
       ok: true,
@@ -54,7 +36,7 @@ test('R17 导航仅请求一次本人能力，下一导航仍读取最新撤权�
 
 test('R17 最新能力读取失败关闭旧按钮，之后可重新读取恢复', async () => {
   let failed = false
-  const run = client(async () => ({
+  const run = createApiClient(async () => ({
     ok: !failed,
     status: failed ? 500 : 200,
     text: async () =>
@@ -86,7 +68,7 @@ test('R17 旧403能力刷新失败不能覆盖较新成功刷新的能力', asyn
     status: ok ? 200 : 500,
     text: async () => JSON.stringify({ code: ok ? 'OK' : 'INTERNAL_ERROR', data }),
   })
-  const run = client(async (path) => {
+  const run = createApiClient(async (path) => {
     if (path === '/api/users') return { ...response(false, null), status: 403 }
     if (++reads === 1) {
       started()

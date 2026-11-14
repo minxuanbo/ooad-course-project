@@ -12,7 +12,7 @@
 | 导航串行双请求 | api.js刷新只请求最新GET /me；Login.vue交导航守卫统一读取。删除未用于正式页面的权限编码状态/旧can入口，保留后端权限明细API契约；每次导航及403仍刷新，失败关闭旧能力，旧刷新不覆盖新结果 |
 | 架构守卫可被注释绕过 | R19R21StructuredBoundaryTest使用ArchUnit1.4.1检查真实生产字节码依赖，并核对Controller实际非静态字段为公共用例接口；误导性UseCase注释及Object注入作为负例。测试依赖不进入运行JAR，不误禁未来DDD领域适配器 |
 
-前端新增测试归frontend/tests/r17-navigation.test.mjs、r17-workspaces.test.mjs，沿R10/R17/R25编号，测试运行真实页面/客户端脚本，不复制加载算法。已有HTTP契约、架构及DTO测试沿原目录维护，没有创建第二份backend或DDD占位代码。
+前端新增测试归frontend/tests/r17-navigation.test.mjs、r17-workspaces.test.mjs，沿R10/R17/R25编号，测试运行真实页面/客户端脚本，不复制加载算法。客户端VM加载夹具统一归tests/helpers/api-client.mjs并由旧audit及新导航测试复用；测试辅助代码不进入生产前端。已有HTTP契约、架构及DTO测试沿原目录维护，没有创建第二份backend或DDD占位代码。
 
 ## 2. TDD及回归证据
 
