@@ -1,16 +1,28 @@
 package com.municipal.rbaccore.architecture;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.core.importer.ClassFileImporter;
+import com.tngtech.archunit.core.importer.ImportOption;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /** R19/R21固定共享API、用例与结构化实现的单向依赖，防止迁移后重新混层。 */
 class R19R21StructuredBoundaryTest {
+  private static final String BASE = "com.municipal.rbaccore";
+  private static final JavaClasses CLASSES =
+      new ClassFileImporter()
+          .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+          .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_JARS)
+          .importPackages(BASE);
   private static final Path PROJECT =
       Files.isDirectory(Path.of("backend"))
           ? Path.of("")
@@ -31,49 +43,83 @@ class R19R21StructuredBoundaryTest {
   @Test
   @DisplayName("R19/R21 共享Controller只依赖公共用例接口和HTTP模型")
   void R19R21_controllersDependOnUseCases() throws Exception {
-    Path api = SOURCE.resolve("api");
-    assertTrue(Files.isDirectory(api), "缺少共享API层");
-    for (Path file : javaFiles(api)) {
-      if (!file.getFileName().toString().endsWith("Controller.java")) continue;
-      String source = Files.readString(file);
-      assertTrue(source.contains("UseCase"), file + " 必须依赖用例接口");
-      assertFalse(source.contains(".infrastructure."), file + " 不得依赖基础设施");
-      assertFalse(source.contains(".structured."), file + " 不得依赖具体业务实现");
+    noClasses()
+        .that()
+        .resideInAPackage(BASE + ".api..")
+        .should()
+        .dependOnClassesThat()
+        .resideInAnyPackage(
+            BASE + ".infrastructure..", BASE + ".service.structured..", BASE + ".service.ddd..")
+        .check(CLASSES);
+    int count = 0;
+    for (JavaClass controller : CLASSES) {
+      if (!controller.getPackageName().startsWith(BASE + ".api.")
+          || !controller.getSimpleName().endsWith("Controller")) continue;
+      assertControllerContract(controller.reflect());
+      count++;
     }
+    assertTrue(count > 0, "必须实际导入并检查生产Controller字节码");
+  }
+
+  /** 注释声称UseCase不能使错误的注入类型通过边界验证。 */
+  @Test
+  @DisplayName("R19/R21 注释不能掩盖控制器错误的依赖类型")
+  void R19R21_commentCannotReplaceInjectedContract() {
+    assertThrows(AssertionError.class, () -> assertControllerContract(MisleadingController.class));
+  }
+
+  /** UseCase只是误导性注释，该反例没有真正的公共用例接口依赖。 */
+  private static class MisleadingController {
+    private Object service;
+  }
+
+  /** 控制器约束集中于同一入口，反例与正式控制器执行相同验证。 */
+  private void assertControllerContract(Class<?> controller) {
+    int dependencies = 0;
+    for (Field field : controller.getDeclaredFields()) {
+      if (field.isSynthetic() || Modifier.isStatic(field.getModifiers())) continue;
+      Class<?> type = field.getType();
+      assertTrue(
+          type.isInterface()
+              && type.getPackageName().startsWith(BASE + ".service.port.")
+              && type.getSimpleName().endsWith("UseCase"),
+          controller.getName() + "." + field.getName() + " 必须注入公共用例接口");
+      dependencies++;
+    }
+    assertTrue(dependencies > 0, controller + " 必须真实注入公共用例接口");
   }
 
   /** 用例契约不含JPA或Web类型，复制注解不能把Entity依赖带回端口。 */
   @Test
   @DisplayName("R19/R21 用例契约只表达命令结果和支撑抽象")
   void R19R21_portsContainNoPersistenceOrWebTypes() throws Exception {
-    Path ports = SOURCE.resolve("service/port");
-    assertTrue(Files.isDirectory(ports), "缺少共享用例契约");
-    for (Path file : javaFiles(ports)) {
-      String source = Files.readString(file);
-      for (String forbidden :
-          List.of(
-              ".infrastructure.",
-              ".service.structured.",
-              ".service.ddd.",
-              "jakarta.persistence",
-              "jakarta.servlet",
-              "org.springframework",
-              ".api.")) {
-        assertFalse(source.contains(forbidden), file + " 不得包含 " + forbidden);
-      }
-      assertFalse(file.getFileName().toString().endsWith("Repository.java"), "持久化端口不混入用例契约");
-    }
+    noClasses()
+        .that()
+        .resideInAPackage(BASE + ".service.port..")
+        .should()
+        .dependOnClassesThat()
+        .resideInAnyPackage(
+            BASE + ".infrastructure..",
+            BASE + ".service.structured..",
+            BASE + ".service.ddd..",
+            BASE + ".api..",
+            "jakarta.persistence..",
+            "jakarta.servlet..",
+            "org.springframework..")
+        .check(CLASSES);
   }
 
   /** 共享适配器不能调用业务编排，后续DDD持久化适配器仍可实现领域仓储并映射领域模型。 */
   @Test
   @DisplayName("R19/R21 共享基础设施不依赖结构化或DDD应用服务")
   void R19R21_sharedInfrastructureDoesNotDependOnBusinessImplementation() throws Exception {
-    for (Path file : javaFiles(SOURCE.resolve("infrastructure"))) {
-      String source = Files.readString(file);
-      assertFalse(source.contains(".service.structured."), file + " 共享适配器不得引用结构化实现");
-      assertFalse(source.contains(".service.ddd.application."), file + " 共享适配器不得引用DDD应用服务");
-    }
+    noClasses()
+        .that()
+        .resideInAPackage(BASE + ".infrastructure..")
+        .should()
+        .dependOnClassesThat()
+        .resideInAnyPackage(BASE + ".service.structured..", BASE + ".service.ddd.application..")
+        .check(CLASSES);
   }
 
   /** 部门类型是HTTP与用例的共同取值，不承载必须由两种实现分别执行的层级策略。 */
@@ -93,27 +139,18 @@ class R19R21StructuredBoundaryTest {
   @Test
   @DisplayName("R19/R21 结构化服务不依赖HTTP模型及Web安全适配器")
   void R19R21_structuredServicesUseSupportPorts() throws Exception {
-    Path structured = SOURCE.resolve("service/structured");
-    assertTrue(Files.isDirectory(structured), "缺少结构化事务脚本");
-    for (Path file : javaFiles(structured)) {
-      String source = Files.readString(file);
-      for (String forbidden :
-          List.of(
-              ".api.",
-              "jakarta.servlet",
-              "org.springframework.web",
-              "org.springframework.security",
-              "RequestAuditFilter",
-              "BearerIdentityStore")) {
-        assertFalse(source.contains(forbidden), file + " 不得包含 " + forbidden);
-      }
-    }
-  }
-
-  /** 关闭文件流，按真实Java文件检查边界而不依赖生成产物。 */
-  private List<Path> javaFiles(Path directory) throws Exception {
-    try (Stream<Path> files = Files.walk(directory)) {
-      return files.filter(file -> file.toString().endsWith(".java")).toList();
-    }
+    noClasses()
+        .that()
+        .resideInAPackage(BASE + ".service.structured..")
+        .should()
+        .dependOnClassesThat()
+        .resideInAnyPackage(
+            BASE + ".api..",
+            "jakarta.servlet..",
+            "org.springframework.web..",
+            "org.springframework.security..",
+            BASE + ".infrastructure.web..",
+            BASE + ".infrastructure.security..")
+        .check(CLASSES);
   }
 }

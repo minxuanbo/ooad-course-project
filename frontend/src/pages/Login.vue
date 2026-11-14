@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { api, setToken, refreshSession, can } from '../api.js'
+import { api, setToken } from '../api.js'
 const router = useRouter()
 const account = ref(''),
   password = ref(''),
@@ -17,7 +17,6 @@ async function login() {
       password: password.value,
     })
     setToken(result.token)
-    await refreshSession()
     await router.replace('/')
   } catch (e) {
     error.value = e.message

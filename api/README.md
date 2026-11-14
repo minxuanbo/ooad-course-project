@@ -20,3 +20,5 @@ python -c "import json,pathlib,yaml; p=pathlib.Path('api'); d=yaml.safe_load((p/
 本阶段已同步正式服务契约，不自动上传Apifox。后续同步须用户明确确认目标项目和覆盖范围，不能沿用老师项目ID或凭据。
 
 阶段4新增部门目录/增删改名及范围总览5操作，扩展身份实际路由、角色级别、人员职位/角色摘要和部门人数。正式目录只含RBAC，原型18业务系统不进入首次授权；课程接入暂不考虑。仅维护本地YAML/JSON，不自动推送Apifox。
+
+组员审核后补齐路由404/405和四种部门专用错误，Error.code共18项；状态与语义见[API约束](../docs/api-contract.md)。权限明细接口仍保留，正式导航只读取GET /me提供的实际路由与范围，不因减少重复请求删除公共API。

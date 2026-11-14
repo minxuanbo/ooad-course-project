@@ -5,10 +5,18 @@ import { errorText, RequestGeneration } from '../lib/presentation.js'
 const result = ref(null),
   error = ref(''),
   busy = ref(false),
-  activity = ref([])
+  activity = ref([]),
+  activityError = ref(''),
+  activityBusy = ref(false)
 const generation = new RequestGeneration()
+const activityGeneration = new RequestGeneration()
+/** 主统计与辅助日志分开反馈；日志失败不能阻塞或清除已取得的范围统计。 */
 async function load() {
   const version = generation.next()
+  activityGeneration.cancel()
+  activity.value = []
+  activityError.value = ''
+  activityBusy.value = false
   busy.value = true
   error.value = ''
   result.value = null
@@ -16,14 +24,26 @@ async function load() {
     const value = await api('/overview')
     if (!generation.current(version)) return
     result.value = value
-    if (canRoute('GET', '/authorization-logs', true)) {
-      const logs = await api('/authorization-logs?limit=5')
-      if (generation.current(version)) activity.value = logs.items
-    }
   } catch (e) {
     if (generation.current(version)) error.value = errorText(e)
   } finally {
     if (generation.current(version)) busy.value = false
+  }
+  if (generation.current(version) && result.value) await loadActivity()
+}
+/** 活动单独重试和丢弃晚响应；每次仍检查实际路由及共同根范围。 */
+async function loadActivity() {
+  if (!canRoute('GET', '/authorization-logs', true)) return
+  const version = activityGeneration.next()
+  activityBusy.value = true
+  activityError.value = ''
+  try {
+    const logs = await api('/authorization-logs?limit=5')
+    if (activityGeneration.current(version)) activity.value = logs.items
+  } catch (e) {
+    if (activityGeneration.current(version)) activityError.value = errorText(e)
+  } finally {
+    if (activityGeneration.current(version)) activityBusy.value = false
   }
 }
 const labels = {
@@ -34,7 +54,10 @@ const labels = {
   REQUEST_DENIED: '请求拒绝',
 }
 onMounted(load)
-onUnmounted(() => generation.cancel())
+onUnmounted(() => {
+  generation.cancel()
+  activityGeneration.cancel()
+})
 </script>
 <template>
   <p v-if="error" class="error card panel" role="alert">
@@ -97,9 +120,16 @@ onUnmounted(() => generation.cancel())
     </div>
     <section v-if="canRoute('GET', '/authorization-logs', true)" class="card panel">
       <h2>最近鉴权与认证活动</h2>
+      <p v-if="activityError" class="error" role="alert">
+        {{ activityError }}
+        <button class="secondary" :disabled="activityBusy" @click="loadActivity">重试活动</button>
+      </p>
+      <p v-if="activityBusy" role="status">正在读取最近活动…</p>
+      <p v-else-if="!activityError && !activity.length" class="muted">暂无活动记录</p>
       <div v-for="row in activity" :key="row.id" class="distribution-row">
         <span>
-          {{ labels[row.eventType] || row.eventType }} · {{ row.username || '未识别身份' }}
+          {{ labels[row.eventType] || row.eventType }} ·
+          {{ row.username || '未识别身份' }}
           <small>{{ row.requestId }}</small>
         </span>
         <time>{{ row.occurredAt }}</time>

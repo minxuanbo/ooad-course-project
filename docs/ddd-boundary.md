@@ -26,4 +26,6 @@ DepartmentType只声明HEADQUARTERS/COMPANY/DEPARTMENT/PROJECT；结构化层级
 - r07/r11/r13/r14已有共享HTTP契约与结构化启动类。DDD阶段分别启动同契约及隔离专库；r23现为结构化增量测试，届时提取共享断言再新增DDD启动类，不复制或调用结构化服务冒充通过。
 - R19R21StructuredBoundaryTest中的“当前无DDD目录”是阶段状态断言，DDD阶段应明确替换为双实现互斥装配检查；公共端口不依赖具体实现、基础设施不调用业务编排等方向约束长期保留。
 
+边界守卫已使用ArchUnit1.4.1检查生产字节码及Controller真实依赖类型，不再以源码中出现UseCase或包名字符串作为上述依赖方向的证据。ArchUnit仅在test作用域，不进入运行JAR。该守卫明确允许未来基础设施依赖DDD领域模型/仓储，仍禁止调用DDD应用服务。
+
 本次只解除现有反向依赖、归位规则并增加边界测试，没有创建DDD代码、策略占位或更改业务授权范围。源码/测试变化的实际证据见[最终一致性核对](acceptance/final-alignment.md)。

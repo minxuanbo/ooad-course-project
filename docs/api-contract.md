@@ -8,6 +8,8 @@
 
 所有成功/失败包含code、message、data、requestId；成功code=OK，失败data=null。POST创建角色201，其余成功200；退出200/data=null。可信用户ID、权限、范围由服务端读取，不接受客户端actor/admin/scope字段。请求JSON类型严格，未知字段拒绝；DTO与VO分开，不返回JPA关系、哈希、手机号或完整原始导入资料；职位以只读字段返回。
 
+不存在的端点返回404 ENDPOINT_NOT_FOUND；路径存在但HTTP方法不支持返回405 METHOD_NOT_ALLOWED，与业务对象不存在的404 RESOURCE_NOT_FOUND区分。部门父子类型错误为400 DEPARTMENT_TYPE_INVALID；删除根、删除非空节点及同级重名分别为409 DEPARTMENT_ROOT_REQUIRED、DEPARTMENT_NOT_EMPTY、DEPARTMENT_NAME_CONFLICT。以上均属于OpenAPI的Error.code枚举并保留requestId；离线导入/首次授权命令的错误不冒充HTTP接口契约。
+
 人员、角色、API候选及可分配角色使用items/total/page/size；第0页、默认20、最多100，id升序，数据库先范围/过滤/计数再分页。日志单独使用cursor/limit快照，不改成offset。有限系统目录、部门树及完整已选集合按规范返回，不受当前候选页截断。
 
 列表q先去首尾空白，处理后最多100字符；按各接口指定字段作不区分大小写的包含搜索。人员查姓名/工号，角色及可分配角色查name/code，API资源查method/path；不把登录标识的精确匹配或角色code唯一性规则混同为搜索规则。

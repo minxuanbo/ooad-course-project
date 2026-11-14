@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { api, canRoute, notify } from '../api.js'
+import { api, canRoute, notify, session, refreshSession } from '../api.js'
 import { errorText, organizationRows, RequestGeneration } from '../lib/presentation.js'
 import Modal from '../components/Modal.vue'
 import Pagination from '../components/Pagination.vue'
@@ -21,24 +21,79 @@ const filters = ref({ q: '', departmentId: '', enabled: '' }),
 const disabling = ref(null)
 const actionDenied = ref(false)
 const generation = new RequestGeneration()
-/** 人员页独立重读部门树，树读取失败不展示错误的全公司筛选。 */
+let departmentScope = null
+/** 缓存仅属于当前人员页；身份、范围或路由变化时必须重新读取，不缓存鉴权结论。 */
+function scopeKey() {
+  const user = session.me?.user
+  return JSON.stringify([
+    session.token,
+    user?.id,
+    user?.departmentId,
+    user?.globalScope,
+    user?.routes?.map((route) => `${route.method} ${route.path}`).sort(),
+  ])
+}
+/** 翻页筛选复用当前范围的成功树；失败和范围变化不能当作空树继续查询。 */
 async function load(next = 0) {
   const version = generation.next()
   busy.value = true
   error.value = ''
   rows.value = []
   try {
-    const tree = await api('/departments/tree')
+    const scope = scopeKey()
+    if (departmentScope !== scope) {
+      departments.value = []
+      departmentScope = null
+      const tree = await api('/departments/tree')
+      if (!generation.current(version) || scopeKey() !== scope) return
+      departments.value = organizationRows(tree)
+      departmentScope = scope
+      if (
+        filters.value.departmentId &&
+        !tree.some((item) => String(item.id) === filters.value.departmentId)
+      ) {
+        filters.value.departmentId = ''
+        next = 0
+      }
+    }
     const params = new URLSearchParams({ page: next, size: size.value })
     for (const [key, value] of Object.entries(filters.value))
       if (value !== '') params.set(key, value.trim())
     const result = await api('/users?' + params)
     if (generation.current(version)) {
-      departments.value = organizationRows(tree)
+      if (scopeKey() !== scope) {
+        departments.value = []
+        departmentScope = null
+        error.value = '身份或管理范围已变化，请重新查询。'
+        return
+      }
       rows.value = result.items
       total.value = result.total
       page.value = next
     }
+  } catch (e) {
+    if (generation.current(version)) {
+      if (departmentScope !== scopeKey()) {
+        departments.value = []
+        departmentScope = null
+      }
+      error.value = errorText(e)
+    }
+  } finally {
+    if (generation.current(version)) busy.value = false
+  }
+}
+/** 显式刷新可取得他人新增/改名/删除的部门；不依赖跨请求授权缓存。 */
+async function refreshDepartments() {
+  const version = generation.next()
+  departmentScope = null
+  departments.value = []
+  rows.value = []
+  busy.value = true
+  error.value = ''
+  try {
+    await refreshSession()
+    if (generation.current(version)) await load(0)
   } catch (e) {
     if (generation.current(version)) error.value = errorText(e)
   } finally {
@@ -69,9 +124,13 @@ async function move() {
   saving.value = true
   actionError.value = ''
   try {
-    await api(`/users/${moving.value.id}/department`, 'PUT', { departmentId: Number(moveTo.value) })
+    const movingSelf = moving.value.id === session.me?.user.id
+    await api(`/users/${moving.value.id}/department`, 'PUT', {
+      departmentId: Number(moveTo.value),
+    })
     moving.value = null
     notify('部门归属已更新，职位保持来源资料。')
+    if (movingSelf) await refreshSession()
     await load(page.value)
   } catch (e) {
     actionError.value = errorText(e)
@@ -92,9 +151,18 @@ function openMove(user) {
   actionError.value = ''
   actionDenied.value = false
 }
-function saved() {
+async function saved() {
+  const editingSelf = editing.value.id === session.me?.user.id
   editing.value = null
-  load(page.value)
+  try {
+    if (editingSelf) await refreshSession()
+    await load(page.value)
+  } catch (e) {
+    rows.value = []
+    departments.value = []
+    departmentScope = null
+    error.value = errorText(e)
+  }
 }
 /** 重置只影响当前人员筛选，重新从首个数据库页查询。 */
 function resetFilters() {
@@ -137,6 +205,14 @@ onUnmounted(() => generation.cancel())
       <button class="primary" :disabled="busy || saving">查询</button>
       <button type="button" class="secondary" :disabled="busy || saving" @click="resetFilters">
         重置
+      </button>
+      <button
+        type="button"
+        class="secondary"
+        :disabled="busy || saving"
+        @click="refreshDepartments"
+      >
+        刷新部门
       </button>
     </form>
   </section>

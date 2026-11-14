@@ -13,7 +13,7 @@
 | 5 | [前端设计](frontend-design.md)、[新原型](../prototype/index.html)、[评审记录](prototype-review.md)、[历史参考](../prototype/README.md) | 正式Vue及获批离线原型；演示系统仅在原型，正式产品仅RBAC |
 | 6 | [API入口](../api/README.md)、[OpenAPI](../api/openapi.yaml)、[API业务约束](api-contract.md)、[页面对照](api-map.md) | Schema主规范与29项操作、授权/范围/事务语义 |
 | 7 | [初始化](initialization.md)、[部署说明](../deploy/README.md) | 数据转换、五角色、依赖与唯一运行命令 |
-| 8 | [测试验收](testing-acceptance.md)、[阶段4验收](acceptance/stage4-vue.md)、[映射核对](acceptance/stage4-mapping-audit.md)、[结构化归类验收](acceptance/structured-organization.md)、[T13历史结果](acceptance/T13.md) | 需求验证矩阵、隔离、证据及实际限制 |
+| 8 | [测试验收](testing-acceptance.md)、[组员审核后修复](acceptance/peer-followup.md)、[阶段4验收](acceptance/stage4-vue.md)、[映射核对](acceptance/stage4-mapping-audit.md)、[结构化归类验收](acceptance/structured-organization.md)、[T13历史结果](acceptance/T13.md) | 需求验证矩阵、隔离、证据及实际限制 |
 | 9 | [开发计划](development-plan.md)、[协作规范](../CONTRIBUTING.md) | 六阶段顺序、分支与审核关口 |
 | 追溯 | [历史索引](history/README.md) | 只读整改记录，不作为第二份当前规范 |
 

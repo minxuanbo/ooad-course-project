@@ -49,6 +49,7 @@ abstract class R07AuthenticationContractSupport {
   private static final String ME = "/api/me";
   private static final String PERMISSIONS = "/api/me/permissions";
   private static final String UNREGISTERED = "/api/t05-unregistered";
+  private static final String UNKNOWN_ENDPOINT = "/api/r18-unknown-endpoint";
   private static final String PASSWORD = "t05-employee-password";
   private static final String ADMIN_PASSWORD = "t05-admin-password";
   @Autowired TestRestTemplate http;
@@ -559,6 +560,25 @@ abstract class R07AuthenticationContractSupport {
     assertEquals(
         10001, body(request("GET", USERS, rootToken, null)).get("data").get("total").asLong());
     assertEquals(403, request("GET", UNREGISTERED, rootToken, null).getStatusCode().value());
+  }
+
+  /** 路由层404/405沿统一信封返回，错误码和请求号必须符合公开契约。 */
+  @Test
+  @DisplayName("R18 未知接口和错误HTTP方法返回声明的404/405错误码")
+  void R18_routingErrorsMatchContract() throws Exception {
+    String admin = token("admin", ADMIN_PASSWORD);
+    ResponseEntity<String> missing = request("GET", UNKNOWN_ENDPOINT, admin, null);
+    ResponseEntity<String> unsupported = request("PUT", LOGIN, admin, Map.of());
+    assertEquals(404, missing.getStatusCode().value());
+    assertEquals("ENDPOINT_NOT_FOUND", body(missing).get("code").asText());
+    assertEquals(405, unsupported.getStatusCode().value());
+    assertEquals("METHOD_NOT_ALLOWED", body(unsupported).get("code").asText());
+    for (ResponseEntity<String> response : List.of(missing, unsupported)) {
+      assertTrue(body(response).get("data").isNull());
+      String requestId = body(response).get("requestId").asText();
+      assertFalse(requestId.isBlank());
+      assertEquals(response.getHeaders().getFirst("X-Request-Id"), requestId);
+    }
   }
 
   /** 日志必须同时具备实际API与共同根，不能只凭公司领导或日志角色名称放行。 */

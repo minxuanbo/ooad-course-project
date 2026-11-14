@@ -67,6 +67,8 @@ Controller与预检/AOP不再引用具体StructuredService。写用例的事务/
 
 HTTP测试拆成可复用的抽象ContractSupport与当前Structured启动类，保留所有原断言、真实MySQL、实际HTTP、故障注入和确定并发同步点。ContractSupport不依赖具体StructuredService；当前启动类只装配结构化实现，不创建DDD测试类。共享端口/基础设施依赖方向由架构测试保护；当前无DDD的阶段断言在阶段5需替换为互斥装配测试，详见[DDD边界](ddd-boundary.md)。测试名/DisplayName带需求编号，旧Txx只用于历史追溯；profile和库名保留以保持既有安全约束。
 
+R19R21StructuredBoundaryTest使用仅测试依赖ArchUnit1.4.1导入生产字节码，检查API、公共端口、基础设施及结构化层依赖；Controller还检查真实非静态字段必须为service.port下用例接口，注释中的UseCase不参与判定。R18ErrorSchemaTest归r18，路由404/405的真实HTTP断言归共享r07契约；前端增量归tests/r17-navigation.test.mjs及r17-workspaces.test.mjs，不放入生产源码或复制另一套页面。
+
 本地运行验收和3项环境隔离单测移至backend/scripts，测试辅助代码不混入生产src/main。SQL位于deploy；阶段4已直接更新首次结构以加入角色级别、组织类型和墓碑，未搬迁旧数据库。实际结果见[测试说明](testing-acceptance.md)及[本阶段验收](acceptance/structured-organization.md)，不覆盖[T13历史事实](acceptance/T13.md)。
 
 ## 5. 本轮交付与后续边界

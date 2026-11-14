@@ -7,7 +7,7 @@
 | 认证与本人 | `POST /api/auth/login` | 工号或手机号登录 | LoginDTO | LoginVO |
 | 认证与本人 | `POST /api/auth/logout` | 退出当前身份 | 路径/query/无body，见规范 | null |
 | 认证与本人 | `GET /api/me` | 本人身份 | 路径/query/无body，见规范 | MeVO |
-| 认证与本人 | `GET /api/me/permissions` | 本人本系统有效权限 | 路径/query/无body，见规范 | 数组 |
+| 认证与本人 | `GET /api/me/permissions` | 本人本系统有效权限明细；保留契约，正式导航不再额外调用 | 路径/query/无body，见规范 | 数组 |
 | 范围总览 | `GET /api/overview` | 人员启停及直接下级分布 | 无body | OverviewVO |
 | 部门管理 | `GET /api/departments` | 完整范围层级及人数 | 无body | DepartmentVO数组 |
 | 部门管理 | `POST /api/departments` | 新增合法下级 | DepartmentCreateDTO | DepartmentVO |
