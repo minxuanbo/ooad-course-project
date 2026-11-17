@@ -20,22 +20,24 @@ umask 077
 password=$(openssl rand -hex 24)
 {
   printf 'MYSQL_ROOT_PASSWORD=%s\n' "$password"
-  printf 'MYSQL_DATABASE=rbac_test\nMYSQL_USER=rbac_test\nMYSQL_PASSWORD=%s\n' "$password"
+  printf 'MYSQL_DATABASE=rbac_core_t02_test\nMYSQL_USER=rbac_test\nMYSQL_PASSWORD=%s\n' "$password"
 } > "$test_dir/mysql.env"
 {
-  printf 'RBAC_TEST_DB_URL=jdbc:mysql://%s:3306/rbac_test?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&allowPublicKeyRetrieval=true&useSSL=false\n' "$test_name"
-  printf 'RBAC_TEST_DB_USER=rbac_test\nRBAC_TEST_DB_PASSWORD=%s\n' "$password"
+  for pair in 'RBAC_CORE_TEST_DB_URL:rbac_core_t02_test' 'RBAC_CORE_IMPORT_TEST_DB_URL:rbac_core_t03_test' 'RBAC_CORE_HTTP_TEST_DB_URL:rbac_core_t05_test' 'RBAC_CORE_RESOURCE_TEST_DB_URL:rbac_core_t07_test' 'RBAC_CORE_ROLE_TEST_DB_URL:rbac_core_t09_test' 'RBAC_CORE_USER_TEST_DB_URL:rbac_core_t11_test'; do
+    printf '%s=jdbc:mysql://127.0.0.1:3306/%s?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&allowPublicKeyRetrieval=true&useSSL=false\n' "${pair%%:*}" "${pair#*:}"
+  done
+  printf 'RBAC_CORE_TEST_DB_USER=rbac_test\nRBAC_CORE_TEST_DB_PASSWORD=%s\n' "$password"
   printf 'MAVEN_OPTS=-Xmx192m\n'
 } > "$test_dir/test.env"
 unset password
 docker network create "$test_name" >/dev/null
 docker run -d --name "$test_name" --network "$test_name" --memory 512m \
   --env-file "$test_dir/mysql.env" "$RBAC_TEST_MYSQL_IMAGE" \
-  --innodb-buffer-pool-size=128M --performance-schema=OFF --mysqlx=OFF --log-bin-trust-function-creators=ON >/dev/null
+  --innodb-buffer-pool-size=128M --performance-schema=OFF --mysqlx=OFF --skip-log-bin >/dev/null
 ready=false
 for attempt in $(seq 1 90); do
   if docker exec "$test_name" sh -c \
-    'MYSQL_PWD="$MYSQL_PASSWORD" mysql -h 127.0.0.1 -u rbac_test rbac_test -e "SELECT 1"' >/dev/null 2>&1; then
+    'MYSQL_PWD="$MYSQL_PASSWORD" mysql -h 127.0.0.1 -u rbac_test rbac_core_t02_test -e "SELECT 1"' >/dev/null 2>&1; then
     ready=true
     break
   fi
@@ -45,12 +47,21 @@ if [ "$ready" != true ]; then
   docker logs --tail 30 "$test_name"
   exit 1
 fi
-docker run --rm --network "$test_name" --memory 800m \
+# Only this disposable instance grants test-only schema/trigger privileges.
+docker exec "$test_name" sh -c '
+  export MYSQL_PWD="$MYSQL_ROOT_PASSWORD"
+  for db in rbac_core_t02_test rbac_core_t03_test rbac_core_t05_test rbac_core_t07_test rbac_core_t09_test rbac_core_t11_test; do
+    printf "CREATE DATABASE IF NOT EXISTS %s CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_bin; GRANT ALL ON %s.* TO '\''rbac_test'\''@'\''%%'\'';\n" "$db" "$db"
+  done | mysql -u root
+'
+# Share only this temporary MySQL network namespace: test guards require loopback URLs.
+docker run --rm --network "container:$test_name" --memory 800m \
   --env-file "$test_dir/test.env" -v "$RBAC_TEST_EXCEL_DIR:/source:ro" -v "$project_dir:/project:ro" \
   -v "$report_dir:/reports" "$RBAC_BUILD_IMAGE" \
   sh -c '
     mkdir /tmp/test-project && cd /tmp/test-project || exit 1
-    cp /project/pom.xml . && cp -R /project/src . && cp /source/*.xlsx . || exit 1
+    cp /project/pom.xml . && cp -R /project/src /project/deploy . && cp /source/*.xlsx . || exit 1
+    mkdir frontend && cp -R /project/frontend/src /project/frontend/tests frontend/ || exit 1
     /opt/apache-maven-3.9.9/bin/mvn -B -ntp -s /opt/maven-settings.xml clean verify
     result=$?
     if [ -s target/site/jacoco/index.html ]; then
@@ -60,8 +71,8 @@ docker run --rm --network "$test_name" --memory 800m \
       for f in target/surefire-reports/*.txt; do
         sed -n "/Tests run:/p" "$f"
       done > /reports/test-summary.txt
-      sha256sum target/classes/com/municipal/rbac/*.class > /reports/class-sha256.txt
-      sha256sum pom.xml src/main/java/com/municipal/rbac/*.java src/test/java/com/municipal/rbac/*.java > /reports/source-sha256.txt
+      find target/classes/com/municipal -name '*.class' | sort | xargs sha256sum > /reports/class-sha256.txt
+      find src/main/java src/test/java -name '*.java' | sort | xargs sha256sum > /reports/source-sha256.txt
     fi
     exit "$result"
   '
