@@ -1,0 +1,982 @@
+{
+  "status": "IMPLEMENTED",
+  "baseline": "519ddefb1c7e254538c4d408aacdd61db7fa71e2",
+  "entries": [
+    {
+      "id": "identity",
+      "title": "身份与准入",
+      "service": "DddAuthenticationService",
+      "port": "AuthenticationUseCase",
+      "repository": "UserRepository",
+      "repoMethods": [
+        "+ match(identity: User.LoginIdentity): List<User>",
+        "+ find(key: User.Key): Optional<User>"
+      ],
+      "model": "User",
+      "fields": [
+        "- id: Long",
+        "- username, name, phone, passwordHash: String",
+        "- department: Department",
+        "- enabled: boolean",
+        "- roles: Set<Role>"
+      ],
+      "methods": [
+        "+ level(): int"
+      ],
+      "policy": "AuthenticationPolicy",
+      "policyMethods": [
+        "+ eligibleAccount(matches): Optional<User>"
+      ],
+      "serviceMethods": [
+        "+ login(command): LoginResult",
+        "+ require(header): CurrentIdentity",
+        "+ me(header): IdentityResult"
+      ],
+      "adapter": "JpaUserRepositoryAdapter",
+      "repoRole": "users"
+    },
+    {
+      "id": "personnel",
+      "title": "人员角色、停用与调动",
+      "service": "DddUserManagementService",
+      "port": "UserManagementUseCase",
+      "repository": "UserRepository",
+      "repoMethods": [
+        "+ find(key: User.Key): Optional<User>",
+        "+ save(user: User): User"
+      ],
+      "model": "User",
+      "fields": [
+        "- id: Long",
+        "- department: Department",
+        "- enabled: boolean",
+        "- roles: Set<Role>",
+        "- position: String"
+      ],
+      "methods": [
+        "+ replaceRoles(selected): User",
+        "+ disable(): User",
+        "+ transfer(target: Department): User"
+      ],
+      "policy": "RoleAssignmentPolicy",
+      "policyMethods": [
+        "+ canManage(actor, global, target): boolean",
+        "+ canAssign(role, level, customPermitted, ids): boolean"
+      ],
+      "serviceMethods": [
+        "+ replaceRoles(header, id, command): UserWithRolesResult",
+        "+ disable(header, id): UserWithRolesResult",
+        "+ move(header, id, command): UserWithRolesResult"
+      ],
+      "adapter": "JpaUserRepositoryAdapter",
+      "repoRole": "users"
+    },
+    {
+      "id": "query",
+      "title": "范围内人员查询",
+      "service": "DddUserQueryService",
+      "port": "UserQueryUseCase",
+      "repository": "UserRepository",
+      "repoMethods": [
+        "+ search(criteria: Users): DomainPage<User>"
+      ],
+      "model": "SearchCriteria.Users",
+      "fields": [
+        "- scope: OrganizationFacts.Scope",
+        "- q: String",
+        "- enabled: Boolean",
+        "- page, size: int"
+      ],
+      "methods": [],
+      "policy": "OrganizationPolicy",
+      "policyMethods": [
+        "+ scope(facts, root): OrganizationFacts.Scope",
+        "+ global(facts, departmentId): boolean"
+      ],
+      "serviceMethods": [
+        "+ list(header, query): UserPageResult",
+        "+ tree(header): List<DepartmentResult>"
+      ],
+      "adapter": "JpaUserRepositoryAdapter",
+      "repoRole": "users"
+    },
+    {
+      "id": "role",
+      "title": "共享角色及直接权限",
+      "service": "DddRoleService",
+      "port": "RoleUseCase",
+      "repository": "RoleRepository",
+      "repoMethods": [
+        "+ find(key: Role.Key): Optional<Role>",
+        "+ save(role: Role): Role"
+      ],
+      "model": "Role",
+      "fields": [
+        "- id: Long",
+        "- code, name: String",
+        "- managementLevel: Integer",
+        "- enabled: boolean",
+        "- permissions: Set<Permission>"
+      ],
+      "methods": [
+        "+ custom(code, name, enabled): Role {static}",
+        "+ revise(name, enabled): Role",
+        "+ replacePermissions(selected): Role"
+      ],
+      "policy": "PermissionSelectionPolicy",
+      "policyMethods": [
+        "+ replace(role, selected, requested): Role"
+      ],
+      "serviceMethods": [
+        "+ create(header, command): RoleResult",
+        "+ replacePermissions(header, id, command): RolePermissionsResult",
+        "+ patch(header, id, command): RoleResult"
+      ],
+      "adapter": "JpaRoleRepositoryAdapter",
+      "repoRole": "roles"
+    },
+    {
+      "id": "resource",
+      "title": "权限树及API映射",
+      "service": "DddResourceService",
+      "port": "ResourceUseCase",
+      "repository": "PermissionRepository",
+      "repoMethods": [
+        "+ find(key: Permission.Key): Optional<Permission>",
+        "+ save(value: Permission): Permission"
+      ],
+      "model": "Permission",
+      "fields": [
+        "- id, parentId: Long",
+        "- system: ApplicationSystem",
+        "- code, name: String",
+        "- type: Permission.Type",
+        "- enabled: boolean",
+        "- apis: Set<ApiResource>"
+      ],
+      "methods": [
+        "+ revise(parent, name, type, active): Permission",
+        "+ replaceApis(selected): Permission"
+      ],
+      "policy": "PermissionTreePolicy",
+      "policyMethods": [
+        "+ revise(current, tree, parentId, type, enabled): Permission",
+        "+ map(current, resources, requested): Permission"
+      ],
+      "serviceMethods": [
+        "+ patchPermission(header, id, command): ResourcePermissionResult",
+        "+ patchApi(header, id, command): ApiResult",
+        "+ replaceMapping(header, id, command): PermissionApisResult"
+      ],
+      "adapter": "JpaPermissionRepositoryAdapter",
+      "repoRole": "permissions"
+    },
+    {
+      "id": "department",
+      "title": "部门维护",
+      "service": "DddDepartmentService",
+      "port": "DepartmentUseCase",
+      "repository": "OrganizationRepository",
+      "repoMethods": [
+        "+ load(): OrganizationFacts",
+        "+ usage(key: Department.Key): Usage",
+        "+ save(department: Department): Department"
+      ],
+      "model": "Department",
+      "fields": [
+        "- id, parentId: Long",
+        "- code, name: String",
+        "- type: Department.Type",
+        "- deleted: boolean"
+      ],
+      "methods": [
+        "+ child(code, name, parent, type): Department {static}",
+        "+ rename(name): Department",
+        "+ tombstone(): Department"
+      ],
+      "policy": "OrganizationPolicy",
+      "policyMethods": [
+        "+ allowsChild(parent, type, trustedRoot): boolean",
+        "+ scope(facts, root): OrganizationFacts.Scope",
+        "+ requireNonRoot(node, facts): void",
+        "+ requireEmpty(usage): void",
+        "+ requireUnique(facts, parent, name, existing): void"
+      ],
+      "serviceMethods": [
+        "+ create(header, command): DepartmentResult",
+        "+ rename(header, id, command): DepartmentResult",
+        "+ delete(header, id): void"
+      ],
+      "adapter": "JpaOrganizationRepositoryAdapter",
+      "repoRole": "departments"
+    },
+    {
+      "id": "overview",
+      "title": "范围总览",
+      "service": "DddOverviewService",
+      "port": "OverviewUseCase",
+      "repository": "UserRepository",
+      "repoMethods": [
+        "+ statistics(scope: Scope): Statistics"
+      ],
+      "model": "OrganizationFacts.Statistics",
+      "fields": [
+        "- total, enabled: long",
+        "- directCounts: List<Count>"
+      ],
+      "methods": [],
+      "policy": "DddDepartmentView",
+      "policyMethods": [
+        "+ build(actor, facts): View"
+      ],
+      "serviceMethods": [
+        "+ overview(header): OverviewResult"
+      ],
+      "adapter": "JpaUserRepositoryAdapter",
+      "repoRole": "users",
+      "supportRole": "departments",
+      "supportInterface": false
+    },
+    {
+      "id": "audit",
+      "title": "最小鉴权日志查询",
+      "service": "DddAuditLogService",
+      "port": "AuditLogUseCase",
+      "repository": "AuditQueryGateway",
+      "repoMethods": [
+        "+ list(query: LogQuery): LogPageResult"
+      ],
+      "model": "LogPageResult",
+      "fields": [
+        "- items: List<LogEntryResult>",
+        "- total, snapshotId: Long",
+        "- nextCursor: String",
+        "- hasMore: Boolean"
+      ],
+      "methods": [],
+      "policy": "ManagementAccessUseCase",
+      "policyMethods": [
+        "+ require(header: String): void"
+      ],
+      "serviceMethods": [
+        "+ list(header, query): LogPageResult"
+      ],
+      "adapter": "JpaAuditQueryGateway",
+      "repoRole": "queries",
+      "supportRole": "access"
+    },
+    {
+      "id": "importing",
+      "title": "新项目组织账号导入",
+      "service": "DddImportService",
+      "port": "ImportUseCase",
+      "repository": "InitializationRepository",
+      "repoMethods": [
+        "+ inspect(): InitializationState",
+        "+ save(batch: ImportBatch): Receipt"
+      ],
+      "model": "ImportManifest",
+      "fields": [
+        "- organizations: List<Organization>",
+        "- people: List<Person>",
+        "- organizationHash, peopleHash: String"
+      ],
+      "methods": [],
+      "policy": "ImportPolicy",
+      "policyMethods": [
+        "+ existing(manifest, state, admin): Receipt",
+        "+ batch(manifest, accounts, admin): ImportBatch"
+      ],
+      "serviceMethods": [
+        "+ importDirectory(directory, credentials): ImportReport"
+      ],
+      "adapter": "JpaInitializationRepositoryAdapter",
+      "repoRole": "initialization"
+    },
+    {
+      "id": "bootstrap",
+      "title": "首次批量授权",
+      "service": "DddInitialAuthorizationService",
+      "port": "AuthorizationBootstrapUseCase",
+      "repository": "InitializationRepository",
+      "repoMethods": [
+        "+ inspect(): InitializationState",
+        "+ catalog(): BootstrapPlan.Catalog",
+        "+ publish(plan: Publication): void"
+      ],
+      "model": "BootstrapPlan",
+      "fields": [
+        "- source: ImportManifest",
+        "- employees: List<Assignment>",
+        "- manifestHash: String"
+      ],
+      "methods": [],
+      "policy": "InitialAuthorizationPolicy",
+      "policyMethods": [
+        "+ plan(manifest, permissions, codes): BootstrapPlan",
+        "+ validate(plan, state, catalog): Map<Long, Integer>"
+      ],
+      "serviceMethods": [
+        "+ preview(directory): RoleBootstrapPlan",
+        "+ initialize(directory): BootstrapReport",
+        "+ initialAdminUsername(): String"
+      ],
+      "adapter": "JpaInitializationRepositoryAdapter",
+      "repoRole": "initialization"
+    },
+    {
+      "id": "maintenance",
+      "title": "完整维护者保护",
+      "service": "DddMaintenanceGuard",
+      "port": "MaintenanceProtection",
+      "repository": "AuthorizationRepository",
+      "repoMethods": [
+        "+ facts(key: User.Key): Optional<AuthorizationFacts>",
+        "+ rootAccounts(root: Department.Key): List<AuthorizationFacts>"
+      ],
+      "model": "AuthorizationFacts",
+      "fields": [
+        "- user: User"
+      ],
+      "methods": [],
+      "policy": "MaintenancePolicy",
+      "policyMethods": [
+        "+ qualifies(facts, root, required): boolean"
+      ],
+      "serviceMethods": [
+        "+ lock(): void",
+        "+ retainOne(): void"
+      ],
+      "adapter": "JpaAuthorizationRepositoryAdapter",
+      "repoRole": "authorization"
+    },
+    {
+      "id": "api-resource",
+      "title": "API资源启停",
+      "service": "DddResourceService",
+      "port": "ResourceUseCase",
+      "repository": "ApiResourceRepository",
+      "repoMethods": [
+        "+ find(key: ApiResource.Key): Optional<ApiResource>",
+        "+ save(api: ApiResource): ApiResource"
+      ],
+      "model": "ApiResource",
+      "fields": [
+        "- id: Long",
+        "- system: ApplicationSystem",
+        "- route: ApiResource.Route",
+        "- enabled: boolean"
+      ],
+      "methods": [
+        "+ changeAvailability(value): ApiResource"
+      ],
+      "policy": "DddWrite",
+      "policyMethods": [
+        "+ global(header, change): T"
+      ],
+      "supportRole": "writes",
+      "serviceMethods": [
+        "+ patchApi(header, id, command): ApiResult"
+      ],
+      "adapter": "JpaApiResourceRepositoryAdapter",
+      "repoRole": "apis",
+      "supportInterface": false
+    },
+    {
+      "id": "systems",
+      "title": "RBAC应用系统目录",
+      "service": "DddResourceService",
+      "port": "ResourceUseCase",
+      "repository": "ApplicationSystemRepository",
+      "repoMethods": [
+        "+ findRbac(): Optional<ApplicationSystem>"
+      ],
+      "model": "ApplicationSystem",
+      "fields": [
+        "- id: Long",
+        "- code, name: String",
+        "- enabled: boolean"
+      ],
+      "methods": [
+        "+ isRbac(): boolean"
+      ],
+      "policy": "ManagementAccessUseCase",
+      "policyMethods": [
+        "+ require(header: String): void"
+      ],
+      "serviceMethods": [
+        "+ systems(header): List<SystemResult>"
+      ],
+      "adapter": "JpaApplicationSystemRepositoryAdapter",
+      "repoRole": "systems",
+      "supportRole": "access"
+    },
+    {
+      "id": "authorization",
+      "title": "逐请求有效授权",
+      "service": "DddAuthorizationService",
+      "port": "ManagementAuthorization",
+      "repository": "AuthorizationRepository",
+      "repoMethods": [
+        "+ facts(key: User.Key): Optional<AuthorizationFacts>"
+      ],
+      "model": "AuthorizationFacts",
+      "fields": [
+        "- user: User"
+      ],
+      "methods": [],
+      "policy": "AuthorizationPolicy",
+      "policyMethods": [
+        "+ routes(facts): Set<ApiResource.Route>",
+        "+ directPermissions(facts): Set<Permission>"
+      ],
+      "serviceMethods": [
+        "+ routes(userId): Set<Route>",
+        "+ allows(userId, method, template): boolean",
+        "+ canEnter(userId): boolean"
+      ],
+      "adapter": "JpaAuthorizationRepositoryAdapter",
+      "repoRole": "authorization"
+    },
+    {
+      "id": "management-access",
+      "title": "实际API与共同根门禁",
+      "service": "DddManagementAccess",
+      "port": "ManagementAccessUseCase",
+      "repository": "DddScope",
+      "repoMethods": [
+        "+ facts(): OrganizationFacts"
+      ],
+      "model": "OrganizationFacts",
+      "fields": [
+        "- trustedRootId: Long",
+        "- departments: List<Department>"
+      ],
+      "methods": [],
+      "policy": "OrganizationPolicy",
+      "policyMethods": [
+        "+ global(facts, departmentId): boolean"
+      ],
+      "serviceMethods": [
+        "+ require(header): void"
+      ],
+      "adapter": "JpaOrganizationRepositoryAdapter",
+      "repoRole": "scope",
+      "repositoryInterface": false
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "authorization",
+      "title": "有效API计算",
+      "source": "service/structured/security/StructuredEffectivePermissionService.java",
+      "anchor": "routes(Long userId)",
+      "structured": {
+        "lifelines": [
+          "permissions: StructuredEffectivePermissionService",
+          "apis: ApiResourceJpaRepository"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "effectiveRoutes = routes(userId)"
+          ],
+          [
+            1,
+            2,
+            "values = effectiveApis(userId, RBAC)"
+          ]
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "permissions: DddAuthorizationService",
+          "repository: AuthorizationRepository",
+          "AuthorizationPolicy"
+        ],
+        "meta": [
+          3
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "effectiveRoutes = routes(userId)"
+          ],
+          [
+            1,
+            2,
+            "facts = facts(User.Key(userId))"
+          ],
+          [
+            1,
+            3,
+            "effective = routes(facts)"
+          ]
+        ],
+        "loops": []
+      },
+      "dddSource": "DddAuthorizationService",
+      "dddAnchor": "routes"
+    },
+    {
+      "id": "personnel",
+      "title": "人员角色整体替换",
+      "source": "service/structured/user/StructuredUserManagementService.java",
+      "anchor": "replaceRoles(String header, Long id, ReplaceUserRolesCommand command)",
+      "structured": {
+        "lifelines": [
+          "service: StructuredUserManagementService",
+          "roles: RoleJpaRepository",
+          "target: UserEntity",
+          "users: UserJpaRepository",
+          "authority: StructuredPersonnelAuthority"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "result = replaceRoles 的差异片段"
+          ],
+          [
+            1,
+            4,
+            "target = findById(id)"
+          ],
+          [
+            1,
+            5,
+            "requireManage(actor, target)"
+          ],
+          [
+            1,
+            2,
+            "selected = findAllById(wanted)"
+          ],
+          [
+            1,
+            2,
+            "allowedCount = count(allowed)"
+          ],
+          [
+            1,
+            3,
+            "removeRole(existing)"
+          ],
+          [
+            1,
+            3,
+            "assignRole(role)"
+          ],
+          [
+            1,
+            4,
+            "saved = saveAndFlush(target)"
+          ]
+        ],
+        "loops": [
+          {
+            "first": 5,
+            "last": 5,
+            "text": "[existing不在wanted内]：逐项移除"
+          },
+          {
+            "first": 6,
+            "last": 6,
+            "text": "[selected]：逐项授予"
+          }
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddUserManagementService",
+          "users: UserRepository",
+          "roles: RoleRepository",
+          "RoleAssignmentPolicy",
+          "target: User"
+        ],
+        "meta": [
+          4
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "replaceRoles 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "target = find(User.Key(id))"
+          ],
+          [
+            1,
+            4,
+            "canManage(actor, global, target)"
+          ],
+          [
+            1,
+            3,
+            "selected = select(Role.Selection(ids))"
+          ],
+          [
+            1,
+            4,
+            "canAssign(role, level, customPermitted, ids)"
+          ],
+          [
+            1,
+            5,
+            "changed = replaceRoles(selected)"
+          ],
+          [
+            1,
+            2,
+            "saved = save(changed)"
+          ]
+        ],
+        "loops": [
+          {
+            "first": 4,
+            "last": 4,
+            "text": "[每个选中的角色]"
+          }
+        ]
+      },
+      "dddSource": "DddUserManagementService",
+      "dddAnchor": "replaceRoles"
+    },
+    {
+      "id": "role-permissions",
+      "title": "角色权限整体替换",
+      "source": "service/structured/role/StructuredRoleService.java",
+      "anchor": "replacePermissions(",
+      "structured": {
+        "lifelines": [
+          "service: StructuredRoleService",
+          "permissions: PermissionJpaRepository",
+          "role: RoleEntity",
+          "roles: RoleJpaRepository"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "result = replacePermissions 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "selected = findAllById(ids)"
+          ],
+          [
+            1,
+            3,
+            "revokePermission(existing)"
+          ],
+          [
+            1,
+            3,
+            "grantPermission(permission)"
+          ],
+          [
+            1,
+            4,
+            "saved = saveAndFlush(role)"
+          ]
+        ],
+        "loops": [
+          {
+            "first": 2,
+            "last": 2,
+            "text": "[原权限不在wanted内]"
+          },
+          {
+            "first": 3,
+            "last": 3,
+            "text": "[selected]"
+          }
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddRoleService",
+          "permissions: PermissionRepository",
+          "PermissionSelectionPolicy",
+          "roles: RoleRepository"
+        ],
+        "meta": [
+          3
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "replacePermissions 的差异片段"
+          ],
+          [
+            1,
+            4,
+            "role = find(Role.Key(id))"
+          ],
+          [
+            1,
+            2,
+            "selected = select(Permission.Selection(ids))"
+          ],
+          [
+            1,
+            3,
+            "changed = replace(role, selected, requested)"
+          ],
+          [
+            1,
+            4,
+            "saved = save(changed)"
+          ]
+        ],
+        "loops": []
+      },
+      "dddSource": "DddRoleService",
+      "dddAnchor": "replacePermissions"
+    },
+    {
+      "id": "permission-tree",
+      "title": "权限树修改",
+      "source": "service/structured/resource/StructuredResourceService.java",
+      "anchor": "patchPermission(",
+      "structured": {
+        "lifelines": [
+          "service: StructuredResourceService",
+          "permissions: PermissionJpaRepository",
+          "permission: PermissionEntity"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "result = patchPermission 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "parent = findById(parentId)"
+          ],
+          [
+            1,
+            3,
+            "changeType(type)"
+          ],
+          [
+            1,
+            3,
+            "moveTo(parent)"
+          ],
+          [
+            1,
+            3,
+            "setEnabled(enabled)"
+          ],
+          [
+            1,
+            2,
+            "saved = saveAndFlush(permission)"
+          ]
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddResourceService",
+          "repository: PermissionRepository",
+          "PermissionTreePolicy"
+        ],
+        "meta": [
+          3
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "patchPermission 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "current = find(Permission.Key(id))"
+          ],
+          [
+            1,
+            2,
+            "tree = tree(system)"
+          ],
+          [
+            1,
+            3,
+            "changed = revise(current, tree, parent, type, enabled)"
+          ],
+          [
+            1,
+            2,
+            "saved = save(changed)"
+          ]
+        ],
+        "loops": []
+      },
+      "dddSource": "DddResourceService",
+      "dddAnchor": "patchPermission"
+    },
+    {
+      "id": "department-create",
+      "title": "新增合法下级部门",
+      "source": "service/structured/department/StructuredDepartmentService.java",
+      "anchor": "create(String header, CreateDepartmentCommand command)",
+      "structured": {
+        "lifelines": [
+          "service: StructuredDepartmentService",
+          "department: DepartmentEntity",
+          "departments: DepartmentJpaRepository"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "result = create 的差异片段"
+          ],
+          [
+            1,
+            1,
+            "allowsChild(parentType, childType)"
+          ],
+          [
+            1,
+            1,
+            "requireUnique(parentId, name, null)"
+          ],
+          [
+            1,
+            2,
+            "moveTo(parent)"
+          ],
+          [
+            1,
+            3,
+            "saved = saveAndFlush(department)"
+          ]
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddDepartmentService",
+          "OrganizationPolicy",
+          "Department",
+          "repository: OrganizationRepository"
+        ],
+        "meta": [
+          2,
+          3
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "create 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "allowsChild(parent, type, trustedRoot)"
+          ],
+          [
+            1,
+            2,
+            "requireUnique(facts, parentId, name, null)"
+          ],
+          [
+            1,
+            3,
+            "child = child(code, name, parentId, type)"
+          ],
+          [
+            1,
+            4,
+            "saved = save(child)"
+          ]
+        ],
+        "loops": []
+      },
+      "dddSource": "DddDepartmentService",
+      "dddAnchor": "create"
+    },
+    {
+      "id": "user-query",
+      "title": "范围内人员分页",
+      "source": "service/structured/user/StructuredUserQueryService.java",
+      "anchor": "list(",
+      "structured": {
+        "lifelines": [
+          "service: StructuredUserQueryService",
+          "users: UserJpaRepository"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "pageResult = list 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "total = count(filter)"
+          ],
+          [
+            1,
+            2,
+            "entities = findAll(filter, pageRequest)"
+          ]
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddUserQueryService",
+          "criteria: SearchCriteria.Users",
+          "repository: UserRepository"
+        ],
+        "meta": [],
+        "calls": [
+          [
+            0,
+            1,
+            "list 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "new Users(scope, query, enabled, page, size)"
+          ],
+          [
+            1,
+            3,
+            "domainPage = search(criteria)"
+          ]
+        ],
+        "loops": []
+      },
+      "dddSource": "DddUserQueryService",
+      "dddAnchor": "list"
+    }
+  ],
+  "sharedSequenceExcluded": [
+    "Controller",
+    "CloneFactory",
+    "IdentityTokenStore",
+    "RequestContext",
+    "LayerLoggingAspect",
+    "AuditWriter",
+    "MaintenanceProtection",
+    "lock",
+    "retainOne",
+    "commit",
+    "rollback"
+  ]
+}

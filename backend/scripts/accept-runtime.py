@@ -19,7 +19,7 @@ COMMON_GIT = Path(subprocess.check_output(
     ['git', 'rev-parse', '--git-common-dir'], cwd=ROOT, text=True).strip())
 WORKSPACE = (ROOT / COMMON_GIT).resolve().parent
 LOCAL = WORKSPACE / '.local'
-REPORT = LOCAL / 'rbac-issues' / ('structured-runtime-' + str(time.time_ns()))
+REPORT = LOCAL / 'rbac-issues' / ('dual-strategy-runtime-' + str(time.time_ns()))
 SOURCES = {
     '市政公司员工信息表.xlsx': '66657800a5e2e252c9d1dedfee2dbd54b694e3a5912166c2bac79c8703b20516',
     '市政公司部门信息表.xlsx': '555ae8cb1a1569dda43cf53c47ee37f4ba4e8964f334ec8f2e1ef73699686c40',
@@ -61,6 +61,8 @@ def prepare():
     required = ('RBAC_CORE_DB_URL', 'RBAC_CORE_DB_USER', 'RBAC_CORE_DB_PASSWORD',
                 'RBAC_CORE_EMPLOYEE_PASSWORD', 'RBAC_CORE_ADMIN_PASSWORD', 'RBAC_ACCEPTANCE_DATADIR')
     require(all(ENV.get(key) for key in required), '缺少RBAC运行验收必填环境配置，见验收说明')
+    strategy = ENV.get('APP_BACKEND_STRATEGY', 'structured')
+    require(strategy in ('structured', 'ddd'), 'RBAC运行验收策略只允许structured或ddd')
     # Spring环境可覆盖YAML中的RBAC占位符；JVM环境还可注入-D/agent，必须先拒绝。
     overrides = []
     for key in ENV:
@@ -73,6 +75,7 @@ def prepare():
                         'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'PROGRAMDATA', 'HOME',
                         'LANG', 'LC_ALL', 'TZ'}
     JAVA_ENV = {key: value for key, value in ENV.items() if key.upper() in operating_system}
+    JAVA_ENV['APP_BACKEND_STRATEGY'] = strategy
     for key in ('JAVA_HOME', 'RBAC_CORE_DB_URL', 'RBAC_CORE_DB_USER', 'RBAC_CORE_DB_PASSWORD',
                 'RBAC_CORE_EMPLOYEE_PASSWORD', 'RBAC_CORE_ADMIN_PASSWORD', 'RBAC_CORE_ADMIN_USERNAME'):
         if key in ENV:
@@ -101,6 +104,7 @@ def prepare():
     REPORT.mkdir(parents=True)
     (REPORT / 'environment.json').write_text(json.dumps({
         'base': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
+        'strategy': strategy,
         'java': version.stderr.splitlines()[0], 'mysql': sql('SELECT VERSION();'),
         'sourceSha256': SOURCES,
     }, ensure_ascii=False, indent=2), encoding='utf-8')
@@ -355,7 +359,8 @@ def main():
     for filename, digest in SOURCES.items():
         require(hashlib.sha256((ROOT / filename).read_bytes()).hexdigest() == digest, '验收修改了原始Excel')
     (REPORT / 'summary.json').write_text(json.dumps({'result': 'PASS', 'httpRequests': HTTP_COUNT,
-                                                   'scope': 'current structured backend only'}, indent=2), encoding='utf-8')
+                                                   'strategy': JAVA_ENV['APP_BACKEND_STRATEGY'],
+                                                   'scope': 'production BCrypt10 initialization and packaged HTTP'}, indent=2), encoding='utf-8')
     print('RBAC运行验收 default JAR restart and repeat initialization preserved changes. Real HTTP requests=' + str(HTTP_COUNT), flush=True)
     print('Local evidence directory: ' + str(REPORT), flush=True)
 

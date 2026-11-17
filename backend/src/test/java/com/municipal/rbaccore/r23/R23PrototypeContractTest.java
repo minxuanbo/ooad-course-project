@@ -179,6 +179,35 @@ class R23PrototypeContractTest {
     assertEquals(3, overview.path("totalDepartments").asInt());
   }
 
+  /** 改名后回传真实人数与删除资格，调用方不必重新读整棵目录才能得到正确状态。 */
+  @Test
+  @DisplayName("R24 非空部门改名返回真实人数且不可删除")
+  void R24_RenamedDepartmentReportsCurrentUsage() {
+    String admin = token(1);
+    ResponseEntity<JsonNode> renamed = call(HttpMethod.PATCH, DEPARTMENTS + "/2", admin,
+        Map.of("name", "新部门名称"));
+    assertEquals(200, renamed.getStatusCode().value());
+    JsonNode node = renamed.getBody().path("data");
+    assertEquals(3, node.path("directUsers").asInt());
+    assertEquals(3, node.path("totalUsers").asInt());
+    assertTrue(node.path("canDelete").isBoolean());
+    assertFalse(node.path("canDelete").asBoolean());
+  }
+
+  /** 已删除部门是范围外筛选，不能作为当前人员目录的过滤根。 */
+  @Test
+  @DisplayName("R10/R24 人员筛选拒绝已删除部门并保留未知目标错误")
+  void R24_UserSearchRejectsDepartmentTombstone() {
+    String admin = token(1);
+    assertEquals(200, call(HttpMethod.DELETE, DEPARTMENTS + "/3", admin, null).getStatusCode().value());
+    ResponseEntity<JsonNode> deleted = call(HttpMethod.GET, USERS + "?departmentId=3", admin, null);
+    assertEquals(403, deleted.getStatusCode().value());
+    assertEquals("MANAGEMENT_SCOPE_DENIED", deleted.getBody().path("code").asText());
+    ResponseEntity<JsonNode> unknown = call(HttpMethod.GET, USERS + "?departmentId=99999", admin, null);
+    assertEquals(404, unknown.getStatusCode().value());
+    assertEquals("RESOURCE_NOT_FOUND", unknown.getBody().path("code").asText());
+  }
+
   /** 部门树的每项总数满足直属加直接子树，职位与停用角色分别展示。 */
   @Test
   @DisplayName("R25/R26 人数聚合及人员摘要使用真实资料")

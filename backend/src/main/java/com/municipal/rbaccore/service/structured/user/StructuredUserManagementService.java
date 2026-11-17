@@ -11,6 +11,7 @@ import com.municipal.rbaccore.infrastructure.persistence.repository.UserJpaRepos
 import com.municipal.rbaccore.service.port.error.BusinessException;
 import com.municipal.rbaccore.service.port.role.RoleResult;
 import com.municipal.rbaccore.service.port.security.CurrentIdentity;
+import com.municipal.rbaccore.service.structured.security.StructuredPersonnelAuthority;
 import com.municipal.rbaccore.service.port.security.RbacCatalog;
 import com.municipal.rbaccore.service.port.security.RequestContext;
 import com.municipal.rbaccore.service.port.user.AssignableRolePageResult;
@@ -74,10 +75,11 @@ public class StructuredUserManagementService implements UserManagementUseCase {
   public AssignableRolePageResult assignableRoles(
       String header, Long id, AssignableRoleQuery query) {
     CurrentIdentity actor = auth.require(header);
-    authority.requireManage(actor, target(actor, id));
+    StructuredPersonnelAuthority.AuthoritySnapshot operator = authority.snapshot(actor);
+    if (!authority.canManage(operator, target(actor, id))) throw BusinessException.scopeDenied();
     String search = query.getQ() == null ? "" : query.getQ().toLowerCase(Locale.ROOT);
     Specification<RoleEntity> filter =
-        assignableFilter(ownPermissionIds(actor), authority.level(actor), search);
+        assignableFilter(ownPermissionIds(actor), operator, search);
     long total = roles.count(filter);
     long offset = (long) query.getPage() * query.getSize();
     if (offset >= total) {
@@ -100,14 +102,15 @@ public class StructuredUserManagementService implements UserManagementUseCase {
         header,
         actor -> {
           UserEntity target = target(actor, id);
-          authority.requireManage(actor, target);
+          StructuredPersonnelAuthority.AuthoritySnapshot operator = authority.snapshot(actor);
+          if (!authority.canManage(operator, target)) throw BusinessException.scopeDenied();
           Set<Long> wanted = new LinkedHashSet<>(command.getIds());
           List<RoleEntity> selected = roles.findAllById(wanted);
           if (selected.size() != wanted.size()) {
             throw BusinessException.bad("INVALID_ARGUMENT", "存在未知的角色ID");
           }
           Specification<RoleEntity> allowed =
-              assignableFilter(ownPermissionIds(actor), authority.level(actor), "")
+              assignableFilter(ownPermissionIds(actor), operator, "")
                   .and((role, query, builder) -> role.get("id").in(wanted));
           if (!wanted.isEmpty() && roles.count(allowed) != wanted.size()) {
             throw BusinessException.scopeDenied();
@@ -221,7 +224,8 @@ public class StructuredUserManagementService implements UserManagementUseCase {
   }
 
   /** 数据库排除任何超出本人有效权限的角色，外系统权限不因过滤而变成空集。 */
-  private Specification<RoleEntity> assignableFilter(Set<Long> ownIds, int level, String search) {
+  private Specification<RoleEntity> assignableFilter(
+      Set<Long> ownIds, StructuredPersonnelAuthority.AuthoritySnapshot operator, String search) {
     String pattern =
         "%" + search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
     return (root, query, builder) -> {
@@ -241,11 +245,11 @@ public class StructuredUserManagementService implements UserManagementUseCase {
                       outside)));
       return builder.and(
           builder.isTrue(root.get("enabled")),
-          level == 5
-              ? builder.conjunction()
-              : builder.and(
-                  builder.isNotNull(root.get("managementLevel")),
-                  builder.le(root.get("managementLevel"), level)),
+          operator.administrator()
+              ? builder.or(
+                  builder.isNull(root.get("managementLevel")),
+                  builder.le(root.get("managementLevel"), operator.level()))
+              : builder.le(root.get("managementLevel"), operator.level()),
           builder.not(builder.exists(forbidden)),
           builder.or(
               builder.like(builder.lower(root.get("name")), pattern, '\\'),

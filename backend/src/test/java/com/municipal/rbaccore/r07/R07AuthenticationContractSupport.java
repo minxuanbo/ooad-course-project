@@ -215,6 +215,11 @@ abstract class R07AuthenticationContractSupport {
     assertEquals(byNumber.get("user"), byPhone.get("user"));
     String numberToken = "Bearer " + byNumber.get("token").asText();
     String phoneToken = "Bearer " + byPhone.get("token").asText();
+    assertStoredIdentity(byNumber.get("user"), "SG000001");
+    assertStoredIdentity(byPhone.get("user"), "SG000001");
+    ResponseEntity<String> me = request("GET", ME, numberToken, null);
+    assertEquals(200, me.getStatusCode().value());
+    assertStoredIdentity(body(me).get("data").get("user"), "SG000001");
     assertEquals(
         body(request("GET", PERMISSIONS, numberToken, null)).get("data"),
         body(request("GET", PERMISSIONS, phoneToken, null)).get("data"));
@@ -781,6 +786,26 @@ abstract class R07AuthenticationContractSupport {
     assertEquals(
         true,
         jdbc.queryForObject("SELECT enabled FROM users WHERE username='admin'", Boolean.class));
+  }
+
+  /** 对照数据库真值检查身份映射，避免两个空对象相等掩盖姓名和工号丢失。 */
+  private void assertStoredIdentity(JsonNode identity, String username) {
+    Map<String, Object> stored =
+        jdbc.queryForMap(
+            "SELECT u.id,u.username,u.name,u.department_id,d.name AS department_name"
+                + " FROM users u JOIN departments d ON d.id=u.department_id WHERE u.username=?",
+            username);
+    assertEquals(((Number) stored.get("id")).longValue(), identity.get("id").asLong());
+    assertEquals(stored.get("username"), identity.get("username").asText());
+    assertEquals(stored.get("name"), identity.get("name").asText());
+    assertEquals(
+        ((Number) stored.get("department_id")).longValue(),
+        identity.get("departmentId").asLong());
+    assertEquals(stored.get("department_name"), identity.get("departmentName").asText());
+    assertEquals(
+        jdbc.queryForObject("SELECT enabled FROM users WHERE username=?", Boolean.class, username)
+            .booleanValue(),
+        identity.get("enabled").asBoolean());
   }
 
   /** 已知账号的内部ID查询仅用于测试夹具，不从姓名推断身份。 */

@@ -13,6 +13,8 @@ import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilde
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -24,12 +26,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @EntityScan(basePackages = "com.municipal.rbaccore.infrastructure.persistence.entity")
 @EnableJpaRepositories(
     basePackages = "com.municipal.rbaccore.infrastructure.persistence.repository")
+@Import(RuntimeStrategySelector.class)
 @ComponentScan(
     basePackages = {
       "com.municipal.rbaccore.api",
-      "com.municipal.rbaccore.service.structured",
       "com.municipal.rbaccore.infrastructure"
-    })
+    },
+    excludeFilters = @ComponentScan.Filter(
+        type = FilterType.REGEX,
+        pattern = "com\\.municipal\\.rbaccore\\.infrastructure\\.persistence\\.ddd\\..*"))
 public class RuntimeConfiguration {
   private static final Map<String, String> TEST_DATABASES =
       Map.of(

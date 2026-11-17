@@ -94,7 +94,7 @@ abstract class R13RoleContractSupport {
     /** 通知测试线程后继续执行实际根锁。 */
     @Before(
         "execution(*"
-            + " com.municipal.rbaccore.service.structured.security.StructuredMaintenanceGuard.lock(..))")
+            + " com.municipal.rbaccore.service.port.security.MaintenanceProtection+.lock(..))")
     public void beforeLock() {
       CountDownLatch latch = entered.get();
       if (latch != null && RequestAuditFilter.current() != null) latch.countDown();

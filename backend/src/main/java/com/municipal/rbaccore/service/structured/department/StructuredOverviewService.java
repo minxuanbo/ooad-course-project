@@ -1,5 +1,6 @@
 package com.municipal.rbaccore.service.structured.department;
 
+import cn.edu.xmu.clonefactory.util.CloneFactory;
 import com.municipal.rbaccore.infrastructure.persistence.repository.UserJpaRepository;
 import com.municipal.rbaccore.service.port.department.*;
 import com.municipal.rbaccore.service.port.security.CurrentIdentity;
@@ -31,10 +32,9 @@ public class StructuredOverviewService implements OverviewUseCase {
             .filter(item -> item.getId().equals(actor.departmentId()))
             .findFirst()
             .orElseThrow();
-    OverviewResult result = new OverviewResult();
+    OverviewResult result = CloneFactory.copy(new OverviewResult(), root);
     result.setDepartmentId(root.getId());
     result.setDepartmentName(root.getName());
-    result.setTotalUsers(root.getTotalUsers());
     result.setEnabledUsers(users.countByDepartmentIdInAndEnabledTrue(scope.allowedIds(actor)));
     result.setDisabledUsers(result.getTotalUsers() - result.getEnabledUsers());
     result.setTotalDepartments(tree.size());

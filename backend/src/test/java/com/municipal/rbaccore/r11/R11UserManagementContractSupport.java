@@ -99,7 +99,7 @@ abstract class R11UserManagementContractSupport {
     /** 请求将获取数据库锁时通知夹具，之后继续执行原方法。 */
     @Before(
         "execution(*"
-            + " com.municipal.rbaccore.service.structured.security.StructuredMaintenanceGuard.lock(..))")
+            + " com.municipal.rbaccore.service.port.security.MaintenanceProtection+.lock(..))")
     public void beforeLock() {
       CountDownLatch gate = entered.get();
       if (gate != null && RequestAuditFilter.current() != null) gate.countDown();
@@ -204,6 +204,7 @@ abstract class R11UserManagementContractSupport {
     String root = token(ROOT);
     String dept = token(DEPT);
     JsonNode empty = success(request("GET", userRoles(employeeUserId), root, null), 200);
+    assertStoredUser(empty.get("user"), employeeUserId);
     assertEquals(employeeUserId, empty.get("user").get("id").asLong());
     assertEquals(6, empty.get("user").size());
     assertEquals(grandchildId, empty.get("user").get("departmentId").asLong());
@@ -285,6 +286,7 @@ abstract class R11UserManagementContractSupport {
                 "PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(personnelRoleId))),
             200);
     assertEquals(List.of(personnelRoleId), longs(assigned.get("roleIds")));
+    assertStoredUser(assigned, employeeUserId);
     assertTrue(assigned.get("enabled").asBoolean());
     assertEquals(6, assigned.size());
 
@@ -439,6 +441,7 @@ abstract class R11UserManagementContractSupport {
         success(
             request("PUT", department(employeeUserId), dept, Map.of("departmentId", childId)), 200);
     assertEquals(childId, moved.get("departmentId").asLong());
+    assertStoredUser(moved, employeeUserId);
     assertEquals(List.of(personnelRoleId), longs(moved.get("roleIds")));
     assertEquals(3, success(request("GET", USERS, employee, null), 200).get("total").asInt());
 
@@ -640,6 +643,24 @@ abstract class R11UserManagementContractSupport {
         request("PUT", department(childAdminUserId), dept, Map.of("departmentId", grandchildId)),
         200);
     assertEquals(2, completeAdministrators());
+  }
+
+  /** 调出可信根后即使保留五级角色，也不能再在子树内授予自定义角色。 */
+  @Test
+  @DisplayName("R23 只有可信根直属五级人员可以授予自定义角色")
+  void R23_RestrictsCustomRolesToRootLevelFive() throws Exception {
+    String root = token(ROOT);
+    long custom = success(request("POST", ROLES, root,
+        Map.of("code", "t11-root-custom", "name", "可信根专属自定义角色")), 201).get("id").asLong();
+    String candidates = assignable(employeeUserId) + "?q=t11-root-custom";
+    assertEquals(1, success(request("GET", candidates, root, null), 200).get("total").asInt());
+    success(request("PUT", department(rootUserId), root, Map.of("departmentId", childId)), 200);
+    assertEquals(0, success(request("GET", candidates, root, null), 200).get("total").asInt());
+    assertError(request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(custom))),
+        403, "MANAGEMENT_SCOPE_DENIED");
+    assertTrue(savedRoleIds(employeeUserId).isEmpty());
+    success(request("PUT", userRoles(employeeUserId), token(ROOT2), Map.of("ids", List.of(custom))), 200);
+    assertEquals(List.of(custom), savedRoleIds(employeeUserId));
   }
 
   /** 当身份、权限或目标范围不满足时，不能先用非法输入返回400。 */
@@ -893,6 +914,42 @@ abstract class R11UserManagementContractSupport {
               for (Long roleId : roleIds) user.assignRole(roles.findById(roleId).orElseThrow());
               return users.save(user).getId();
             });
+  }
+
+  /** 人员列表的姓名和岗位使用不同于工号的夹具值，逐项验证跨层映射。 */
+  @Test
+  @DisplayName("R11/R19 人员列表保留数据库姓名工号岗位与部门真值")
+  void R11R19_PersonFieldsSurviveMappings() throws Exception {
+    jdbc.update(
+        "UPDATE users SET name=?,position=? WHERE id=?", "映射核对人员", "映射核对岗位", employeeUserId);
+    String username =
+        jdbc.queryForObject("SELECT username FROM users WHERE id=?", String.class, employeeUserId);
+    JsonNode page = success(request("GET", USERS + "?q=" + username, token(ROOT), null), 200);
+    assertEquals(1, page.get("total").asInt());
+    assertEquals(1, page.get("items").size());
+    JsonNode person = page.get("items").get(0);
+    assertStoredUser(person, employeeUserId);
+    assertEquals(
+        jdbc.queryForObject("SELECT position FROM users WHERE id=?", String.class, employeeUserId),
+        person.get("position").asText());
+    assertEquals(
+        jdbc.queryForObject("SELECT name FROM departments WHERE id=?", String.class, grandchildId),
+        person.get("departmentName").asText());
+  }
+
+  /** 读取与写入返回均对照已提交数据库，防止仅检查ID漏掉姓名工号映射。 */
+  private void assertStoredUser(JsonNode person, long userId) {
+    Map<String, Object> stored =
+        jdbc.queryForMap("SELECT id,username,name,department_id FROM users WHERE id=?", userId);
+    assertEquals(((Number) stored.get("id")).longValue(), person.get("id").asLong());
+    assertEquals(stored.get("username"), person.get("username").asText());
+    assertEquals(stored.get("name"), person.get("name").asText());
+    assertEquals(
+        ((Number) stored.get("department_id")).longValue(), person.get("departmentId").asLong());
+    assertEquals(
+        jdbc.queryForObject("SELECT enabled FROM users WHERE id=?", Boolean.class, userId)
+            .booleanValue(),
+        person.get("enabled").asBoolean());
   }
 
   /** 从已提交数据库核对整体替换结果，不依靠内存对象。 */

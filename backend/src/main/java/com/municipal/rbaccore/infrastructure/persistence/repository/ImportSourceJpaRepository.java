@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 /** 导入来源通过独立仓储保存，不读取或修改旧业务库。 */
 public interface ImportSourceJpaRepository extends JpaRepository<ImportSourceEntity, Long> {
@@ -21,4 +22,8 @@ public interface ImportSourceJpaRepository extends JpaRepository<ImportSourceEnt
   /** 通过受控导入记录取得已核实共同根或独立初始化账号，不按角色名猜身份。 */
   Optional<ImportSourceEntity> findByKindAndSourceKey(
       ImportSourceEntity.Kind kind, String sourceKey);
+
+  /** 标量定位来源根，避免等待写锁前把旧实体载入持久化上下文。 */
+  @Query("select source.department.id from ImportSourceEntity source where source.kind=:kind and source.sourceKey=:key")
+  Optional<Long> findSourceDepartmentId(ImportSourceEntity.Kind kind, String key);
 }

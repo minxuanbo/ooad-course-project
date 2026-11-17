@@ -4,16 +4,16 @@
 
 ## 1. 当前工作边界
 
-T13已合入共同基线，当前仅结构化实现。文档PR #29及结构化整理PR #30均经用户审核合入。原型PR #31已获批合入，阶段4正式Vue与结构化后端在PR #32待审。组员按[复现指南](docs/reproduction.md)检出该分支，不能用历史main或未合入阶段4的共同基线冒充当前成果。不得自动推进DDD/T14/T15、加入假策略开关或调整待定服务器部署，后续顺序见[开发计划](docs/development-plan.md)。
+T13已合入共同基线，阶段5新增独立DDD实现。文档PR #29及结构化整理PR #30均经用户审核合入。原型PR #31已获批合入，阶段4正式Vue与结构化后端PR #32已于2026-11-17经用户批准合入，PR #1同步main。组员按[复现指南](docs/reproduction.md)检出待复现提交。阶段5按两种后端策略分别执行回归。后续顺序见[开发计划](docs/development-plan.md)。
 
 ## 2. 分支与工作树
 
-共同基线为refactor/rbac-core-backend，main仍是历史工程。先确认本地改动，再获取远端；按本票范围使用独立codex/分支。示例：
+main已同步修复基线；新设计分支从origin/main建立。先确认本地改动，再获取远端；按本票范围使用独立codex/分支。示例：
 
 ```bash
 git status --short
 git fetch origin
-git worktree add -b codex/your-task ../ooad-your-task origin/refactor/rbac-core-backend
+git worktree add -b codex/your-task ../ooad-your-task origin/main
 ```
 
 分支或目录存在时先核对，不覆盖或重置用户工作。每次开工读AGENTS.md、对应Issue、批准需求及依赖证据；不凭Issue关闭状态推断交付物已进入共同基线，不自动领取下游任务。
@@ -28,6 +28,6 @@ git worktree add -b codex/your-task ../ooad-your-task origin/refactor/rbac-core-
 
 ## 4. 交付与审核
 
-核对git diff和验证结果，按文件明确暂存。提交并推送任务分支，创建base为refactor/rbac-core-backend的草稿PR；关联实际Issue时用Refs，不用无关的自动关票语句。正文写问题、最终变更、证据、限制与待审核事项。
+核对git diff和验证结果，按文件明确暂存。提交并推送任务分支，创建base为main的草稿PR；任务另行明确其他目标时再按其约定，不沿用旧修复分支示例。关联实际Issue时用Refs，不用无关的自动关票语句。正文写问题、最终变更、证据、限制与待审核事项。
 
-用户要求先审时，不自行合并、删除在审分支或关闭Issue。文档审核以[逐项指南](docs/review-guide.md)为入口；用户批准后才进行后续动作。变更批准范围时同步计划与受影响Issue，不新建重复任务。本轮不向Apifox推送。
+用户要求先审时，不自行合并、删除在审分支或关闭Issue。项目文档以[正式导航](docs/README.md)为入口；用户批准后才进行后续动作。变更批准范围时同步计划与受影响Issue，不新建重复任务。本轮不向Apifox推送。

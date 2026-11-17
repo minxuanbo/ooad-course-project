@@ -1,13 +1,15 @@
-# UML图件来源与复现
+# RBAC设计图资源
 
-本目录图件只表达当前结构化实现StructuredAuthenticationService.require，依据backend下当前实际代码，不表示DDD已实现。类图截取相关字段/方法，顺序图省略简单get访问器及返回对象构造；Bearer内部异常沿当前代码在其生命线内部产生，公开方法未捕获时直接回复caller。
+正式包图、类图与差异顺序图统一编排在[后端设计第17章](../backend-design.md#17-结构化与ddd-uml)，不另设设计稿或审核图集。结构化图和DDD图均描述当前实现。
 
-采用用户提供的uml-class-sequence-diagrams skill检查Service居中、字段关联/局部依赖、静态MetaClass、每次独立执行条及异常回复。该skill不用于ER图；既有Chen ER保持原件及评审路径。身份索引和请求上下文以实际字段类型IdentityTokenStore/RequestContext表示，静态异常工厂才使用MetaClass；不再画Service直接调用RequestAuditFilter。
+## 编辑、生成和检查
 
-脚本为[scripts/build-current-uml.mjs](../../scripts/build-current-uml.mjs)，使用Node及sharp渲染SVG/PNG。使用已有工具环境或在仓库外安装sharp，不往生产前端添加绘图依赖；可通过UML_SHARP_MODULE指向其模块路径，随后在仓库根运行：
+设计数据源为[ddd-diagrams.json](ddd-diagrams.json)，唯一生成脚本为[scripts/build-ddd-design.mjs](../../scripts/build-ddd-design.mjs)，复用[scripts/uml-svg.mjs](../../scripts/uml-svg.mjs)。它们只生成文档，不进入后端或正式前端依赖。使用Node和sharp；可用UML_SHARP_MODULE指向仓库外已安装sharp，或使用含sharp的工具运行时。不要将sharp加到生产frontend/package.json。
 
-```text
+```powershell
+node scripts/build-ddd-design.mjs
+# 仅需要重新核对现有结构化身份类图时：
 node scripts/build-current-uml.mjs
 ```
 
-脚本检查源码关键操作、类框无重叠、依赖不穿第三方类框以及同步消息进入执行条顶边、回复/异常两端处于执行状态。生成后仍须打开两张PNG检查文字、留白、控制框与箭头；自动检查不等于完整UML语义或视觉验收。图件是设计插图，不是测试执行报告。
+旧脚本现只生成current-auth-class，不再产生完整身份顺序图。生成脚本校验两套源码的类与方法锚点、框无重叠/边不穿第三方框、共同步骤禁入、调用与执行条顶边、循环接收执行条完整性和文字宽度；生成清单见[ddd-generated-manifest.json](ddd-generated-manifest.json)。自动检查不等于视觉或业务语义通过，交付前必须实际打开PNG，历史设计记录见[设计阶段证据](../history/verification/ddd-design.md)。
