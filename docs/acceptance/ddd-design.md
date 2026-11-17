@@ -35,6 +35,8 @@
 
 已打开总联系表查看所有新图，并放大检查DDD包图、资源/首次授权/有效授权类图，以及人员循环、部门自调用/静态factory和DDD人员顺序图原图；修正过循环条件文字与外层执行条重叠的问题。类图关系方向、Service居中和签名留白，顺序图执行条、loop和MetaClass已实际目视核对。联系表留在忽略目录，不作为业务验收截图。
 
-Git范围检查确认backend/src、frontend生产代码/测试及依赖、OpenAPI和首次SQL相对a4275be无变化；不存在DDD Java目录；原三份Excel及Chen ER图件摘要不变。没有把新增包和目标签名伪装成可运行实现。独立设计复核结果在提交前补记。
+Git范围检查确认backend/src、frontend生产代码/测试及依赖、OpenAPI和首次SQL相对a4275be无变化；不存在DDD Java目录；原三份Excel及Chen ER图件摘要不变。没有把新增包和目标签名伪装成可运行实现。
+
+按既有code-review skill，两名全新上下文审核者分别检查规范与需求，固定范围a4275be...HEAD。首轮Standards指出1项协作示例/base不一致，Spec指出1项UserCriteria工厂应用/领域输入歧义；59a44a8同步main工作流、显式领域查询参数及初始化种子边界，并重新生成/打开相关3张PNG。最终Standards硬规范0/启发式0，Spec0；此为设计复核，不是DDD执行验收。用户审核关口仍保留。
 
 本轮不改backend/src、frontend生产代码/测试、OpenAPI、首次SQL或业务测试，不启动服务或数据库，不宣称完整回归/DDD验收完成。未构建镜像、未部署服务器、未同步Apifox。类图截取关键成员，不把省略的依赖当作不存在；成功差异片段未展开的异常处理仍须沿既有契约及设计正文实现。
