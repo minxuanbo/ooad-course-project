@@ -1,5 +1,6 @@
 package com.municipal.rbaccore.service.ddd.application.department;
 
+import cn.edu.xmu.clonefactory.util.CloneFactory;
 import com.municipal.rbaccore.service.ddd.application.support.DddDepartmentView;
 import com.municipal.rbaccore.service.ddd.application.support.DddScope;
 import com.municipal.rbaccore.service.ddd.domain.model.User;
@@ -33,10 +34,9 @@ public class DddOverviewService implements OverviewUseCase {
             .orElseThrow(BusinessException::unauthorized);
     DddDepartmentView.View view = departments.build(actor, scope.facts());
     DepartmentResult root = view.tree().getFirst();
-    OverviewResult result = new OverviewResult();
+    OverviewResult result = CloneFactory.copy(new OverviewResult(), root);
     result.setDepartmentId(root.getId());
     result.setDepartmentName(root.getName());
-    result.setTotalUsers(root.getTotalUsers());
     result.setEnabledUsers(view.enabled());
     result.setDisabledUsers(root.getTotalUsers() - view.enabled());
     result.setTotalDepartments(view.tree().size());

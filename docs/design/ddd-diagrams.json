@@ -197,7 +197,10 @@
       "policy": "OrganizationPolicy",
       "policyMethods": [
         "+ allowsChild(parent, type, trustedRoot): boolean",
-        "+ scope(facts, root): OrganizationFacts.Scope"
+        "+ scope(facts, root): OrganizationFacts.Scope",
+        "+ requireNonRoot(node, facts): void",
+        "+ requireEmpty(usage): void",
+        "+ requireUnique(facts, parent, name, existing): void"
       ],
       "serviceMethods": [
         "+ create(header, command): DepartmentResult",
@@ -883,6 +886,11 @@
             1,
             2,
             "allowsChild(parent, type, trustedRoot)"
+          ],
+          [
+            1,
+            2,
+            "requireUnique(facts, parentId, name, null)"
           ],
           [
             1,

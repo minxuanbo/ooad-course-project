@@ -1,5 +1,6 @@
 package com.municipal.rbaccore.service.port.department;
 
+import cn.edu.xmu.clonefactory.CopyFrom;
 import com.municipal.rbaccore.service.port.user.DepartmentResult;
 import java.util.List;
 import lombok.Getter;
@@ -10,6 +11,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@CopyFrom(DepartmentResult.class)
 public class OverviewResult {
   private Long departmentId;
   private String departmentName;

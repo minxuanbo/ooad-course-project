@@ -11,7 +11,10 @@ public record Role(
     boolean enabled,
     Set<Permission> permissions) {
   public static final int DEFAULT_LEVEL = 1;
-  public static final int FIRST_MANAGER_LEVEL = 2;
+  public static final int PROJECT_MANAGER_LEVEL = 2;
+  public static final int DEPARTMENT_MANAGER_LEVEL = 3;
+  public static final int COMPANY_LEADER_LEVEL = 4;
+  public static final int FIRST_MANAGER_LEVEL = PROJECT_MANAGER_LEVEL;
   public static final int ADMIN_LEVEL = 5;
 
   /** 明确的角色查找键。 */

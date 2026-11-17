@@ -33,16 +33,16 @@
 | Role              | code稳定、name、enabled、managementLevel、直接permissionIds；createEmpty/rename/changeEnabled/replacePermissions | 权限存在/启用/本系统、编码唯一、K       |
 | Permission        | systemId、parentId、type、enabled、直接apiIds；changeType/moveTo/changeEnabled/replaceApis                       | 同系统树无环、BUTTON无子、映射同系统、K |
 | ApiResource       | 系统、方法/模板只读、enabled；changeEnabled                                                                      | 系统状态和K                             |
-| Department        | 稳定code、parentId、type、name、deleted；createChild/rename/deleteEmpty                                          | 可信根与范围、同父名称、人员/下级存在性 |
+| Department        | 稳定code、parentId、type、name、deleted；child/rename/tombstone，变更前由OrganizationPolicy核验相关不变量       | 可信根与范围、同父名称、人员/下级存在性 |
 | ApplicationSystem | RBAC系统标识与启用事实，只读                                                                                     | 有效授权链同系统边界，不新增系统CRUD    |
 
 聚合以标识引用，不嵌入JPA对象图。关系集合返回只读副本，替换行为明确增删，不通过公开setter任意修改权限关系。来源导入通过受控reconstitute或factory建立完整快照，不调用运行时HTTP补造数据。User不会包含所有Role对象或全公司员工，Role不会持有所有用户；需要的关联事实批量取得。
 
-领域状态/属性常量由对应对象以public static final声明：Role归口五基础级别和自定义级别语义，Department归口四种类型，Permission归口MENU/BUTTON，ApplicationSystem归口RBAC系统编码。应用/领域不引用公共协议枚举作为自身状态，也不按名称/职位猜级别；应用Mapper在领域取值与现有DepartmentType等协议值间显式转换。布尔启用状态保持其既有语义，不虚构额外生命周期。
+领域状态/属性常量由对应对象以public static final声明：Role归口DEFAULT_LEVEL、PROJECT_MANAGER_LEVEL、DEPARTMENT_MANAGER_LEVEL、COMPANY_LEADER_LEVEL、ADMIN_LEVEL五基础级别，FIRST_MANAGER_LEVEL引用PROJECT_MANAGER_LEVEL；自定义角色的managementLevel为空。InitialAuthorizationPolicy引用Role的级别常量进行首次分类。Department归口四种类型，Permission归口MENU/BUTTON，ApplicationSystem归口RBAC系统编码。应用/领域不引用公共协议枚举作为自身状态，也不按角色名称猜级别；应用Mapper在领域取值与现有DepartmentType等协议值间显式转换。布尔启用状态保持其既有语义，不虚构额外生命周期。
 
 UserKey、RoleKey、PermissionKey、ApiKey、DepartmentKey等不可变标识只用于领域/仓储边界的类型安全；HTTP仍为正安全整数，工号仍为字符串。PageWindow、DepartmentScope、ApiOperation、UserCriteria、RoleCriteria、AuthorizationFacts、OrganizationFacts、DepartmentUsage、MaintenanceFacts等值/事实都归domain.model；不可变值和record使用显式构造，不交CloneFactory写final字段。
 
-跨聚合策略在model.policy：AuthorizationPolicy逐链计算有效Permission/API及OR，不把父菜单当继承；RoleAssignmentPolicy同时检查目标保护、授予上限及完整有效Permission子集，污染角色拒绝，停用自定义角色也保留目标保护；OrganizationPolicy核实来源根并计算有效子树/合法父子；MaintenancePolicy判断一个启用、可信根、级别5的用户独自覆盖K，不把多人权限拼接。策略接受明确事实，不访问仓储、HTTP、Spring或全局缓存。
+跨聚合策略在model.policy：AuthorizationPolicy逐链计算有效Permission/API及OR，不把父菜单当继承；RoleAssignmentPolicy同时检查目标保护、授予上限及完整有效Permission子集，污染角色拒绝，停用自定义角色也保留目标保护；OrganizationPolicy核实来源根并计算有效子树/合法父子，以requireNonRoot保护可信根、requireEmpty拒绝存在人员或下级的删除、requireUnique保证同父有效部门名称唯一；MaintenancePolicy判断一个启用、可信根、级别5的用户独自覆盖K，不把多人权限拼接。策略接受明确事实，不访问仓储、HTTP、Spring或全局缓存。
 
 DDD仓储位于service.ddd.domain.repository，Infrastructure实现适配与装配；应用只依赖领域模型/仓储及公共用例抽象。事务、端口签名及复杂读模型见后端设计第4、6、9章。
 

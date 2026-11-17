@@ -50,6 +50,24 @@ class R22AcceptanceEnvironmentTest(unittest.TestCase):
             self.assertNotIn('SERVER_PORT', PROBE.JAVA_ENV)
             self.assertNotIn('rbac_core_db_url', PROBE.JAVA_ENV)
 
+    def test_r21_selected_strategy_reaches_all_java_entrypoints(self):
+        """三入口共用的Java环境必须保留选定策略，不能将DDD验收悄悄退回结构化。"""
+        for strategy in ('structured', 'ddd'):
+            with self.subTest(strategy=strategy), \
+                    patch.object(PROBE, 'ENV', dict(self.environment(), APP_BACKEND_STRATEGY=strategy)), \
+                    patch.object(PROBE, 'sql', side_effect=RuntimeError('私有实例核实入口')):
+                with self.assertRaisesRegex(RuntimeError, '私有实例核实入口'):
+                    PROBE.prepare()
+                self.assertEqual(PROBE.JAVA_ENV.get('APP_BACKEND_STRATEGY'), strategy)
+
+    def test_r21_unknown_strategy_fails_before_database_contact(self):
+        """错误策略应在建表和导入之前拒绝，不能给出默认策略的成功报告。"""
+        with patch.object(PROBE, 'ENV', dict(self.environment(), APP_BACKEND_STRATEGY='unknown')), \
+                patch.object(PROBE, 'sql', side_effect=RuntimeError('已经接触数据库')) as database:
+            with self.assertRaisesRegex(RuntimeError, '策略'):
+                PROBE.prepare()
+            database.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()

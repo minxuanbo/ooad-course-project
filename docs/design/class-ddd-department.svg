@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1820" height="1120" viewBox="0 0 1820 1120"><defs>
+<svg xmlns="http://www.w3.org/2000/svg" width="1820" height="1175" viewBox="0 0 1820 1175"><defs>
   <marker id="open" markerWidth="12" markerHeight="12" refX="11" refY="6" orient="auto"><path d="M1,1 L11,6 L1,11" fill="none" stroke="#223046" stroke-width="1.5"/></marker>
   <marker id="triangle" markerWidth="14" markerHeight="14" refX="13" refY="7" orient="auto"><path d="M1,1 L13,7 L1,13 Z" fill="white" stroke="#245a93" stroke-width="1.4"/></marker>
   <marker id="filled" markerWidth="12" markerHeight="12" refX="11" refY="6" orient="auto"><path d="M1,1 L11,6 L1,11 Z" fill="#223046"/></marker></defs>
@@ -18,11 +18,11 @@
   <path d="M1330,453H1780 M1330,585H1780" stroke="#223046"/>
   <text x="1555" y="437" font-size="23" text-anchor="middle" fill="#223046">Department</text>
   <text x="1343" y="481" font-size="18" text-anchor="start" fill="#223046">- id, parentId: Long</text><text x="1343" y="509" font-size="18" text-anchor="start" fill="#223046">- code, name: String</text><text x="1343" y="537" font-size="18" text-anchor="start" fill="#223046">- type: Department.Type</text><text x="1343" y="565" font-size="18" text-anchor="start" fill="#223046">- deleted: boolean</text>
-  <text x="1343" y="611" font-size="13.308223477715005" text-anchor="start" fill="#223046">+ child(code, name, parent, type): Department {static}</text><text x="1343" y="639" font-size="18" text-anchor="start" fill="#223046">+ rename(name): Department</text><text x="1343" y="667" font-size="18" text-anchor="start" fill="#223046">+ tombstone(): Department</text><rect x="580" y="850" width="640" height="195" rx="2" fill="white" stroke="#223046" stroke-width="1.5"/>
+  <text x="1343" y="611" font-size="13.308223477715005" text-anchor="start" fill="#223046">+ child(code, name, parent, type): Department {static}</text><text x="1343" y="639" font-size="18" text-anchor="start" fill="#223046">+ rename(name): Department</text><text x="1343" y="667" font-size="18" text-anchor="start" fill="#223046">+ tombstone(): Department</text><rect x="580" y="850" width="640" height="270" rx="2" fill="white" stroke="#223046" stroke-width="1.5"/>
   <path d="M580,898H1220 M580,946H1220" stroke="#223046"/>
   <text x="900" y="882" font-size="23" text-anchor="middle" fill="#223046">OrganizationPolicy</text>
   <text x="593" y="926" font-size="18" text-anchor="start" fill="#223046">—</text>
-  <text x="593" y="972" font-size="18" text-anchor="start" fill="#223046">+ allowsChild(parent, type, trustedRoot): boolean</text><text x="593" y="1000" font-size="18" text-anchor="start" fill="#223046">+ scope(facts, root): OrganizationFacts.Scope</text><rect x="20" y="850" width="450" height="215" rx="2" fill="white" stroke="#223046" stroke-width="1.5"/>
+  <text x="593" y="972" font-size="18" text-anchor="start" fill="#223046">+ allowsChild(parent, type, trustedRoot): boolean</text><text x="593" y="1000" font-size="18" text-anchor="start" fill="#223046">+ scope(facts, root): OrganizationFacts.Scope</text><text x="593" y="1028" font-size="18" text-anchor="start" fill="#223046">+ requireNonRoot(node, facts): void</text><text x="593" y="1056" font-size="18" text-anchor="start" fill="#223046">+ requireEmpty(usage): void</text><text x="593" y="1084" font-size="18" text-anchor="start" fill="#223046">+ requireUnique(facts, parent, name, existing): void</text><rect x="20" y="850" width="450" height="215" rx="2" fill="white" stroke="#223046" stroke-width="1.5"/>
   <path d="M20,898H470 M20,946H470" stroke="#223046"/>
   <text x="245" y="882" font-size="22.24576271186441" text-anchor="middle" fill="#223046">JpaOrganizationRepositoryAdapter</text>
   <text x="33" y="926" font-size="18" text-anchor="start" fill="#223046">- jpa: DepartmentJpaRepository</text>

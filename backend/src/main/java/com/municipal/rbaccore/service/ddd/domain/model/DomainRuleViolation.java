@@ -8,7 +8,10 @@ public final class DomainRuleViolation extends RuntimeException {
     INVALID_PERMISSION,
     INVALID_MAPPING,
     INVALID_TREE,
-    INVALID_CHILD
+    INVALID_CHILD,
+    DEPARTMENT_ROOT_REQUIRED,
+    DEPARTMENT_NOT_EMPTY,
+    DEPARTMENT_NAME_CONFLICT
   }
 
   private final Rule rule;

@@ -13,12 +13,16 @@ backend/
 │   ├── api/{auth,user,department,role,resource,audit,shared}
 │   ├── service/port/{auth,user,department,role,resource,audit,security,importing,bootstrap,error}
 │   ├── service/structured/{auth,user,department,role,resource,audit,security,importing,bootstrap}
+│   ├── service/ddd/application/{auth,user,department,role,resource,audit,security,importing,bootstrap,support}
+│   ├── service/ddd/domain/{model,model/policy,repository}
 │   ├── infrastructure/{persistence,security,web,logging,excel}
 │   ├── config
 │   └── bootstrap
 ├── src/test/java/com/municipal/rbaccore/{r01,r03,r04,r06,r07,r11,r13,r14,r18,r22,r23,architecture,infrastructure,shared}
 └── scripts/{accept-runtime.py,tests,test-backend.ps1}
 ```
+
+DDD 持久化适配器位于 `infrastructure/persistence/ddd`。`r23` 同时包含共享 HTTP 契约 `R23PrototypeContractTest` 和纯领域测试 `R24DepartmentPolicyTest`；后者检查可信根保护、空节点删除与同父名称唯一规则，不连接数据库。部门规则由 `OrganizationPolicy` 执行，五个基础管理级别的领域常量统一定义在 `Role`，应用服务负责事务与错误翻译。
 
 先按[固定依赖安装](../deploy/README.md#本机依赖安装)准备老师CloneFactory。以下命令在仓库根执行：
 
@@ -65,7 +69,7 @@ java '-Dloader.main=com.municipal.rbaccore.bootstrap.BootstrapAuthorizationComma
 java -jar backend/target/rbac0-0.1.0.jar
 ```
 
-HTTP默认8081，前端代理/api不变。后端29个操作的机器契约见[OpenAPI](../api/openapi.yaml)。需要新空库端到端复现时，使用[accept-runtime.py](scripts/accept-runtime.py)并按[验收说明](../docs/testing-acceptance.md)提供实际私有datadir、MySQL客户端及JDK21；探针拒绝非空库和额外Spring/JVM覆盖，不提供清库开关。
+HTTP默认8081，前端代理/api不变。后端29个操作的机器契约见[OpenAPI](../api/openapi.yaml)。需要新空库端到端复现时，使用[accept-runtime.py](scripts/accept-runtime.py)并按[验收说明](../docs/testing-acceptance.md)提供实际私有datadir、MySQL客户端及JDK21。每次为所选 `APP_BACKEND_STRATEGY` 提供独立空库，报告会记录策略。探针拒绝非空库和额外Spring/JVM覆盖，不提供清库开关。若 Windows 上 JDK 报本机套接字 `Invalid argument: connect`，可在当前终端将 `TEMP` 和 `TMP` 指向实际存在、可写的短路径目录，再启动验收。
 
 ## 4. 当前部署边界
 

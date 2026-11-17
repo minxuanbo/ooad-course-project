@@ -428,7 +428,7 @@ for (const item of design.entries) {
       x: 580,
       y: 850,
       w: 640,
-      h: 195,
+      h: item.id === 'department' ? 270 : 195,
       title: (item.supportRole && item.supportInterface !== false ? '«interface» ' : '') + item.policy,
       fields: [],
       methods: item.policyMethods,
@@ -501,7 +501,7 @@ for (const item of design.entries) {
     'class-ddd-' + item.id,
     svg(
       1820,
-      1120,
+      item.id === 'department' ? 1175 : 1120,
       'DDD · ' + item.title + '类图',
       'Service居中。只展示当前实现的关键成员；字段为关联，局部/返回类型为依赖。',
       edges.map(edge).join('') + boxes.map(box).join(''),

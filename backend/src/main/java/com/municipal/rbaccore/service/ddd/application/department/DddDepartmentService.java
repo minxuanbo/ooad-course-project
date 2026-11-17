@@ -11,7 +11,6 @@ import com.municipal.rbaccore.service.port.error.BusinessException;
 import com.municipal.rbaccore.service.port.security.CurrentIdentity;
 import com.municipal.rbaccore.service.port.user.DepartmentResult;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -65,7 +64,7 @@ public class DddDepartmentService implements DepartmentUseCase {
           if (!OrganizationPolicy.allowsChild(parent, child, facts.trustedRootId())) {
             throw BusinessException.bad("DEPARTMENT_TYPE_INVALID", "该层级不允许新增此类下级");
           }
-          requireUnique(facts, parent.id(), command.getName(), null);
+          OrganizationPolicy.requireUnique(facts, parent.id(), command.getName(), null);
           Department saved =
               departments.save(
                   Department.child(
@@ -85,7 +84,7 @@ public class DddDepartmentService implements DepartmentUseCase {
           OrganizationFacts facts = scope.facts();
           Department node = target(actor, facts, id);
           requireEdit(actor, facts, node);
-          requireUnique(facts, node.parentId(), command.getName(), id);
+          OrganizationPolicy.requireUnique(facts, node.parentId(), command.getName(), id);
           return savedView(actor, departments.save(node.rename(command.getName())).id());
         });
   }
@@ -100,14 +99,10 @@ public class DddDepartmentService implements DepartmentUseCase {
           User actor = person(identity);
           OrganizationFacts facts = scope.facts();
           Department node = target(actor, facts, id);
-          if (id.equals(facts.trustedRootId())) {
-            throw new BusinessException(409, "DEPARTMENT_ROOT_REQUIRED", "总公司根节点不能删除");
-          }
+          OrganizationPolicy.requireNonRoot(node, facts);
           requireEdit(actor, facts, node);
           OrganizationFacts.Usage usage = departments.usage(new Department.Key(id));
-          if (usage.hasUsers() || usage.hasChildren()) {
-            throw new BusinessException(409, "DEPARTMENT_NOT_EMPTY", "部门有人员或下级，不能删除");
-          }
+          OrganizationPolicy.requireEmpty(usage);
           departments.save(node.tombstone());
           return null;
         });
@@ -146,18 +141,6 @@ public class DddDepartmentService implements DepartmentUseCase {
         .filter(node -> node.id().equals(id))
         .findFirst()
         .orElseThrow(BusinessException::scopeDenied);
-  }
-
-  /** 同一上级仅允许一个同名有效部门。 */
-  private void requireUnique(OrganizationFacts facts, Long parent, String name, Long existing) {
-    if (facts.departments().stream()
-        .anyMatch(
-            node ->
-                Objects.equals(parent, node.parentId())
-                    && !node.id().equals(existing)
-                    && node.name().equals(name.trim()))) {
-      throw new BusinessException(409, "DEPARTMENT_NAME_CONFLICT", "同一上级下部门名称不能重复");
-    }
   }
 
   /** 保存后用同一事务最新状态装配写响应。 */

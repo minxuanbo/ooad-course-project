@@ -8,9 +8,6 @@ import java.util.*;
 
 /** 首次五角色分类与核验，按已确认原件规则构造一次性的发布计划。 */
 public final class InitialAuthorizationPolicy {
-  private static final int COMPANY_LEADER = 4;
-  private static final int DEPARTMENT_MANAGER = 3;
-  private static final int PROJECT_MANAGER = 2;
   private static final int SOURCE_ORGANIZATIONS = 111;
   private static final int SOURCE_EMPLOYEES = 10000;
 
@@ -138,10 +135,10 @@ public final class InitialAuthorizationPolicy {
     String department = employee.department().trim();
     if (company.equals(department)
         || (ImportManifest.ROOT_NAME.equals(company)
-            && ImportManifest.MERGED_LEADERS.equals(department))) return COMPANY_LEADER;
+            && ImportManifest.MERGED_LEADERS.equals(department))) return Role.COMPANY_LEADER_LEVEL;
     return switch (employee.position().trim()) {
-      case "部长", "副部长" -> DEPARTMENT_MANAGER;
-      case "项目经理", "项目副经理" -> PROJECT_MANAGER;
+      case "部长", "副部长" -> Role.DEPARTMENT_MANAGER_LEVEL;
+      case "项目经理", "项目副经理" -> Role.PROJECT_MANAGER_LEVEL;
       default -> Role.DEFAULT_LEVEL;
     };
   }

@@ -146,6 +146,10 @@ StructuredPersonnelAuthority集中角色级别与目标保护；StructuredDepart
 | AuthorizationBootstrapUseCase                                           | DddInitialAuthorizationService                                    | BootstrapPlan、Receipt；预览只读、五角色完整集合、首次回执、重复不重置                                | bootstrap                                       |
 | ManagementAuthorization、ManagementAccessUseCase、MaintenanceProtection | DddAuthorizationService、DddManagementAccess、DddMaintenanceGuard | 有效链、范围与完整维护者分别编排；注入公共接口，禁止跨调具体应用服务                                  | authorization / management-access / maintenance |
 
+部门新增和改名通过 `OrganizationPolicy.requireUnique` 检查同父名称唯一；删除通过 `requireNonRoot` 保护可信根，通过 `requireEmpty` 检查人员及有效下级占用。`DddDepartmentService` 负责加载事实，保持范围检查、可信根保护、编辑权限、占用检查的删除顺序，规则通过后才调用 `Department.tombstone`。领域规则失败由 `DddWrite` 翻译为既有 `DEPARTMENT_ROOT_REQUIRED`、`DEPARTMENT_NOT_EMPTY`、`DEPARTMENT_NAME_CONFLICT` 三种409错误，在原写事务中回滚。
+
+角色基础级别在 `Role` 中以 `public static final` 归口：`DEFAULT_LEVEL`、`PROJECT_MANAGER_LEVEL`、`DEPARTMENT_MANAGER_LEVEL`、`COMPANY_LEADER_LEVEL`、`ADMIN_LEVEL`。`FIRST_MANAGER_LEVEL` 引用项目经理级别，`InitialAuthorizationPolicy` 使用这些领域常量完成首次分类，不再单独定义级别值。
+
 ### 6.3 领域仓储与复杂查询边界
 
 领域仓储输入输出使用领域对象，容器使用 JDK 集合、Optional 或 DomainPage。仓储协议独立于 HTTP 及 JPA。
@@ -269,7 +273,7 @@ OpenAPI定义29个操作（含部门及总览5个新增操作）；[业务约束
 | r11            | R11UserManagementContractSupport + R11UserManagementContractTest                                                                       | T11人员管理、子集/调动/并发保护                 |
 | r13            | R13RoleContractSupport + R13RoleContractTest                                                                                           | T09角色、选权/共享维护者                        |
 | r14            | R14ResourceContractSupport + R14ResourceContractTest                                                                                   | T07资源树/API映射/并发                          |
-| r23            | R23PrototypeContractTest                                                                                                                         | 阶段4级别、目标保护、部门增删改名、聚合及摘要   |
+| r23            | R23PrototypeContractTest、R24DepartmentPolicyTest                                                                                                  | 共享HTTP级别/目标/部门契约；纯领域根保护、空节点及同父唯一规则 |
 | r18            | R18UserQueryValidationTest                                                                                                                       | DTO清洗顺序及安全ID回归                         |
 | r22            | R22Import/Resource/Role/UserDatabaseBoundaryTest                                                                                                 | 各专库/profile守卫                              |
 | infrastructure | R03ExcelReaderBoundaryTest、R16RequestAuditBoundaryTest、R16ManagedAuditTest                                                                     | 格式/隐私/日志切面职责                          |

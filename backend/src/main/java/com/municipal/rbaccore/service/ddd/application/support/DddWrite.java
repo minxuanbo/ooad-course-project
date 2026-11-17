@@ -44,6 +44,8 @@ public class DddWrite {
         case ROLE_NOT_ASSIGNABLE -> BusinessException.scopeDenied();
         case INVALID_CHILD ->
             BusinessException.bad("DEPARTMENT_TYPE_INVALID", violation.getMessage());
+        case DEPARTMENT_ROOT_REQUIRED, DEPARTMENT_NOT_EMPTY, DEPARTMENT_NAME_CONFLICT ->
+            new BusinessException(409, violation.rule().name(), violation.getMessage());
         default -> BusinessException.bad("INVALID_ARGUMENT", violation.getMessage());
       };
     }
