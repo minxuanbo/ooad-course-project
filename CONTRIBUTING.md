@@ -4,11 +4,11 @@
 
 ## 1. 当前工作边界
 
-T13已合入共同基线，当前仅结构化实现。文档PR #29及结构化整理PR #30均经用户审核合入。原型PR #31已获批合入，阶段4正式Vue与结构化后端在PR #32待审。组员按[复现指南](docs/reproduction.md)检出该分支，不能用历史main或未合入阶段4的共同基线冒充当前成果。不得自动推进DDD/T14/T15、加入假策略开关或调整待定服务器部署，后续顺序见[开发计划](docs/development-plan.md)。
+T13已合入共同基线，当前仅结构化实现。文档PR #29及结构化整理PR #30均经用户审核合入。原型PR #31已获批合入，阶段4正式Vue与结构化后端PR #32已于2026-11-17经用户批准合入，PR #1同步main。组员按[复现指南](docs/reproduction.md)检出main；当前codex/ddd-design仅编写DDD设计和图件，用户审核后才能编码，不自动推进T14/T15、加入假策略开关或调整待定服务器部署，后续顺序见[开发计划](docs/development-plan.md)。
 
 ## 2. 分支与工作树
 
-共同基线为refactor/rbac-core-backend，main仍是历史工程。先确认本地改动，再获取远端；按本票范围使用独立codex/分支。示例：
+main已同步修复基线；新设计分支从origin/main建立。先确认本地改动，再获取远端；按本票范围使用独立codex/分支。示例：
 
 ```bash
 git status --short

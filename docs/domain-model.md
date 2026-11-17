@@ -1,6 +1,6 @@
 # 领域模型与业务规则
 
-版本：1.1评审稿。本文先表达业务概念，再提出DDD边界；当前代码仍是结构化Service与JPA实体，本文不声明DDD已落地。需求依据为[需求说明](requirements.md)，既有Chen ER见[数据库设计](database-design.md)。
+版本：1.1评审稿。本文先表达业务概念，再提出DDD边界；当前代码仍是结构化Service与JPA实体，本文不声明DDD已落地。DDD聚合、仓储及实施切片以[本轮详细设计](ddd-design.md)为准；领域仓储仅使用领域模型输入输出，不复用公共Command/Result。需求依据为[需求说明](requirements.md)，既有Chen ER见[数据库设计](database-design.md)。
 
 ## 1. 统一业务模型
 
@@ -40,7 +40,7 @@
 
 同一根锁下的业务事务由应用服务编排：读取锁后最新事实→调用领域规则/行为→通过仓储端口持久化→检查完整K→提交。跨聚合保护使用同一事务与稳定锁点，不引入消息最终一致性、分布式事务或把全数据库装成一个巨大聚合。
 
-DDD仓储接口位于领域/用例端口，Infrastructure实现JPA适配与装配；应用服务不得引用EntityManager、JpaRepository或JPA Entity。结构化与DDD可以共享错误码、用例契约、值的协议表示及技术适配器；角色/范围/子集/组织层级/K等业务判断分别由结构化服务和DDD领域对象/策略实现。DDD不得转调结构化Service冒充独立实现，公共类型不得反向引用任一实现。
+DDD仓储接口位于service.ddd.domain.repository，Infrastructure实现JPA适配与装配；应用服务不得引用EntityManager、JpaRepository或JPA Entity。结构化与DDD可以共享错误码、用例契约、值的协议表示及技术适配器；角色/范围/子集/组织层级/K等业务判断分别由结构化服务和DDD领域对象/策略实现。DDD不得转调结构化Service冒充独立实现，公共类型不得反向引用任一实现。
 
 ## 4. 运行支撑的边界
 

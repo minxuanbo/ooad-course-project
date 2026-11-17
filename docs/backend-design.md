@@ -10,7 +10,7 @@
 
 ## 2. 当前基线与总体架构
 
-文档PR #29、结构化归类PR #30及原型PR #31已合入；阶段4正式前后端在PR #32待审。后端位于backend，业务实现归service.structured，部门及总览增量已包含在本分支。共享Controller只调用service.port，持久化、认证、请求、日志及Excel归入infrastructure，config/bootstrap负责装配和启动。DDD目录及策略选择尚未实现。
+文档PR #29、结构化归类PR #30及原型PR #31已合入；阶段4正式前后端PR #32已合入修复分支，并通过PR #1同步main；当前独立分支只编写DDD设计。后端位于backend，业务实现归service.structured，部门及总览增量已包含在本分支。共享Controller只调用service.port，持久化、认证、请求、日志及Excel归入infrastructure，config/bootstrap负责装配和启动。DDD目录及策略选择尚未实现。
 
 | 实际模块 | 当前责任 |
 | --- | --- |
@@ -32,13 +32,12 @@ com.municipal.rbaccore
 ├── api                       Controller、dto、vo、HTTP异常适配
 ├── service
 │   ├── port                  公共用例接口、Command/Query/Result、共享错误
-│   ├── common（后续按需要提取，当前无此包）
 │   ├── structured            结构化事务脚本与辅助规则
-│   └── ddd（后续设计，当前不存在）
+│   └── ddd（本轮目标设计，当前尚无源码）
 │       ├── application       用例编排与事务
 │       └── domain
-│           ├── model         聚合/实体/有业务规则的值对象
-│           ├── policy        授权、范围、可授予、完整K
+│           ├── model         聚合/实体/值、事实、DomainPage
+│           │   └── policy    授权、范围、可授予、完整K
 │           └── repository    领域仓储端口
 ├── infrastructure            JPA Entity/Repository/Adapter、认证、日志、Excel
 └── config                    装配、基础设施配置（策略选择待DDD阶段）
@@ -124,7 +123,7 @@ OpenAPI定义29个操作（含部门及总览5个新增操作）；[业务约束
 
 ## 13. 待评审的设计决策
 
-已确认的业务口径不重复作为未决需求。用户本轮重点审核：目标包及端口划分、DDD聚合边界、根锁事实读取、完整前端交互、OpenAPI与现有契约一致性。当前类/接口名已在代码归类中列明；未来DDD实施前再细化领域仓储、策略装配及切片顺序。原型PR #31已获批合入，阶段4正式Vue及结构化后端PR #32仍交用户审核，DDD尚未启动。
+已确认的业务口径不重复作为未决需求。用户本轮重点审核：目标包及端口划分、DDD聚合边界、根锁事实读取、完整前端交互、OpenAPI与现有契约一致性。当前类/接口名已在代码归类中列明；未来DDD实施前再细化领域仓储、策略装配及切片顺序。原型PR #31已获批合入，阶段4正式Vue及结构化后端PR #32已获批合入main；DDD设计先交用户审核，尚未开始DDD编码。
 
 ## 14. CloneFactory映射方案
 
@@ -150,12 +149,6 @@ api.<业务>.dto下的类以DTO结尾，api.<业务>.vo下的类以VO结尾；�
 
 阶段4增加StructuredPersonnelAuthority和StructuredDepartmentService/StructuredOverviewService：固定角色级别、完整RBAC有效Permission子集、所有人员写的严格级别保护、部门增删改名与范围聚合共用事务/根锁。目录查询先限制范围，按部门聚合人数；人员角色摘要只批量加载当前页。部门type与deleted、有效同级名称唯一约束直接进入首次SQL，删除保留来源墓碑；重复导入按稳定编码和原父ID核对，不复原后续维护。新总览及部门操作不扩大原17项K，完整维护者另需有效基础级别5。正式系统不初始化18业务演示目录，课程系统暂不接入。
 
-以下两图表达当前StructuredAuthenticationService.require的实际协作，已随本轮代码归类重新生成，不是DDD目标类图。省略无关访问器和构造，安全判断顺序不省略。
+本轮DDD细化设计见[DDD设计](ddd-design.md)，包图、模块类图及差异顺序图统一从[图集](design/README.md)进入。结构化现状取已批准源码，DDD图均标明待实现目标；两种状态不混称实现完成。
 
-![当前身份校验类图](design/current-auth-class.png)
-
-[类图SVG](design/current-auth-class.svg)
-
-![当前身份校验顺序图](design/current-auth-sequence.png)
-
-[顺序图SVG](design/current-auth-sequence.svg)。caller为调用方，未捕获异常直接回复caller，HTTP转换在图外；BusinessException.unauthorized的静态调用以MetaClass表示；RequestContext是普通端口对象，HttpRequestContext适配内部过滤器采集。脚本及UML skill适用边界见[图件说明](design/README.md)。本次保留图件，不生成虚构DDD实现图。
+顺序图只展示两种实现不同的领域编排/持久化片段，不画相同的Controller、DTO/VO、Bearer、通用日志、共同锁、锁后重新鉴权、K检查或提交链路。共同约束保留在正文，不表示运行中取消这些步骤。原完整require顺序图退出当前图集，历史从Git追溯；现有require类图可作为静态参考保留。

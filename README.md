@@ -19,19 +19,21 @@
 
 ## 当前基线与目标
 
-共同基线为refactor/rbac-core-backend，main仍保留历史工程。当前后端Maven项目位于backend，代码位于backend/src/main/java/com/municipal/rbaccore，使用Java21、Boot3.5.6、JPA、MySQL8.4、AOP与老师真实CloneFactory。业务层已按service/structured归类，共享API经service/port调用，持久化和认证/日志等归入infrastructure；没有DDD实现或策略开关。详见[代码归类](docs/code-organization.md)。
+2026-11-17，结构化PR #32已合入修复分支，修复分支经PR #1同步main，两者同一文件树。当前后端Maven项目位于backend，代码位于backend/src/main/java/com/municipal/rbaccore，使用Java21、Boot3.5.6、JPA、MySQL8.4、AOP与老师真实CloneFactory。业务层已按service/structured归类，共享API经service/port调用，持久化和认证/日志等归入infrastructure；没有DDD实现或策略开关。详见[代码归类](docs/code-organization.md)。
 
 正式前端frontend为Vue3/Vite，阶段4包含登录、总览、部门、人员、角色、资源与日志，全部对接真实RBAC接口，使用说明见[前端README](frontend/README.md)。顶层prototype仅保留当前交互原型，旧四组和v2并行目录已按用户要求替换，历史从Git追溯。课程系统指老师Gitee课程项目，T14/T15等待老师进一步要求。
 
 T13历史验收记录142项后端回归、3项运行器安全单测、70次默认JAR真实HTTP及两轮启动，详见[原验收记录](docs/acceptance/T13.md)。当前结构化归类另取得156项后端回归、3项运行器安全单测、70次完整探针及最终产物3次真实HTTP检查通过的新证据，详见[本阶段记录](docs/acceptance/structured-organization.md)；这些结果不代表完整前端、DDD或云端通过。
 
-文档PR #29、结构化整理PR #30及原型PR #31均已获批合入。阶段4在独立codex/rbac-vue-implementation分支交付正式前后端，当前仅管理RBAC自身权限，18业务系统只在离线原型演示，课程系统暂不考虑接入。首次SQL直接适用于全新库，不提供旧库升级脚本；本轮不操作服务器。
+文档PR #29、结构化整理PR #30及原型PR #31均已获批合入。阶段4正式前后端已获用户批准并合入main，当前仅管理RBAC自身权限，18业务系统只在离线原型演示，课程系统暂不考虑接入。首次SQL直接适用于全新库，不提供旧库升级脚本；本轮不操作服务器。
 
-阶段4已有后端162项、前端17项及构建、全新隔离库默认JAR47次HTTP证据；最终边界修复后完整回归164项通过，前端17项及构建再次通过，见[最终一致性核对](docs/acceptance/final-alignment.md)。CloneFactory逐处及真实生成代码已核对。完整浏览器验证仍有明确限制，沿[阶段4记录](docs/acceptance/stage4-vue.md)，不把组件/接口成绩冒称全量UI通过。分支待用户审核，不自动合并或推进DDD。
+阶段4已有后端162项、前端17项及构建、全新隔离库默认JAR47次HTTP证据；最终边界修复后完整回归164项通过，前端17项及构建再次通过，见[最终一致性核对](docs/acceptance/final-alignment.md)。CloneFactory逐处及真实生成代码已核对。完整浏览器验证仍有明确限制，沿[阶段4记录](docs/acceptance/stage4-vue.md)，不把组件/接口成绩冒称全量UI通过。阶段4已合入，当前只交DDD设计待审，不自动开始DDD编码。
 
-组员先按[复现指南](docs/reproduction.md)检出PR #32分支，公共代码与后续DDD边界见[隔离说明](docs/ddd-boundary.md)。
+组员先按[复现指南](docs/reproduction.md)检出main，公共代码与后续DDD边界见[隔离说明](docs/ddd-boundary.md)。
 
 组员审核后补齐HTTP错误码、总览活动独立降级、页面重复请求与字节码架构守卫；最新完整回归167项、前端26项及构建、运行器3项安全单测通过，见[本轮修复记录](docs/acceptance/peer-followup.md)。此前阶段结果保留各自版本，浏览器/窄屏复验限制不变。
+
+DDD设计审核从[逐项指南](docs/ddd-review-guide.md)进入，正文见[DDD设计](docs/ddd-design.md)，图件见[包图、类图及差异顺序图](docs/design/README.md)。本轮只设计，尚无DDD源码或可运行开关。
 
 ## 运行入口
 

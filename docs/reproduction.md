@@ -1,11 +1,11 @@
 # 组员本地复现与核对
 
-本指南对应PR #32的`codex/rbac-vue-implementation`分支。PR尚未合并，`main`保留历史工程，`refactor/rbac-core-backend`目前也尚未包含本次正式Vue；组员必须先检出本分支并记录实际提交号。只通过Git获取项目，不复制其他人的`.local`、数据库文件、node_modules、口令或预检CSV。
+2026-11-17，PR #32已合入修复分支，PR #1同步main；本指南现以main为可复现结构化基线。组员检出main并记录实际提交号，DDD设计分支只有文档、尚不可切换DDD。只通过Git获取项目，不复制其他人的`.local`、数据库文件、node_modules、口令或预检CSV。
 
 ## 1. 获取正确版本及工具
 
 ```powershell
-git clone --branch codex/rbac-vue-implementation --single-branch https://github.com/minxuanbo/ooad-course-project.git
+git clone --branch main --single-branch https://github.com/minxuanbo/ooad-course-project.git
 Set-Location ooad-course-project
 git branch --show-current
 git rev-parse HEAD

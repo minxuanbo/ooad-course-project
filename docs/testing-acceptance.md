@@ -8,9 +8,9 @@
 | --- | --- | --- |
 | 结构化后端 | [T13记录](acceptance/T13.md)：JDK21/MySQL8.4，142后端测试、3运行器单测、70次默认JAR HTTP，两轮启动 | PR #28已合入、Issue #14关闭；这是历史基线，本次不重报为新运行 |
 | 正式前端 | 阶段4正式Vue七工作区，组员审核后26项Node及构建通过，使用真实RBAC接口 | 浏览器已验登录/总览/部门新增改名，其余流程按[阶段4记录](acceptance/stage4-vue.md)保留复验限制 |
-| DDD | 目标分层与聚合已设计，无DDD实现/策略开关 | 后续编码及同契约验收，当前不宣称通过 |
+| DDD | 本轮提交详细设计、两套包图、模块类图及仅差异顺序图，无DDD实现/策略开关 | 先按[DDD审核指南](ddd-review-guide.md)审核；之后编码及同契约验收，当前不宣称DDD通过 |
 | 课程系统/双业务系统 | 等待老师进一步要求 | T14/T15当前不实施 |
-| 文档阶段 | PR #29已于2026-11-13经用户批准合入 | 历史文件清单保留；阶段2也已合入，阶段4在独立分支实现与复验 |
+| 文档阶段 | PR #29、阶段2及阶段4均已获用户批准合入main | 历史文件清单保留；当前独立DDD设计分支只验证文档、图件和实现边界 |
 | 历史阶段2结构化归类 | 审核修复后代码5da102b：Java21/本轮私有MySQL完整package共156项通过，Failures/Errors/Skipped均0；3项Python环境安全单测、16adbcb的70次完整JAR HTTP及最终5da102b产物3次HTTP通过 | [本阶段记录](acceptance/structured-organization.md)保留源码/产物及失败诊断边界；不代表DDD/新前端/服务器部署完成 |
 
 阶段4结构化后端clean package原162项通过，并有全新首次SQL隔离库默认JAR47次真实HTTP及审核后5次HTTP证据；2026-11-14最终边界修复后完整回归164项通过，另重跑前端17项/构建及运行器3项单测，见[最终核对](acceptance/final-alignment.md)。CloneFactory检查见[映射核对](acceptance/stage4-mapping-audit.md)，不把历史JAR探针次数当作最终边界修复后的重跑证据。

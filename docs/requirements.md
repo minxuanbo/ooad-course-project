@@ -147,6 +147,6 @@ K包含角色维护、角色权限配置、人员角色分配、资源与映射�
 
 ## 7. 当前状态与本次范围
 
-T13已合入，历史结果见[验收说明](testing-acceptance.md)。当前结构化实现已在backend按层归类；阶段4正式Vue包含登录、总览、部门、人员、角色、资源和日志页面，位于PR #32待审分支。DDD与策略切换尚未编码，浏览器复验限制沿[阶段4验收](acceptance/stage4-vue.md)。
+T13已合入，历史结果见[验收说明](testing-acceptance.md)。当前结构化实现已在backend按层归类；阶段4正式Vue包含登录、总览、部门、人员、角色、资源和日志页面，已随PR #32及PR #1合入main。DDD与策略切换尚未编码，浏览器复验限制沿[阶段4验收](acceptance/stage4-vue.md)。
 
-文档PR #29、结构化整理PR #30及[阶段3原型](prototype-review.md)PR #31已由用户批准合入；当前阶段4正式前后端在独立分支复验与审核。原型继续以模拟数据直接打开HTML，不能代替正式Vue真实HTTP验证；随后DDD及双实现验收顺序见[开发计划](development-plan.md)。课程系统就是老师Gitee示例项目，T14/T15待老师进一步要求，不自行补齐课程业务。
+文档PR #29、结构化整理PR #30及[阶段3原型](prototype-review.md)PR #31已由用户批准合入；阶段4正式前后端已获用户批准合入main；当前codex/ddd-design先编写DDD设计及差异图，审核后才开始代码。原型继续以模拟数据直接打开HTML，不能代替正式Vue真实HTTP验证；随后DDD及双实现验收顺序见[开发计划](development-plan.md)。课程系统就是老师Gitee示例项目，T14/T15待老师进一步要求，不自行补齐课程业务。

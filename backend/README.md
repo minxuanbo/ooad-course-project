@@ -2,7 +2,7 @@
 
 Java21、Spring Boot3.5.6、Spring Data JPA、MySQL8.4及老师真实CloneFactory。当前只有结构化业务实现，DDD后续单独编写；不提供尚未实现的策略开关。完整[代码与测试归类](../docs/code-organization.md)说明共享API、用例及基础设施边界。
 
-组员从[完整本地复现](../docs/reproduction.md)开始；当前分支未合并，默认main不是本轮代码。共享/结构化边界见[DDD隔离说明](../docs/ddd-boundary.md)。
+组员从[完整本地复现](../docs/reproduction.md)开始；阶段4已合入main，DDD设计分支尚未实现第二套代码。共享/结构化边界见[DDD隔离说明](../docs/ddd-boundary.md)。
 
 ## 1. 目录与构建
 

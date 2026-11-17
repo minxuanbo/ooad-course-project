@@ -7,7 +7,8 @@
 | 1 | [需求说明](requirements.md)、[需求来源](requirements/sources.md) | 做什么、原始事实、后续确认、范围与质量要求 |
 | 2 | [领域模型](domain-model.md) | 统一语言、核心不变量、目标聚合/行为/策略 |
 | 3 | [数据库设计](database-design.md)、[物理模型](database/physical-model.md)、[Chen源码](database/chen-er-source.md) | 六实体联系、九核心表与三支撑表，保留原ER |
-| 4 | [后端设计](backend-design.md)、[当前实现图](design/README.md) | 17章总体架构、模块、双实现、事务与技术约束；图仅表示当前结构化代码 |
+| 4 | [后端设计](backend-design.md)、[现状/目标图集](design/README.md) | 17章总体架构及双实现边界；图明确区分结构化现状与未实现DDD目标 |
+| DDD审核 | [逐项指南](ddd-review-guide.md)、[DDD设计](ddd-design.md)、[图集](design/README.md)、[评审记录](acceptance/ddd-design.md) | 目标聚合、严格领域仓储、装配/映射及差异图；DDD未编码，用户审核后才实施 |
 | 复现 | [组员复现](reproduction.md)、[DDD隔离边界](ddd-boundary.md)、[最终一致性核对](acceptance/final-alignment.md) | 正确分支、全新库、依赖/口令/命令、默认端口与共享边界 |
 | 代码 | [代码与测试归类](code-organization.md)、[本地后端说明](../backend/README.md) | 实际结构化目录、共享用例、测试需求编号及本地构建 |
 | 5 | [前端设计](frontend-design.md)、[新原型](../prototype/index.html)、[评审记录](prototype-review.md)、[历史参考](../prototype/README.md) | 正式Vue及获批离线原型；演示系统仅在原型，正式产品仅RBAC |
@@ -23,4 +24,4 @@ requirements定义业务规则；domain-model定义行为与不变量；数据�
 
 变更业务、模型或接口时同步受影响规范与测试，保留同一个需求编号。历史摘录保留时间语境，新结论以现行正文为准。原Excel、用户本地设计文档及数据库不清理；已淘汰资料从当前树删除后仍可在Git历史追溯。
 
-结构化整理PR #30已由用户批准合入，原型PR #31也已获批合入，当前进入阶段4正式Vue与结构化后端更新；T13及阶段2保留各自历史证据。阶段4交付另待用户审核，DDD/T14/T15及服务器部署沿后续计划。文档阶段的修改、迁移、归档和删除清单仍见原审核指南。
+结构化整理PR #30、原型PR #31及阶段4 PR #32均已获用户批准合入，修复分支经PR #1同步main；T13及各阶段保留历史证据。当前阶段5只交DDD设计待审，审核后才编码；T14/T15及服务器部署仍待后续。文档阶段的历史清单仍见原审核指南。

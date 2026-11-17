@@ -1,12 +1,12 @@
 # RBAC双实现交付计划
 
-2026-11-13：用户已批准原型，PR #31合入bd72a34。阶段3结束，阶段4进行中，分支codex/rbac-vue-implementation。下表阶段3“尚不启动”描述为先前审核状态；本阶段完成后另记真实验收证据，不沿用历史测试结果。
+2026-11-17：用户批准阶段4，PR #32合入4822114，修复分支经PR #1同步main为a4275be。当前阶段5先在codex/ddd-design编写设计和差异图，用户审核后才编码；不沿用结构化测试成绩宣称DDD通过。
 
 本计划依据用户最新确认，目标是先完成本RBAC的structured/ddd两套代码及共用前端。课程系统指老师Gitee上的course-project-mgt，等老师另给接入要求；当前不启动T14/T15，也不自行新增课程业务。
 
 ## 1. 当前基线
 
-T13已随PR #28合入ffc7ceb，保留当时结构化后端的验收。当前分支已将结构化代码迁入backend并按service/structured、service/port和infrastructure分层，没有DDD实现或策略开关；阶段4正式Vue七工作区及后端增量在PR #32待审。当前结果见[阶段4验收](acceptance/stage4-vue.md)及[最终一致性核对](acceptance/final-alignment.md)，不沿用T13结果宣称双实现或全量UI通过。
+T13已随PR #28合入ffc7ceb，保留当时结构化后端的验收。当前分支已将结构化代码迁入backend并按service/structured、service/port和infrastructure分层，没有DDD实现或策略开关；阶段4正式Vue七工作区及后端增量已合入main；当前DDD只有待审设计，没有实现或策略开关。当前结果见[阶段4验收](acceptance/stage4-vue.md)及[最终一致性核对](acceptance/final-alignment.md)，不沿用T13结果宣称双实现或全量UI通过。
 
 ## 2. 已确认顺序
 
@@ -16,7 +16,7 @@ T13已随PR #28合入ffc7ceb，保留当时结构化后端的验收。当前分�
 | 2 结构化代码整理 | 参照老师分层，抽取共用用例/持久化边界，分批修复格式、职责及CloneFactory遗漏 | 2026-11-13用户批准PR #30合入；当前仍仅结构化实现，证据见[归类验收](acceptance/structured-organization.md) |
 | 3 新前端原型/API审核 | RBAC全量页面、权限/范围差异、表单/空/错/并发反馈及页面接口对照 | 用户已批准并合入PR #31，唯一入口prototype/index.html，见[原型评审](prototype-review.md) |
 | 4 正式前后端按原型更新 | 小组确认后先同步RBAC自身API/模型/必要后端规则，再更新正式前端并与结构化后端联调 | 获批原型、契约与前后端同批更新；验证页面行为、真实API/范围、错误、键盘/窄屏；不实现18业务系统API |
-| 5 DDD实现与文档 | 同仓库同应用，选定一套Service，分享API/数据库/前端，领域仓储适配 | 独立领域行为、事务/锁/回滚、两策略同一契约，禁止转调structured冒充DDD |
+| 5 DDD设计→审核→实现 | 先交聚合/仓储/装配/映射设计及包图、类图、仅差异顺序图；用户批准后再按切片编码 | 设计审核关口不可跳过；独立领域行为、事务/锁/回滚、两策略同一契约，禁止转调structured冒充DDD |
 | 6 RBAC双实现总验收 | 分别运行两策略、隔离数据库、同一前端及完整端到端 | 业务结果、范围、错误、持久化状态和并发一致；明确未完成的课程接入 |
 
 阶段2先确定公共边界，阶段5再编码DDD。没有另行授权时不跳过用户原型/文档审核，不自动合并或启动下一阶段。
