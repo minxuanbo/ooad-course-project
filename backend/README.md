@@ -1,6 +1,6 @@
 # RBAC结构化后端
 
-Java21、Spring Boot3.5.6、Spring Data JPA、MySQL8.4及老师真实CloneFactory。当前只有结构化业务实现，DDD后续单独编写；不提供尚未实现的策略开关。完整[代码与测试归类](../docs/backend-design.md#3-包结构)说明共享API、用例及基础设施边界。
+Java21、Spring Boot3.5.6、Spring Data JPA、MySQL8.4及老师真实CloneFactory。当前只有结构化业务实现，DDD后续单独编写；不提供尚未实现的策略开关。完整[后端设计](../docs/backend-design.md)说明共享API、用例、基础设施边界及代码与测试归类。
 
 组员从[完整本地复现](../docs/reproduction.md)开始；阶段4已合入main，DDD设计分支尚未实现第二套代码。共享/结构化边界见[DDD隔离说明](../docs/backend-design.md#4-双实现选择方式)。
 

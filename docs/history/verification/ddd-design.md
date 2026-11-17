@@ -49,4 +49,6 @@ Git范围检查确认backend/src、frontend生产代码/测试及依赖、OpenAP
 
 图件直接编排在backend-design第17章，design/README只保留源数据和生成说明。历史验收迁至history/verification，旧文档审核清单迁至history/documentation，原型决策迁至history/design-decisions；保留当时事实与证据，所有本地链接按新路径重定位。项目自有文件及模型命名不使用课程业务名称。
 
-本次重新生成29组SVG/PNG，源锚点、几何及差异范围检查通过，已打开全图联系表及人员查询类图核对。检查321处Markdown本地链接/锚点和29组图件正文引用、SVG解析/PNG配套均通过；git diff --check与绘图脚本语法检查通过。生产代码、前后端业务测试、依赖、OpenAPI、首次SQL、三份Excel及Chen图件未改，不启动服务或执行业务回归。
+本次重新生成29组SVG/PNG，源锚点、几何及差异范围检查通过，已打开全图联系表及人员查询类图核对。检查324处Markdown本地链接/锚点和29组图件正文引用、SVG解析/PNG配套均通过；git diff --check与绘图脚本语法检查通过。生产代码、前后端业务测试、依赖、OpenAPI、首次SQL、三份Excel及Chen图件未改，不启动服务或执行业务回归。
+
+固定ccbe107...f7ca99e再次按code-review skill独立复核归并：Standards硬规范0/启发式0，Spec0。随后同步原型README中过时的“阶段4等待确认/24操作”语句为当前状态，原型本身未改；历史索引使用普通追溯说明，不再保留当前审核引导。
