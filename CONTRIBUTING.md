@@ -13,7 +13,7 @@ main已同步修复基线；新设计分支从origin/main建立。先确认本�
 ```bash
 git status --short
 git fetch origin
-git worktree add -b codex/your-task ../ooad-your-task origin/refactor/rbac-core-backend
+git worktree add -b codex/your-task ../ooad-your-task origin/main
 ```
 
 分支或目录存在时先核对，不覆盖或重置用户工作。每次开工读AGENTS.md、对应Issue、批准需求及依赖证据；不凭Issue关闭状态推断交付物已进入共同基线，不自动领取下游任务。
@@ -28,6 +28,6 @@ git worktree add -b codex/your-task ../ooad-your-task origin/refactor/rbac-core-
 
 ## 4. 交付与审核
 
-核对git diff和验证结果，按文件明确暂存。提交并推送任务分支，创建base为refactor/rbac-core-backend的草稿PR；关联实际Issue时用Refs，不用无关的自动关票语句。正文写问题、最终变更、证据、限制与待审核事项。
+核对git diff和验证结果，按文件明确暂存。提交并推送任务分支，创建base为main的草稿PR；任务另行明确其他目标时再按其约定，不沿用旧修复分支示例。关联实际Issue时用Refs，不用无关的自动关票语句。正文写问题、最终变更、证据、限制与待审核事项。
 
 用户要求先审时，不自行合并、删除在审分支或关闭Issue。文档审核以[逐项指南](docs/review-guide.md)为入口；用户批准后才进行后续动作。变更批准范围时同步计划与受影响Issue，不新建重复任务。本轮不向Apifox推送。

@@ -85,11 +85,13 @@
         "- window: PageWindow"
       ],
       "methods": [
-        "+ of(scope, query): UserCriteria {static}"
+        "+ of(scope: DepartmentScope, q: String,",
+        "    enabled: Boolean, window: PageWindow): UserCriteria {static}"
       ],
       "policy": "OrganizationPolicy",
       "policyMethods": [
-        "+ scopeFor(user, organization): DepartmentScope"
+        "+ scopeFor(user, facts): DepartmentScope",
+        "+ restrict(scope, selected: DepartmentKey, facts): DepartmentScope"
       ],
       "serviceMethods": [
         "+ list(header, query): UserPageResult",
@@ -274,7 +276,7 @@
         "- originalKeys, originalParents: Map<String,String>"
       ],
       "methods": [
-        "+ prepare(state, credentials): ImportBatch"
+        "+ prepare(state, accounts: AccountInitialization): ImportBatch"
       ],
       "policy": "InitializationPolicy",
       "policyMethods": [
@@ -921,7 +923,7 @@
           [
             1,
             2,
-            "criteria = of(scope, query)"
+            "criteria = of(scope, q, enabled, window)"
           ],
           [
             1,
