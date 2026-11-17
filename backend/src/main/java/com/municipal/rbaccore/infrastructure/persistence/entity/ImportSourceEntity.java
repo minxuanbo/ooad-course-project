@@ -67,11 +67,17 @@ public class ImportSourceEntity {
   /** 保存原组织三列；公司领导与总公司可分别追溯到同一个目标部门。 */
   public static ImportSourceEntity organization(
       ImportPlan.Organization row, String hash, String json, DepartmentEntity target) {
+    return organization(row.name().trim(), row.row(), hash, json, target);
+  }
+
+  /** 按已核实的原始键、行号和父目标保存组织来源。 */
+  public static ImportSourceEntity organization(
+      String key, int row, String hash, String json, DepartmentEntity target) {
     ImportSourceEntity source = new ImportSourceEntity();
     source.kind = Kind.ORGANIZATION;
-    source.sourceKey = row.name().trim();
+    source.sourceKey = key;
     source.fileSha256 = hash;
-    source.sourceRow = row.row();
+    source.sourceRow = row;
     source.sourceJson = json;
     source.department = target;
     return source;
@@ -80,11 +86,17 @@ public class ImportSourceEntity {
   /** 员工来源以唯一工号定位，原六列和原行号均不被目标归属覆盖。 */
   public static ImportSourceEntity employee(
       ImportPlan.Employee row, String hash, String json, UserEntity target) {
+    return employee(row.username().trim(), row.row(), hash, json, target);
+  }
+
+  /** 以唯一工号键与来源文档关联已有人员行。 */
+  public static ImportSourceEntity employee(
+      String key, int row, String hash, String json, UserEntity target) {
     ImportSourceEntity source = new ImportSourceEntity();
     source.kind = Kind.EMPLOYEE;
-    source.sourceKey = row.username().trim();
+    source.sourceKey = key;
     source.fileSha256 = hash;
-    source.sourceRow = row.row();
+    source.sourceRow = row;
     source.sourceJson = json;
     source.user = target;
     return source;

@@ -59,7 +59,8 @@ export function assertGeometry(boxes, edges) {
 }
 export function edge(e) {
   if (e.kind !== 'association' && e.role) throw Error('依赖或实现线上不能写文字')
-  return `<polyline points="${e.points.map((p) => p.join(',')).join(' ')}" fill="none" stroke="${e.kind === 'realization' ? blue : ink}" stroke-width="1.7" ${e.kind === 'association' ? '' : 'stroke-dasharray="8 5"'} marker-end="url(#${e.kind === 'realization' ? 'triangle' : 'open'})"/>${e.role ? text(...e.role, 17) : ''}`
+  const role = e.role ? text(e.role[0], e.role[1], e.role[2], e.role[3] ?? 17, e.role[4], e.role[5]) : ''
+  return `<polyline points="${e.points.map((p) => p.join(',')).join(' ')}" fill="none" stroke="${e.kind === 'realization' ? blue : ink}" stroke-width="1.7" ${e.kind === 'association' ? '' : 'stroke-dasharray="8 5"'} marker-end="url(#${e.kind === 'realization' ? 'triangle' : 'open'})"/>${role}`
 }
 export async function output(directory, name, value) {
   writeFileSync(resolve(directory, name + '.svg'), value, 'utf8')

@@ -5,7 +5,6 @@ import com.municipal.rbaccore.infrastructure.persistence.entity.DepartmentEntity
 import com.municipal.rbaccore.infrastructure.persistence.entity.ImportSourceEntity;
 import com.municipal.rbaccore.infrastructure.persistence.repository.DepartmentJpaRepository;
 import com.municipal.rbaccore.service.port.error.ImportException;
-import com.municipal.rbaccore.service.structured.importing.StructuredImportService;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -23,7 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @EntityScan(basePackageClasses = {DepartmentEntity.class, ImportSourceEntity.class})
 @EnableJpaRepositories(basePackageClasses = DepartmentJpaRepository.class)
 @Import({
-  StructuredImportService.class,
+  ImportStrategySelector.class,
   com.municipal.rbaccore.infrastructure.security.BCryptPasswordHashing.class
 })
 public class ImportConfiguration {

@@ -16,6 +16,7 @@ spring:
   web.resources.add-mappings: false
   jackson.deserialization.fail-on-unknown-properties: true
 server.port: ${PORT:8081}
+app.backend-strategy: ${APP_BACKEND_STRATEGY:structured}
 rbac:
   initialize: false
   core:

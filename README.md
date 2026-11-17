@@ -18,11 +18,11 @@
 
 ## 当前实现
 
-后端backend使用Java21、Spring Boot3.5.6、JPA、MySQL8.4、AOP与真实CloneFactory。service.structured为已实现的事务脚本，Controller只经service.port调用，持久化/认证/日志/Excel归infrastructure。DDD和策略开关尚未实现，当前分支只完善设计，设计确认后才编码。
+后端backend使用Java21、Spring Boot3.5.6、JPA、MySQL8.4、AOP与真实CloneFactory。service.structured为已实现的事务脚本，Controller只经service.port调用，持久化/认证/日志/Excel归infrastructure。DDD在service.ddd中独立计算领域规则，持久化由领域仓储适配器完成。通过APP_BACKEND_STRATEGY选择structured（默认）或ddd。
 
 正式前端frontend使用Vue3/Vite，包含登录、总览、部门、人员、角色、资源和日志工作区。正式系统仅管理RBAC自身权限；18业务系统仅在[离线原型](prototype/README.md)演示，课程管理系统暂不接入，T14/T15等待后续要求。
 
-结构化阶段最新已记录后端167项、前端26项及构建、3项运行器安全单测通过，实际版本与浏览器复验限制见[测试验收](docs/testing-acceptance.md)。这些历史结果不代表DDD通过。
+结构化阶段最新已记录后端167项、前端26项及构建、3项运行器安全单测通过，实际版本与浏览器复验限制见[测试验收](docs/testing-acceptance.md)。本阶段的双策略测试见同一验收说明。
 
 ## 本地运行
 

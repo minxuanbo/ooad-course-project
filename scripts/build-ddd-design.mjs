@@ -7,7 +7,15 @@ import { svg, text, box, edge, assertGeometry, output, contactSheet } from './um
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const directory = resolve(root, 'docs/design')
 const design = JSON.parse(readFileSync(resolve(directory, 'ddd-diagrams.json'), 'utf8'))
-if (design.status !== 'DESIGN_ONLY') throw Error('DDD尚未编码，不能输出实现完成声明')
+if (design.status !== 'IMPLEMENTED') throw Error('图件必须与当前双策略源码同步')
+const javaRoot = resolve(root, 'backend/src/main/java/com/municipal/rbaccore')
+const javaFiles = readdirSync(javaRoot, { recursive: true })
+function requireJava(type) {
+  const simple = type.includes('.') ? type.slice(0, type.indexOf('.')) : type
+  const file = javaFiles.find((name) => name.split(/[\\/]/).at(-1) === `${simple}.java`)
+  if (!file) throw Error(`缺少图件对应的Java类型：${type}`)
+  return readFileSync(resolve(javaRoot, file), 'utf8')
+}
 const generated = []
 async function emit(name, document) {
   await output(directory, name, document)
@@ -46,7 +54,7 @@ async function packageDiagram(ddd) {
           w: 460,
           h: 170,
           title: '«package» config/bootstrap',
-          fields: ['拟互斥策略装配 / 三种启动入口'],
+          fields: ['互斥策略装配 / 三种启动入口'],
           methods: [],
         },
         {
@@ -90,7 +98,7 @@ async function packageDiagram(ddd) {
           w: 600,
           h: 190,
           title: '«package» infrastructure.persistence.ddd',
-          fields: ['领域仓储适配器及assembler'],
+          fields: ['领域仓储适配器及JpaDomainMapper'],
           methods: [],
         },
         {
@@ -314,8 +322,8 @@ async function packageDiagram(ddd) {
     svg(
       1840,
       1160,
-      ddd ? 'DDD目标 · 包图' : '结构化现状 · 包图',
-      '虚线空心箭头：依赖；蓝色虚线空心三角：接口实现。DDD为待审核设计，不表示已编码。',
+      ddd ? 'DDD · 包图' : '结构化 · 包图',
+      '虚线空心箭头表示包依赖，蓝色虚线空心三角表示包中的类型实现接口。',
       edges.map(edge).join('') + boxes.map(box).join(''),
     ),
   )
@@ -324,6 +332,11 @@ await packageDiagram(false)
 await packageDiagram(true)
 
 for (const item of design.entries) {
+  const serviceSource = requireJava(item.service)
+  const repositorySource = requireJava(item.repository)
+  const supportSource = requireJava(item.policy)
+  requireJava(item.model)
+  requireJava(item.adapter)
   const portRoot = resolve(root, 'backend/src/main/java/com/municipal/rbaccore/service/port')
   const portFile = readdirSync(portRoot, { recursive: true }).find((value) =>
     value.endsWith(item.port + '.java'),
@@ -332,8 +345,17 @@ for (const item of design.entries) {
   const portSource = readFileSync(resolve(portRoot, portFile), 'utf8')
   for (const operation of item.serviceMethods) {
     const method = operation.match(/^\+ (\w+)\(/)?.[1]
-    if (!method || !portSource.includes(method + '('))
-      throw Error(`目标用例方法不符合共用接口：${item.service}/${operation}`)
+    if (!method || !portSource.includes(method + '(') || !serviceSource.includes(method + '('))
+      throw Error(`图件方法不符合共用接口或实际用例：${item.service}/${operation}`)
+  }
+  for (const [type, source, methods] of [
+    [item.repository, repositorySource, item.repoMethods],
+    [item.policy, supportSource, item.policyMethods],
+  ]) {
+    for (const operation of methods) {
+      const method = operation.match(/^\+ (\w+)\(/)?.[1]
+      if (!method || !source.includes(method + '(')) throw Error(`图件方法已失效：${type}/${operation}`)
+    }
   }
   const jpa = {
     UserRepository: 'UserJpaRepository',
@@ -342,9 +364,10 @@ for (const item of design.entries) {
     ApiResourceRepository: 'ApiResourceJpaRepository',
     ApplicationSystemRepository: 'ApplicationSystemJpaRepository',
     OrganizationRepository: 'DepartmentJpaRepository',
-    AuthorizationRepository: 'ApiResourceJpaRepository',
+    AuthorizationRepository: 'UserJpaRepository',
     InitializationRepository: 'ImportSourceJpaRepository',
     AuditQueryGateway: 'AuthorizationLogJpaRepository',
+    DddScope: 'DepartmentJpaRepository',
   }[item.repository]
   if (!jpa) throw Error(`缺少适配器的技术仓储来源：${item.repository}`)
   readFileSync(
@@ -365,7 +388,7 @@ for (const item of design.entries) {
       title: item.service,
       fields: [
         `- ${item.repoRole || 'repository'}: ${item.repository}`,
-        `- ${item.supportRole || 'policy'}: ${item.policy}`,
+        ...(item.supportRole ? [`- ${item.supportRole}: ${item.policy}`] : []),
       ],
       methods: item.serviceMethods,
       center: true,
@@ -386,7 +409,7 @@ for (const item of design.entries) {
       y: 405,
       w: 450,
       h: 285,
-      title: '«interface» ' + item.repository,
+      title: (item.repositoryInterface === false ? '' : '«interface» ') + item.repository,
       fields: [],
       methods: item.repoMethods,
     },
@@ -406,7 +429,7 @@ for (const item of design.entries) {
       y: 850,
       w: 640,
       h: 195,
-      title: (item.supportRole ? '«interface» ' : '') + item.policy,
+      title: (item.supportRole && item.supportInterface !== false ? '«interface» ' : '') + item.policy,
       fields: [],
       methods: item.policyMethods,
     },
@@ -439,7 +462,7 @@ for (const item of design.entries) {
         [580, 550],
         [470, 550],
       ],
-      role: [482, 531, item.repoRole || 'repository'],
+      role: [482, 531, item.repoRole || 'repository', 16, 'start', 94],
     },
     {
       from: 'service',
@@ -452,12 +475,12 @@ for (const item of design.entries) {
     {
       from: 'service',
       to: 'policy',
-      kind: 'association',
+      kind: item.supportRole ? 'association' : 'dependency',
       points: [
         [900, 720],
         [900, 850],
       ],
-      role: [750, 788, item.supportRole || 'policy'],
+      ...(item.supportRole ? { role: [750, 788, item.supportRole] } : {}),
     },
     {
       from: 'adapter',
@@ -469,14 +492,18 @@ for (const item of design.entries) {
       ],
     },
   ]
+  if (item.repositoryInterface === false) {
+    boxes.pop()
+    edges.pop()
+  }
   assertGeometry(boxes, edges)
   await emit(
     'class-ddd-' + item.id,
     svg(
       1820,
       1120,
-      'DDD目标 · ' + item.title + '类图',
-      '待实现设计；Service居中。只截取关键成员，完整依赖和不变量见backend-design.md；字段为关联，局部/返回类型为依赖。',
+      'DDD · ' + item.title + '类图',
+      'Service居中。只展示当前实现的关键成员；字段为关联，局部/返回类型为依赖。',
       edges.map(edge).join('') + boxes.map(box).join(''),
     ),
   )
@@ -489,6 +516,8 @@ for (const scenario of design.scenarios) {
     'utf8',
   )
   if (!source.includes(scenario.anchor)) throw Error(`结构化图源锚点已失效：${scenario.id}`)
+  if (!requireJava(scenario.dddSource).includes(scenario.dddAnchor + '('))
+    throw Error(`DDD图源锚点已失效：${scenario.id}`)
   for (const variant of ['structured', 'ddd']) {
     const data = scenario[variant]
     const names = ['obj: 调用者', ...data.lifelines]
@@ -564,7 +593,7 @@ for (const scenario of design.scenarios) {
       svg(
         width,
         end + 70,
-        scenario.title + ' · ' + (variant === 'ddd' ? 'DDD目标差异' : 'Structured现状差异'),
+        scenario.title + ' · ' + (variant === 'ddd' ? 'DDD差异' : 'Structured差异'),
         '仅成功差异片段；共同HTTP/身份/日志/锁后鉴权/K/提交均省略，不表示取消。赋值调用不重复画回复；异常约定见正文。',
         body,
       ),

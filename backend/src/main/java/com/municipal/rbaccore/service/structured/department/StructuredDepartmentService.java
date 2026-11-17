@@ -116,7 +116,11 @@ public class StructuredDepartmentService implements DepartmentUseCase {
               command.getName(),
               id);
           CloneFactory.copyNotNull(department, command);
-          return result(actor, departments.saveAndFlush(department));
+          departments.saveAndFlush(department);
+          return list(header).stream()
+              .filter(node -> id.equals(node.getId()))
+              .findFirst()
+              .orElseThrow(BusinessException::scopeDenied);
         });
   }
 

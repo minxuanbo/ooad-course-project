@@ -1,3 +1,4 @@
+app.backend-strategy: ${APP_BACKEND_STRATEGY:structured}
 spring:
   main:
     web-application-type: none

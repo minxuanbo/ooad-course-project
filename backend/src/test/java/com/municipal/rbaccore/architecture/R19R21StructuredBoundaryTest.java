@@ -30,13 +30,33 @@ class R19R21StructuredBoundaryTest {
   private static final Path SOURCE =
       PROJECT.resolve("backend/src/main/java/com/municipal/rbaccore");
 
-  /** 后端独立归类且核心业务全部放在结构化层，本阶段没有DDD实现。 */
+  /** 同一后端中保留两套独立的业务实现。 */
   @Test
-  @DisplayName("R19/R21 后端独立归类且仅包含结构化业务实现")
-  void R19R21_backendContainsOnlyStructuredBusiness() throws Exception {
+  @DisplayName("R19/R21 两套业务实现位于同一个后端")
+  void R19R21_singleBackendContainsBothStrategies() {
     assertTrue(Files.isDirectory(SOURCE.resolve("service/structured")), "缺少独立backend及结构化业务层");
-    assertFalse(Files.exists(SOURCE.resolve("service/ddd")), "本阶段不创建DDD业务代码");
+    assertTrue(Files.isDirectory(SOURCE.resolve("service/ddd/domain/repository")));
+    assertTrue(Files.isDirectory(SOURCE.resolve("service/ddd/application")));
     assertFalse(Files.exists(PROJECT.resolve("src/main/java")), "不得留下第二份后端源码");
+  }
+
+  /** 领域和仓储只能依赖领域对象及JDK，应用层不引用持久化和另一策略。 */
+  @Test
+  @DisplayName("R21 DDD领域、仓储签名及应用依赖保持隔离")
+  void R21_dddUsesDomainBoundary() {
+    noClasses().that().resideInAPackage(BASE + ".service.ddd.domain..")
+        .should().dependOnClassesThat().resideOutsideOfPackages(
+            BASE + ".service.ddd.domain..", "java..")
+        .check(CLASSES);
+    noClasses().that().resideInAPackage(BASE + ".service.ddd.application..")
+        .should().dependOnClassesThat().resideInAnyPackage(
+            BASE + ".api..", BASE + ".infrastructure..", BASE + ".service.structured..",
+            "jakarta.persistence..", "jakarta.servlet..", "org.springframework.data..",
+            "org.springframework.web..", "org.springframework.jdbc..")
+        .check(CLASSES);
+    noClasses().that().resideInAPackage(BASE + ".service.structured..")
+        .should().dependOnClassesThat().resideInAPackage(BASE + ".service.ddd..")
+        .check(CLASSES);
   }
 
   /** Controller依赖可替换用例接口，不能引用实体、仓储或结构化实现。 */

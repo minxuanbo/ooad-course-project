@@ -5,7 +5,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
-/** R11结构化实现运行共享HTTP契约；DDD后续复用同一契约，当前不创建DDD实现。 */
+/** R11按配置选择后端策略运行同一组真实HTTP契约。 */
 @SpringBootTest(
     classes = RuntimeConfiguration.class,
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -16,4 +16,4 @@ import org.springframework.test.context.ActiveProfiles;
     })
 @ActiveProfiles("core-user-test")
 @Import(R11UserManagementContractSupport.LockFixtures.class)
-class R11StructuredUserManagementContractTest extends R11UserManagementContractSupport {}
+class R11UserManagementContractTest extends R11UserManagementContractSupport {}

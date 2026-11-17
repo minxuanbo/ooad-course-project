@@ -1,11 +1,11 @@
 # 组员本地复现与核对
 
-2026-11-17，PR #32已合入修复分支，PR #1同步main；本指南现以main为可复现结构化基线。组员检出main并记录实际提交号，DDD设计分支只有文档、尚不可切换DDD。只通过Git获取项目，不复制其他人的`.local`、数据库文件、node_modules、口令或预检CSV。
+2026-11-17，PR #32已合入修复分支，PR #1同步main；复现阶段5请检出codex/ddd-implementation并记录提交号。当前main可复现阶段4。只通过Git获取项目，不复制其他人的`.local`、数据库文件、node_modules、口令或预检CSV。
 
 ## 1. 获取正确版本及工具
 
 ```powershell
-git clone --branch main --single-branch https://github.com/minxuanbo/ooad-course-project.git
+git clone --branch codex/ddd-implementation --single-branch https://github.com/minxuanbo/ooad-course-project.git
 Set-Location ooad-course-project
 git branch --show-current
 git rev-parse HEAD
@@ -14,7 +14,7 @@ mvn -version
 node --version
 ```
 
-要求JDK21、Maven、MySQL8.4、Node≥22.12及npm。Maven实际使用的JDK也必须为21。先按[固定依赖安装](../deploy/README.md#本机依赖安装)从老师固定提交安装真实CloneFactory，不能以同名空包、BeanUtils或ObjectMapper代替。首次联网下载依赖需要访问Gitee、Maven及npm。
+要求JDK21、Maven、MySQL8.4、Node≥22.12及npm。使用`APP_BACKEND_STRATEGY`在产品、本机导入及首次授权三个入口选择`structured`（默认）或`ddd`。比较两种实现时为各策略使用单独实例和同名库。Maven实际使用的JDK也必须为21。先按[固定依赖安装](../deploy/README.md#本机依赖安装)从老师固定提交安装真实CloneFactory，不能以同名空包、BeanUtils或ObjectMapper代替。首次联网下载依赖需要访问Gitee、Maven及npm。
 
 没有配置六个回归专库时，先只生成运行包：
 
@@ -53,6 +53,7 @@ SHOW TABLES;
 回到仓库根的PowerShell，配置本机端口及账号。下列输入在内存中转换为进程环境变量，禁止输出环境变量值或把真实口令保存到脚本/聊天/日志。
 
 ```powershell
+$env:APP_BACKEND_STRATEGY='structured'
 $env:RBAC_CORE_DB_URL='jdbc:mysql://127.0.0.1:3307/rbac_core?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true'
 $env:RBAC_CORE_DB_USER='rbac_local'
 $env:RBAC_CORE_DB_PASSWORD=[System.Net.NetworkCredential]::new('', (Read-Host '数据库口令' -AsSecureString)).Password
@@ -61,15 +62,15 @@ $env:RBAC_CORE_EMPLOYEE_PASSWORD=[System.Net.NetworkCredential]::new('', (Read-H
 $env:RBAC_CORE_ADMIN_PASSWORD=[System.Net.NetworkCredential]::new('', (Read-Host '管理员独立初始口令' -AsSecureString)).Password
 $env:RBAC_CORE_ADMIN_USERNAME='admin'
 New-Item -ItemType Directory -Force .local | Out-Null
-java -Dloader.main=com.municipal.rbaccore.bootstrap.ImportCommand -cp backend/target/rbac0-0.1.0.jar org.springframework.boot.loader.launch.PropertiesLauncher
+java '-Dloader.main=com.municipal.rbaccore.bootstrap.ImportCommand' -cp backend/target/rbac0-0.1.0.jar org.springframework.boot.loader.launch.PropertiesLauncher
 ```
 
 员工和管理员初始口令分别配置，非空且各不超过72个UTF-8字节。导入对10001个账号逐个BCrypt10加盐，耗时显著长于启动服务；等待命令成功退出，再继续，不并行重复导入。此时账号全部启用但尚无角色，不能据此登录管理端。
 
 ```powershell
-java -Dloader.main=com.municipal.rbaccore.bootstrap.BootstrapAuthorizationCommand -cp backend/target/rbac0-0.1.0.jar org.springframework.boot.loader.launch.PropertiesLauncher --rbac.core.preview-file=.local/initial-role-preview.csv
+java '-Dloader.main=com.municipal.rbaccore.bootstrap.BootstrapAuthorizationCommand' -cp backend/target/rbac0-0.1.0.jar org.springframework.boot.loader.launch.PropertiesLauncher --rbac.core.preview-file=.local/initial-role-preview.csv
 # 先核对预检文件；文件必须为新文件，已有文件不覆盖。
-java -Dloader.main=com.municipal.rbaccore.bootstrap.BootstrapAuthorizationCommand -cp backend/target/rbac0-0.1.0.jar org.springframework.boot.loader.launch.PropertiesLauncher
+java '-Dloader.main=com.municipal.rbaccore.bootstrap.BootstrapAuthorizationCommand' -cp backend/target/rbac0-0.1.0.jar org.springframework.boot.loader.launch.PropertiesLauncher
 ```
 
 首次核对值：110有效组织、10000员工加独立admin、根直属11人；五角色人数1/64/106/72/9758，固定级别5/4/3/2/1；仅1个rbac系统及25个受控API。18业务系统仅在离线原型展示，不进入初始化。普通员工默认无RBAC管理权限，拒绝登录属于正确结果。
@@ -104,6 +105,6 @@ npm run dev
 4. 部门按连续子树显示，直属/含下级人数不重计；新增类型受父级限制，只删无人无下级且非根节点，无层级调整。局部不能改删本人、上级或平级。
 5. 另一个管理员撤权后，旧令牌的新请求立即按最新权限拒绝；前端403后更新实际能力并禁用失效提交，500/网络失败安全重试。
 6. 日志改变筛选/批量需重新查询，同一游标快照total不变；日志查询本身的新记录可能被下一次新查询看到，不代表同快照自动增加。
-7. 按[DDD隔离边界](backend-design.md#4-双实现选择方式)检查公共端口、技术适配器、结构化服务和未来装配的区别；不要新增DDD占位类或用结构化服务套壳。
+7. 按[DDD隔离边界](backend-design.md#4-双实现选择方式)检查公共端口、技术适配器、结构化、DDD服务和互斥装配的区别；不要新增DDD占位类或用结构化服务套壳。
 
 反馈请附Git提交号、操作角色/部门、操作步骤、预期/实际、HTTP状态/业务code和requestId；不附口令、Bearer、万人CSV或完整隐私数据。完整浏览器及窄屏复验仍沿[阶段4验收限制](history/verification/stage4-vue.md)，不要将已有自动测试扩大为所有页面已人工通过。

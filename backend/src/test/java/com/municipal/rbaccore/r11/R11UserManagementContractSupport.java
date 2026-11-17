@@ -99,7 +99,7 @@ abstract class R11UserManagementContractSupport {
     /** 请求将获取数据库锁时通知夹具，之后继续执行原方法。 */
     @Before(
         "execution(*"
-            + " com.municipal.rbaccore.service.structured.security.StructuredMaintenanceGuard.lock(..))")
+            + " com.municipal.rbaccore.service.port.security.MaintenanceProtection+.lock(..))")
     public void beforeLock() {
       CountDownLatch gate = entered.get();
       if (gate != null && RequestAuditFilter.current() != null) gate.countDown();
@@ -640,6 +640,24 @@ abstract class R11UserManagementContractSupport {
         request("PUT", department(childAdminUserId), dept, Map.of("departmentId", grandchildId)),
         200);
     assertEquals(2, completeAdministrators());
+  }
+
+  /** 调出可信根后即使保留五级角色，也不能再在子树内授予自定义角色。 */
+  @Test
+  @DisplayName("R23 只有可信根直属五级人员可以授予自定义角色")
+  void R23_RestrictsCustomRolesToRootLevelFive() throws Exception {
+    String root = token(ROOT);
+    long custom = success(request("POST", ROLES, root,
+        Map.of("code", "t11-root-custom", "name", "可信根专属自定义角色")), 201).get("id").asLong();
+    String candidates = assignable(employeeUserId) + "?q=t11-root-custom";
+    assertEquals(1, success(request("GET", candidates, root, null), 200).get("total").asInt());
+    success(request("PUT", department(rootUserId), root, Map.of("departmentId", childId)), 200);
+    assertEquals(0, success(request("GET", candidates, root, null), 200).get("total").asInt());
+    assertError(request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(custom))),
+        403, "MANAGEMENT_SCOPE_DENIED");
+    assertTrue(savedRoleIds(employeeUserId).isEmpty());
+    success(request("PUT", userRoles(employeeUserId), token(ROOT2), Map.of("ids", List.of(custom))), 200);
+    assertEquals(List.of(custom), savedRoleIds(employeeUserId));
   }
 
   /** 当身份、权限或目标范围不满足时，不能先用非法输入返回400。 */

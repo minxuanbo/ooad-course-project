@@ -16,7 +16,8 @@ import com.municipal.rbaccore.service.port.error.ImportException;
 import com.municipal.rbaccore.service.port.importing.BootstrapCredentials;
 import com.municipal.rbaccore.service.port.importing.ImportPlan;
 import com.municipal.rbaccore.service.port.importing.ImportReport;
-import com.municipal.rbaccore.service.structured.importing.StructuredImportService;
+import com.municipal.rbaccore.config.ImportStrategySelector;
+import com.municipal.rbaccore.service.port.importing.ImportUseCase;
 import com.municipal.rbaccore.shared.TestProjectPaths;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -48,11 +49,11 @@ import org.springframework.util.Assert;
 
 /** T03 使用本机专用MySQL库验证真实全量导入，绝不连接既有业务库。 */
 @SpringBootTest(
-    classes = R03StructuredImportJpaTest.ImportTestConfiguration.class,
+    classes = R03ImportJpaContractTest.ImportTestConfiguration.class,
     webEnvironment = SpringBootTest.WebEnvironment.NONE,
     properties = "spring.config.name=application-core-import-test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-class R03StructuredImportJpaTest {
+class R03ImportJpaContractTest {
   /** 显式选择新模型及导入支撑，不扫描旧产品初始化器、触发器或Controller。 */
   @Configuration(proxyBeanMethods = false)
   @EnableAutoConfiguration
@@ -60,7 +61,7 @@ class R03StructuredImportJpaTest {
   @EnableJpaRepositories(
       basePackageClasses = {DepartmentJpaRepository.class, ImportSourceJpaRepository.class})
   @Import({
-    StructuredImportService.class,
+    ImportStrategySelector.class,
     com.municipal.rbaccore.infrastructure.security.BCryptPasswordHashing.class
   })
   static class ImportTestConfiguration {
@@ -89,7 +90,7 @@ class R03StructuredImportJpaTest {
     }
   }
 
-  @Autowired StructuredImportService service;
+  @Autowired ImportUseCase service;
   @Autowired UserJpaRepository users;
   @Autowired DepartmentJpaRepository departments;
   @Autowired RoleJpaRepository roles;

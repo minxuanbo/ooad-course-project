@@ -87,7 +87,7 @@ abstract class R14ResourceContractSupport {
     /** 只通知测试等待点，实际加锁和事务仍执行原实现。 */
     @Before(
         "execution(*"
-            + " com.municipal.rbaccore.service.structured.security.StructuredMaintenanceGuard.lock(..))")
+            + " com.municipal.rbaccore.service.port.security.MaintenanceProtection+.lock(..))")
     public void beforeLock() {
       CountDownLatch gate = entered.get();
       if (gate != null && RequestAuditFilter.current() != null) gate.countDown();

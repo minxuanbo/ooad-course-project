@@ -15,7 +15,7 @@ git clone --no-checkout https://gitee.com/mingqcn/spring-fundamentals.git .local
 git -C .local/teacher-clonefactory-build checkout --detach 237f49c52bdc72da30383571bb2f985ac54a514a
 git -C .local/teacher-clonefactory-build rev-parse HEAD
 Push-Location .local/teacher-clonefactory-build/clonefactory
-mvn -B -ntp -Dmaven.compiler.proc=full clean org.apache.maven.plugins:maven-compiler-plugin:3.14.0:compile jar:jar install:install
+mvn -B -ntp '-Dmaven.compiler.proc=full' clean org.apache.maven.plugins:maven-compiler-plugin:3.14.0:compile jar:jar install:install
 Pop-Location
 ```
 
