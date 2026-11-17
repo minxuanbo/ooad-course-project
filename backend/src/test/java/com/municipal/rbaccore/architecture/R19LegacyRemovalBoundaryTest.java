@@ -126,14 +126,13 @@ class R19LegacyRemovalBoundaryTest {
 
   /** 旧前端失效入口删除，归档按钮与登录后提示假设不再出现。 */
   @Test
-  @DisplayName("R19/R21 前端仅保留登录与日志查询兼容入口")
-  void R19_FrontendKeepsOnlyLoginAndLogQuery() {
+  @DisplayName("R19/R21 正式前端保留整改入口并排除旧演示业务入口")
+  void R19_FrontendExcludesLegacyBusinessWorkspaces() {
     for (String absent :
         List.of(
             "frontend/src/pages/Portal.vue",
             "frontend/src/pages/System.vue",
             "frontend/src/pages/Organizations.vue",
-            "frontend/src/pages/Users.vue",
             "frontend/src/pages/Management.vue",
             "frontend/src/components/Handover.vue",
             "frontend/src/components/ManagementGrants.vue",

@@ -10,5 +10,6 @@ public class RoleResult {
   private Long id;
   private String code;
   private String name;
+  private Integer managementLevel;
   private Boolean enabled;
 }

@@ -14,13 +14,24 @@ public final class RbacCatalog {
           "rbac.users.read",
           "rbac.users.roles.write",
           "rbac.users.disable",
-          "rbac.users.department.write");
+          "rbac.users.department.write",
+          "rbac.overview.read",
+          "rbac.departments.read",
+          "rbac.departments.write");
 
   private RbacCatalog() {}
 
   /** 只声明已评审的API模板；后续任务接入各自Controller，不生成通用CRUD。 */
   public static Map<String, List<Route>> definitions() {
     Map<String, List<Route>> definitions = new LinkedHashMap<>();
+    definitions.put("rbac.overview.read", List.of(route("GET", "/api/overview")));
+    definitions.put("rbac.departments.read", List.of(route("GET", "/api/departments")));
+    definitions.put(
+        "rbac.departments.write",
+        List.of(
+            route("POST", "/api/departments"),
+            route("PATCH", "/api/departments/{id}"),
+            route("DELETE", "/api/departments/{id}")));
     definitions.put(
         "rbac.users.read",
         List.of(
@@ -67,12 +78,18 @@ public final class RbacCatalog {
         .collect(Collectors.toUnmodifiableSet());
   }
 
-  /** K不包含日志、停用人员和调动，其余已评审模板均须完整保留。 */
+  /** K保留原17项恢复维护模板，不包含日志、停用、调动及新增部门/总览操作。 */
   public static Set<Route> maintenanceRoutes() {
     return definitions().entrySet().stream()
         .filter(
             entry ->
-                !Set.of("rbac.logs.read", "rbac.users.disable", "rbac.users.department.write")
+                !Set.of(
+                        "rbac.logs.read",
+                        "rbac.users.disable",
+                        "rbac.users.department.write",
+                        "rbac.overview.read",
+                        "rbac.departments.read",
+                        "rbac.departments.write")
                     .contains(entry.getKey()))
         .flatMap(entry -> entry.getValue().stream())
         .collect(Collectors.toUnmodifiableSet());

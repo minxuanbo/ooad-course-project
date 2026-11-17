@@ -215,7 +215,7 @@ abstract class R11UserManagementContractSupport {
     JsonNode assigned = success(request("GET", userRoles(employeeUserId), dept, null), 200);
     assertEquals(1, assigned.get("roles").size());
     assertEquals("t11-full", assigned.get("roles").get(0).get("code").asText());
-    assertEquals(4, assigned.get("roles").get(0).size());
+    assertEquals(5, assigned.get("roles").get(0).size());
     assertTrue(assigned.get("roles").get(0).get("enabled").asBoolean());
     long disabledRole =
         role("t11-current-disabled", List.of(permissionIds.get("rbac.users.read")), false);
@@ -396,7 +396,11 @@ abstract class R11UserManagementContractSupport {
             "SELECT department_id FROM users WHERE id=?", Long.class, employeeUserId));
     String dept = token(DEPT);
 
-    success(request("PATCH", status(deptUserId), dept, Map.of("enabled", false)), 200);
+    assertError(
+        request("PATCH", status(deptUserId), dept, Map.of("enabled", false)),
+        403,
+        "MANAGEMENT_SCOPE_DENIED");
+    success(request("PATCH", status(deptUserId), root, Map.of("enabled", false)), 200);
     assertError(request("GET", USERS, dept, null), 401, "SESSION_INVALID");
     assertError(login(DEPT), 401, "LOGIN_FAILED");
   }
@@ -412,6 +416,24 @@ abstract class R11UserManagementContractSupport {
         request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(personnelRoleId))),
         200);
     String employee = token(EMPLOYEE);
+    assertError(
+        request("PUT", department(employeeUserId), dept, Map.of("departmentId", childId)),
+        403,
+        "MANAGEMENT_SCOPE_DENIED");
+    // 保留低级管理者的双范围移动场景，原同级人员不再允许局部管理者修改。
+    jdbc.update("UPDATE roles SET management_level=2 WHERE id=?", personnelRoleId);
+    jdbc.update(
+        "UPDATE roles SET management_level=3 WHERE id=?",
+        role(
+            "t11-dept-higher",
+            List.of(
+                permissionIds.get("rbac.users.read"),
+                permissionIds.get("rbac.users.department.write")),
+            true));
+    jdbc.update(
+        "INSERT INTO user_roles(user_id,role_id) SELECT ?,id FROM roles WHERE"
+            + " code='t11-dept-higher'",
+        deptUserId);
     assertEquals(1, success(request("GET", USERS, employee, null), 200).get("total").asInt());
     JsonNode moved =
         success(
@@ -844,6 +866,12 @@ abstract class R11UserManagementContractSupport {
         .execute(
             status -> {
               RoleEntity role = new RoleEntity(code, code);
+              role.setManagementLevel(
+                  code.equals("t11-full")
+                          || code.equals("t11-backup")
+                          || code.equals("t11-partial-operator")
+                      ? 5
+                      : code.equals("t11-personnel") ? 3 : 2);
               for (Long id : ids) role.grantPermission(permissions.findById(id).orElseThrow());
               role.setEnabled(enabled);
               return roles.save(role).getId();

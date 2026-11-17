@@ -1,11 +1,13 @@
 package com.municipal.rbaccore.infrastructure.web;
 
+import com.municipal.rbaccore.api.department.DepartmentController;
 import com.municipal.rbaccore.api.resource.ResourceController;
 import com.municipal.rbaccore.api.role.RoleController;
 import com.municipal.rbaccore.api.shared.ApiLimits;
 import com.municipal.rbaccore.api.user.UserController;
 import com.municipal.rbaccore.service.port.audit.AuditEvent;
 import com.municipal.rbaccore.service.port.audit.AuditWriter;
+import com.municipal.rbaccore.service.port.department.DepartmentUseCase;
 import com.municipal.rbaccore.service.port.error.BusinessException;
 import com.municipal.rbaccore.service.port.resource.ResourceUseCase;
 import com.municipal.rbaccore.service.port.security.ManagementAccessUseCase;
@@ -26,6 +28,7 @@ public class ManagementPreflight implements HandlerInterceptor {
   private final ManagementAccessUseCase access;
   private final ResourceUseCase resources;
   private final UserManagementUseCase users;
+  private final DepartmentUseCase departments;
   private final AuditWriter audit;
 
   /** 只处理已评审的管理控制器，人员接口保留部门范围而不要求共同根。 */
@@ -35,7 +38,8 @@ public class ManagementPreflight implements HandlerInterceptor {
     if (!(handler instanceof HandlerMethod method)
         || (!ResourceController.class.isAssignableFrom(method.getBeanType())
             && !RoleController.class.isAssignableFrom(method.getBeanType())
-            && !UserController.class.isAssignableFrom(method.getBeanType()))) {
+            && !UserController.class.isAssignableFrom(method.getBeanType())
+            && !DepartmentController.class.isAssignableFrom(method.getBeanType()))) {
       return true;
     }
     String template =
@@ -43,11 +47,14 @@ public class ManagementPreflight implements HandlerInterceptor {
     String header = request.getHeader("Authorization");
     try {
       Long id = targetId(request);
+      if (DepartmentController.class.isAssignableFrom(method.getBeanType())) {
+        departments.checkTarget(header, id, !request.getMethod().equals("GET"));
+        return true;
+      }
       if (UserController.class.isAssignableFrom(method.getBeanType())) {
         boolean protectSelf =
-            request.getMethod().equals("PUT")
-                && (template.equals("/api/users/{id}/roles")
-                    || template.equals("/api/users/{id}/department"));
+            !request.getMethod().equals("GET")
+                || template.equals("/api/users/{id}/assignable-roles");
         users.checkTarget(header, id, protectSelf);
         return true;
       }

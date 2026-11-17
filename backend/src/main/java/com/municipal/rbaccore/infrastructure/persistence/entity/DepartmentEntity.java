@@ -10,6 +10,10 @@ import org.springframework.util.Assert;
 @Table(
     name = "departments",
     uniqueConstraints = @UniqueConstraint(name = "uk_department_code", columnNames = "code"))
+@cn.edu.xmu.clonefactory.CopyNotNullFrom({
+  com.municipal.rbaccore.service.port.department.CreateDepartmentCommand.class,
+  com.municipal.rbaccore.service.port.department.RenameDepartmentCommand.class
+})
 @cn.edu.xmu.clonefactory.CopyTo({com.municipal.rbaccore.service.port.user.DepartmentResult.class})
 @lombok.Getter
 @lombok.NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
@@ -22,7 +26,24 @@ public class DepartmentEntity {
   private String code;
 
   @Column(nullable = false, length = 191)
+  @lombok.Setter
   private String name;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20, columnDefinition = "varchar(20) default 'DEPARTMENT'")
+  @lombok.Setter
+  private com.municipal.rbaccore.service.port.department.DepartmentType type =
+      com.municipal.rbaccore.service.port.department.DepartmentType.DEPARTMENT;
+
+  /** 删除空节点保留来源外键和稳定ID，重复导入不能将其复活。 */
+  @Column(nullable = false, columnDefinition = "bit default 0")
+  @lombok.Setter
+  private boolean deleted;
+
+  /** 改名不改变稳定编码和层级，格式由API边界先校验。 */
+  public void rename(String name) {
+    this.name = name.trim();
+  }
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "parent_id", foreignKey = @ForeignKey(name = "fk_department_parent"))

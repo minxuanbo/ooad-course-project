@@ -15,6 +15,10 @@ public class IdentityVO {
   private Long id;
   private String username;
   private String name;
+  private String departmentName;
+  private Integer managementLevel;
+  private Boolean globalScope;
+  private java.util.List<com.municipal.rbaccore.service.port.security.RbacCatalog.Route> routes;
   private Long departmentId;
   private boolean enabled;
 }

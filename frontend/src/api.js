@@ -1,32 +1,56 @@
 import { reactive } from 'vue'
-export const session = reactive({ token: sessionStorage.getItem('rbacToken') || '', me: null, permissions: [], logAccess: false, notice: '' })
+export const session = reactive({
+  token: sessionStorage.getItem('rbacToken') || '',
+  me: null,
+  notice: '',
+})
 let noticeTimer
+let refreshVersion = 0
 export function notify(message) {
   session.notice = message
   clearTimeout(noticeTimer)
   noticeTimer = setTimeout(clearNotice, 6000)
 }
-function clearNotice() { session.notice = '' }
+function clearNotice() {
+  session.notice = ''
+}
 export function setToken(token) {
+  if (session.token !== token) {
+    ++refreshVersion
+    session.me = null
+  }
   session.token = token
   if (token) sessionStorage.setItem('rbacToken', token)
-  else { sessionStorage.removeItem('rbacToken'); session.me = null; session.permissions = []; session.logAccess = false }
+  else {
+    sessionStorage.removeItem('rbacToken')
+    session.me = null
+  }
 }
 export async function api(path, method = 'GET', body) {
   const requestToken = session.token
   let response
   try {
     response = await fetch('/api' + path, {
-      method, cache: 'no-store',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + requestToken },
+      method,
+      cache: 'no-store',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + requestToken,
+      },
       body: body === undefined ? undefined : JSON.stringify(body),
-      signal: AbortSignal.timeout(20000)
+      signal: AbortSignal.timeout(20000),
     })
-  } catch { throw Error('无法连接服务，请检查后端服务及网络。') }
+  } catch {
+    throw Error('无法连接服务，请检查后端服务及网络。')
+  }
   const text = await response.text()
   let data = null
   if (text) {
-    try { data = JSON.parse(text) } catch { throw Error('接口响应异常，请检查 API 代理配置。') }
+    try {
+      data = JSON.parse(text)
+    } catch {
+      throw Error('接口响应异常，请检查 API 代理配置。')
+    }
   }
   if (!response.ok) {
     if (response.status === 401 && path !== '/auth/login' && session.token === requestToken) {
@@ -37,28 +61,44 @@ export async function api(path, method = 'GET', body) {
     error.status = response.status
     error.code = data?.code || 'HTTP_ERROR'
     error.requestId = data?.requestId || ''
+    if (
+      response.status === 403 &&
+      requestToken &&
+      session.token === requestToken &&
+      !['/auth/login', '/me', '/me/permissions'].includes(path)
+    ) {
+      try {
+        await refreshSession()
+      } catch {
+        // refreshSession按代次关闭失效能力；保留原403，不能覆盖较新的刷新结果。
+      }
+    }
     throw error
   }
   if (session.token !== requestToken) throw Error('登录身份已改变，请重新加载。')
   if (data?.code !== 'OK' || !Object.hasOwn(data, 'data')) throw Error('接口响应格式不符合约定。')
   return data.data
 }
+/** 导航和403只读一次最新身份能力；读取失败关闭旧按钮，不缓存授权结论。 */
 export async function refreshSession() {
   const token = session.token
-  const me = await api('/me')
-  const permissions = await api('/me/permissions')
-  const codes = (permissions || []).map(item => item.code)
-  let logAccess = false
-  try { await api('/authorization-logs?limit=1'); logAccess = true }
-  catch (error) { if (error.status !== 403) throw error }
-  if (session.token === token) {
-    session.me = me
-    session.permissions = codes
-    session.logAccess = logAccess
+  const version = ++refreshVersion
+  try {
+    const me = await api('/me')
+    if (session.token === token && version === refreshVersion) session.me = me
+    return me
+  } catch (error) {
+    if (session.token === token && version === refreshVersion && session.me) {
+      session.me = { ...session.me, user: { ...session.me.user, routes: [] } }
+    }
+    throw error
   }
-  return me
 }
-// 日志还要求共同根范围，入口使用服务端实际查询结果，不按角色名推断。
-export function can(permission) {
-  return permission === 'rbac.logs.read' ? session.logAccess : session.permissions.includes(permission)
+/** 页面入口及按钮按服务端实际API能力显示，角色名和职位不参与判断。 */
+export function canRoute(method, path, global = false) {
+  return (
+    !!session.me &&
+    (!global || session.me.user.globalScope === true) &&
+    session.me.user.routes?.some((item) => item.method === method && item.path === '/api' + path)
+  )
 }

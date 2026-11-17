@@ -193,7 +193,7 @@ abstract class R13RoleContractSupport {
     assertEquals("new-role", created.get("code").asText());
     assertEquals("新角色", created.get("name").asText());
     assertTrue(created.get("enabled").asBoolean());
-    assertEquals(4, created.size());
+    assertEquals(5, created.size());
     assertEquals(0, success(request("GET", selected(id), admin, null), 200).get("ids").size());
     JsonNode renamed = success(request("PATCH", role(id), admin, Map.of("name", " 更名 ")), 200);
     assertEquals("更名", renamed.get("name").asText());
@@ -1008,6 +1008,7 @@ abstract class R13RoleContractSupport {
         .execute(
             status -> {
               RoleEntity role = roles.save(new RoleEntity(username, username));
+              role.setManagementLevel(5);
               for (Long id : ids) role.grantPermission(permissions.findById(id).orElseThrow());
               UserEntity user =
                   new UserEntity(

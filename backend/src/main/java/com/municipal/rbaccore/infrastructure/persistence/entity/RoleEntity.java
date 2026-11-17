@@ -32,6 +32,11 @@ public class RoleEntity {
   @lombok.Setter
   private String name;
 
+  /** 固定基础角色管理级别；自定义角色为null，不能提高持有人级别。 */
+  @Column(name = "management_level")
+  @Setter
+  private Integer managementLevel;
+
   @Column(nullable = false)
   @Setter
   @cn.edu.xmu.clonefactory.CopyTo.Exclude({

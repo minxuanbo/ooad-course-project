@@ -13,5 +13,6 @@ public class RoleVO {
   private Long id;
   private String code;
   private String name;
+  private Integer managementLevel;
   private Boolean enabled;
 }

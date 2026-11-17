@@ -26,6 +26,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class StructuredAuthenticationService implements AuthenticationUseCase {
   private final UserJpaRepository users;
+  private final com.municipal.rbaccore.service.structured.security.StructuredPersonnelAuthority
+      authority;
+  private final com.municipal.rbaccore.service.structured.security.StructuredDepartmentScopeService
+      scope;
   private final StructuredEffectivePermissionService permissions;
   private final PasswordHashing encoder;
   private final IdentityTokenStore identities;
@@ -80,6 +84,19 @@ public class StructuredAuthenticationService implements AuthenticationUseCase {
   private IdentityResult identity(UserEntity user) {
     IdentityResult result = CloneFactory.copy(new IdentityResult(), user);
     result.setEnabled(user.isEnabled());
+    result.setDepartmentName(user.getDepartment().getName());
+    result.setManagementLevel(authority.level(user));
+    result.setRoutes(
+        permissions.routes(user.getId()).stream()
+            .sorted(
+                java.util.Comparator.comparing(
+                        com.municipal.rbaccore.service.port.security.RbacCatalog.Route::path)
+                    .thenComparing(
+                        com.municipal.rbaccore.service.port.security.RbacCatalog.Route::method))
+            .toList());
+    result.setGlobalScope(
+        scope.isGlobal(
+            new CurrentIdentity(user.getId(), user.getUsername(), user.getDepartment().getId())));
     result.setDepartmentId(user.getDepartment().getId());
     return result;
   }
@@ -92,5 +109,4 @@ public class StructuredAuthenticationService implements AuthenticationUseCase {
     result.setParentId(permission.getParent() == null ? null : permission.getParent().getId());
     return result;
   }
-
 }

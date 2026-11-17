@@ -6,8 +6,14 @@ CREATE TABLE IF NOT EXISTS departments (
   code VARCHAR(100) NOT NULL,
   name VARCHAR(191) NOT NULL,
   parent_id BIGINT,
+  type VARCHAR(20) NOT NULL DEFAULT 'DEPARTMENT',
+  deleted BIT NOT NULL DEFAULT 0,
+  active_name VARCHAR(191) GENERATED ALWAYS AS (IF(deleted=0,TRIM(name),NULL)) STORED,
   PRIMARY KEY (id),
   CONSTRAINT uk_department_code UNIQUE (code),
+  CONSTRAINT uk_department_sibling_name UNIQUE (parent_id, active_name),
+  CONSTRAINT ck_department_type CHECK (type IN ('HEADQUARTERS','COMPANY','DEPARTMENT','PROJECT')),
+  CONSTRAINT ck_department_name CHECK (CHAR_LENGTH(TRIM(name)) BETWEEN 1 AND 100),
   CONSTRAINT fk_department_parent FOREIGN KEY (parent_id) REFERENCES departments(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
 
@@ -25,8 +31,10 @@ CREATE TABLE IF NOT EXISTS roles (
   code VARCHAR(100) NOT NULL,
   name VARCHAR(100) NOT NULL,
   enabled BIT NOT NULL,
+  management_level INT,
   PRIMARY KEY (id),
   CONSTRAINT uk_role_code UNIQUE (code)
+  ,CONSTRAINT ck_role_level CHECK (management_level BETWEEN 1 AND 5)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
 
 CREATE TABLE IF NOT EXISTS users (

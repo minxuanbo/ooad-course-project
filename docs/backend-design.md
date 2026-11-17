@@ -1,6 +1,6 @@
 # 后端概要设计与双实现方案
 
-版本1.1评审稿；依据[需求](requirements.md)、[领域](domain-model.md)、[数据库](database-design.md)及[API](api-contract.md)。章节职责参照老师[backend-design](https://gitee.com/mingqcn/course-project-mgt/blob/fde08d5dd417abc543145aff33ca8378deb9ca36/docs/backend-design.md)，内容使用本RBAC业务。本文设计目标不作为实现完成声明。
+版本1.2；依据[需求](requirements.md)、[领域](domain-model.md)、[数据库](database-design.md)及[API](api-contract.md)。章节职责参照老师[backend-design](https://gitee.com/mingqcn/course-project-mgt/blob/fde08d5dd417abc543145aff33ca8378deb9ca36/docs/backend-design.md)，内容使用本RBAC业务。本文设计目标不作为实现完成声明。
 
 ## 1. 设计目标与约束
 
@@ -10,11 +10,11 @@
 
 ## 2. 当前基线与总体架构
 
-文档PR #29已合入d1438d7；2026-11-13当前分支将现有后端归入backend，并将业务明确归入service.structured。共享Controller只调用service.port，持久化、认证、请求、日志及Excel归入infrastructure，config/bootstrap负责装配和启动。DDD目录及策略选择尚未实现。
+文档PR #29、结构化归类PR #30及原型PR #31已合入；阶段4正式前后端在PR #32待审。后端位于backend，业务实现归service.structured，部门及总览增量已包含在本分支。共享Controller只调用service.port，持久化、认证、请求、日志及Excel归入infrastructure，config/bootstrap负责装配和启动。DDD目录及策略选择尚未实现。
 
 | 实际模块 | 当前责任 |
 | --- | --- |
-| api.auth/user/role/resource/audit及shared | 共享HTTP、DTO/VO、输入校验、CloneFactory映射及响应/错误适配 |
+| api.auth/user/department/role/resource/audit及shared | 共享HTTP、DTO/VO、输入校验、CloneFactory映射及响应/错误适配 |
 | service.port | 独立用例接口、Command/Query/Result与支撑抽象，无Entity/MVC/Spring依赖 |
 | service.structured | 事务脚本、范围/有效授权/可授予/根锁/K及初始化；直接使用JPA仓储 |
 | infrastructure.persistence.entity/repository | Entity/JpaRepository，保留表结构、关系与查询，不作为DDD聚合 |
@@ -50,7 +50,7 @@ API只依赖service.port；DDD application只依赖领域模型、领域仓储�
 
 拟用app.backend-strategy=structured|ddd，默认structured，错误配置启动失败。Spring条件装配同一用例接口的一个Bean；Controller不写策略if/else，不登记两组路由。此开关尚未编码，不能用于当前运行命令。
 
-两种策略共用用例输入输出及HTTP错误语义，核心业务各自表达；认证索引、日志、文件读取和JPA基础设施可复用。共享service.common不得变成隐藏业务边界的大Service。分别以隔离数据库运行同一契约测试，不能让两套测试并发修改同一数据集。
+两种策略共用用例输入输出及HTTP错误语义，核心业务各自表达；认证索引、日志、文件读取和JPA基础设施可复用。共享service.common当前不存在，不提前创建隐藏业务边界的大Service。公共端口只表达协议及支撑抽象；部门类型枚举不执行层级策略，技术适配器不导入结构化服务或DDD应用服务。分别以隔离数据库运行同一契约测试，不能让两套测试并发修改同一数据集。
 
 ## 5. 公共用例与端口
 
@@ -72,11 +72,11 @@ API只依赖service.port；DDD application只依赖领域模型、领域仓储�
 
 按人员、角色、资源、认证、日志、初始化划分用例服务，Service负责业务判断和事务，Repository负责明确查询/持久化。候选Permission子集、范围过滤、total和分页在数据库完成，不先全量加载再截页。纯规则可提取有明确输入的辅助对象，不把角色名硬编码成权限判断。
 
-当前分支已拆分用例输入输出、迁移JPA/认证/日志等技术支撑，并按需求归类测试；在保持现有HTTP/数据库契约的前提下修复copyNotNull、API输入清洗/ID和日志判定职责。实际验证随阶段记录更新。所有类和关键方法写中文Javadoc，明确类型，不用var，不写压缩单行类或字面量换行。
+当前分支已拆分用例输入输出、迁移JPA/认证/日志等技术支撑，并按需求归类测试；阶段2修复copyNotNull、API输入清洗/ID和日志判定职责；阶段4新增部门/总览接口与初始SQL字段，当前29操作及12表字典以OpenAPI/正式SQL为准。实际验证随阶段记录更新。所有类和关键方法写中文Javadoc，明确类型，不用var，不写压缩单行类或字面量换行。
 
 ## 7. DDD实现方案
 
-User、Role、Permission、ApiResource采用[领域模型](domain-model.md)提出的聚合边界，以标识引用其他聚合。领域行为封装状态改变和自身规则；跨对象授权、树和完整维护者规则由领域策略接收一致事实判断。Department/ApplicationSystem以只读模型满足当前用例，不增加通用CRUD。
+User、Role、Permission、ApiResource采用[领域模型](domain-model.md)提出的聚合边界，以标识引用其他聚合。领域行为封装状态改变和自身规则；跨对象授权、树和完整维护者规则由领域策略接收一致事实判断。Department拟作为独立聚合实现类型约束、合法下级新增、改名和删除空节点；ApplicationSystem目前只读，不增加通用CRUD。
 
 应用服务编排锁、仓储、领域行为和事务，不直接set持久化实体。JPA适配器负责领域对象装配/持久化和约束错误翻译；领域常量归口对应领域对象，application/domain不依赖结构化或service.common状态字符串。无需事件总线或最终一致性来替代根锁下的本地事务。
 
@@ -90,7 +90,7 @@ User、Role、Permission、ApiResource采用[领域模型](domain-model.md)提�
 4. User行为整体替换roleIds，通过仓储保存，维护者策略验证同一根用户完整K仍存在。
 5. 成功提交并转Result/VO；未知关联、越界、最后管理员或数据库故障均回滚。
 
-查询候选与保存分别重验，前端旧草稿不构成授权证据。其余切片依次覆盖人员状态/调动、角色选权、资源与映射，再以同契约验证全量行为；本次只设计，不启动这些编码。
+查询候选与保存分别重验，前端旧草稿不构成授权证据。其余切片依次覆盖人员状态/调动、角色选权、资源与映射，再以同契约验证全量行为；以上为DDD目标职责；结构化对应切片已在阶段4实现，DDD尚未启动。
 
 ## 9. 事务与并发
 
@@ -106,7 +106,7 @@ User、Role、Permission、ApiResource采用[领域模型](domain-model.md)提�
 
 ## 10. API、安全与错误
 
-OpenAPI定义24个既有操作；[业务约束](api-contract.md)解释实际API OR、同系统、范围、可授予子集和17项K。API门禁按服务端方法/模板，不依据固定权限code、角色名或客户端admin标识。本人查询与退出沿独立兼容契约。
+OpenAPI定义29个操作（含部门及总览5个新增操作）；[业务约束](api-contract.md)解释实际API OR、同系统、范围、可授予子集和17项K。API门禁按服务端方法/模板，不依据固定权限code、角色名或客户端admin标识。本人查询与退出沿独立兼容契约。
 
 账号唯一性和口令校验后还需管理端准入。Bearer索引保留在进程内，重启失效；每次管理请求重读最新状态/授权/部门，不把token内旧权限当真。用户停用后已有身份不能管理。统一{code,message,data,requestId}，401/403/404/409各按规范，500不泄露栈、SQL或输入。
 
@@ -124,7 +124,7 @@ OpenAPI定义24个既有操作；[业务约束](api-contract.md)解释实际API 
 
 ## 13. 待评审的设计决策
 
-已确认的业务口径不重复作为未决需求。用户本轮重点审核：目标包及端口划分、DDD聚合边界、根锁事实读取、完整前端交互、OpenAPI与现有契约一致性。当前类/接口名已在代码归类中列明；未来DDD实施前再细化领域仓储、策略装配及切片顺序。代码分支仍交用户审核，新原型未开始。
+已确认的业务口径不重复作为未决需求。用户本轮重点审核：目标包及端口划分、DDD聚合边界、根锁事实读取、完整前端交互、OpenAPI与现有契约一致性。当前类/接口名已在代码归类中列明；未来DDD实施前再细化领域仓储、策略装配及切片顺序。原型PR #31已获批合入，阶段4正式Vue及结构化后端PR #32仍交用户审核，DDD尚未启动。
 
 ## 14. CloneFactory映射方案
 
@@ -148,7 +148,7 @@ api.<业务>.dto下的类以DTO结尾，api.<业务>.vo下的类以VO结尾；�
 
 ## 17. 当前实现UML与边界
 
-阶段3原型新增R23—R28属于后续设计待办：候选与保存使用级别及完整跨系统Permission子集；所有人员写按最新目标级别保护本人/同级/上级；部门增删改名逐次鉴权，局部只维护严格下级，新建父级可为本人，删除仅无人无下级且非根。服务端应在事务与共同锁边界重验，数据库约束兜底同级重名、人员/子部门引用；导入来源和历史引用兼容及新维护操作的恢复约束须原型定稿后一并评审。18业务系统目录/矩阵只作为来源和配置设计，真实API及“本人”数据约束须接入契约，不由RBAC猜测业务接口。当前OpenAPI/正式代码仍沿原基线，下面实现图不表示这些新规则已落地。
+阶段4增加StructuredPersonnelAuthority和StructuredDepartmentService/StructuredOverviewService：固定角色级别、完整RBAC有效Permission子集、所有人员写的严格级别保护、部门增删改名与范围聚合共用事务/根锁。目录查询先限制范围，按部门聚合人数；人员角色摘要只批量加载当前页。部门type与deleted、有效同级名称唯一约束直接进入首次SQL，删除保留来源墓碑；重复导入按稳定编码和原父ID核对，不复原后续维护。新总览及部门操作不扩大原17项K，完整维护者另需有效基础级别5。正式系统不初始化18业务演示目录，课程系统暂不接入。
 
 以下两图表达当前StructuredAuthenticationService.require的实际协作，已随本轮代码归类重新生成，不是DDD目标类图。省略无关访问器和构造，安全判断顺序不省略。
 

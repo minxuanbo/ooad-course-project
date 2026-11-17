@@ -1,0 +1,346 @@
+<script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
+import { api, canRoute, notify, session, refreshSession } from '../api.js'
+import { errorText, organizationRows, RequestGeneration } from '../lib/presentation.js'
+import Modal from '../components/Modal.vue'
+import Pagination from '../components/Pagination.vue'
+import CollectionEditor from '../components/CollectionEditor.vue'
+const rows = ref([]),
+  departments = ref([]),
+  total = ref(0),
+  page = ref(0),
+  size = ref(20),
+  busy = ref(false),
+  error = ref('')
+const filters = ref({ q: '', departmentId: '', enabled: '' }),
+  editing = ref(null),
+  moving = ref(null),
+  moveTo = ref(''),
+  saving = ref(false),
+  actionError = ref('')
+const disabling = ref(null)
+const actionDenied = ref(false)
+const generation = new RequestGeneration()
+let departmentScope = null
+/** 缓存仅属于当前人员页；身份、范围或路由变化时必须重新读取，不缓存鉴权结论。 */
+function scopeKey() {
+  const user = session.me?.user
+  return JSON.stringify([
+    session.token,
+    user?.id,
+    user?.departmentId,
+    user?.globalScope,
+    user?.routes?.map((route) => `${route.method} ${route.path}`).sort(),
+  ])
+}
+/** 翻页筛选复用当前范围的成功树；失败和范围变化不能当作空树继续查询。 */
+async function load(next = 0) {
+  const version = generation.next()
+  busy.value = true
+  error.value = ''
+  rows.value = []
+  try {
+    const scope = scopeKey()
+    if (departmentScope !== scope) {
+      departments.value = []
+      departmentScope = null
+      const tree = await api('/departments/tree')
+      if (!generation.current(version) || scopeKey() !== scope) return
+      departments.value = organizationRows(tree)
+      departmentScope = scope
+      if (
+        filters.value.departmentId &&
+        !tree.some((item) => String(item.id) === filters.value.departmentId)
+      ) {
+        filters.value.departmentId = ''
+        next = 0
+      }
+    }
+    const params = new URLSearchParams({ page: next, size: size.value })
+    for (const [key, value] of Object.entries(filters.value))
+      if (value !== '') params.set(key, value.trim())
+    const result = await api('/users?' + params)
+    if (generation.current(version)) {
+      if (scopeKey() !== scope) {
+        departments.value = []
+        departmentScope = null
+        error.value = '身份或管理范围已变化，请重新查询。'
+        return
+      }
+      rows.value = result.items
+      total.value = result.total
+      page.value = next
+    }
+  } catch (e) {
+    if (generation.current(version)) {
+      if (departmentScope !== scopeKey()) {
+        departments.value = []
+        departmentScope = null
+      }
+      error.value = errorText(e)
+    }
+  } finally {
+    if (generation.current(version)) busy.value = false
+  }
+}
+/** 显式刷新可取得他人新增/改名/删除的部门；不依赖跨请求授权缓存。 */
+async function refreshDepartments() {
+  const version = generation.next()
+  departmentScope = null
+  departments.value = []
+  rows.value = []
+  busy.value = true
+  error.value = ''
+  try {
+    await refreshSession()
+    if (generation.current(version)) await load(0)
+  } catch (e) {
+    if (generation.current(version)) error.value = errorText(e)
+  } finally {
+    if (generation.current(version)) busy.value = false
+  }
+}
+async function disable(user) {
+  if (actionDenied.value || saving.value) return
+  saving.value = true
+  actionError.value = ''
+  try {
+    await api(`/users/${user.id}/status`, 'PATCH', { enabled: false })
+    notify('账号已停用。')
+    disabling.value = null
+    await load(page.value)
+  } catch (e) {
+    actionError.value = errorText(e)
+    if (e.status === 403) {
+      actionDenied.value = true
+      await load(page.value)
+    }
+  } finally {
+    saving.value = false
+  }
+}
+async function move() {
+  if (actionDenied.value || saving.value) return
+  saving.value = true
+  actionError.value = ''
+  try {
+    const movingSelf = moving.value.id === session.me?.user.id
+    await api(`/users/${moving.value.id}/department`, 'PUT', {
+      departmentId: Number(moveTo.value),
+    })
+    moving.value = null
+    notify('部门归属已更新，职位保持来源资料。')
+    if (movingSelf) await refreshSession()
+    await load(page.value)
+  } catch (e) {
+    actionError.value = errorText(e)
+    if (e.status === 403) {
+      actionDenied.value = true
+      await load(page.value)
+    }
+  } finally {
+    saving.value = false
+  }
+}
+function editRoles(user) {
+  editing.value = user
+}
+function openMove(user) {
+  moving.value = user
+  moveTo.value = String(user.departmentId)
+  actionError.value = ''
+  actionDenied.value = false
+}
+async function saved() {
+  const editingSelf = editing.value.id === session.me?.user.id
+  editing.value = null
+  try {
+    if (editingSelf) await refreshSession()
+    await load(page.value)
+  } catch (e) {
+    rows.value = []
+    departments.value = []
+    departmentScope = null
+    error.value = errorText(e)
+  }
+}
+/** 重置只影响当前人员筛选，重新从首个数据库页查询。 */
+function resetFilters() {
+  filters.value = { q: '', departmentId: '', enabled: '' }
+  load(0)
+}
+/** 展示目标与停用影响，确认前不发送写请求。 */
+function openDisable(user) {
+  disabling.value = user
+  actionError.value = ''
+  actionDenied.value = false
+}
+onMounted(() => load())
+onUnmounted(() => generation.cancel())
+</script>
+<template>
+  <section class="card">
+    <form class="toolbar user-filters" @submit.prevent="load(0)">
+      <label>
+        搜索人员
+        <input v-model="filters.q" maxlength="100" placeholder="姓名或工号" />
+      </label>
+      <label>
+        部门及下级
+        <select v-model="filters.departmentId">
+          <option value="">全部管理范围</option>
+          <option v-for="item in departments" :key="item.id" :value="String(item.id)">
+            {{ '　'.repeat(item.depth) + item.name }}
+          </option>
+        </select>
+      </label>
+      <label>
+        账号状态
+        <select v-model="filters.enabled">
+          <option value="">全部</option>
+          <option value="true">启用</option>
+          <option value="false">停用</option>
+        </select>
+      </label>
+      <button class="primary" :disabled="busy || saving">查询</button>
+      <button type="button" class="secondary" :disabled="busy || saving" @click="resetFilters">
+        重置
+      </button>
+      <button
+        type="button"
+        class="secondary"
+        :disabled="busy || saving"
+        @click="refreshDepartments"
+      >
+        刷新部门
+      </button>
+    </form>
+  </section>
+  <p v-if="error || actionError" class="error card panel" role="alert">
+    {{ error || actionError }}
+    <button class="secondary" :disabled="busy" @click="load(page)">重试</button>
+  </p>
+  <p class="muted">
+    仅能维护范围内级别严格低于本人的人员；本人、同级和上级只读。职位来自员工资料。
+  </p>
+  <section class="card table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>姓名 / 工号</th>
+          <th>所属部门</th>
+          <th>职位</th>
+          <th>当前角色</th>
+          <th>账号状态</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="user in rows" :key="user.id">
+          <td>
+            {{ user.name }}
+            <small>{{ user.username }}</small>
+          </td>
+          <td>{{ user.departmentName }}</td>
+          <td>{{ user.position || '未提供' }}</td>
+          <td>
+            <span
+              v-for="role in user.roles"
+              :key="role.id"
+              class="badge"
+              :class="role.enabled ? 'blue' : 'red'"
+            >
+              {{ role.name }}{{ role.enabled ? '' : ' · 停用' }}
+            </span>
+            <span v-if="!user.roles.length" class="muted">未授予角色</span>
+          </td>
+          <td>
+            <span class="badge" :class="user.enabled ? 'green' : 'red'">
+              {{ user.enabled ? '启用' : '停用' }}
+            </span>
+          </td>
+          <td class="row-actions">
+            <button class="text-button" :disabled="saving" @click="editRoles(user)">
+              {{ user.writable && canRoute('PUT', '/users/{id}/roles') ? '调整角色' : '查看角色' }}
+            </button>
+            <button
+              v-if="user.writable && canRoute('PUT', '/users/{id}/department')"
+              class="text-button"
+              :disabled="saving"
+              @click="openMove(user)"
+            >
+              调动归属
+            </button>
+            <button
+              v-if="user.writable && user.enabled && canRoute('PATCH', '/users/{id}/status')"
+              class="text-button danger"
+              :disabled="saving"
+              @click="openDisable(user)"
+            >
+              停用
+            </button>
+          </td>
+        </tr>
+        <tr v-if="!rows.length">
+          <td colspan="6" class="empty">
+            {{ busy ? '正在读取人员…' : error ? '人员读取失败' : '没有符合条件的人员' }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <Pagination :page="page" :size="size" :total="total" :busy="busy || saving" @change="load" />
+  </section>
+  <CollectionEditor
+    v-if="editing"
+    :key="editing.id"
+    :title="editing.name + ' · 当前角色'"
+    kind="roles"
+    :read-path="`/users/${editing.id}/roles`"
+    :save-path="`/users/${editing.id}/roles`"
+    :readonly="!editing.writable || !canRoute('PUT', '/users/{id}/roles')"
+    @close="editing = null"
+    @saved="saved"
+    @invalidated="load(page)"
+  />
+  <Modal v-if="moving" title="调动部门归属" :busy="saving" @close="moving = null">
+    <p>{{ moving.name }} · {{ moving.username }}</p>
+    <p class="muted">仅修改权限系统内的部门归属，不修改职位。</p>
+    <form @submit.prevent="move">
+      <label>
+        目标部门
+        <select v-model="moveTo" required>
+          <option v-for="item in departments" :key="item.id" :value="String(item.id)">
+            {{ '　'.repeat(item.depth) + item.name }}
+          </option>
+        </select>
+      </label>
+      <p v-if="actionError" class="error" role="alert">{{ actionError }}</p>
+      <p v-if="actionDenied" class="error">
+        权限或范围已变化，本次操作已禁用；请关闭弹窗并刷新后重新进入。
+      </p>
+      <footer class="dialog-actions">
+        <button type="button" class="secondary" :disabled="saving" @click="moving = null">
+          取消
+        </button>
+        <button class="primary" :disabled="actionDenied || saving || !moveTo">确认调动</button>
+      </footer>
+    </form>
+  </Modal>
+  <Modal v-if="disabling" title="确认停用账号" :busy="saving" @close="disabling = null">
+    <p>
+      停用 {{ disabling.name }}（{{
+        disabling.username
+      }}）？现有管理会话随后失效，部门和角色关联保留。
+    </p>
+    <p v-if="actionError" class="error" role="alert">{{ actionError }}</p>
+    <p v-if="actionDenied" class="error">
+      权限或范围已变化，本次操作已禁用；请关闭弹窗并刷新后重新进入。
+    </p>
+    <footer class="dialog-actions">
+      <button class="secondary" :disabled="saving" @click="disabling = null">取消</button>
+      <button class="primary" :disabled="actionDenied || saving" @click="disable(disabling)">
+        确认停用
+      </button>
+    </footer>
+  </Modal>
+</template>
