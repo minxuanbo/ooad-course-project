@@ -4,7 +4,7 @@
 
 来源基线：T13合入提交ffc7ceb783dd71b069a41664b11c994b31da2371。录音纪要为整理材料，不冒称逐字原话；个人评分和原始录音不提交。下文“原表根无直属员工”是原始111节点事实，目标合并后的根直属11人以现行需求为准。
 
-历史任务号仅作为来源索引，不代表仍有待执行工作。T13验收记录保留在[acceptance/T13.md](../acceptance/T13.md)；旧过程文档已从当前目录清理，完整历史可由[基线版本](https://github.com/minxuanbo/ooad-course-project/tree/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification)追溯。
+历史任务号仅作为来源索引，不代表仍有待执行工作。T13验收记录保留在[T13验收记录](../history/verification/T13.md)；旧过程文档已从当前目录清理，完整历史可由[基线版本](https://github.com/minxuanbo/ooad-course-project/tree/ffc7ceb783dd71b069a41664b11c994b31da2371/docs/rbac-rectification)追溯。
 
 ## 1. 检查纪要技术摘录
 
@@ -45,7 +45,7 @@ ER图应使用标准符号并只表达核心对象。User、Role、Permission及
 | 界面与 API | 用户跨部门调动、针对用户的权限、部门范围授权等核心操作；先原型后 API，避免大量通用 CRUD；路径、方法及参数符合 REST；菜单权限与后端 API 权限区分并关联 | T04/T06/T08/T10 逐项契约评审，T05/T07/T09/T11 实现，T13 复核 |
 | 代码与架构 | Controller/Service/Repository 分层；读写声明式事务；Spring Data JPA；课程技术及 CloneFactory 实际使用 | T05 首个调用落地，后续业务票复用，T12 收敛，T13 验证 |
 
-“针对用户的权限”通过选人、查看/分配/撤销角色及真实访问变化实现，保持角色授权模型。最终有效权限的展示方式由原型评审确定，独立来源说明页属于方案选择。当时CloneFactory缺少指定来源，要求T05核实后落地，ObjectMapper不能代替；该句是当时整改要求，现行固定来源及用法见[后端设计](../backend-design.md#14-clonefactory映射方案)。
+“针对用户的权限”通过选人、查看/分配/撤销角色及真实访问变化实现，保持角色授权模型。最终有效权限的展示方式由原型评审确定，独立来源说明页属于方案选择。当时CloneFactory缺少指定来源，要求T05核实后落地，ObjectMapper不能代替；该句是当时整改要求，现行固定来源及用法见[后端设计](../backend-design.md#14-clonefactory对象拷贝方案)。
 
 原纪要明确日志留在核心 ER 之外。用户补充最小鉴权日志复用与查询，作为运行支撑适配；核心仍为六实体、九表及三段 Mermaid。
 
@@ -98,10 +98,10 @@ ER图应使用标准符号并只表达核心对象。User、Role、Permission及
 | 实时鉴权与日志补充（2026-11-12） | 用户确认先明确：撤权提交后原身份的新请求立即按最新有效链判断；日志明确事件/主体/目标/结果/原因/追踪信息、筛选及同快照total，后续有调整再改 | [需求3.1—3.2](../requirements.md#31-实时鉴权与撤权生效r08r09r12r15) |
 | 两套RBAC实现 | 同仓库同应用，共享API/表结构/前端，structured与ddd可选择；当前仅结构化实现 | [后端设计](../backend-design.md) |
 | 课程系统 | 指老师Gitee上的course-project-mgt；等老师进一步要求，当前不实施课程接入或T14/T15 | [开发计划](../development-plan.md) |
-| 文档阶段 | 2026-11-13用户完成审核并授权合入PR #29，历史清单保留 | [审核指南](../review-guide.md) |
-| 当前授权（2026-11-13） | 整理结构化代码/测试、按需求编号命名、确定用例/基础设施边界并修复格式/CloneFactory/职责；DDD后续实现，部署待新增服务器方案 | [代码归类](../code-organization.md) |
-| 第三阶段后续确认（2026-11-13） | 部门支持局部下级增删改名，无层级调整；本人/同级/上级人员只读；体现原Excel其他系统矩阵与按系统配置；先迭代离线原型，满意后统一前后端 | [需求R23—R28](../requirements.md)、[原型记录](../prototype-review.md) |
-| 第四轮六点澄清（2026-11-13） | 部门类型限制；全部仅为同行操作并集；删除角色模板套用；区分账号与角色状态；18系统仅能力展示且API空态正确，不在RBAC实现其业务API，未来仅课程管理系统实际接入 | [需求R24/R26/R28](../requirements.md)、[第四轮记录](../prototype-review.md) |
+| 文档阶段 | 2026-11-13用户完成审核并授权合入PR #29，历史清单保留 | [审核指南](../history/documentation/docs-cleanup.md) |
+| 当前授权（2026-11-13） | 整理结构化代码/测试、按需求编号命名、确定用例/基础设施边界并修复格式/CloneFactory/职责；DDD后续实现，部署待新增服务器方案 | [代码归类](../backend-design.md#3-包结构) |
+| 第三阶段后续确认（2026-11-13） | 部门支持局部下级增删改名，无层级调整；本人/同级/上级人员只读；体现原Excel其他系统矩阵与按系统配置；先迭代离线原型，满意后统一前后端 | [需求R23—R28](../requirements.md)、[原型记录](../history/design-decisions/prototype.md) |
+| 第四轮六点澄清（2026-11-13） | 部门类型限制；全部仅为同行操作并集；删除角色模板套用；区分账号与角色状态；18系统仅能力展示且API空态正确，不在RBAC实现其业务API，未来仅课程管理系统实际接入 | [需求R24/R26/R28](../requirements.md)、[第四轮记录](../history/design-decisions/prototype.md) |
 
 ## 3. 参考项目的使用边界
 

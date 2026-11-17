@@ -8,7 +8,7 @@
 - OpenAPI YAML/JSON与Controller对应29操作、23路径；正式SQL为12张表，物理字段字典与其对应。K保留17操作，完整维护者另须启用、可信根与有效基础级别5，不能把新增部门/总览操作误写入K。
 - 完整OpenAPI校验发现部门树与新增部门目录重复使用listDepartments操作ID；将目录改为listDepartmentDirectory并从YAML重生成JSON，校验转绿，不改变方法/路径/业务行为，不写入Apifox。
 - 修正旧阶段的“部门只读”“仅登录/日志前端”“尚未进入阶段4”等当前状态描述；保留历史验收及原型讨论的时间语境。物理字典删除误放在permissions中的部门墓碑字段，补齐roles.management_level。
-- 新增[组员复现指南](../reproduction.md)与[DDD隔离边界](../ddd-boundary.md)，明确依赖固定版本、新库首次SQL、秘密配置、导入/预检/首次授权、后端与Vue启动命令及隔离测试库。
+- 新增[组员复现指南](../../reproduction.md)与[DDD隔离边界](../../backend-design.md#4-双实现选择方式)，明确依赖固定版本、新库首次SQL、秘密配置、导入/预检/首次授权、后端与Vue启动命令及隔离测试库。
 - 正式文档入口为docs/README.md下的版本化Markdown。主目录历史main中用户未跟踪的旧概要设计Markdown及DOCX未改写、未删除，不是本次当前设计源；本次不宣称旧Word已同步。
 
 ## 2. 结构化与公共边界

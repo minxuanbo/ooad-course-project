@@ -1,27 +1,23 @@
-# 正式文档导航
+# 项目文档
 
-按老师项目的requirements/domain-model/database/backend/api/prototype/deploy职责组织。文档阶段已于2026-11-13审核并随PR #29合入；当前代码归类见[代码归类](code-organization.md)。原[审核指南](review-guide.md)保留上一阶段文件清单。需求来自老师说明与用户确认，示例仓库用于组织和框架参考。
+按老师项目的需求、领域、数据库、后端、API职责组织；增加本RBAC所需的前端、初始化及本地复现说明。structured和DDD统一编排在相同正式文档中，不分别维护审核稿。参考项目为课程管理系统，本项目所有模型与命名均采用RBAC业务。
 
-| 顺序 | 文档 | 职责 |
-| --- | --- | --- |
-| 1 | [需求说明](requirements.md)、[需求来源](requirements/sources.md) | 做什么、原始事实、后续确认、范围与质量要求 |
-| 2 | [领域模型](domain-model.md) | 统一语言、核心不变量、目标聚合/行为/策略 |
-| 3 | [数据库设计](database-design.md)、[物理模型](database/physical-model.md)、[Chen源码](database/chen-er-source.md) | 六实体联系、九核心表与三支撑表，保留原ER |
-| 4 | [后端设计](backend-design.md)、[现状/目标图集](design/README.md) | 17章总体架构及双实现边界；图明确区分结构化现状与未实现DDD目标 |
-| DDD审核 | [逐项指南](ddd-review-guide.md)、[DDD设计](ddd-design.md)、[图集](design/README.md)、[评审记录](acceptance/ddd-design.md) | 目标聚合、严格领域仓储、装配/映射及差异图；DDD未编码，用户审核后才实施 |
-| 复现 | [组员复现](reproduction.md)、[DDD隔离边界](ddd-boundary.md)、[最终一致性核对](acceptance/final-alignment.md) | 正确分支、全新库、依赖/口令/命令、默认端口与共享边界 |
-| 代码 | [代码与测试归类](code-organization.md)、[本地后端说明](../backend/README.md) | 实际结构化目录、共享用例、测试需求编号及本地构建 |
-| 5 | [前端设计](frontend-design.md)、[新原型](../prototype/index.html)、[评审记录](prototype-review.md)、[历史参考](../prototype/README.md) | 正式Vue及获批离线原型；演示系统仅在原型，正式产品仅RBAC |
-| 6 | [API入口](../api/README.md)、[OpenAPI](../api/openapi.yaml)、[API业务约束](api-contract.md)、[页面对照](api-map.md) | Schema主规范与29项操作、授权/范围/事务语义 |
-| 7 | [初始化](initialization.md)、[部署说明](../deploy/README.md) | 数据转换、五角色、依赖与唯一运行命令 |
-| 8 | [测试验收](testing-acceptance.md)、[组员审核后修复](acceptance/peer-followup.md)、[阶段4验收](acceptance/stage4-vue.md)、[映射核对](acceptance/stage4-mapping-audit.md)、[结构化归类验收](acceptance/structured-organization.md)、[T13历史结果](acceptance/T13.md) | 需求验证矩阵、隔离、证据及实际限制 |
-| 9 | [开发计划](development-plan.md)、[协作规范](../CONTRIBUTING.md) | 六阶段顺序、分支与审核关口 |
-| 追溯 | [历史索引](history/README.md) | 只读整改记录，不作为第二份当前规范 |
+| 文档                                                                                                             | 内容                                                                    |
+| ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| [需求说明](requirements.md)、[来源](requirements/sources.md)                                                     | 范围、统一业务规则、原件及确认依据                                      |
+| [领域模型](domain-model.md)                                                                                      | 六核心对象、聚合、值、策略、生命周期与不变量                            |
+| [数据库设计](database-design.md)、[物理模型](database/physical-model.md)、[Chen源码](database/chen-er-source.md) | 概念联系、12表字典、约束及两策略共用存储                                |
+| [后端设计](backend-design.md)                                                                                    | 总体结构、包、共享契约、structured/DDD职责、仓储、事务、映射、测试与UML |
+| [前端设计](frontend-design.md)                                                                                   | Vue页面、组件、权限能力、状态、交互与错误处理                           |
+| [API映射](api-map.md)、[业务契约](api-contract.md)、[OpenAPI](../api/openapi.yaml)                               | 页面/操作索引、Schema外语义及唯一字段规范                               |
+| [首次初始化](initialization.md)                                                                                  | 原件转换、五角色、来源、整批事务与重复执行保护                          |
+| [测试与验收](testing-acceptance.md)                                                                              | 需求矩阵、隔离、验证方案及实际结果引用                                  |
+| [本地复现](reproduction.md)、[后端运行](../backend/README.md)、[前端运行](../frontend/README.md)                 | 依赖、全新库初始化、命令与端口                                          |
+| [开发计划](development-plan.md)、[协作](../CONTRIBUTING.md)                                                      | 实施顺序和分支约定                                                      |
+| [历史索引](history/README.md)                                                                                    | 原型决策、阶段检查与验证记录，不作为另一套当前设计                      |
 
-## 文档之间的维护规则
+## 维护约定
 
-requirements定义业务规则；domain-model定义行为与不变量；数据库文档定义概念映射和存储；前后端文档定义实现方案。OpenAPI YAML唯一维护字段，JSON同源导出，api-contract只解释Schema以外的约束，api-map只作索引。状态与证据进入testing-acceptance或独立验收记录，不混写成设计已实现。
+requirements回答做什么；domain-model定义行为和不变量；数据库文档定义存储；前后端文档定义怎么做。OpenAPI YAML唯一维护字段，JSON同源导出，api-contract解释Schema外规则，api-map仅作索引。图件与源数据归design，第17章直接展示。
 
-变更业务、模型或接口时同步受影响规范与测试，保留同一个需求编号。历史摘录保留时间语境，新结论以现行正文为准。原Excel、用户本地设计文档及数据库不清理；已淘汰资料从当前树删除后仍可在Git历史追溯。
-
-结构化整理PR #30、原型PR #31及阶段4 PR #32均已获用户批准合入，修复分支经PR #1同步main；T13及各阶段保留历史证据。当前阶段5只交DDD设计待审，审核后才编码；T14/T15及服务器部署仍待后续。文档阶段的历史清单仍见原审核指南。
+structured和Vue已有实现，DDD仅有设计；设计通过后另行编码。实际执行版本、结果与限制保留在历史验证记录，不将目标设计写成已完成。业务范围变化同步受影响文档、接口及测试；原Excel和用户未跟踪的本地概要设计文档不清理。

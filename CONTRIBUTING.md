@@ -30,4 +30,4 @@ git worktree add -b codex/your-task ../ooad-your-task origin/main
 
 核对git diff和验证结果，按文件明确暂存。提交并推送任务分支，创建base为main的草稿PR；任务另行明确其他目标时再按其约定，不沿用旧修复分支示例。关联实际Issue时用Refs，不用无关的自动关票语句。正文写问题、最终变更、证据、限制与待审核事项。
 
-用户要求先审时，不自行合并、删除在审分支或关闭Issue。文档审核以[逐项指南](docs/review-guide.md)为入口；用户批准后才进行后续动作。变更批准范围时同步计划与受影响Issue，不新建重复任务。本轮不向Apifox推送。
+用户要求先审时，不自行合并、删除在审分支或关闭Issue。项目文档以[正式导航](docs/README.md)为入口；用户批准后才进行后续动作。变更批准范围时同步计划与受影响Issue，不新建重复任务。本轮不向Apifox推送。

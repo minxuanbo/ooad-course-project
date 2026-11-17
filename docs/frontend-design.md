@@ -1,6 +1,6 @@
 # 前端概要设计
 
-版本：1.7；覆盖整个RBAC管理端的目标交互，依据[需求](requirements.md)、[API契约](api-contract.md)与用户原型反馈。本文说明界面职责和规则；本阶段真实验证结果另见验收记录，不由设计文字代替。阶段3第六轮交互见[唯一原型](../prototype/index.html)及[评审记录](prototype-review.md)，部门按层级显示并明确人数口径；阶段4正式接口与Vue实现同步；R28中的18系统仅保留于离线原型，正式页面只管理RBAC自身。
+版本：1.7；覆盖整个RBAC管理端的目标交互，依据[需求](requirements.md)、[API契约](api-contract.md)与用户原型反馈。本文说明界面职责和规则；本阶段真实验证结果另见验收记录，不由设计文字代替。阶段3第六轮交互见[唯一原型](../prototype/index.html)及[评审记录](history/design-decisions/prototype.md)，部门按层级显示并明确人数口径；阶段4正式接口与Vue实现同步；R28中的18系统仅保留于离线原型，正式页面只管理RBAC自身。
 
 ## 1. 目标与现状
 

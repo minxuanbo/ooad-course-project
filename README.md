@@ -1,44 +1,33 @@
 # 市政公司统一权限管理系统
 
-管理组织人员、角色、菜单/按钮及API的授权关系。用户名即工号，手机号是同一账号的另一个登录入口；有效授权决定可执行操作，本人部门及后代限定人员管理范围。
+管理组织人员、角色、菜单/按钮及API的授权关系。用户名即工号，手机号是同一账号的另一个登录入口；有效授权决定可执行操作，部门子树和角色级别限定管理边界。
 
-## 文档与审核
+## 项目文档
 
-资料按老师[course-project-mgt](https://gitee.com/mingqcn/course-project-mgt)的职责组织；业务依据为老师说明、原Excel及用户后续确认，不以老师课程业务或旧需求规格说明书替代本RBAC需求。
+| 文档                                                                    | 内容                                |
+| ----------------------------------------------------------------------- | ----------------------------------- |
+| [文档导航](docs/README.md)、[需求](docs/requirements.md)                | 项目范围、业务规则与设计入口        |
+| [领域模型](docs/domain-model.md)、[数据库](docs/database-design.md)     | 核心对象、不变量、Chen ER及12张表   |
+| [后端设计](docs/backend-design.md)、[前端设计](docs/frontend-design.md) | structured/DDD总体方案及完整Vue交互 |
+| [API](api/README.md)、[API映射](docs/api-map.md)                        | 29项操作、OpenAPI及页面对应关系     |
+| [初始化](docs/initialization.md)、[本地复现](docs/reproduction.md)      | 全新库、来源、五角色、运行与核对    |
+| [测试验收](docs/testing-acceptance.md)、[历史](docs/history/README.md)  | 验证方案、版本结果与限制            |
+| [开发计划](docs/development-plan.md)、[协作](CONTRIBUTING.md)           | 实施阶段与分支约定                  |
 
-| 入口 | 内容 |
-| --- | --- |
-| [文档导航](docs/README.md) / [阶段4审核记录](docs/acceptance/stage4-vue.md) | 正式目录、逐项阅读顺序、变更与待审点 |
-| [需求](docs/requirements.md) / [来源](docs/requirements/sources.md) | 项目范围、业务规则及确认依据 |
-| [领域](docs/domain-model.md) / [数据库](docs/database-design.md) | 核心对象、规则、Chen ER、12张物理表 |
-| [后端](docs/backend-design.md) / [前端](docs/frontend-design.md) | 同仓库双实现目标、完整RBAC前端设计 |
-| [API](api/README.md) / [参考原型](prototype/README.md) | OpenAPI、29项操作及原交互参考 |
-| [初始化](docs/initialization.md) / [部署](deploy/README.md) | 来源映射、五角色、依赖安装与运行 |
-| [测试验收](docs/testing-acceptance.md) / [开发计划](docs/development-plan.md) | 历史T13基线、当前检查及后续审核关口 |
-| [协作](CONTRIBUTING.md) / [历史](docs/history/README.md) | 分支、审核与只读整改追溯 |
+文档按老师[course-project-mgt](https://gitee.com/mingqcn/course-project-mgt)的职责组织，业务来源为老师说明、原Excel及确认需求，全部内容和命名使用本RBAC模型。两套实现放在同一后端工程，共享API、Vue与数据库；structured和DDD设计统一见后端文档，第17章展示包图、类图及仅差异顺序图。
 
-## 当前基线与目标
+## 当前实现
 
-2026-11-17，结构化PR #32已合入修复分支，修复分支经PR #1同步main，两者同一文件树。当前后端Maven项目位于backend，代码位于backend/src/main/java/com/municipal/rbaccore，使用Java21、Boot3.5.6、JPA、MySQL8.4、AOP与老师真实CloneFactory。业务层已按service/structured归类，共享API经service/port调用，持久化和认证/日志等归入infrastructure；没有DDD实现或策略开关。详见[代码归类](docs/code-organization.md)。
+后端backend使用Java21、Spring Boot3.5.6、JPA、MySQL8.4、AOP与真实CloneFactory。service.structured为已实现的事务脚本，Controller只经service.port调用，持久化/认证/日志/Excel归infrastructure。DDD和策略开关尚未实现，当前分支只完善设计，设计确认后才编码。
 
-正式前端frontend为Vue3/Vite，阶段4包含登录、总览、部门、人员、角色、资源与日志，全部对接真实RBAC接口，使用说明见[前端README](frontend/README.md)。顶层prototype仅保留当前交互原型，旧四组和v2并行目录已按用户要求替换，历史从Git追溯。课程系统指老师Gitee课程项目，T14/T15等待老师进一步要求。
+正式前端frontend使用Vue3/Vite，包含登录、总览、部门、人员、角色、资源和日志工作区。正式系统仅管理RBAC自身权限；18业务系统仅在[离线原型](prototype/README.md)演示，课程管理系统暂不接入，T14/T15等待后续要求。
 
-T13历史验收记录142项后端回归、3项运行器安全单测、70次默认JAR真实HTTP及两轮启动，详见[原验收记录](docs/acceptance/T13.md)。当前结构化归类另取得156项后端回归、3项运行器安全单测、70次完整探针及最终产物3次真实HTTP检查通过的新证据，详见[本阶段记录](docs/acceptance/structured-organization.md)；这些结果不代表完整前端、DDD或云端通过。
+结构化阶段最新已记录后端167项、前端26项及构建、3项运行器安全单测通过，实际版本与浏览器复验限制见[测试验收](docs/testing-acceptance.md)。这些历史结果不代表DDD通过。
 
-文档PR #29、结构化整理PR #30及原型PR #31均已获批合入。阶段4正式前后端已获用户批准并合入main，当前仅管理RBAC自身权限，18业务系统只在离线原型演示，课程系统暂不考虑接入。首次SQL直接适用于全新库，不提供旧库升级脚本；本轮不操作服务器。
+## 本地运行
 
-阶段4已有后端162项、前端17项及构建、全新隔离库默认JAR47次HTTP证据；最终边界修复后完整回归164项通过，前端17项及构建再次通过，见[最终一致性核对](docs/acceptance/final-alignment.md)。CloneFactory逐处及真实生成代码已核对。完整浏览器验证仍有明确限制，沿[阶段4记录](docs/acceptance/stage4-vue.md)，不把组件/接口成绩冒称全量UI通过。阶段4已合入，当前只交DDD设计待审，不自动开始DDD编码。
+依照[后端说明](backend/README.md)安装固定来源CloneFactory，准备独立rbac_core、秘密配置和首次SQL，再执行导入、只读预览及首次授权。默认产物backend/target/rbac0-0.1.0.jar，后端8081；启动不建表、不导入、不重授角色。
 
-组员先按[复现指南](docs/reproduction.md)检出main，公共代码与后续DDD边界见[隔离说明](docs/ddd-boundary.md)。
+前端在frontend执行npm ci、npm run dev，默认5173代理/api至8081；npm test及npm run build用于测试和构建。完整步骤见[本地复现](docs/reproduction.md)。原型可直接打开prototype/index.html。
 
-组员审核后补齐HTTP错误码、总览活动独立降级、页面重复请求与字节码架构守卫；最新完整回归167项、前端26项及构建、运行器3项安全单测通过，见[本轮修复记录](docs/acceptance/peer-followup.md)。此前阶段结果保留各自版本，浏览器/窄屏复验限制不变。
-
-DDD设计审核从[逐项指南](docs/ddd-review-guide.md)进入，正文见[DDD设计](docs/ddd-design.md)，图件见[包图、类图及差异顺序图](docs/design/README.md)。本轮只设计，尚无DDD源码或可运行开关。
-
-## 运行入口
-
-本地构建/初始化见[后端说明](backend/README.md)，先安装固定来源CloneFactory、显式准备独立rbac_core及秘密配置，再执行离线导入、只读预览、实际五角色授权。用户确认云部署待新增服务器方案确定后再整理，旧容器配置暂不适配本轮目录。默认jar为backend/target/rbac0-0.1.0.jar；启动不建表、不导入、不重授角色。不能指向旧业务库。
-
-现有前端在frontend执行npm ci、npm run dev，默认5173代理/api到后端8081；npm test和npm run build分别检查测试与构建。参考原型可直接打开prototype/index.html。
-
-三份原Excel保持原件；目标为111组织来源合并到110部门、10000员工加独立admin共10001账号。新项目不复用旧ID/哈希/状态/授权，口令来自部署秘密。测试使用隔离MySQL专库；JaCoCo独立报告，当前不作为阻塞，不提交凭据或生成报告。
+三份原Excel保留原件，首次111组织来源合并为110部门，10000员工加独立admin共10001账号；不复用旧ID、哈希、状态或授权。口令由配置提供，不提交Git。当前仅提供全新库SQL，服务器部署待新方案确定后处理，旧容器配置不作为现行发布入口。

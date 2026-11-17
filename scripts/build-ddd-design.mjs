@@ -476,7 +476,7 @@ for (const item of design.entries) {
       1820,
       1120,
       'DDD目标 · ' + item.title + '类图',
-      '待实现设计；Service居中。只截取关键成员，完整依赖和不变量见ddd-design.md；字段为关联，局部/返回类型为依赖。',
+      '待实现设计；Service居中。只截取关键成员，完整依赖和不变量见backend-design.md；字段为关联，局部/返回类型为依赖。',
       edges.map(edge).join('') + boxes.map(box).join(''),
     ),
   )

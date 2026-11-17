@@ -6,7 +6,7 @@
 
 Microsoft OpenJDK21.0.13.0.2、MySQL8.4.8、Maven3.8.5。本轮新建工作区私有mysql-structured-data，MySQL仅绑定127.0.0.1:3322；分别建立rbac_core_t02/t03/t05/t07/t09/t11_test六个回归专库及空rbac_core运行探针库。配置前核实实际@@datadir，测试用户仅授六个专库权限。原业务库、T13私有实例/证据和三份Excel未改。
 
-当前源码、测试编号与边界见[代码归类](../code-organization.md)；本机变量及可复现命令见[后端说明](../../backend/README.md)。执行完整回归使用正式backend/scripts/test-backend.ps1入口，传入clean package及UTC/JVM参数，不跳过测试。运行探针使用backend/scripts/accept-runtime.py，拒绝非空库与Spring/JVM额外配置，不提供自动清库。
+当前源码、测试编号与边界见[代码归类](../../backend-design.md#3-包结构)；本机变量及可复现命令见[后端说明](../../../backend/README.md)。执行完整回归使用正式backend/scripts/test-backend.ps1入口，传入clean package及UTC/JVM参数，不跳过测试。运行探针使用backend/scripts/accept-runtime.py，拒绝非空库与Spring/JVM额外配置，不提供自动清库。
 
 ## 2. 先失败后修复
 

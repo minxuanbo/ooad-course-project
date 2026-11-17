@@ -1,3 +1,5 @@
+> 记录范围：以下为2026-11-17初次交付时的文件名与检查结果。后续文档按老师目录归并：正文统一见[后端设计](../../backend-design.md)及[领域模型](../../domain-model.md)，不另设审核稿。
+
 # DDD设计交付与核对记录
 
 日期2026-11-17。本记录只陈述合并、设计产物及实际检查，不是DDD运行验收。
@@ -40,3 +42,11 @@ Git范围检查确认backend/src、frontend生产代码/测试及依赖、OpenAP
 按既有code-review skill，两名全新上下文审核者分别检查规范与需求，固定范围a4275be...HEAD。首轮Standards指出1项协作示例/base不一致，Spec指出1项UserCriteria工厂应用/领域输入歧义；59a44a8同步main工作流、显式领域查询参数及初始化种子边界，并重新生成/打开相关3张PNG。最终Standards硬规范0/启发式0，Spec0；此为设计复核，不是DDD执行验收。用户审核关口仍保留。
 
 本轮不改backend/src、frontend生产代码/测试、OpenAPI、首次SQL或业务测试，不启动服务或数据库，不宣称完整回归/DDD验收完成。未构建镜像、未部署服务器、未同步Apifox。类图截取关键成员，不把省略的依赖当作不存在；成功差异片段未展开的异常处理仍须沿既有契约及设计正文实现。
+
+## 5. 按老师文档职责归并（2026-11-17）
+
+依据用户后续要求，不再单列DDD设计稿、DDD审核指南或结构化代码归类/隔离设计。structured与DDD统一进入backend-design的17章：包、共享用例、关键模块/领域仓储、人员角色切片、MySQL、事务、安全、测试、映射及UML；聚合、值和策略进入domain-model。前端、初始化、API与数据库继续按各自正式文档职责维护。
+
+图件直接编排在backend-design第17章，design/README只保留源数据和生成说明。历史验收迁至history/verification，旧文档审核清单迁至history/documentation，原型决策迁至history/design-decisions；保留当时事实与证据，所有本地链接按新路径重定位。项目自有文件及模型命名不使用课程业务名称。
+
+本次重新生成29组SVG/PNG，源锚点、几何及差异范围检查通过，已打开全图联系表及人员查询类图核对。检查321处Markdown本地链接/锚点和29组图件正文引用、SVG解析/PNG配套均通过；git diff --check与绘图脚本语法检查通过。生产代码、前后端业务测试、依赖、OpenAPI、首次SQL、三份Excel及Chen图件未改，不启动服务或执行业务回归。

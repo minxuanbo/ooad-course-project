@@ -6,16 +6,16 @@
 
 | 对象 | 已有证据 | 本次/后续边界 |
 | --- | --- | --- |
-| 结构化后端 | [T13记录](acceptance/T13.md)：JDK21/MySQL8.4，142后端测试、3运行器单测、70次默认JAR HTTP，两轮启动 | PR #28已合入、Issue #14关闭；这是历史基线，本次不重报为新运行 |
-| 正式前端 | 阶段4正式Vue七工作区，组员审核后26项Node及构建通过，使用真实RBAC接口 | 浏览器已验登录/总览/部门新增改名，其余流程按[阶段4记录](acceptance/stage4-vue.md)保留复验限制 |
-| DDD | 本轮提交详细设计、两套包图、模块类图及仅差异顺序图，无DDD实现/策略开关 | 先按[DDD审核指南](ddd-review-guide.md)审核；之后编码及同契约验收，当前不宣称DDD通过 |
+| 结构化后端 | [T13记录](history/verification/T13.md)：JDK21/MySQL8.4，142后端测试、3运行器单测、70次默认JAR HTTP，两轮启动 | PR #28已合入、Issue #14关闭；这是历史基线，本次不重报为新运行 |
+| 正式前端 | 阶段4正式Vue七工作区，组员审核后26项Node及构建通过，使用真实RBAC接口 | 浏览器已验登录/总览/部门新增改名，其余流程按[阶段4记录](history/verification/stage4-vue.md)保留复验限制 |
+| DDD | 本轮提交详细设计、两套包图、模块类图及仅差异顺序图，无DDD实现/策略开关 | 先确认[后端设计](backend-design.md)；之后编码及同契约验收，当前不宣称DDD通过 |
 | 课程系统/双业务系统 | 等待老师进一步要求 | T14/T15当前不实施 |
 | 文档阶段 | PR #29、阶段2及阶段4均已获用户批准合入main | 历史文件清单保留；当前独立DDD设计分支只验证文档、图件和实现边界 |
-| 历史阶段2结构化归类 | 审核修复后代码5da102b：Java21/本轮私有MySQL完整package共156项通过，Failures/Errors/Skipped均0；3项Python环境安全单测、16adbcb的70次完整JAR HTTP及最终5da102b产物3次HTTP通过 | [本阶段记录](acceptance/structured-organization.md)保留源码/产物及失败诊断边界；不代表DDD/新前端/服务器部署完成 |
+| 历史阶段2结构化归类 | 审核修复后代码5da102b：Java21/本轮私有MySQL完整package共156项通过，Failures/Errors/Skipped均0；3项Python环境安全单测、16adbcb的70次完整JAR HTTP及最终5da102b产物3次HTTP通过 | [本阶段记录](history/verification/structured-organization.md)保留源码/产物及失败诊断边界；不代表DDD/新前端/服务器部署完成 |
 
-阶段4结构化后端clean package原162项通过，并有全新首次SQL隔离库默认JAR47次真实HTTP及审核后5次HTTP证据；2026-11-14最终边界修复后完整回归164项通过，另重跑前端17项/构建及运行器3项单测，见[最终核对](acceptance/final-alignment.md)。CloneFactory检查见[映射核对](acceptance/stage4-mapping-audit.md)，不把历史JAR探针次数当作最终边界修复后的重跑证据。
+阶段4结构化后端clean package原162项通过，并有全新首次SQL隔离库默认JAR47次真实HTTP及审核后5次HTTP证据；2026-11-14最终边界修复后完整回归164项通过，另重跑前端17项/构建及运行器3项单测，见[最终核对](history/verification/final-alignment.md)。CloneFactory检查见[映射核对](history/verification/stage4-mapping-audit.md)，不把历史JAR探针次数当作最终边界修复后的重跑证据。
 
-组员审核后四项修复的最新完整回归为167项、前端26项及构建、运行器3项安全单测通过；错误码、局部降级、重复请求、ArchUnit及竞态证据见[本轮记录](acceptance/peer-followup.md)。没有以历史成绩代替本轮执行，也没有重复宣称默认JAR万人长流程已重跑。
+组员审核后四项修复的最新完整回归为167项、前端26项及构建、运行器3项安全单测通过；错误码、局部降级、重复请求、ArchUnit及竞态证据见[本轮记录](history/verification/peer-followup.md)。没有以历史成绩代替本轮执行，也没有重复宣称默认JAR万人长流程已重跑。
 
 ## 2. 需求验证矩阵
 
@@ -57,7 +57,7 @@ Java21/MySQL8.4，先安装[固定CloneFactory](../deploy/README.md#本机依赖
 
 核对现行Markdown链接/锚点、HTML资源、OpenAPI3.1合法性、YAML/JSON同源一致、29操作与17项K、原Excel/ER和原型JS摘要不变。原型目录迁移后，替换已淘汰旧原型测试，使其加载真实参考原型并验证范围/同系统拒绝；前端npm test及build检查现有工程未因清理破坏。
 
-上一阶段文档整理不改生产行为。当前结构化归类会修改Java与测试目录、映射及职责，真实回归和私有库运行验收须取得新证据；历史T13记录保留原时间语境。实际检查结果随分支审核摘要记录，不把计划检查自动标为已通过。用户审核入口为[逐项指南](review-guide.md)。
+上一阶段文档整理不改生产行为。当前结构化归类会修改Java与测试目录、映射及职责，真实回归和私有库运行验收须取得新证据；历史T13记录保留原时间语境。实际检查结果随分支审核摘要记录，不把计划检查自动标为已通过。正式设计入口为[文档导航](README.md)。
 
 ## 5. 证据与完成条件
 

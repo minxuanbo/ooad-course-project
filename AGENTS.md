@@ -2,9 +2,9 @@
 
 2026-11-17用户批准合并阶段4：PR #32合入refactor/rbac-core-backend为4822114，PR #1同步main为a4275be，文件树一致。本轮独立codex/ddd-design仅交DDD设计、包图/类图及差异顺序图，用户审核后才开始DDD代码；不修改生产Java/Vue、SQL、API或业务测试，不推进T14/T15、课程接入或服务器部署。组员复现使用main，见docs/reproduction.md。
 
-业务依据为老师说明、原始资料和用户确认形成的docs/requirements.md；老师Gitee仅提供组织和框架参考。当前正式系统只管理RBAC自身权限，18业务系统及矩阵仅在离线原型演示，不进入正式目录/初始化/授权子集。课程系统暂不考虑；采用全新库首次SQL，不交付升级脚本。历史原型讨论以其时间语境保留在docs/prototype-review.md及requirements/sources.md，不覆盖最新范围。
+业务依据为老师说明、原始资料和用户确认形成的docs/requirements.md；老师Gitee仅提供组织和框架参考。当前正式系统只管理RBAC自身权限，18业务系统及矩阵仅在离线原型演示，不进入正式目录/初始化/授权子集。课程系统暂不考虑；采用全新库首次SQL，不交付升级脚本。历史原型讨论以其时间语境保留在docs/history/design-decisions/prototype.md及requirements/sources.md，不覆盖最新范围。
 
-HTTP字段主规范为api/openapi.yaml，JSON同源；业务语义见docs/api-contract.md。结构化实现归service/structured；service/port是共享用例/模型/协议取值，不放具体实现依赖或组织层级策略。共享基础设施不调用结构化或DDD应用服务，未来DDD持久化适配器可以实现领域仓储并映射领域模型。DDD当前不存在或可用策略开关；后续必须独立业务链和互斥装配，见docs/ddd-boundary.md。
+HTTP字段主规范为api/openapi.yaml，JSON同源；业务语义见docs/api-contract.md。结构化实现归service/structured；service/port是共享用例/模型/协议取值，不放具体实现依赖或组织层级策略。共享基础设施不调用结构化或DDD应用服务，未来DDD持久化适配器可以实现领域仓储并映射领域模型。DDD当前不存在或可用策略开关；后续必须独立业务链和互斥装配，见docs/backend-design.md第4章。
 
 后续生产代码与测试按用户2026-11-17提供新版projectmgt-code-conventions执行；本RBAC保留本地口令，分页沿page/size。领域仓储只输入输出domain.model及JDK容器，DomainPage装领域对象，复杂读模型用service.port Gateway；application不依赖JPA/Entity/结构化。final/record不可依赖CloneFactory写入，须显式构造；可变同名同类型字段仍优先真实处理器并核对生成赋值。注解独立换行、中文Javadoc、TDD、Service事务及锁后重鉴权沿新规范。本轮不为了格式改动已批准生产代码。
 
