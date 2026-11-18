@@ -284,13 +284,13 @@ OpenAPI定义29个操作（含部门及总览5个新增操作）；[业务约束
 
 R19R21StructuredBoundaryTest使用仅测试依赖ArchUnit1.4.1导入生产字节码，检查API、公共端口、基础设施及结构化层依赖；Controller还检查真实非静态字段必须为service.port下用例接口，注释中的UseCase不参与判定。R18ErrorSchemaTest归r18，路由404/405的真实HTTP断言归共享r07契约；前端增量归tests/r17-navigation.test.mjs及r17-workspaces.test.mjs，共享客户端夹具归tests/helpers/api-client.mjs，不放入生产源码或复制另一套页面。
 
-本地运行验收和3项环境隔离单测移至backend/scripts，测试辅助代码不混入生产src/main。SQL位于deploy；阶段4已直接更新首次结构以加入角色级别、组织类型和墓碑，未搬迁旧数据库。实际结果见[测试说明](testing-acceptance.md)及[本阶段验收](history/verification/structured-organization.md)，不覆盖[T13历史事实](history/verification/T13.md)。
+本地运行验收及5项运行器单测位于backend/scripts，覆盖环境隔离和策略传递；测试辅助代码不混入生产src/main。SQL位于deploy；阶段4已直接更新首次结构以加入角色级别、组织类型和墓碑，未搬迁旧数据库。实际结果见[测试说明](testing-acceptance.md)及[阶段2历史验收](history/verification/structured-organization.md)。
 
 ### 11.2 DDD架构及双实现验证
 
 领域仅依赖JDK与自身模型，领域仓储签名仅模型及JDK容器；应用不依赖JPA/结构化/HTTP。R19BackendStrategyTest检查同一配置入口的互斥装配和未知值，同时保留公共端口和基础设施的单向依赖检查。基础设施依赖DDD领域模型/仓储是合法适配，不得调用DDD应用服务。
 
-R03、R07、R11、R13、R14、R23 等共享契约在两个策略实例分别运行。生成的 CloneFactory 和显式领域映射使用字段断言验证。全量浏览器及窄屏仍沿阶段4复验范围。
+R03、R07、R11、R13、R14、R23 等共享契约在两个策略实例分别运行。生成的 CloneFactory 和显式领域映射使用字段断言验证。[阶段5交接复核](testing-acceptance.md#阶段5-交接复核2026-11-17)已记录两策略的真实数据库、默认JAR及桌面浏览器结果；窄屏、完整键盘交互和其他写入组合仍待复验。
 
 ## 12. 实施顺序
 

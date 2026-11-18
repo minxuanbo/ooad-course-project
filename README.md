@@ -22,7 +22,9 @@
 
 正式前端frontend使用Vue3/Vite，包含登录、总览、部门、人员、角色、资源和日志工作区。正式系统仅管理RBAC自身权限；18业务系统仅在[离线原型](prototype/README.md)演示，课程管理系统暂不接入，T14/T15等待后续要求。
 
-结构化阶段最新已记录后端167项、前端26项及构建、3项运行器安全单测通过，实际版本与浏览器复验限制见[测试验收](docs/testing-acceptance.md)。本阶段的双策略测试见同一验收说明。
+截至2026-11-18，阶段5已通过审核并随[PR #34](https://github.com/minxuanbo/ooad-course-project/pull/34)合入main（e521f97，验收代码83dbf17）。structured和ddd各178项后端测试、71次真实HTTP检查通过；两套空库各完成10001个BCrypt10账号导入及首次授权。前端26项测试/构建及运行器5项单测通过，CloneFactory生成的51个重载均有实际赋值。
+
+桌面浏览器已分别复验两种策略的登录、六个管理页面及关键权限操作。阶段6仍需补齐窄屏、完整键盘交互和其他写入组合；实际证据与限制见[测试验收](docs/testing-acceptance.md)，后续安排见[开发计划](docs/development-plan.md)。
 
 ## 本地运行
 
