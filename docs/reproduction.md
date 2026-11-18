@@ -1,11 +1,11 @@
 # 组员本地复现与核对
 
-2026-11-17，PR #32已合入修复分支，PR #1同步main；复现阶段5请检出codex/ddd-implementation并记录提交号。当前main可复现阶段4。只通过Git获取项目，不复制其他人的`.local`、数据库文件、node_modules、口令或预检CSV。
+更新至2026-11-18：[PR #34](https://github.com/minxuanbo/ooad-course-project/pull/34)已合入main（e521f97），当前main包含structured/ddd双实现，文件树与验收提交83dbf17一致。组员统一从main获取并记录实际提交号；需要固定本轮验收版本时检出e521f97。只通过Git获取项目，不复制其他人的`.local`、数据库文件、node_modules、口令或预检CSV。
 
 ## 1. 获取正确版本及工具
 
 ```powershell
-git clone --branch codex/ddd-implementation --single-branch https://github.com/minxuanbo/ooad-course-project.git
+git clone --branch main --single-branch https://github.com/minxuanbo/ooad-course-project.git
 Set-Location ooad-course-project
 git branch --show-current
 git rev-parse HEAD
@@ -85,7 +85,7 @@ java -jar backend/target/rbac0-0.1.0.jar
 
 默认`http://127.0.0.1:8081`，`PORT`环境变量可改端口。没有匿名首页或健康200；匿名`GET /api/me`应返回401及requestId。
 
-另开终端进入本分支`frontend`：
+另开终端进入仓库的`frontend`：
 
 ```powershell
 npm ci
@@ -107,4 +107,4 @@ npm run dev
 6. 日志改变筛选/批量需重新查询，同一游标快照total不变；日志查询本身的新记录可能被下一次新查询看到，不代表同快照自动增加。
 7. 按[DDD隔离边界](backend-design.md#4-双实现选择方式)检查公共端口、技术适配器、结构化、DDD服务和互斥装配的区别；不要新增DDD占位类或用结构化服务套壳。
 
-反馈请附Git提交号、操作角色/部门、操作步骤、预期/实际、HTTP状态/业务code和requestId；不附口令、Bearer、万人CSV或完整隐私数据。完整浏览器及窄屏复验仍沿[阶段4验收限制](history/verification/stage4-vue.md)，不要将已有自动测试扩大为所有页面已人工通过。
+反馈请附Git提交号、操作角色/部门、操作步骤、预期/实际、HTTP状态/业务code和requestId；不附口令、Bearer、万人CSV或完整隐私数据。[阶段5交接复核](testing-acceptance.md#阶段5-交接复核2026-11-17)已记录两策略桌面浏览器及关键操作结果；窄屏、完整键盘和其他写入组合仍待复验。

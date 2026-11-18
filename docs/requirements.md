@@ -147,6 +147,6 @@ K包含角色维护、角色权限配置、人员角色分配、资源与映射�
 
 ## 7. 当前状态与本次范围
 
-T13已合入，历史结果见[验收说明](testing-acceptance.md)。当前结构化实现已在backend按层归类；阶段4正式Vue包含登录、总览、部门、人员、角色、资源和日志页面，已随PR #32及PR #1合入main。阶段5分支实现DDD和策略切换，浏览器复验限制沿[阶段4验收](history/verification/stage4-vue.md)。
+截至2026-11-18，main已包含按层归类的structured实现、独立DDD实现、三入口策略选择及正式Vue的登录、总览、部门、人员、角色、资源和日志页面。阶段5经规范/需求双轴审核、修复与CloneFactory专项核对后，已获用户批准随[PR #34](https://github.com/minxuanbo/ooad-course-project/pull/34)合入main（e521f97）。
 
-文档PR #29、结构化整理PR #30及[阶段3原型](history/design-decisions/prototype.md)PR #31已由用户批准合入；阶段4正式前后端已获用户批准合入main；阶段5在codex/ddd-implementation完成双策略代码及图件同步。原型继续以模拟数据直接打开HTML，不能代替正式Vue真实HTTP验证；随后DDD及双实现验收顺序见[开发计划](development-plan.md)。课程系统就是老师Gitee示例项目，T14/T15待老师进一步要求，不自行补齐课程业务。
+两种策略的真实数据库回归、万人初始化、关键HTTP及桌面浏览器结果见[阶段5验收](testing-acceptance.md#阶段5-交接复核2026-11-17)。阶段6仍待窄屏、完整键盘及其他写入组合复验，剩余安排见[开发计划](development-plan.md)。原型继续使用模拟数据，18业务系统及原表矩阵仅在离线原型演示。课程系统指老师Gitee示例项目，T14/T15待老师进一步要求，服务器部署另待方案。

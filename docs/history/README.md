@@ -16,7 +16,7 @@
 
 ## 文档与验证记录
 
-[文档整理记录](documentation/docs-cleanup.md)保留早期设计清理过程。以下为固定阶段证据，不用于覆盖正式设计或证明尚未实现的DDD。
+[文档整理记录](documentation/docs-cleanup.md)保留早期设计清理过程。以下为固定阶段证据，不用于覆盖正式设计。DDD已随PR #34合入main，当前双策略实现结果见[阶段5验收](../testing-acceptance.md#阶段5-交接复核2026-11-17)。
 
 - [DDD设计交付与核对记录](verification/ddd-design.md)
 - [阶段4最终文档与结构化边界核对](verification/final-alignment.md)

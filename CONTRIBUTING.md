@@ -4,11 +4,11 @@
 
 ## 1. 当前工作边界
 
-T13已合入共同基线，阶段5新增独立DDD实现。文档PR #29及结构化整理PR #30均经用户审核合入。原型PR #31已获批合入，阶段4正式Vue与结构化后端PR #32已于2026-11-17经用户批准合入，PR #1同步main。组员按[复现指南](docs/reproduction.md)检出待复现提交。阶段5按两种后端策略分别执行回归。后续顺序见[开发计划](docs/development-plan.md)。
+截至2026-11-18，文档PR #29、结构化整理PR #30、原型PR #31、阶段4正式前后端PR #32及同步PR #1均已合入。阶段5独立DDD实现经双轴审核、修复、CloneFactory专项核对及两策略隔离回归后，已获用户批准随[PR #34](https://github.com/minxuanbo/ooad-course-project/pull/34)合入main（e521f97）。组员按[复现指南](docs/reproduction.md)从main检出并记录提交号；阶段6剩余UI复验、课程接入和部署边界见[开发计划](docs/development-plan.md)。
 
 ## 2. 分支与工作树
 
-main已同步修复基线；新设计分支从origin/main建立。先确认本地改动，再获取远端；按本票范围使用独立codex/分支。示例：
+main已包含structured/ddd双实现；新任务分支从origin/main建立。先确认本地改动，再获取远端；按本票范围使用独立codex/分支。示例：
 
 ```bash
 git status --short
