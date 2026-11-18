@@ -9,7 +9,8 @@ import org.springframework.util.Assert;
 @Entity
 @Table(
     name = "departments",
-    uniqueConstraints = @UniqueConstraint(name = "uk_department_code", columnNames = "code"))
+    uniqueConstraints =
+        @UniqueConstraint(name = "uk_department_code", columnNames = "code"))
 @cn.edu.xmu.clonefactory.CopyNotNullFrom({
   com.municipal.rbaccore.service.port.department.CreateDepartmentCommand.class,
   com.municipal.rbaccore.service.port.department.RenameDepartmentCommand.class
@@ -46,7 +47,8 @@ public class DepartmentEntity {
   }
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "parent_id", foreignKey = @ForeignKey(name = "fk_department_parent"))
+  @JoinColumn(name = "parent_id", foreignKey =
+      @ForeignKey(name = "fk_department_parent"))
   private DepartmentEntity parent;
 
   /** 创建带必要归属和稳定编码的持久化记录，输入缺失时拒绝。 */

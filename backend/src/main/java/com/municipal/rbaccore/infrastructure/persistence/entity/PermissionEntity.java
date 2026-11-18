@@ -31,11 +31,13 @@ public class PermissionEntity {
   @JoinColumn(
       name = "system_id",
       nullable = false,
-      foreignKey = @ForeignKey(name = "fk_permission_system"))
+      foreignKey =
+          @ForeignKey(name = "fk_permission_system"))
   private ApplicationSystemEntity system;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "parent_id", foreignKey = @ForeignKey(name = "fk_permission_parent"))
+  @JoinColumn(name = "parent_id", foreignKey =
+      @ForeignKey(name = "fk_permission_parent"))
   private PermissionEntity parent;
 
   @OneToMany(mappedBy = "parent")
@@ -67,9 +69,11 @@ public class PermissionEntity {
       joinColumns =
           @JoinColumn(
               name = "permission_id",
-              foreignKey = @ForeignKey(name = "fk_permission_api_permission")),
+              foreignKey =
+                      @ForeignKey(name = "fk_permission_api_permission")),
       inverseJoinColumns =
-          @JoinColumn(name = "api_id", foreignKey = @ForeignKey(name = "fk_permission_api_api")))
+          @JoinColumn(name = "api_id", foreignKey =
+                  @ForeignKey(name = "fk_permission_api_api")))
   private Set<ApiResourceEntity> apis = new LinkedHashSet<>();
 
   /** 创建带必要归属和稳定编码的持久化记录，输入缺失时拒绝。 */

@@ -31,9 +31,12 @@ class R23PrototypeContractTest {
   private static final String DEPARTMENTS = "/api/departments";
   private static final String USERS = "/api/users";
   private static final String PASSWORD = "isolated-stage4-fixture";
-  @Autowired TestRestTemplate http;
-  @Autowired JdbcTemplate jdbc;
-  @Autowired PasswordEncoder encoder;
+  @Autowired
+  TestRestTemplate http;
+  @Autowired
+  JdbcTemplate jdbc;
+  @Autowired
+  PasswordEncoder encoder;
 
   /** 专库内构造独立根管理员、部门经理和跨系统无API权限，不触及业务库。 */
   @BeforeEach

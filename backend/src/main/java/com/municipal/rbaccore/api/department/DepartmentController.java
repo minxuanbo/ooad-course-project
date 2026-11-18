@@ -24,7 +24,8 @@ public class DepartmentController {
   /** 层级导航完整返回范围树，人数由数据库聚合，不读取员工明细。 */
   @GetMapping
   public List<DepartmentVO> list(
-      @RequestHeader(value = "Authorization", required = false) String header) {
+      @RequestHeader(value = "Authorization", required = false)
+      String header) {
     return service.list(header).stream()
         .map(item -> CloneFactory.copy(new DepartmentVO(), item))
         .toList();
@@ -33,8 +34,11 @@ public class DepartmentController {
   /** DTO格式校验后映射为共享用例输入，返回已保存节点。 */
   @PostMapping
   public DepartmentVO create(
-      @RequestHeader(value = "Authorization", required = false) String header,
-      @Valid @RequestBody DepartmentCreateDTO dto) {
+      @RequestHeader(value = "Authorization", required = false)
+      String header,
+      @Valid
+      @RequestBody
+      DepartmentCreateDTO dto) {
     return CloneFactory.copy(
         new DepartmentVO(),
         service.create(header, CloneFactory.copy(new CreateDepartmentCommand(), dto)));
@@ -43,9 +47,15 @@ public class DepartmentController {
   /** 禁止通过改名入口修改父级或类型。 */
   @PatchMapping("/{id}")
   public DepartmentVO rename(
-      @RequestHeader(value = "Authorization", required = false) String header,
-      @PathVariable @Positive @Max(ApiLimits.MAX_ID) Long id,
-      @Valid @RequestBody DepartmentRenameDTO dto) {
+      @RequestHeader(value = "Authorization", required = false)
+      String header,
+      @PathVariable
+      @Positive
+      @Max(ApiLimits.MAX_ID)
+      Long id,
+      @Valid
+      @RequestBody
+      DepartmentRenameDTO dto) {
     return CloneFactory.copy(
         new DepartmentVO(),
         service.rename(header, id, CloneFactory.copy(new RenameDepartmentCommand(), dto)));
@@ -54,8 +64,12 @@ public class DepartmentController {
   /** 删除失败保留节点及人员归属。 */
   @DeleteMapping("/{id}")
   public void delete(
-      @RequestHeader(value = "Authorization", required = false) String header,
-      @PathVariable @Positive @Max(ApiLimits.MAX_ID) Long id) {
+      @RequestHeader(value = "Authorization", required = false)
+      String header,
+      @PathVariable
+      @Positive
+      @Max(ApiLimits.MAX_ID)
+      Long id) {
     service.delete(header, id);
   }
 }

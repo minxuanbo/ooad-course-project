@@ -18,7 +18,12 @@ import lombok.Setter;
 @Setter
 @CopyTo(ReplaceUserRolesCommand.class)
 public class UserRolesDTO {
-  @NotNull private List<@NotNull @Positive @Max(ApiLimits.MAX_ID) Long> ids;
+  @NotNull
+  private List<
+      @NotNull
+      @Positive
+      @Max(ApiLimits.MAX_ID)
+      Long> ids;
 
   /** 不静默去重，避免前端错误被当作一次成功的整体替换。 */
   @JsonIgnore

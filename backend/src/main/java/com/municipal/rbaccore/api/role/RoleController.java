@@ -37,8 +37,11 @@ public class RoleController {
   /** 分页搜索角色，状态格式通过校验后才转换为Boolean命令。 */
   @GetMapping
   public RolePageVO list(
-      @RequestHeader(value = "Authorization", required = false) String header,
-      @Valid @ModelAttribute RoleQueryDTO dto) {
+      @RequestHeader(value = "Authorization", required = false)
+      String header,
+      @Valid
+      @ModelAttribute
+      RoleQueryDTO dto) {
     RoleQuery query = CloneFactory.copy(new RoleQuery(), dto);
     query.setEnabled(dto.getEnabled() == null ? null : Boolean.valueOf(dto.getEnabled()));
     RolePageResult result = service.list(header, query);
@@ -50,16 +53,23 @@ public class RoleController {
   /** 直接权限集合独立读取，不依赖权限树候选或列表页大小。 */
   @GetMapping("/{id}/permissions")
   public RolePermissionsVO selected(
-      @RequestHeader(value = "Authorization", required = false) String header,
-      @PathVariable @Positive @Max(ApiLimits.MAX_ID) Long id) {
+      @RequestHeader(value = "Authorization", required = false)
+      String header,
+      @PathVariable
+      @Positive
+      @Max(ApiLimits.MAX_ID)
+      Long id) {
     return permissionsView(service.selected(header, id));
   }
 
   /** POST返回201及新定义，后续授权仍通过独立PUT入口完成。 */
   @PostMapping
   public ResponseEntity<RoleVO> create(
-      @RequestHeader(value = "Authorization", required = false) String header,
-      @Valid @RequestBody RoleCreateDTO dto) {
+      @RequestHeader(value = "Authorization", required = false)
+      String header,
+      @Valid
+      @RequestBody
+      RoleCreateDTO dto) {
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(roleView(service.create(header, CloneFactory.copy(new CreateRoleCommand(), dto))));
   }
@@ -67,18 +77,30 @@ public class RoleController {
   /** PATCH只维护名称和状态，不接受编码、系统或直接权限字段。 */
   @PatchMapping("/{id}")
   public RoleVO patch(
-      @RequestHeader(value = "Authorization", required = false) String header,
-      @PathVariable @Positive @Max(ApiLimits.MAX_ID) Long id,
-      @Valid @RequestBody RolePatchDTO dto) {
+      @RequestHeader(value = "Authorization", required = false)
+      String header,
+      @PathVariable
+      @Positive
+      @Max(ApiLimits.MAX_ID)
+      Long id,
+      @Valid
+      @RequestBody
+      RolePatchDTO dto) {
     return roleView(service.patch(header, id, CloneFactory.copy(new UpdateRoleCommand(), dto)));
   }
 
   /** 显式空数组清空，重复、null或非法ID在进入服务前拒绝。 */
   @PutMapping("/{id}/permissions")
   public RolePermissionsVO replacePermissions(
-      @RequestHeader(value = "Authorization", required = false) String header,
-      @PathVariable @Positive @Max(ApiLimits.MAX_ID) Long id,
-      @Valid @RequestBody RolePermissionsDTO dto) {
+      @RequestHeader(value = "Authorization", required = false)
+      String header,
+      @PathVariable
+      @Positive
+      @Max(ApiLimits.MAX_ID)
+      Long id,
+      @Valid
+      @RequestBody
+      RolePermissionsDTO dto) {
     return permissionsView(
         service.replacePermissions(
             header, id, CloneFactory.copy(new ReplaceRolePermissionsCommand(), dto)));

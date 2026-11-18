@@ -14,7 +14,12 @@ import lombok.Setter;
 @Setter
 @CopyTo(ReplacePermissionApisCommand.class)
 public class PermissionApisDTO {
-  @NotNull private List<@NotNull @Positive @Max(ApiLimits.MAX_ID) Long> ids;
+  @NotNull
+  private List<
+      @NotNull
+      @Positive
+      @Max(ApiLimits.MAX_ID)
+      Long> ids;
 
   /** null由NotNull报告，非空集合中的重复ID由API直接拒绝。 */
   @AssertTrue(message = "API ID不能重复")

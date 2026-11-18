@@ -24,6 +24,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -193,6 +195,15 @@ public class StructuredImportService implements ImportUseCase {
         currentUsers.stream()
             .map(user -> new LoginIdentifiers.Identity(user.getUsername(), user.getPhone()))
             .toList());
+    Set<Long> sourceUsers =
+        existingSources.stream()
+            .filter(source -> source.getKind() != ImportSourceEntity.Kind.ORGANIZATION)
+            .map(source -> source.getUser().getId())
+            .collect(Collectors.toSet());
+    Set<Long> actualUsers = currentUsers.stream().map(UserEntity::getId).collect(Collectors.toSet());
+    if (!sourceUsers.equals(actualUsers)) {
+      throw new ImportException("SOURCE_MAPPING_INCOMPLETE", "存在无来源账号，拒绝继续初始化");
+    }
     return report(plan, storedDepartments.size(), 0, currentUsers.size(), admin.getUser().getId());
   }
 

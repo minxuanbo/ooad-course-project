@@ -15,7 +15,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 /** T03复用读取器，覆盖无共享字符串表的前导零和实际行号。 */
 class R03ExcelImportTest {
-  @TempDir Path directory;
+  @TempDir
+  Path directory;
 
   /** inlineStr不用sharedStrings，错误dimension仍不得截断实际单元格。 */
   @Test

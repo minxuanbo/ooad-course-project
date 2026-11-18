@@ -17,7 +17,8 @@ import org.springframework.mock.env.MockEnvironment;
 
 /** T03 登录标识、部署秘密及独立库守卫的业务边界。 */
 class R22ImportDatabaseBoundaryTest {
-  @TempDir Path directory;
+  @TempDir
+  Path directory;
 
   /** 文件缺失时不能返回空的可执行计划。 */
   @Test

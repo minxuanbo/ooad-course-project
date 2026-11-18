@@ -63,6 +63,8 @@ account/password是一个入口，工号或手机号定位唯一用户，共用�
 
 首次snapshotId为当前最大日志ID，选id≤snapshotId，后续按id<上页末条降序；total为同一快照筛选总数，不随翻页缩小或读取产生的新技术记录增长。筛选/limit绑定游标，改变后清cursor；损坏/伪造/不一致400 INVALID_CURSOR。from含、to不含，必须UTC Z格式且from<to；到底nextCursor=null、hasMore=false。
 
+上述最大 ID 表示已提交日志的稳定前缀。生产写入统一经 `JpaAuditWriter`：在独立事务中先锁定稳定 RBAC 系统目录行，再分配日志 ID 并提交，防止较大 ID 抢先提交、较小 ID 随后污染旧快照。新增日志写入入口也必须沿用该追加协议，不能直接调用日志仓储绕过协调。接口字段、筛选和游标形式保持不变。
+
 ## 4. 错误与检查顺序
 
 | HTTP/code | 语义 |

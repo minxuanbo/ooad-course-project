@@ -52,7 +52,8 @@ public class UserEntity {
   @JoinColumn(
       name = "department_id",
       nullable = false,
-      foreignKey = @ForeignKey(name = "fk_user_department"))
+      foreignKey =
+          @ForeignKey(name = "fk_user_department"))
   private DepartmentEntity department;
 
   @Setter
@@ -69,9 +70,11 @@ public class UserEntity {
   @JoinTable(
       name = "user_roles",
       joinColumns =
-          @JoinColumn(name = "user_id", foreignKey = @ForeignKey(name = "fk_user_role_user")),
+          @JoinColumn(name = "user_id", foreignKey =
+                  @ForeignKey(name = "fk_user_role_user")),
       inverseJoinColumns =
-          @JoinColumn(name = "role_id", foreignKey = @ForeignKey(name = "fk_user_role_role")))
+          @JoinColumn(name = "role_id", foreignKey =
+                  @ForeignKey(name = "fk_user_role_role")))
   @cn.edu.xmu.clonefactory.CopyTo.Exclude(com.municipal.rbaccore.service.port.user.UserResult.class)
   private Set<RoleEntity> roles = new LinkedHashSet<>();
 

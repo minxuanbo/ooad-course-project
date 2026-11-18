@@ -20,7 +20,8 @@ import lombok.Setter;
 @NoArgsConstructor
 @CopyTo(LogQuery.class)
 public class LogQueryDTO {
-  @Positive private Long userId;
+  @Positive
+  private Long userId;
 
   @Size(max = 100)
   private String username;

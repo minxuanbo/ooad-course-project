@@ -32,7 +32,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
       "com.municipal.rbaccore.api",
       "com.municipal.rbaccore.infrastructure"
     },
-    excludeFilters = @ComponentScan.Filter(
+    excludeFilters =
+        @ComponentScan.Filter(
         type = FilterType.REGEX,
         pattern = "com\\.municipal\\.rbaccore\\.infrastructure\\.persistence\\.ddd\\..*"))
 public class RuntimeConfiguration {
