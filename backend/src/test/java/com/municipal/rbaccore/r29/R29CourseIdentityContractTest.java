@@ -151,7 +151,7 @@ class R29CourseIdentityContractTest {
             + " VALUES(107,2,'UL','身份查询','BUTTON',1)");
     jdbc.update(
         "INSERT INTO api_resources(id,system_id,http_method,path_template,enabled)"
-            + " VALUES(105,2,'GET','/identity/users/{userId}',1)");
+            + " VALUES(105,2,'GET','/auth/users/{userId}',1)");
     jdbc.update("INSERT INTO permission_apis VALUES(107,105)");
     jdbc.update("INSERT INTO role_permissions VALUES(1,107)");
   }

@@ -1,6 +1,6 @@
 # 课程系统本地联调
 
-本轮由用户于2026-11-19明确启动，替代此前“课程接入暂缓”的排期限制。RBAC起点为main `717345f`，任务分支为`codex/course-local-integration`。老师工程来自本地`course-project-mgt`，提交`19fbd1a`；使用其现有生产前端和HTTP客户端作为T14的契约/交互依据，不另造课程业务系统。
+本轮由用户于2026-11-19明确启动，替代此前“课程接入暂缓”的排期限制。RBAC起点为main `717345f`，任务分支为`codex/course-local-integration`。老师工程来自本地`course-project-mgt`，提交`19fbd1a`；使用其现有生产前端和HTTP客户端作为T14的契约/交互依据，不另造课程业务系统；原目录保留，联调副本应用[最小教师名单补丁](../integrations/course/README.md)。
 
 ## 1. 范围与身份边界
 
@@ -14,7 +14,7 @@
 
 ## 2. 老师现有协议
 
-课程后端每个Bearer请求通过`UnifiedIdentityClient`实时查询身份，不读取令牌中的权限快照。配置`IDENTITY_BASE_URL`指向RBAC，课程原有Controller/Service及权限守卫保持原职责。
+课程后端每个Bearer请求通过`UnifiedIdentityClient`实时查询身份，不读取令牌中的权限快照。配置`IDENTITY_BASE_URL`指向RBAC，课程原有Controller/Service及功能权限守卫保持原职责。最小补丁使每个教师请求继续验证本地未删除Teacher，不能绕过课程登录页直接持身份令牌访问；学生路径不在本轮扩展。
 
 | RBAC兼容端点 | 老师已有调用与返回 |
 | --- | --- |
@@ -43,7 +43,7 @@
 
 只对独立空库执行下述夹具，不得对原始员工库执行。原RBAC首次SQL与老师Flyway保持原样：先在独立MySQL准备`rbac_core`和`course_project`；RBAC执行两份首次SQL，课程JAR使用`spring.flyway.enabled=true`与`spring.jpa.hibernate.ddl-auto=validate`启动并建立其自有表。正常万人初始化说明保持不变，本轮虚构夹具不替代真实来源导入。
 
-老师工程使用本地提交`19fbd1a`的可构建源码副本；不修改其pom、迁移、Java或Vue。其pom要求Java21、Boot4.1.2、Lombok1.18.48、CloneFactory0.0.2；后者从老师[spring-fundamentals](https://gitee.com/mingqcn/spring-fundamentals)提交`38fd81730e7294bb3a1ef708faa78996b3c7fa80`的`clonefactory`子项目安装到本机Maven仓库，不伪装依赖版本。RBAC继续使用自身已锁定的真实0.0.1-SNAPSHOT。
+老师工程使用本地提交`19fbd1a`的可构建源码副本；保留其pom、迁移和Vue；副本仅改两个生产安全配置/过滤文件，增加一个测试并适配一个既有测试，见[补丁清单](../integrations/course/README.md)。其pom要求Java21、Boot4.1.2、Lombok1.18.48、CloneFactory0.0.2；后者从老师[spring-fundamentals](https://gitee.com/mingqcn/spring-fundamentals)提交`38fd81730e7294bb3a1ef708faa78996b3c7fa80`的`clonefactory`子项目安装到本机Maven仓库，不伪装依赖版本。RBAC继续使用自身已锁定的真实0.0.1-SNAPSHOT。
 
 本轮课程后端最终采用其structured策略，RBAC的structured和ddd分别联调。老师DDD在有当前学期时替换到另一学期会返回409 TERM_CURRENT_CONFLICT，保留独立复现证据且不修改老师业务；不能将该模式的整个学期用例宣称通过。
 
@@ -62,6 +62,7 @@ python scripts/course_integration_fixture.py --output-dir .local/course-integrat
 python scripts/verify_course_integration.py --fixture --report .local/course-integration/actual-http.json
 # 需要已安装Chrome与frontend锁定的Playwright开发依赖。
 node scripts/verify_course_browser.mjs
+python -m unittest discover -s scripts/tests -v
 ```
 
 SQL生成器只写新文件，不连接数据库；操作者须确认目标库为空再导入，不提供清库选项。虚构管理员`ui-admin`；`ui-user-05`有显式教师身份和学期/课程权限；`ui-user-06`仅教师身份；`ui-user-07`虽有课程本地Teacher但没有RBAC教师准入。RBAC普通员工管理准入仍拒绝。

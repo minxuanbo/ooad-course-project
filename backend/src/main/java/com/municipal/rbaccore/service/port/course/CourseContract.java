@@ -43,7 +43,7 @@ public final class CourseContract {
           Map.entry("TEE", List.of(new RbacCatalog.Route("PATCH", "/teachers/{teacherId}"))),
           Map.entry("TED", List.of(new RbacCatalog.Route("DELETE", "/teachers/{teacherId}"))),
           Map.entry("AV", List.of(new RbacCatalog.Route("GET", "/audit-logs"))),
-          Map.entry("UL", List.of(new RbacCatalog.Route("GET", "/identity/users/{userId}"))));
+          Map.entry("UL", List.of(new RbacCatalog.Route("GET", "/auth/users/{userId}"))));
 
   /** 固定协议不建立可变实例。 */
   private CourseContract() {}

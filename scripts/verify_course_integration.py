@@ -42,6 +42,10 @@ class Verification:
         r, c, q = self.rbac, self.course, self.request
         admin = q('RBAC管理员登录', r, '/api/auth/login', 200, 'POST', body={
             'account': 'ui-admin', 'password': self.password})['data']['token']
+        unbound = q('身份服务可认证但课程本地未绑定', r, '/auth/login', 200, 'POST', body={
+            'username': 'ui-admin', 'password': self.password,
+            'systems': ['course-project-management']})['accessToken']
+        q('直取身份令牌不能绕过课程本地Teacher', c, '/admin/courses', 403, token=unbound)
         q('匿名课程请求拒绝', c, '/admin/courses', 401)
         q('普通员工无管理准入', r, '/api/auth/login', 403, 'POST', body={
             'account': 'ui-user-05', 'password': self.password})
@@ -65,6 +69,12 @@ class Verification:
                 ids[item['code']] = item['id']
                 visit(item.get('children', []))
         visit(tree)
+        q('课程真实身份查询路由要求UL', c, '/auth/users/7', 403, token=course)
+        q('临时授予UL以验证真实调用链', r, '/api/roles/51/permissions', 200, 'PUT', admin,
+          {'ids': all_ids + [ids['UL']]})
+        lookup = q('课程UL经原客户端读取RBAC身份', c, '/auth/users/7', 200, token=course)
+        assert lookup['no'] == 'ui-user-07'
+        q('恢复不含UL的原课程角色', r, '/api/roles/51/permissions', 200, 'PUT', admin, {'ids': all_ids})
         mappings = q('读取TC真实映射', r, f"/api/permissions/{ids['TC']}/apis", 200, token=admin)['data']['ids']
         term_ids = []
         def create(label, expected):

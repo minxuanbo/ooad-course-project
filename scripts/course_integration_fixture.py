@@ -13,13 +13,16 @@ ROOT = Path(__file__).resolve().parents[1]
 def course_catalog():
     """从共享协议取值读取权限与真实API，断言数量以防静默漏登记。"""
     source = (ROOT / 'backend/src/main/java/com/municipal/rbaccore/service/port/course/CourseContract.java').read_text(encoding='utf-8')
-    display = re.search(r'DISPLAY_CODES = Set.of\((.*?)\);', source, re.S).group(1)
+    match = re.search(r'DISPLAY_CODES\s*=\s*Set\.of\s*\((.*?)\);', source, re.S)
+    if match is None:
+        raise ValueError('无法读取CourseContract显示码目录，请核对协议定义')
+    display = match.group(1)
     codes = ['COURSE_TEACHER'] + re.findall(r'"([A-Z]+)"', display)
     # 按相邻Map.entry切块，保留一个短码对应的全部路由。
     routes = {}
-    for entry in source.split('Map.entry(')[1:]:
-        code = re.match(r'"([A-Z]+)"', entry).group(1)
-        routes[code] = re.findall(r'new RbacCatalog.Route\("([A-Z]+)", "([^"]+)"\)', entry)
+    for entry in re.split(r'Map\.entry\s*\(', source)[1:]:
+        code = re.match(r'\s*"([A-Z]+)"', entry).group(1)
+        routes[code] = re.findall(r'new RbacCatalog\.Route\s*\(\s*"([A-Z]+)"\s*,\s*"([^"]+)"\s*\)', entry)
     assert len(codes) == 17 and len(routes) == 16 and sum(map(len, routes.values())) == 19
     assert 'CRS' not in routes, '老师没有reset实现，不得编造API'
     return codes, routes
