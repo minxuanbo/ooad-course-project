@@ -1,6 +1,6 @@
 # RBAC项目协作
 
-2026-11-19补充：用户指定的structured UI范围已在独立虚构库上完成，浏览器13项、前端26项及构建通过；修复窄屏日志计数隐藏、Modal键盘首尾循环及CollectionEditor失权事件声明，分支codex/structured-ui-acceptance待审核合入。详见docs/structured-ui-acceptance.md。ddd同项UI复验仍待执行，不把共用前端通过当作双策略总验收完成；下段保留阶段5历史基线。
+2026-11-19补充：用户指定的structured UI范围已在独立虚构库上完成，浏览器13项、前端26项及构建通过；修复窄屏日志计数隐藏、Modal键盘首尾循环及CollectionEditor失权事件声明，用户已批准通过PR #36交付（codex/structured-ui-acceptance）。详见docs/structured-ui-acceptance.md。ddd同项UI复验仍待执行，不把共用前端通过当作双策略总验收完成；下段保留阶段5历史基线。
 
 截至2026-11-18，阶段5已完成双轴审核、修复及CloneFactory专项核对，用户批准PR #34合入main，合并提交e521f97，文件树与验收提交83dbf17一致。structured和ddd各178项后端测试、71次真实HTTP通过，前端26项测试/构建及运行器5项单测通过；两套空库各完成10001个BCrypt10账号导入及首次授权。桌面浏览器已复验登录、六个管理页面和关键写入；阶段6仍待窄屏、完整键盘及其他写入组合复验。组员从main复现并记录实际提交，见docs/reproduction.md及docs/testing-acceptance.md。T14/T15、课程接入及服务器部署仍按开发计划。
 
