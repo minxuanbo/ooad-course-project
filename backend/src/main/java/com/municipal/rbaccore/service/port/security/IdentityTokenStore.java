@@ -15,6 +15,9 @@ public interface IdentityTokenStore {
   /** 读取与应用受众匹配的有效身份，其他系统的令牌不能混用。 */
   Long requireForSystem(String header, String system);
 
+  /** 读取有效令牌绑定的应用受众，拒绝失效令牌。 */
+  String system(String header);
+
   /** 幂等撤销身份。 */
   void revoke(String header);
 

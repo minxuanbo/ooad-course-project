@@ -110,7 +110,7 @@ public class PermissionEntity {
   /** 类型变化不能使已有子节点挂在按钮之下。 */
   public void changeType(PermissionType type) {
     Assert.notNull(type, "权限类型不能为空");
-    Assert.isTrue(type != PermissionType.BUTTON || children.isEmpty(), "有子权限的菜单不能改为按钮");
+    Assert.isTrue(type == PermissionType.MENU || children.isEmpty(), "有子权限的节点必须保持菜单类型");
     this.type = type;
   }
 

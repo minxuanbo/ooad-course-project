@@ -43,7 +43,7 @@ public class StructuredResourceService implements ResourceUseCase {
   private final ApiResourceJpaRepository apis;
   private final StructuredGlobalManagementAccess access;
 
-  /** 仅选择本权限系统；目录查询本身也必须满足实际API和共同根。 */
+  /** 枚举已登记应用；目录查询本身仍须实际API和共同根。 */
   public List<SystemResult> systems(String header) {
     access.require(header);
     currentSystem();
@@ -208,7 +208,7 @@ public class StructuredResourceService implements ResourceUseCase {
     }
   }
 
-  /** 外系统及未知系统查询统一按范围拒绝，不泄露外系统存在性。 */
+  /** 选择已登记应用，未知编号按范围拒绝。 */
   private ApplicationSystemEntity selectSystem(Long requested) {
     if (requested == null) return currentSystem();
     return systems

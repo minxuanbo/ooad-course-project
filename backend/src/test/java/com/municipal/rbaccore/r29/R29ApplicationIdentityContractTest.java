@@ -28,11 +28,12 @@ import org.springframework.test.context.ActiveProfiles;
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
       "spring.config.name=application-core-resource-test",
-      "app.course-integration.enabled=true"
+      "app.identity.enabled=true",
+      "app.identity.allowed-origins=http://127.0.0.1:5174"
     })
 @ActiveProfiles("core-resource-test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-class R29CourseIdentityContractTest {
+class R29ApplicationIdentityContractTest {
   private static final String LOGIN = "/auth/login";
   private static final String ME = "/auth/me";
   private static final String CHECK = "/auth/permissions/MTR";
@@ -123,7 +124,7 @@ class R29CourseIdentityContractTest {
             "INSERT INTO permission_apis(permission_id,api_id) VALUES(?,?)", permission, next++);
       }
     }
-    String[] codes = {"COURSE_TEACHER", "MTR", "MTRC", "TC", "TE", "TD", "TCM"};
+    String[] codes = {"LOGIN", "MTR", "MTRC", "TC", "TE", "TD", "TCM"};
     for (int index = 0; index < codes.length; index++) {
       long id = 100 + index;
       jdbc.update(
@@ -133,6 +134,7 @@ class R29CourseIdentityContractTest {
           codes[index]);
       jdbc.update("INSERT INTO role_permissions(role_id,permission_id) VALUES(1,?),(2,?)", id, id);
     }
+    jdbc.update("UPDATE permissions SET type='API' WHERE id BETWEEN 103 AND 108");
     String[][] routes = {
       {"POST", "/terms"},
       {"PATCH", "/terms/{termId}"},
@@ -177,7 +179,7 @@ class R29CourseIdentityContractTest {
     String token = courseLogin();
     JsonNode identity = request(ME, HttpMethod.GET, token, null, 200);
     assertEquals("2", identity.path("subject").asText());
-    assertEquals("teacher", identity.path("roles").get(0).asText());
+    assertEquals("r29-course", identity.path("roles").get(0).asText());
     assertTrue(identity.path("permissions").toString().contains("\"TC\""));
     assertEquals(
         "course-project-management",
@@ -204,7 +206,7 @@ class R29CourseIdentityContractTest {
         ROLE_PERMISSIONS, HttpMethod.PUT, adminLogin(), Map.of("ids", List.of(100, 101, 102)), 200);
     JsonNode identity = request(ME, HttpMethod.GET, course, null, 200);
     assertFalse(identity.path("permissions").toString().contains("\"TC\""));
-    assertEquals("teacher", identity.path("roles").get(0).asText());
+    assertEquals("r29-course", identity.path("roles").get(0).asText());
   }
 
   /** 映射必须属于课程系统，API停用也不能继续导出对应短权限码。 */
@@ -232,12 +234,21 @@ class R29CourseIdentityContractTest {
   @DisplayName("R29 多路由短码要求全部映射有效，菜单撤回即时生效")
   void R29_CoarseAuthorityFailsClosed() {
     String course = courseLogin();
+    assertEquals(
+        2,
+        request(ME, HttpMethod.GET, course, null, 200).path("permissionApis").path("TCM").size());
     jdbc.update("UPDATE api_resources SET enabled=0 WHERE id=104");
     assertFalse(
         request(ME, HttpMethod.GET, course, null, 200)
             .path("permissions")
             .toString()
             .contains("\"TCM\""));
+    jdbc.update("DELETE FROM permission_apis WHERE permission_id=103");
+    assertFalse(
+        request(ME, HttpMethod.GET, course, null, 200)
+            .path("permissions")
+            .toString()
+            .contains("\"TC\""));
     assertTrue(request(CHECK, HttpMethod.GET, course, null, 200).path("allowed").asBoolean());
     request(PERMISSION_STATE, HttpMethod.PATCH, adminLogin(), Map.of("enabled", false), 200);
     assertFalse(request(CHECK, HttpMethod.GET, course, null, 200).path("allowed").asBoolean());
@@ -246,11 +257,11 @@ class R29CourseIdentityContractTest {
   /** 资源目录只增加显式接入的课程系统，未批准系统仍不得通过目录枚举。 */
   @Test
   @DisplayName("R29 正式资源目录精确包含RBAC和课程系统")
-  void R29_CatalogDoesNotAdmitOtherSystems() {
+  void R29_CatalogReadsRegisteredSystems() {
     JsonNode systems = request(SYSTEMS, HttpMethod.GET, adminLogin(), null, 200).path("data");
-    assertEquals(2, systems.size());
+    assertEquals(3, systems.size());
     assertTrue(systems.toString().contains("course-project-management"));
-    assertFalse(systems.toString().contains("unapproved"));
+    assertTrue(systems.toString().contains("unapproved"));
   }
 
   /** 错口令、账号停用和未经接入的systems输入均失败关闭。 */
@@ -326,6 +337,7 @@ class R29CourseIdentityContractTest {
   @DisplayName("R29 身份查询先鉴权，允许后校验不存在主键与最小字段")
   void R29_UserLookupIsPermissionControlled() {
     String token = courseLogin();
+    jdbc.update("DELETE FROM role_permissions WHERE role_id=2 AND permission_id=108");
     request(USER_LOOKUP, HttpMethod.GET, token, null, 403);
     jdbc.update("INSERT INTO role_permissions VALUES(2,107)");
     JsonNode user = request(USER_LOOKUP, HttpMethod.GET, token, null, 200);
@@ -385,15 +397,15 @@ class R29CourseIdentityContractTest {
     JsonNode before =
         request(TARGET_CANDIDATES, HttpMethod.GET, manager, null, 200).path("data").path("items");
     assertFalse(containsRole(before, 4));
-    assertFalse(containsRole(before, 5));
+    assertTrue(containsRole(before, 5));
     request(TARGET_ROLES, HttpMethod.PUT, manager, Map.of("ids", List.of(4)), 403);
     jdbc.update("INSERT INTO role_permissions VALUES(6,103)");
     JsonNode after =
         request(TARGET_CANDIDATES, HttpMethod.GET, manager, null, 200).path("data").path("items");
     assertTrue(containsRole(after, 4));
-    assertFalse(containsRole(after, 5));
+    assertTrue(containsRole(after, 5));
     request(TARGET_ROLES, HttpMethod.PUT, manager, Map.of("ids", List.of(4)), 200);
-    request(TARGET_ROLES, HttpMethod.PUT, adminLogin(), Map.of("ids", List.of(5)), 403);
+    request(TARGET_ROLES, HttpMethod.PUT, adminLogin(), Map.of("ids", List.of(5)), 200);
   }
 
   /** 检查真实分页候选，不能把显示名称或字符串包含当作角色身份。 */
@@ -420,6 +432,38 @@ class R29CourseIdentityContractTest {
             .path("permissions")
             .toString()
             .contains("\"TEC\""));
+  }
+
+  /** 新登记应用无须更改代码；角色码和权限码均来自数据，令牌受众不能跨应用。 */
+  @Test
+  @DisplayName("R29 任意登记应用的身份角色权限与即时停用")
+  void R29_RegisteredApplicationIsGeneric() {
+    jdbc.update(
+        "INSERT INTO permissions(id,system_id,code,name,type,enabled)"
+            + " VALUES(300,3,'LOGIN','登录','BUTTON',1)");
+    jdbc.update("INSERT INTO roles(id,code,name,enabled) VALUES(7,'student','学生',1)");
+    jdbc.update("INSERT INTO role_permissions VALUES(7,300)");
+    jdbc.update("INSERT INTO user_roles VALUES(3,7)");
+    String token =
+        request(
+                LOGIN,
+                HttpMethod.POST,
+                null,
+                Map.of(
+                    "username",
+                    "r29-unassigned",
+                    "password",
+                    PASSWORD,
+                    "systems",
+                    List.of("unapproved")),
+                200)
+            .path("accessToken")
+            .asText();
+    JsonNode me = request(ME, HttpMethod.GET, token, null, 200);
+    assertEquals("student", me.path("roles").get(0).asText());
+    assertEquals("LOGIN", me.path("permissions").get(0).asText());
+    jdbc.update("DELETE FROM user_roles WHERE user_id=3 AND role_id=7");
+    request(ME, HttpMethod.GET, token, null, 403);
   }
 
   /** 从老师既有登录协议取得不透明课程令牌。 */

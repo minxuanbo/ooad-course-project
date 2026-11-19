@@ -6,6 +6,9 @@ public interface RequestContext {
   /** 更新已核实主体以供最小日志采集，不记录原始登录输入。 */
   void actor(Long id, String username);
 
+  /** 登记服务端核实的应用受众，用于安全日志。 */
+  void application(String code);
+
   /** 获取当前请求关联号，无HTTP请求时为空字符串。 */
   String requestId();
 

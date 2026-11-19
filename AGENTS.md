@@ -1,6 +1,6 @@
 # RBAC项目协作
 
-2026-11-19更新：阶段6约定的双策略UI验收已通过PR #37合入main（717345f）。用户明确启动老师course-project-mgt的本地联调，在codex/course-local-integration分支适配既有课程身份HTTP协议；旧“课程暂缓”仅为历史排期。课程目录须显式启用，18原型演示系统仍排除；老师原目录保留；为阻止直接身份令牌绕过本地Teacher，副本有两个生产文件与两个测试文件的最小补丁，见integrations/course，变更须报告。设计及本轮实测分别见docs/course-integration.md和docs/history/verification/course-integration-local.md。未经另行要求不合main、不自动关闭T14/T15、不部署服务器。
+2026-11-20更新：课程本地接入按用户澄清改为通用应用目录和身份协议，不维护应用代码白名单、教师标记或课程专用RBAC服务。应用角色由配置数据表达；RBAC管理端准入保持原规则。自定义角色不冻结人员，角色差集锁后校验且不可改现有项可原样保留；自定义项仍仅可信根直属有效五级管理员可增删，不增加委托机制。老师原目录保留；副本仅修复structured课程组长重复保存、学生里程碑读取和管理员教学班读取，旧教师名单安全补丁撤除。外部业务审计由integrations/course独立本地支撑持久保存，不混入RBAC鉴权日志；来源限制和实测见docs/course-integration.md及本轮验证记录。未经要求不合main、不关闭T14/T15、不部署服务器。
 
 2026-11-19阶段6 UI复验：structured通过PR #36交付窄屏日志计数、Modal键盘焦点及CollectionEditor失权事件修复，详见docs/structured-ui-acceptance.md。ddd在包含PR #36的main提交292a8a4上，用相同用例和夹具在独立库复验。两种策略各通过13项浏览器用例、26项前端测试及生产构建；ddd的S6-01～S6-09补充用例及重启回读也通过，详见docs/history/verification/stage6-ddd.md。
 
@@ -8,7 +8,7 @@
 
 main核对后修复代码2fd8d40：日志追加独立事务先锁稳定RBAC系统目录行再取号、提交，查询继续使用同一快照；两策略独立校验员工/admin来源覆盖全部账号；生产与测试Java注解独行。两套真实MySQL完整回归各180项、前端26项及构建、运行器5项通过，CloneFactory51个生成重载及183组同名同类型字段已核对。新增两项共享回归在两策略均先RED后GREEN；规范/需求复核均0项，实际记录见测试说明，不以本次成绩替代此前独立JAR或浏览器证据。
 
-RBAC本体业务依据为老师说明、原始资料和用户确认形成的docs/requirements.md；老师Gitee提供本体组织/框架参考，并在R29提供课程真实协议与实现来源。默认目录仅RBAC，显式课程接入允许course-project-management；18业务系统及矩阵仍仅在离线原型演示，不进入正式目录/初始化/授权子集。采用全新库首次SQL，不交付升级脚本。历史原型讨论以其时间语境保留在docs/history/design-decisions/prototype.md及requirements/sources.md，不覆盖最新范围。
+RBAC本体业务依据为老师说明、原始资料和用户确认形成的docs/requirements.md；老师Gitee提供本体组织/框架参考，并在R29提供课程真实协议与实现来源。默认万人初始化仅登记RBAC；正式目录按数据库登记事实读取，课程接入配置独立角色/权限；18业务系统及矩阵仍仅在离线原型演示，不进入正式目录/初始化/授权子集。采用全新库首次SQL，不交付升级脚本。历史原型讨论以其时间语境保留在docs/history/design-decisions/prototype.md及requirements/sources.md，不覆盖最新范围。
 
 HTTP字段主规范为api/openapi.yaml，JSON同源；业务语义见docs/api-contract.md。结构化实现归service/structured；service/port是共享用例/模型/协议取值，不放具体实现依赖或组织层级策略。共享基础设施不调用结构化或DDD应用服务，DDD持久化适配器实现领域仓储并映射领域模型。产品、导入与首次授权共用互斥装配，见docs/backend-design.md第4章。
 

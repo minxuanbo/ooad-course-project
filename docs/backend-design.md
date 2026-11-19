@@ -10,7 +10,7 @@
 
 本RBAC自己保存口令并认证，不照搬课程项目的外部统一身份。课程身份适配按R29显式接入；Redis、语音、存储和其他示例集成不纳入本轮。
 
-默认目录管理RBAC自身权限，显式配置按R29接入课程系统，共用Vue、29项管理HTTP操作与4项可选课程身份操作、19项HTTP错误、12表首次SQL、固定五级角色及17项完整维护能力集合K。18个外系统仅保留离线原型演示，不进入正式目录、授权或初始化。课程身份适配职责见[课程接入](course-integration.md)，两策略各自计算权限，不将业务实现放入共享port。
+默认首次授权管理RBAC自身权限，通用应用目录按登记事实读取，课程按R29接入，共用Vue、29项管理HTTP操作与4项可选通用应用身份操作、19项HTTP错误、12表首次SQL、固定五级角色及17项完整维护能力集合K。18个外系统仅保留离线原型演示，不进入正式目录、授权或初始化。课程身份适配职责见[课程接入](course-integration.md)，两策略各自计算权限，不将业务实现放入共享port。
 
 参考老师项目的共享用例、领域仓储、互斥装配与按模块绘图方式；本项目保留本地账号认证，不移植课程业务、外部统一身份、Boot4或Redis。
 
@@ -565,12 +565,21 @@ Java新增或修改类/接口/记录及关键方法写中文Javadoc；明确局�
 
 HTTP总计29操作；初始化为离线命令，不混入HTTP计数。新增图件共29组（包2、类15、差异顺序12），每组同源SVG/PNG；另保留现有结构化类图1组。没有全套公共登录/HTTP/技术日志顺序图。
 
-## 18. 可选课程身份适配（R29）
+## 18. 通用应用身份与课程本地接入（R29）
 
-`api.course.CourseIdentityController`只做老师HTTP协议校验、DTO/Command与Result/VO映射；成功响应由`RawResponse`保持原始结构。共享`CourseIdentityUseCase`及`CourseContract`只放用例/协议取值，`ManagedApplications`由装配层构造不可变显式目录。
+`api.identity.ApplicationIdentityController`负责统一身份HTTP适配与DTO/Command、Result/VO转换；`RawResponse`保留外部既有成功结构。共享`ApplicationIdentityUseCase`只定义用例，`ManagedApplications`为登记事实读取端口，由`JpaManagedApplications`适配；应用编码、教师/学生角色和业务权限短码不得硬编码进RBAC。
 
-结构化`StructuredCourseIdentityService`直接用JPA事实计算；DDD `DddCourseIdentityService`从领域仓储装配事实，由纯领域`CourseAuthorizationPolicy`投影有效短码。两者不相互调用。鉴权、教师准入与全部路由有效性在服务事务内处理，领域不引用port协议或JPA。
+结构化`StructuredApplicationIdentityService`直接从JPA读取账号、角色、权限和系统；DDD `DddApplicationIdentityService`从领域仓储装配事实，由纯领域`ApplicationAuthorizationPolicy`计算有效投影。两种实现不相互调用；DDD应用层不依赖JPA。角色全局共享，可组合多个应用的权限；权限与API映射须同系统。
 
-原Bearer索引增加应用受众，不增加会话表；当前账号校验抽出verify/requireForSystem，课程用例检查准入后才签发课程身份。日志切面排除不承载业务执行的port协议值对象，避免为final record建立代理。资源及人员授权仍共根锁、锁后重鉴权和K；目录扩展不会让课程权限替代RBAC管理能力。
+`/auth/login`接收单个登记外部应用，验证本地凭据、应用状态及有效授权后签发独立受众。`/auth/me`每次重算账号与授权，返回subject/roles/permissions/system。roles为贡献该应用有效权限的启用角色配置编码。API类型权限须有至少一条映射且所有映射同系统启用；菜单、按钮可独立表达展示或资格。管理受众不能通过外部入口绕过管理准入。最小身份查询按该应用实际GET /auth/users/{userId}映射控制，不写死UL、TEC等课程短码。
 
-原第17章图件描述R01—R28主业务模块，六实体及持久化边界未变；R29新增兼容模块的职责与调用以本章和[接入说明](course-integration.md)为准，不将老师课程业务类画入RBAC核心模型。
+人员角色替换在共同根锁后重读目标集合并计算差集；仅对新增和删除关联检查资格，非法变化整次回滚。不可改的现有项可原样保留；自定义角色增删仍只允许可信根直属有效五级管理员。当前角色返回lockedRoleIds供界面锁定，但客户端结果不构成授权证据。自定义角色不使人员整体只读，停用、调动仍按现有部门和人员级别规则判断。
+
+课程角色与路由配置位于`integrations/course/catalog.json`及显式联调夹具，不进入service/port。课程业务、Teacher/Student关联及对象规则均由老师工程维护。老师现有外部审计依赖由独立本地支撑工具提供持久存储，不写入RBAC鉴权日志表，也不向RBAC领域增加课程实体。该工具只用于本地联调，不能作为服务器部署方案，安全与限制见[课程接入](course-integration.md)。
+
+原第17章图件保持核心六实体与双实现边界；本章补充的通用身份模块不把老师课程业务类画入RBAC核心模型。共享身份协议及技术支撑不重复绘制顺序图。
+
+
+权限展示名称采用完整中文（如“查看总览”“分配人员角色”“查询鉴权日志”），稳定编码仍保留供关联、排错和接口使用，不按中文名称鉴权。两套首次授权与本地夹具读取同一RBAC中文目录；课程显示名称也来自独立接入配置，不在Vue按英文编码硬翻译。
+
+通用/auth/me还返回permissionApis，即每个有效权限当前实际映射的方法/模板事实。RBAC不内置接入系统的预期路由；本地课程适配器依据catalog.json核实老师同一粗粒度短码的全部必要路由，缺少一条即保守关闭整个短码，菜单检查也采用相同投影。这样删除多路由权限的部分映射不能借另一条映射继续调用已撤路由，映射变更仍即时生效。

@@ -15,8 +15,7 @@ public final class RoleAssignmentPolicy {
     return (global && actor.level() == Role.ADMIN_LEVEL)
         || (actor.level() >= Role.FIRST_MANAGER_LEVEL
             && !actor.id().equals(target.id())
-            && actor.level() > target.level()
-            && target.roles().stream().noneMatch(role -> role.managementLevel() == null));
+            && actor.level() > target.level());
   }
 
   /** 停用角色不可授，直接外系统权限即使停用也拒绝整个角色。 */
@@ -37,7 +36,18 @@ public final class RoleAssignmentPolicy {
       boolean customPermitted,
       Set<Long> allowedPermissionIds,
       Set<String> systems) {
-    if (!role.enabled() || !withinLevel(role, actorLevel, customPermitted)) return false;
+    return role.enabled()
+        && canRemove(role, actorLevel, customPermitted, allowedPermissionIds, systems);
+  }
+
+  /** 删除关联仍检查级别与有效权限子集；停用项可清理，自定义项只允许管理员调整。 */
+  public static boolean canRemove(
+      Role role,
+      int actorLevel,
+      boolean customPermitted,
+      Set<Long> allowedPermissionIds,
+      Set<String> systems) {
+    if (!withinLevel(role, actorLevel, customPermitted)) return false;
     for (Permission permission : role.permissions()) {
       if (!systems.contains(permission.system().code())) return false;
       if (AuthorizationPolicy.active(permission, systems)

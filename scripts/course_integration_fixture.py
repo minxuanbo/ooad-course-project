@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """仅为两个独立空库生成虚构联调夹具，不连接数据库、不覆盖现有资料。"""
 import argparse
+import json
 import os
 from pathlib import Path
 import re
@@ -12,20 +13,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def course_catalog():
     """从共享协议取值读取权限与真实API，断言数量以防静默漏登记。"""
-    source = (ROOT / 'backend/src/main/java/com/municipal/rbaccore/service/port/course/CourseContract.java').read_text(encoding='utf-8')
-    match = re.search(r'DISPLAY_CODES\s*=\s*Set\.of\s*\((.*?)\);', source, re.S)
-    if match is None:
-        raise ValueError('无法读取CourseContract显示码目录，请核对协议定义')
-    display = match.group(1)
-    codes = ['COURSE_TEACHER'] + re.findall(r'"([A-Z]+)"', display)
-    # 按相邻Map.entry切块，保留一个短码对应的全部路由。
-    routes = {}
-    for entry in re.split(r'Map\.entry\s*\(', source)[1:]:
-        code = re.match(r'\s*"([A-Z]+)"', entry).group(1)
-        routes[code] = re.findall(r'new RbacCatalog\.Route\s*\(\s*"([A-Z]+)"\s*,\s*"([^"]+)"\s*\)', entry)
-    assert len(codes) == 17 and len(routes) == 16 and sum(map(len, routes.values())) == 20
-    assert len({route for entries in routes.values() for route in entries}) == 19
+    catalog = json.loads((ROOT / 'integrations/course/catalog.json').read_text(encoding='utf-8'))
+    codes, routes = catalog['display'], {code: [tuple(route) for route in entries] for code,entries in catalog['routes'].items()}
+    assert len(codes) == 17 and len(routes) == 16 and sum(map(len, routes.values())) == 22
+    assert len({route for entries in routes.values() for route in entries}) == 20
     assert 'CRS' not in routes, '老师没有reset实现，不得编造API'
+
     return codes, routes
 
 
@@ -33,23 +26,21 @@ def rbac_sql():
     """复用RBAC最小可信根，追加课程目录及明确教师准入；所有员工均为虚构。"""
     base = fixture_sql().removesuffix('COMMIT;\n')
     statements = [base, "INSERT INTO systems VALUES(2,'course-project-management','课程项目管理系统',1);",
-                  "INSERT INTO roles VALUES(50,'course-teacher','课程教师身份',1,NULL),(51,'course-operator','课程学期维护',1,NULL);",
-                  'INSERT INTO user_roles VALUES(5,50),(5,51),(6,50);']
+                  "INSERT INTO roles VALUES(50,'teacher','课程教师资格',1,NULL),(51,'course-admin','课程管理员',1,NULL),(52,'student','课程学生资格',1,NULL);",
+                  'INSERT INTO user_roles VALUES(5,50),(6,50),(8,50),(8,51),(9,52),(10,52);']
     codes, routes = course_catalog()
     all_codes = codes + sorted(routes)
     ids = {code: 1000 + index for index, code in enumerate(all_codes)}
-    titles = {'COURSE_TEACHER': '课程教师准入', 'MCO': '课程管理菜单', 'MTR': '学期管理菜单',
-              'MTE': '教师管理菜单', 'MLG': '审计菜单（本轮未接入）', 'TC': '新建学期', 'TE': '编辑学期',
-              'TD': '删除学期', 'TCM': '设置和取消当前学期', 'CV': '查看课程', 'UL': '查询员工身份'}
-    operator = {'MCO', 'MTR', 'MTRC', 'MTRE', 'MTRD', 'MTRM', 'CV', 'TC', 'TE', 'TD', 'TCM'}
+    titles = json.loads((ROOT / 'integrations/course/catalog.json').read_text(encoding='utf-8'))['names']
+    operator = set(all_codes) - {'LOGIN'}
     for code in all_codes:
         ident = ids[code]
-        enabled = 0 if code in {'MLG', 'AV'} else 1
-        kind = 'MENU' if code in {'MCO', 'MTR', 'MTE', 'MLG'} else 'BUTTON'
+        enabled = 1
+        kind = 'API' if code in routes else 'MENU' if code in {'MCO', 'MTR', 'MTE', 'MLG'} else 'BUTTON'
         statements.append(f"INSERT INTO permissions VALUES({ident},2,NULL,'{code}','{titles.get(code, '课程权限 ' + code)}','{kind}',{enabled});")
         statements.append(f'INSERT INTO role_permissions VALUES(1,{ident});')
-        if code == 'COURSE_TEACHER':
-            statements.append(f'INSERT INTO role_permissions VALUES(50,{ident});')
+        if code == 'LOGIN':
+            statements.append(f'INSERT INTO role_permissions VALUES(50,{ident}),(52,{ident});')
         if code in operator:
             statements.append(f'INSERT INTO role_permissions VALUES(51,{ident});')
     next_api = 1000
@@ -59,7 +50,7 @@ def rbac_sql():
             route = (method, path)
             if route not in api_ids:
                 api_ids[route] = next_api
-                enabled = 0 if code == 'AV' else 1
+                enabled = 1
                 statements.append(f"INSERT INTO api_resources VALUES({next_api},2,'{method}','{path}',{enabled});")
                 next_api += 1
             statements.append(f'INSERT INTO permission_apis VALUES({ids[code]},{api_ids[route]});')
@@ -68,13 +59,26 @@ def rbac_sql():
 
 
 def teacher_sql():
-    """为老师现有表写入3个虚构教师、1个学期及课程，绝不修改老师迁移。"""
+    """初始化老师自有表的虚构教学场景：教师、学生、个人/分组课程及两类里程碑。"""
     statements = ['START TRANSACTION;']
-    for ident in (5, 6, 7):
-        statements.append(f"INSERT INTO teacher(id,user_id,employee_no,name,title,department,creator,created_at,modifier,modi_at) VALUES({ident},'{ident}','ui-user-{ident:02}','联调虚构教师{ident}','联调教师','工程部','local-fixture',NOW(6),'local-fixture',NOW(6));")
-    statements += ["INSERT INTO term(id,name,starts_on,ends_on,is_current,creator,created_at,modifier,modi_at) VALUES(1,'联调基准学期','2026-09-01','2027-01-31',1,'local-fixture',NOW(6),'local-fixture',NOW(6));",
-                   "INSERT INTO course(id,term_id,code,name,description,work_mode,status,creator,created_at,modifier,modi_at) VALUES(1,1,'LOCAL-RBAC-01','RBAC真实联调课程','仅隔离库虚构数据','individual',3,'5',NOW(6),'5',NOW(6));",
-                   "INSERT INTO course_leader_assignment(course_id,teacher_id,creator,created_at,modifier,modi_at) VALUES(1,5,'local-fixture',NOW(6),'local-fixture',NOW(6));", 'COMMIT;']
+    audit = "'local-fixture',NOW(6),'local-fixture',NOW(6)"
+    for ident in (5, 6, 7, 8):
+        statements.append(f"INSERT INTO teacher(id,user_id,employee_no,name,title,department,creator,created_at,modifier,modi_at) VALUES({ident},'{ident}','ui-user-{ident:02}','联调虚构教师{ident}','教师','工程部',{audit});")
+    for ident in (9, 10, 11):
+        statements.append(f"INSERT INTO student(id,user_id,student_no,name,status,creator,created_at,modifier,modi_at) VALUES({ident},'{ident}','ui-user-{ident:02}','联调虚构学生{ident}','active',{audit});")
+    statements.append(f"INSERT INTO term(id,name,starts_on,ends_on,is_current,creator,created_at,modifier,modi_at) VALUES(1,'联调基准学期','2026-09-01','2027-01-31',1,{audit});")
+    for ident,mode in ((1,'individual'),(2,'group')):
+        statements.append(f"INSERT INTO course(id,term_id,code,name,description,work_mode,status,creator,created_at,modifier,modi_at) VALUES({ident},1,'LOCAL-RBAC-{ident:02}','联调{mode}课程','隔离库虚构教学场景','{mode}',3,{audit});")
+        statements.append(f"INSERT INTO course_leader_assignment(course_id,teacher_id,creator,created_at,modifier,modi_at) VALUES({ident},5,{audit});")
+        statements.append(f"INSERT INTO teaching_class(id,course_id,no,name,creator,created_at,modifier,modi_at) VALUES({ident},{ident},1,'联调教学班{ident}',{audit});")
+        statements.append(f"INSERT INTO class_teacher_assignment(class_id,teacher_id,creator,created_at,modifier,modi_at) VALUES({ident},5,{audit});")
+        for student in (9,10):
+            statements.append(f"INSERT INTO enrollment(class_id,student_id,course_id,source,creator,created_at,modifier,modi_at) VALUES({ident},{student},{ident},'manual',{audit});")
+        for index,check in enumerate(('grading','oral'),1):
+            milestone=(ident-1)*2+index
+            statements.append(f"INSERT INTO milestone(id,course_id,name,description,due_at,mode,weight,scale,group_ratio,book_limit,cancel_before,done,creator,created_at,modifier,modi_at) VALUES({milestone},{ident},'联调{check}里程碑','可上传文本文件与预约口试','2027-01-01 00:00:00','{check}',50,100,{0 if mode=='individual' else 50},{'NULL' if check=='grading' else 100},{'NULL' if check=='grading' else 0},0,{audit});")
+    statements.append(f"INSERT INTO course_grouping_rule(course_id,min_size,max_size,allow_cross_class,starts_at,formation_closes_at,creator,created_at,modifier,modi_at) VALUES(2,1,4,1,'2026-01-01','2027-01-01',{audit});")
+    statements.append('COMMIT;')
     return '\n'.join(statements) + '\n'
 
 

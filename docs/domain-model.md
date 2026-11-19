@@ -38,11 +38,11 @@
 
 聚合以标识引用，不嵌入JPA对象图。关系集合返回只读副本，替换行为明确增删，不通过公开setter任意修改权限关系。来源导入通过受控reconstitute或factory建立完整快照，不调用运行时HTTP补造数据。User不会包含所有Role对象或全公司员工，Role不会持有所有用户；需要的关联事实批量取得。
 
-领域状态/属性常量由对应对象以public static final声明：Role归口DEFAULT_LEVEL、PROJECT_MANAGER_LEVEL、DEPARTMENT_MANAGER_LEVEL、COMPANY_LEADER_LEVEL、ADMIN_LEVEL五基础级别，FIRST_MANAGER_LEVEL引用PROJECT_MANAGER_LEVEL；自定义角色的managementLevel为空。InitialAuthorizationPolicy引用Role的级别常量进行首次分类。Department归口四种类型，Permission归口MENU/BUTTON，ApplicationSystem归口RBAC系统编码。应用/领域不引用公共协议枚举作为自身状态，也不按角色名称猜级别；应用Mapper在领域取值与现有DepartmentType等协议值间显式转换。布尔启用状态保持其既有语义，不虚构额外生命周期。
+领域状态/属性常量由对应对象以public static final声明：Role归口DEFAULT_LEVEL、PROJECT_MANAGER_LEVEL、DEPARTMENT_MANAGER_LEVEL、COMPANY_LEADER_LEVEL、ADMIN_LEVEL五基础级别，FIRST_MANAGER_LEVEL引用PROJECT_MANAGER_LEVEL；自定义角色的managementLevel为空。InitialAuthorizationPolicy引用Role的级别常量进行首次分类。Department归口四种类型，Permission归口MENU/BUTTON/API，ApplicationSystem归口RBAC系统编码。应用/领域不引用公共协议枚举作为自身状态，也不按角色名称猜级别；应用Mapper在领域取值与现有DepartmentType等协议值间显式转换。布尔启用状态保持其既有语义，不虚构额外生命周期。
 
 UserKey、RoleKey、PermissionKey、ApiKey、DepartmentKey等不可变标识只用于领域/仓储边界的类型安全；HTTP仍为正安全整数，工号仍为字符串。PageWindow、DepartmentScope、ApiOperation、UserCriteria、RoleCriteria、AuthorizationFacts、OrganizationFacts、DepartmentUsage、MaintenanceFacts等值/事实都归domain.model；不可变值和record使用显式构造，不交CloneFactory写final字段。
 
-跨聚合策略在model.policy：AuthorizationPolicy逐链计算有效Permission/API及OR，不把父菜单当继承；RoleAssignmentPolicy同时检查目标保护、授予上限及完整有效Permission子集，污染角色拒绝，停用自定义角色也保留目标保护；OrganizationPolicy核实来源根并计算有效子树/合法父子，以requireNonRoot保护可信根、requireEmpty拒绝存在人员或下级的删除、requireUnique保证同父有效部门名称唯一；MaintenancePolicy判断一个启用、可信根、级别5的用户独自覆盖K，不把多人权限拼接。策略接受明确事实，不访问仓储、HTTP、Spring或全局缓存。
+跨聚合策略在model.policy：AuthorizationPolicy逐链计算有效Permission/API及OR，不把父菜单当继承；RoleAssignmentPolicy同时检查目标保护、授予上限及完整有效Permission子集，新增/删除逐项验权，现有不可改角色可锁定保留，自定义角色不冻结人员；OrganizationPolicy核实来源根并计算有效子树/合法父子，以requireNonRoot保护可信根、requireEmpty拒绝存在人员或下级的删除、requireUnique保证同父有效部门名称唯一；MaintenancePolicy判断一个启用、可信根、级别5的用户独自覆盖K，不把多人权限拼接。策略接受明确事实，不访问仓储、HTTP、Spring或全局缓存。
 
 DDD仓储位于service.ddd.domain.repository，Infrastructure实现适配与装配；应用只依赖领域模型/仓储及公共用例抽象。事务、端口签名及复杂读模型见后端设计第4、6、9章。
 
@@ -63,9 +63,9 @@ DDD仓储位于service.ddd.domain.repository，Infrastructure实现适配与装�
 | 可授予角色         | 启用角色满足固定授予级别上限，全部有效Permission ID为操作者本系统有效集合子集；目标人员另受严格级别保护 |
 | 完整维护者         | 启用、直属已核实共同根、有效基础级别5且一个人覆盖完整K的User，不由名称或初始来源推断                    |
 
-记D(u)为u部门的有效子树，P(u)为u在本RBAC启用角色及启用系统下的有效Permission ID集合（含无API映射菜单），A(u)为本RBAC同系统实际API集合。目标人员v的管理先具具体操作API，再检查department(v)∈D(u)。候选角色同时满足固定授予级别及P(r)⊆P(u)；包含正式范围外系统关联的污染角色直接拒绝，不过滤后变为空角色。
+记D(u)为u部门的有效子树，P(u)为u在所有已登记启用应用、启用角色下的有效Permission ID集合（含无API映射菜单），A(u)为本RBAC同系统实际API集合。目标人员v的管理先具具体操作API，再检查department(v)∈D(u)。候选角色同时满足固定授予级别及P(r)⊆P(u)；不同登记应用的有效权限同样参与子集，不因只比较RBAC API而漏过。
 
-人员与部门保护规则：非系统管理员还须满足目标级别严格低于本人，本人、同级、上级只读；系统管理员例外仍受实际API、范围及完整维护者保护。自定义角色不提升操作者级别，仅启用、直属可信根且有效基础级别5的管理员可授，局部不能维护其持有者，停用自定义角色也不解除保护。部门新增父级∈D(u)，局部改名/删除须为严格下级；删除仅空且非根，类型固定，无层级调整。删除保留来源墓碑，不参与有效子树。两套实现均使用当前事务的角色与部门事实执行上述规则。
+人员与部门保护规则：非系统管理员还须满足目标级别严格低于本人，本人、同级、上级只读；系统管理员例外仍受实际API、范围及完整维护者保护。自定义角色不提升操作者级别，仅启用、直属可信根且有效基础级别5的管理员可授，局部不能增删自定义关联，但可在原人员范围内维护较低级持有人，锁定原样保留项不算重新授予。部门新增父级∈D(u)，局部改名/删除须为严格下级；删除仅空且非根，类型固定，无层级调整。删除保留来源墓碑，不参与有效子树。两套实现均使用当前事务的角色与部门事实执行上述规则。
 
 18个业务系统及原表矩阵仅保留在离线原型演示，不进入正式目录或初始化。课程系统按R29显式接入老师已有身份协议和真实API，不自行设计课程业务接口；沿用同一六实体模型，课程数据仍只在老师数据库。
 
@@ -93,7 +93,7 @@ DDD仓储位于service.ddd.domain.repository，Infrastructure实现适配与装�
 | Role                     | 启用↔停用                         | 保留权限和用户关联；下次管理请求重算                    |
 | Permission / ApiResource | 启用↔停用                         | 保留映射；父节点状态不代替子节点直接授权判断            |
 | Department               | 首次导入→新增下级/改名/删除空节点  | 类型固定，不调整层级；删除保留来源墓碑且不再参与范围    |
-| ApplicationSystem        | 读取RBAC及显式接入的课程目录        | 演示系统不进入正式初始化，课程按R29独立登记              |
+| ApplicationSystem        | 从登记事实读取应用目录        | 演示系统不进入正式初始化，课程按R29独立登记              |
 
 没有必须异步完成的业务流程，不引入事件总线、Outbox或分布式最终一致性。最小鉴权日志是运行记录，不冒充完整领域事件或变更审计。后续确有跨系统事件需求时另行评审。
 
@@ -102,3 +102,5 @@ DDD仓储位于service.ddd.domain.repository，Infrastructure实现适配与装�
 R01—R06落在身份、组织及初始化来源；R07—R09落在登录和有效授权策略；R10—R12落在范围与User行为；R13—R15落在共享Role/Permission/API及跨聚合维护者不变量；R16/R20由日志与安全适配支撑。关系和字段见数据库文档，用例及事务装配见后端设计。
 
 授权事实按当前用户读取，人员页批量读取当页角色。域仓储和锁后回归证据见测试与验收说明。
+
+应用身份只投影当前受众下的有效角色编码和权限，不增加课程实体。Permission.type的API项要求非空有效映射；MENU/BUTTON保留展示和资格控制用途。自定义角色不冻结User，角色差集校验及锁定项规则见R27。

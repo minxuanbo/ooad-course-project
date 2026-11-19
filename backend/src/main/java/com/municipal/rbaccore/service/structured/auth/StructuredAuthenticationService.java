@@ -45,7 +45,7 @@ public class StructuredAuthenticationService implements AuthenticationUseCase {
     return new LoginResult(identities.issue(user.getId()), identity(user), identities.expiresIn());
   }
 
-  /** 账号凭据验证复用于课程入口，但不在这里授予任何应用准入。 */
+  /** 账号凭据验证复用于外部应用入口，但不在这里授予任何应用准入。 */
   @Override
   public CurrentIdentity verify(LoginCommand command) {
     String account = command.getAccount();

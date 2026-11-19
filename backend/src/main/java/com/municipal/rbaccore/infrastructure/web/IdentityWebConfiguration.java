@@ -6,11 +6,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-/** 课程生产前端直连身份服务，仅对显式配置的来源开放身份路径。 */
+/** 已接入应用前端直连身份服务，仅对显式配置的来源开放身份路径。 */
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(name = "app.course-integration.enabled", havingValue = "true")
-public class CourseWebConfiguration implements WebMvcConfigurer {
-  @Value("${app.course-integration.allowed-origins:http://127.0.0.1:5174}")
+@ConditionalOnProperty(name = "app.identity.enabled", havingValue = "true")
+public class IdentityWebConfiguration implements WebMvcConfigurer {
+  @Value("${app.identity.allowed-origins:}")
   private String[] allowedOrigins;
 
   /** 不扩展管理端跨域规则，也不使用任意来源与凭据组合。 */

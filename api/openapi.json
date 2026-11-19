@@ -3,7 +3,7 @@
   "info": {
     "title": "市政公司统一权限管理系统 API",
     "version": "1.3.0",
-    "description": "structured/ddd共享契约：29项RBAC管理操作及4项可选课程身份兼容操作。APP_COURSE_INTEGRATION_ENABLED默认false；显式启用后增加course-project-management目录。老师课程业务API仍在老师工程；原型18系统不接入。权限按最新有效关系计算，K仍为17项RBAC路由。"
+    "description": "structured/ddd共享契约：29项RBAC管理操作及4项可选通用应用身份操作。应用目录来自登记数据及状态，APP_IDENTITY_ENABLED默认false。角色可包含多个应用的权限，Permission—API映射必须同系统。接入应用的业务接口由其自身实现；K仍为17项RBAC路由。"
   },
   "servers": [
     {
@@ -31,7 +31,8 @@
       "name": "鉴权日志"
     },
     {
-      "name": "课程身份兼容"
+      "name": "应用身份",
+      "description": "通用应用身份兼容接口，不包含接入系统业务逻辑。"
     }
   ],
   "security": [
@@ -475,7 +476,7 @@
           "人员授权"
         ],
         "summary": "整体替换人员角色",
-        "description": "整组重验，[]清空；不能提交过期/超权/停用角色；部门账号不能改自身或有效全局管理员。根锁后重验和完整K保护。 同时检查固定授予级别、当前已接入系统全部有效Permission子集（含无API菜单）；本人、同级、上级及仅管理员可授的自定义角色持有人对局部管理者只读，停用自定义角色不解除保护。",
+        "description": "锁后读取当前角色集合，只对新增与删除项检查授予级别及完整有效权限子集。无权改变的现有项可以原样保留，非法变化整次回滚。自定义角色仅可信根直属有效五级管理员可增删；人员停用/调动按原级别和部门范围判断。",
         "responses": {
           "200": {
             "description": "成功",
@@ -1304,7 +1305,7 @@
           "资源与映射"
         ],
         "summary": "本轮系统目录",
-        "description": "默认仅rbac；显式启用课程接入后含course-project-management。真实ID不固定，不开放系统CRUD。",
+        "description": "返回全部已登记应用（含停用项供维护），真实ID不固定；系统/权限/API的新增登记通过经过核对的首次SQL完成，本轮不开放系统CRUD。",
         "responses": {
           "200": {
             "description": "成功",
@@ -2426,21 +2427,21 @@
     },
     "/auth/login": {
       "post": {
-        "operationId": "courseIdentityLogin",
+        "operationId": "applicationIdentityLogin",
         "tags": [
-          "课程身份兼容"
+          "应用身份"
         ],
         "summary": "课程既有身份协议登录",
-        "description": "同一账号凭据，单独检查有效COURSE_TEACHER；无RBAC管理API不影响课程准入。系统/角色/权限启用均须成立，课程受众令牌不能访问管理端。 默认关闭，未启用时端点404；成功保留老师的原始JSON结构，错误沿RBAC Error并含requestId。",
+        "description": "仅接收单个已登记外部应用，账号启用且至少有该应用有效授权时签发受众隔离令牌。RBAC管理端沿原登录入口及准入规则。",
         "x-maintenance-member": false,
-        "x-management-scope": "course-identity",
+        "x-management-scope": "application-identity",
         "responses": {
           "200": {
             "description": "老师既有协议原始响应，不包裹data",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CourseLoginVO"
+                  "$ref": "#/components/schemas/ApplicationLoginVO"
                 }
               }
             }
@@ -2502,7 +2503,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CourseLoginDTO"
+                "$ref": "#/components/schemas/ApplicationLoginDTO"
               }
             }
           }
@@ -2511,21 +2512,21 @@
     },
     "/auth/me": {
       "get": {
-        "operationId": "courseIdentityMe",
+        "operationId": "applicationIdentityMe",
         "tags": [
-          "课程身份兼容"
+          "应用身份"
         ],
         "summary": "课程当前实时身份权限",
-        "description": "只接受课程受众Bearer；每个请求读取最新有效链，短后端码覆盖的全部真实路由必须同系统且启用。不提供学生准入，不按职位猜身份。 默认关闭，未启用时端点404；成功保留老师的原始JSON结构，错误沿RBAC Error并含requestId。",
+        "description": "按令牌受众实时返回角色编码、权限编码和system；角色须启用且贡献本应用有效权限。无API映射权限直接导出，有映射短码须全部同系统且启用。",
         "x-maintenance-member": false,
-        "x-management-scope": "course-identity",
+        "x-management-scope": "application-identity",
         "responses": {
           "200": {
             "description": "老师既有协议原始响应，不包裹data",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CourseIdentityVO"
+                  "$ref": "#/components/schemas/ApplicationIdentityVO"
                 }
               }
             }
@@ -2585,21 +2586,21 @@
     },
     "/auth/permissions/{permission}": {
       "get": {
-        "operationId": "courseIdentityPermission",
+        "operationId": "applicationIdentityPermission",
         "tags": [
-          "课程身份兼容"
+          "应用身份"
         ],
         "summary": "课程菜单按钮短码检查",
-        "description": "未知短码返回allowed:false；菜单和API分别授权。 默认关闭，未启用时端点404；成功保留老师的原始JSON结构，错误沿RBAC Error并含requestId。",
+        "description": "检查当前应用实时有效权限，不补父菜单、不按角色名称或职位推断。",
         "x-maintenance-member": false,
-        "x-management-scope": "course-identity",
+        "x-management-scope": "application-identity",
         "responses": {
           "200": {
             "description": "老师既有协议原始响应，不包裹data",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CoursePermissionVO"
+                  "$ref": "#/components/schemas/ApplicationPermissionVO"
                 }
               }
             }
@@ -2670,21 +2671,21 @@
     },
     "/auth/users/{userId}": {
       "get": {
-        "operationId": "courseIdentityUser",
+        "operationId": "applicationIdentityUser",
         "tags": [
-          "课程身份兼容"
+          "应用身份"
         ],
         "summary": "课程教师维护所需员工身份",
-        "description": "先验证当前UL，再查最小用户投影。没有UL不泄漏用户是否存在。 默认关闭，未启用时端点404；成功保留老师的原始JSON结构，错误沿RBAC Error并含requestId。",
+        "description": "先验证当前应用身份及GET /auth/users/{userId}对应的有效API映射，再返回最小用户信息。",
         "x-maintenance-member": false,
-        "x-management-scope": "course-identity",
+        "x-management-scope": "application-identity",
         "responses": {
           "200": {
             "description": "老师既有协议原始响应，不包裹data",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CourseUserVO"
+                  "$ref": "#/components/schemas/ApplicationUserVO"
                 }
               }
             }
@@ -3169,7 +3170,8 @@
             "type": "string",
             "enum": [
               "MENU",
-              "BUTTON"
+              "BUTTON",
+              "API"
             ]
           },
           "code": {
@@ -3216,7 +3218,8 @@
             "type": "string",
             "enum": [
               "MENU",
-              "BUTTON"
+              "BUTTON",
+              "API"
             ]
           },
           "code": {
@@ -3267,7 +3270,8 @@
             "type": "string",
             "enum": [
               "MENU",
-              "BUTTON"
+              "BUTTON",
+              "API"
             ]
           },
           "code": {
@@ -3455,11 +3459,20 @@
             "items": {
               "$ref": "#/components/schemas/RoleVO"
             }
+          },
+          "lockedRoleIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "description": "当前已授且操作者不能删除的角色ID；可原样保留，不能增删伪造，保存时锁后重新校验。"
           }
         },
         "required": [
           "user",
-          "roles"
+          "roles",
+          "lockedRoleIds"
         ]
       },
       "RolePermissionsVO": {
@@ -3871,7 +3884,8 @@
             "type": "string",
             "enum": [
               "MENU",
-              "BUTTON"
+              "BUTTON",
+              "API"
             ]
           },
           "enabled": {
@@ -4808,7 +4822,7 @@
           "requestId"
         ]
       },
-      "CourseLoginDTO": {
+      "ApplicationLoginDTO": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -4830,8 +4844,10 @@
             "maxItems": 1,
             "items": {
               "type": "string",
-              "const": "course-project-management"
-            }
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "description": "单个已登记应用编码，不允许客户端自报角色。"
           }
         },
         "required": [
@@ -4840,7 +4856,7 @@
           "systems"
         ]
       },
-      "CourseLoginVO": {
+      "ApplicationLoginVO": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -4864,7 +4880,7 @@
           "expiresIn"
         ]
       },
-      "CourseIdentityVO": {
+      "ApplicationIdentityVO": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -4876,11 +4892,11 @@
           "roles": {
             "type": "array",
             "items": {
-              "type": "string",
-              "const": "teacher"
+              "type": "string"
             },
             "minItems": 1,
-            "maxItems": 1
+            "maxItems": 1,
+            "description": "已配置并实际授予的启用角色编码，不固定teacher或student。"
           },
           "permissions": {
             "type": "array",
@@ -4889,15 +4905,44 @@
               "type": "string"
             },
             "description": "当前有效短码，不导出COURSE_TEACHER身份标记；不是令牌快照"
+          },
+          "system": {
+            "type": "string",
+            "description": "服务端核实的令牌受众应用编码"
+          },
+          "permissionApis": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "method",
+                  "path"
+                ],
+                "properties": {
+                  "method": {
+                    "type": "string"
+                  },
+                  "path": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "description": "按权限编码投影当前有效API映射事实；接入适配器可据自身协议配置核实粗粒度权限的全部必要路由。"
           }
         },
         "required": [
           "subject",
           "roles",
-          "permissions"
-        ]
+          "permissions",
+          "system",
+          "permissionApis"
+        ],
+        "description": "实时应用身份。API类型权限必须具有至少一个映射且全部同系统启用；菜单、按钮可无API独立控制展示或资格。"
       },
-      "CoursePermissionVO": {
+      "ApplicationPermissionVO": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -4909,7 +4954,7 @@
           "allowed"
         ]
       },
-      "CourseUserVO": {
+      "ApplicationUserVO": {
         "type": "object",
         "additionalProperties": false,
         "properties": {

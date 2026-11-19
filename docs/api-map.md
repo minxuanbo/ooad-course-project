@@ -38,11 +38,11 @@
 
 初始化走离线命令，不新增HTTP初始化入口。课程接入见[专门记录](course-integration.md)，RBAC不承载老师的课程业务路径、模拟外系统路径或旧归档接口。
 
-| 课程既有客户端 | 操作 | 成功原始响应 |
+| 通用应用身份（课程既有客户端使用） | 操作 | 成功原始响应 |
 | --- | --- | --- |
-| 登录 | `POST /auth/login` | CourseLoginVO |
-| 每次Bearer请求 | `GET /auth/me` | CourseIdentityVO |
-| 菜单/按钮检查 | `GET /auth/permissions/{permission}` | CoursePermissionVO |
-| 添加教师时身份查询 | `GET /auth/users/{userId}` | CourseUserVO |
+| 登录 | `POST /auth/login` | ApplicationLoginVO |
+| 每次Bearer请求 | `GET /auth/me` | ApplicationIdentityVO |
+| 菜单/按钮检查 | `GET /auth/permissions/{permission}` | ApplicationPermissionVO |
+| 添加教师时身份查询 | `GET /auth/users/{userId}` | ApplicationUserVO |
 
 四项仅显式启用时提供，不属于管理API或K；其业务处理器仍在老师工程。

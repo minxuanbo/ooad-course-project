@@ -17,26 +17,17 @@ class R29CourseIntegrationCleanupTest(unittest.TestCase):
         verification = Verification('http://127.0.0.1:8081', 'http://127.0.0.1:8080', 'synthetic')
 
         def request(label, base, path, expected, method='GET', token=None, body=None):
-            """用最小HTTP契约模型记录授权结果，在UL查询处注入行为失败。"""
-            if path == '/api/auth/login':
-                return {'data': {'token': 'synthetic'}}
-            if path in {'/auth/login', '/login'}:
-                return {'accessToken': 'synthetic'}
-            if path == '/admin/courses' and expected == 200:
-                return {'total': 1}
-            if path == '/api/roles/51/permissions':
-                if method == 'PUT':
-                    state['ids'] = list(body['ids'])
-                return {'data': {'ids': list(state['ids'])}}
-            if path.startswith('/api/permissions/tree'):
-                return {'data': [{'code': 'UL', 'id': 1}, {'code': 'TC', 'id': 2}, {'code': 'TEC', 'id': 3}]}
-            if path == '/auth/users/7' and expected == 200:
-                raise AssertionError('模拟UL查询失败')
-            return {}
+            """只模拟角色持久状态；使用真实临时授权上下文验证失败恢复。"""
+            if method == 'PUT':
+                state['ids'] = list(body['ids'])
+            return {'data': {'ids': list(state['ids'])}}
 
         with patch.object(verification, 'request', side_effect=request):
             with self.assertRaisesRegex(AssertionError, '模拟UL查询失败'):
-                verification.run()
+                with verification.temporary_permissions('synthetic'):
+                    verification.request('变更', verification.rbac, '/api/roles/51/permissions',
+                                         200, 'PUT', 'synthetic', {'ids': [1,2]})
+                    raise AssertionError('模拟UL查询失败')
         self.assertEqual([2], state['ids'])
 
 

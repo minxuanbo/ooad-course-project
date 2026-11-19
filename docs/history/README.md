@@ -28,3 +28,5 @@
 - [课程本地联调及双轴审查记录](verification/course-integration-local.md)
 
 [离线原型决策](design-decisions/prototype.md)保存此前讨论与获批口径；现行页面交互以frontend-design、正式API和需求为准。
+
+- [通用应用边界及课程完整本地联调](verification/course-integration-generic.md)

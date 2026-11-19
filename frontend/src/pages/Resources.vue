@@ -156,7 +156,7 @@ onUnmounted(() => generation.cancel())
     </form>
     <div class="tabs">
       <button :class="{ active: tab === 'permissions' }" @click="selectTab('permissions')">
-        菜单与按钮
+        权限项
       </button>
       <button :class="{ active: tab === 'apis' }" @click="selectTab('apis')">API资源</button>
     </div>
@@ -181,7 +181,7 @@ onUnmounted(() => generation.cancel())
             {{ node.name }}
             <small>{{ node.code }}</small>
           </td>
-          <td>{{ node.type === 'MENU' ? '菜单' : '按钮' }}</td>
+          <td>{{ node.type === 'MENU' ? '菜单' : node.type === 'API' ? 'API权限' : '按钮' }}</td>
           <td>
             <span class="badge" :class="node.enabled ? 'green' : 'red'">
               {{ node.enabled ? '启用' : '停用' }}
@@ -279,6 +279,7 @@ onUnmounted(() => generation.cancel())
           <select v-model="form.type">
             <option value="MENU">菜单</option>
             <option value="BUTTON">按钮</option>
+            <option value="API">API权限（必须映射接口）</option>
           </select>
         </label>
       </template>

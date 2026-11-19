@@ -86,7 +86,7 @@ public class UserController {
       @Max(ApiLimits.MAX_ID)
       Long id) {
     UserRolesResult result = admin.roles(header, id);
-    UserRolesVO view = new UserRolesVO();
+    UserRolesVO view = CloneFactory.copy(new UserRolesVO(), result);
     view.setUser(userView(result.getUser()));
     view.setRoles(result.getRoles().stream().map(this::roleView).toList());
     return view;

@@ -1,26 +1,31 @@
-# 老师课程工程本地接入补丁
+# 老师课程工程的本地接入
 
-本目录只保存相对老师提交`19fbd1a`的必要补丁，不复制整套课程源码。原目录保留不动，联调副本应用[teacher-local-binding.patch](teacher-local-binding.patch)。
+老师原目录和提交`19fbd1a`保留不动。RBAC核心只提供通用应用授权，课程角色与权限配置保存在[catalog.json](catalog.json)，不在RBAC生产代码维护teacher/student或课程路由常量。
 
-统一身份服务可以为有教师标记的账号签发令牌，但课程本地未必已有对应Teacher。老师原登录页检查名单，Bearer过滤器原先只信任身份服务，直接取得令牌可绕过本地名单。因此在每个教师请求进入业务前，继续核对当前未软删除的本地Teacher绑定；名单存储故障返回503并拒绝，功能权限仍由原课程Service判断。
+## 必要副本补丁
 
-仅改动两个生产文件及两个测试文件：
+[course-local-fixes.patch](course-local-fixes.patch)仅修改老师structured的三个生产文件：
 
-| 文件 | 改动 |
+| 文件 | 原问题与修复 |
 | --- | --- |
-| `infrastructure/security/BearerAuthenticationFilter.java` | 注入现有TeacherJpaRepository，每次教师请求检查有效user_id绑定，无绑定403，存储故障503；不缓存绑定、不改变学生原路径 |
-| `infrastructure/security/SecurityConfiguration.java` | 将既有仓储注入过滤器；路由与安全链配置保留 |
-| `r42/R42BoundTeacherFilterTest.java` | 6项回归：未绑定、有绑定、软删除、原令牌下一请求撤绑定、存储故障、学生原行为 |
-| `testing/BearerAuthenticationFilterAopTest.java` | 适配新增构造参数，保留原AOP初始化测试 |
+| StructuredCourseService.java | 重复保存或部分保留课程组长时，批量删除后merge相同复合主键触发乐观锁错误；改为保留未变关联、删除移除项、仅插入新增项 |
+| StructuredTeachingClassService.java | 团队管理页面调用教学班读取被对象规则误拒绝；读取分支沿既有CV/CTM权限，普通无关教师仍拒绝 |
+| StructuredMilestoneService.java | 列表强制解析教师导致已选课学生403；增加有效学生角色、账号状态、开放课程和选课关系的读取分支，教师及写入规则不放宽 |
 
-以上路径均位于老师backend的main/test源码中；无SQL、pom、Vue、课程业务Service或权限码改动，不修本轮另发现的DDD当前学期409问题。补丁不新增身份服务、角色模型或口令存储。
+旧teacher-local-binding补丁已撤除，不额外改老师登录/安全过滤器。补丁通过真实两系统HTTP回归观察RED→GREEN；来源和限制见[接入说明](../../docs/course-integration.md)。未修改老师pom、迁移或前端，不在此实现老师生产代码中缺少的个人批改/录音摘要等业务。
 
-在老师工程副本根目录先确认来源提交及干净工作树，再执行：
+在干净的老师源码副本根目录，先核对提交，再执行：
 
 ```powershell
-git apply --check <RBAC仓库绝对路径>/integrations/course/teacher-local-binding.patch
-git apply <RBAC仓库绝对路径>/integrations/course/teacher-local-binding.patch
-mvn -f backend/pom.xml '-Dtest=R42BoundTeacherFilterTest,BearerAuthenticationFilterAopTest,HttpExchangeUnifiedIdentityGatewayTest,SecurityCourseAuthorizationTest,DddServiceBoundaryTest,ServicePortBoundaryTest' package
+git apply --check <RBAC仓库绝对路径>/integrations/course/course-local-fixes.patch
+git apply <RBAC仓库绝对路径>/integrations/course/course-local-fixes.patch
+mvn -f backend/pom.xml -DskipTests clean package
 ```
 
-新文件中的record/身份协议仍由老师原实现负责。该补丁只补认证名单边界，不以小型单元测试替代两个真实系统联调，也不代表老师完整课程回归已通过。配置与实测见[接入设计](../../docs/course-integration.md)和[验收记录](../../docs/history/verification/course-integration-local.md)。
+## 外部依赖支撑
+
+[local_identity_gateway.py](local_identity_gateway.py)仅供本机联调：实时转接RBAC身份、验证配置应用受众、持久追加和查询外部业务审计。SQLite与数据库配置必须位于忽略目录；不是生产服务器方案，不替代RBAC鉴权日志，也不把前端菜单显示当作后端权限。
+
+读取外部审计要求AV全局授权；不向普通教师开放全部业务日志。写日志的主体与服务端时间不可由请求伪造，requestId同应用幂等，不同内容重放拒绝。老师Spring客户端的chunked JSON请求与浏览器普通请求均支持。老师对象ID到课程/班级的只读投影留在此联调工具中，不进入RBAC应用或领域层。
+
+老师将同一短码用于多个路由。RBAC只提供通用permissionApis事实，本工具依据catalog.json核对全部必要路由，缺失任一条即关闭整个短码；不把课程路由常量重新塞回RBAC。

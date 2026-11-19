@@ -61,7 +61,7 @@ public class DddAuthenticationService implements AuthenticationUseCase {
     return requireForSystem(header, RbacCatalog.SYSTEM_CODE);
   }
 
-  /** 领域账号状态与令牌受众分别校验，课程会话不能进入管理身份接口。 */
+  /** 领域账号状态与令牌受众分别校验，外部应用会话不能进入管理身份接口。 */
   @Override
   public CurrentIdentity requireForSystem(String header, String system) {
     User user = active(tokens.requireForSystem(header, system));

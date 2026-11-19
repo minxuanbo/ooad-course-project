@@ -20,7 +20,7 @@ public final class PermissionTreePolicy {
       Permission.Type type,
       Boolean enabled) {
     Permission.Type resultType = type == null ? current.type() : type;
-    if (resultType == Permission.Type.BUTTON
+    if (resultType != Permission.Type.MENU
         && tree.values().stream().anyMatch(node -> current.id().equals(node.parentId()))) {
       throw invalidTree();
     }

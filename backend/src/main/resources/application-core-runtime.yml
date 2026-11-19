@@ -17,8 +17,8 @@ spring:
   jackson.deserialization.fail-on-unknown-properties: true
 server.port: ${PORT:8081}
 app.backend-strategy: ${APP_BACKEND_STRATEGY:structured}
-app.course-integration.enabled: ${APP_COURSE_INTEGRATION_ENABLED:false}
-app.course-integration.allowed-origins: ${COURSE_UI_ALLOWED_ORIGINS:http://127.0.0.1:5174}
+app.identity.enabled: ${APP_IDENTITY_ENABLED:false}
+app.identity.allowed-origins: ${IDENTITY_ALLOWED_ORIGINS:}
 rbac:
   initialize: false
   core:

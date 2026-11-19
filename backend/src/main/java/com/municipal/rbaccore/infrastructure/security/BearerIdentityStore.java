@@ -52,6 +52,19 @@ public class BearerIdentityStore implements IdentityTokenStore {
   /** 受众不匹配只拒绝当前请求，不撤销另一个系统仍然有效的身份。 */
   @Override
   public Long requireForSystem(String header, String system) {
+    Entry entry = entry(header);
+    if (!entry.system().equals(system)) throw BusinessException.unauthorized();
+    return entry.userId();
+  }
+
+  /** 绑定应用来自服务端随机令牌索引，不信任客户端自报受众。 */
+  @Override
+  public String system(String header) {
+    return entry(header).system();
+  }
+
+  /** 只接受尚未过期的服务端身份索引。 */
+  private Entry entry(String header) {
     if (header == null || !header.startsWith("Bearer ")) {
       throw new BusinessException(401, "AUTHENTICATION_REQUIRED", "请先登录");
     }
@@ -61,8 +74,7 @@ public class BearerIdentityStore implements IdentityTokenStore {
       identities.remove(token);
       throw BusinessException.unauthorized();
     }
-    if (!entry.system().equals(system)) throw BusinessException.unauthorized();
-    return entry.userId();
+    return entry;
   }
 
   /** 兼容原退出行为，不新增凭证持久化或认证端点。 */

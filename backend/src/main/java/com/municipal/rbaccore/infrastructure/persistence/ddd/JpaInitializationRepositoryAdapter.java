@@ -163,7 +163,7 @@ public class JpaInitializationRepositoryAdapter implements InitializationReposit
     Map<ApiResource.Route, ApiResourceEntity> byRoute = new HashMap<>();
     for (BootstrapPlan.PermissionSeed seed : entries) {
       PermissionEntity row =
-          new PermissionEntity(system, seed.code(), seed.code(), PermissionType.BUTTON);
+          new PermissionEntity(system, seed.code(), seed.name(), PermissionType.BUTTON);
       row.moveTo(workspace);
       for (ApiResource.Route route : seed.routes()) {
         row.mapApi(
