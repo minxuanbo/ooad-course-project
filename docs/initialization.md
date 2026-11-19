@@ -57,3 +57,24 @@ users.id只负责新库关联；username来自“用户名”即工号，phone�
 ## 可选课程本地联调
 
 默认万人导入/首次授权仍只有RBAC自身，不能因设置课程开关就自动批量建立教师或授课程权。R29采用独立空库、显式课程目录及虚构Teacher绑定，见[课程接入](course-integration.md)。RBAC首次结构SQL包含API权限类型，老师Flyway保持原样，不生成升级SQL；夹具、持久审计和凭据只写.local。课程角色teacher/student/course-admin由显式配置授予，不随系统开关自动建立或批量授给员工。
+
+
+## 权限中文展示名称（R30）
+
+name用于人员操作时理解权限，code仍为稳定标识；不按中文名称鉴权。两套首次授权共用RbacCatalog.displayNames，不在前端建立翻译白名单。
+
+| 稳定编码 | 中文名称 |
+| --- | --- |
+| rbac.overview.read | 查看总览 |
+| rbac.departments.read | 查询部门 |
+| rbac.departments.write | 维护部门 |
+| rbac.users.read | 查询人员 |
+| rbac.users.roles.write | 分配人员角色 |
+| rbac.users.disable | 停用人员账号 |
+| rbac.users.department.write | 调整人员部门 |
+| rbac.resources.read | 查询权限与API资源 |
+| rbac.resources.write | 配置权限与API映射 |
+| rbac.roles.read | 查询角色 |
+| rbac.roles.write | 维护角色定义 |
+| rbac.roles.permissions.write | 配置角色权限 |
+| rbac.logs.read | 查询鉴权日志 |

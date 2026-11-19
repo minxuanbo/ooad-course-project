@@ -111,4 +111,6 @@ npm run dev
 
 ## 6. 课程系统本地联调
 
-本轮从main 717345f检出codex/course-local-integration。按[课程接入说明](course-integration.md)配置两个数据库、两后端及两前端，老师原目录不动，使用独立源码副本和虚构账号。实际覆盖与限制见[本地联调证据](history/verification/course-integration-local.md)，不以原阶段6成绩替代新增接口验证。
+本轮从main 717345f检出codex/course-local-integration。按[课程接入说明](course-integration.md)配置两个数据库、两后端及两前端，老师原目录不动，使用独立源码副本和虚构账号。实际覆盖与限制见[本轮联调证据](history/verification/course-integration-generic.md)，不以原阶段6成绩替代新增接口验证。
+
+课程联调当前由PR #38交付，复现前检出origin/codex/course-local-integration并记录实际提交；main尚不包含此次修改。先完成两项目npm ci，并安装Chrome与Python依赖`python -m pip install -r scripts/requirements-course-integration.txt`；初始化和端口按课程接入说明，不向真实员工库导入虚构夹具。

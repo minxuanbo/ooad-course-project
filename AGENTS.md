@@ -17,3 +17,5 @@ HTTP字段主规范为api/openapi.yaml，JSON同源；业务语义见docs/api-co
 两套策略分别保留业务实现，共用正式接口和数据模型。完整K保留原17项并要求有效基础级别5及可信根；人员目标/授予级别和部门规则见R23—R27。文档写目标职责，实际测试和限制独立记验收；不以历史成绩替代新版本通过。
 
 按CONTRIBUTING.md协作，保留原Excel、用户未跟踪DOCX/Markdown、原库及历史日志；临时凭据/CSV/数据库/日志/产物不提交。按文件提交并以main为草稿PR目标。Apifox写入须明确要求。类图/顺序图用新版UML skill，图件应与代码实际类和方法对应；包图使用UML包语义，不宣称该skill适用于包图。顺序图只画两套差异，共同部分一律不画。
+
+2026-11-20本轮交付：通用身份查人日志、安全ID与多角色Schema经双轴审核修复复核为0项；两RBAC各195项完整回归，真实HTTP structured141/ddd142、各27项浏览器通过，前端27项与构建、脚本8项通过。CloneFactory53个非空重载及185组同名同类型核对。R30中文权限名在两策略初始化、夹具、本地数据和文档一致；稳定编码不变。详见docs/history/verification/course-integration-generic.md，不以此覆盖老师原项目来源缺口。
