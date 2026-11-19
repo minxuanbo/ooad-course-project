@@ -37,6 +37,17 @@ public class StructuredAuthenticationService implements AuthenticationUseCase {
 
   /** 两个字段定位同一用户；歧义不选第一条，不为手机号另建口令或授权。 */
   public LoginResult login(LoginCommand command) {
+    CurrentIdentity actor = verify(command);
+    UserEntity user = users.findById(actor.id()).orElseThrow(BusinessException::unauthorized);
+    if (!permissions.canEnter(user.getId())) {
+      throw new BusinessException(403, "MANAGEMENT_ACCESS_DENIED", "该账号没有本权限系统的有效管理权限");
+    }
+    return new LoginResult(identities.issue(user.getId()), identity(user), identities.expiresIn());
+  }
+
+  /** 账号凭据验证复用于课程入口，但不在这里授予任何应用准入。 */
+  @Override
+  public CurrentIdentity verify(LoginCommand command) {
     String account = command.getAccount();
     String password = command.getPassword();
     requestContext.actor(null, null);
@@ -46,17 +57,21 @@ public class StructuredAuthenticationService implements AuthenticationUseCase {
       throw new BusinessException(401, "LOGIN_FAILED", "账号或密码错误");
     }
     requestContext.actor(user.getId(), user.getUsername());
-    if (!permissions.canEnter(user.getId())) {
-      throw new BusinessException(403, "MANAGEMENT_ACCESS_DENIED", "该账号没有本权限系统的有效管理权限");
-    }
-    return new LoginResult(identities.issue(user.getId()), identity(user), identities.expiresIn());
+    return new CurrentIdentity(user.getId(), user.getUsername(), user.getDepartment().getId());
   }
 
   /** 每次请求重新读取账号有效性，角色撤回不能借旧身份继续管理。 */
   public CurrentIdentity require(String header) {
+    return requireForSystem(
+        header, com.municipal.rbaccore.service.port.security.RbacCatalog.SYSTEM_CODE);
+  }
+
+  /** 应用受众和最新启用状态均须成立，不沿用其他系统的会话。 */
+  @Override
+  public CurrentIdentity requireForSystem(String header, String system) {
     UserEntity user =
         users
-            .findById(identities.require(header))
+            .findById(identities.requireForSystem(header, system))
             .filter(UserEntity::isEnabled)
             .orElseThrow(BusinessException::unauthorized);
     requestContext.actor(user.getId(), user.getUsername());

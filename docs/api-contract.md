@@ -1,12 +1,12 @@
 # API业务约束与接口阅读说明
 
-版本1.2。接口字段、方法、路径、必填、分页和响应模型的唯一机器规范为[api/openapi.yaml](../api/openapi.yaml)，[JSON](../api/openapi.json)由同一内容派生。29个操作，当前正式目录仅含RBAC自身；不接入课程或原型演示业务系统。本文解释Schema不能独立表达的授权、范围、原子性和交互语义；[页面对照](api-map.md)只作索引。
+版本1.3。接口字段、方法、路径、必填、分页和响应模型的唯一机器规范为[api/openapi.yaml](../api/openapi.yaml)，[JSON](../api/openapi.json)由同一内容派生。29项RBAC操作及4项可选课程身份操作；默认目录仅RBAC，显式接入后含课程，原型演示系统不接入。本文解释Schema不能独立表达的授权、范围、原子性和交互语义；[页面对照](api-map.md)只作索引。
 
 阶段4同步授予级别、人员目标保护、部门增删改名、范围总览及只读职位/角色摘要。GET /me增加最新实际routes、managementLevel、globalScope和departmentName，前端按路由能力与范围显示入口，不额外查询日志来探测权限。
 
 ## 1. 共用HTTP约定
 
-所有成功/失败包含code、message、data、requestId；成功code=OK，失败data=null。POST创建角色201，其余成功200；退出200/data=null。可信用户ID、权限、范围由服务端读取，不接受客户端actor/admin/scope字段。请求JSON类型严格，未知字段拒绝；DTO与VO分开，不返回JPA关系、哈希、手机号或完整原始导入资料；职位以只读字段返回。
+RBAC管理端成功/失败包含code、message、data、requestId；成功code=OK，失败data=null。POST创建角色201，其余成功200；退出200/data=null。可信用户ID、权限、范围由服务端读取，不接受客户端actor/admin/scope字段。请求JSON类型严格，未知字段拒绝；DTO与VO分开，不返回JPA关系、哈希、手机号或完整原始导入资料；职位以只读字段返回。
 
 不存在的端点返回404 ENDPOINT_NOT_FOUND；路径存在但HTTP方法不支持返回405 METHOD_NOT_ALLOWED，与业务对象不存在的404 RESOURCE_NOT_FOUND区分。部门父子类型错误为400 DEPARTMENT_TYPE_INVALID；删除根、删除非空节点及同级重名分别为409 DEPARTMENT_ROOT_REQUIRED、DEPARTMENT_NOT_EMPTY、DEPARTMENT_NAME_CONFLICT。以上均属于OpenAPI的Error.code枚举并保留requestId；离线导入/首次授权命令的错误不冒充HTTP接口契约。
 
@@ -49,7 +49,7 @@ account/password是一个入口，工号或手机号定位唯一用户，共用�
 | 操作组 | 必须保持的语义 |
 | --- | --- |
 | 人员查询 | 部门/q/状态AND组合，q查姓名/工号；先操作者子树再所选部门子树及过滤；同谓词total，越末页空items但保留total |
-| 人员角色 | 当前集合包含停用或不可再授的已保存角色；候选只启用角色，同时满足固定授予级别上限及当前RBAC完整有效Permission ID子集（含无API菜单）；含范围外系统关联的污染角色拒绝授予，不能过滤后变为空角色；保存整组重验 |
+| 人员角色 | 当前集合包含停用或不可再授的已保存角色；候选只启用角色，同时满足固定授予级别上限及当前已接入系统完整有效Permission ID子集（含无API菜单）；含范围外系统关联的污染角色拒绝授予，不能过滤后变为空角色；保存整组重验 |
 | 人员保护 | 非系统管理员不能改本人、同级、上级或仅管理员可授的自定义角色持有人（含已停用自定义角色）；系统管理员仍受实际API、范围与完整K限制。停用保留部门/角色，旧请求401，再登录LOGIN_FAILED；调动双范围，保持同一用户/角色 |
 | 角色定义 | 新建启用空权限角色；编码稳定，唯一性按真实列比较规则；改名不改权限，停用保留关联；无删除/继承/审批/版本 |
 | 角色选权 | 直接ids独立选择，不自动补祖先/后代；只授本系统启用权限，空集撤销，未知/重复/跨系统/停用关联拒绝 |
@@ -94,3 +94,11 @@ GET /api/departments为完整范围导航，返回type、directUsers、totalUser
 新增仅支持总公司→分公司/部门/项目，分公司→部门/项目，部门→项目，项目叶子。总公司身份依可信来源，不按名称或任意parentId=null推断。局部可在本人/下级下新增，只能改删严格下级。删除保留内部墓碑及来源外键，查询、范围、统计不含墓碑；含停用人员也不能删除。错误包括DEPARTMENT_TYPE_INVALID(400)、DEPARTMENT_NAME_CONFLICT、DEPARTMENT_ROOT_REQUIRED、DEPARTMENT_NOT_EMPTY(409)。
 
 GET /api/overview在同一快照聚合范围人数、启停人数、有效组织数及直接下级分布。总数等于根直属人数加每个直接子树人数，不重复加孙节点；总览不混入无权访问的全局日志。新增5操作按对应权限独立控制，不扩大原17项K；完整恢复资格同时增加基础级别5，防止自定义角色仅凑齐接口后冒充系统管理员。
+
+## 6. 可选课程身份协议（R29）
+
+四项`/auth/*`兼容接口仅在`APP_COURSE_INTEGRATION_ENABLED=true`时提供，成功使用老师原始JSON；错误仍含code/message/data/requestId。`/api/*`管理契约保持原包装。详情见[课程接入](course-integration.md)，OpenAPI同时列出兼容DTO/VO。
+
+课程登录复用同一账号校验，另查COURSE_TEACHER准入，不授管理级别；角色`teacher`为老师身份协议取值。两受众不能混用，旧课程令牌每次重查账号/角色/系统/权限/映射。缺少准入为403 APPLICATION_ACCESS_DENIED，停用账号为401。老师课程入口先按本地工号查Teacher，不能宣称课程入口支持手机号。菜单短码和后端短码分别授予；TCM/CV/CTM有多条路由，部分停用或映射撤回时关闭整个短码。
+
+资源/选权/人员候选仅扩大到显式接入目录，未知系统污染角色仍整体拒绝，跨系统映射仍400。K只按原17项RBAC路由，不以课程权限补足。CORS只对配置的课程UI来源开放`/auth/**`，不放宽管理端。身份登录/拒绝日志以课程appCode区分；老师业务操作日志不冒充RBAC身份鉴权日志。

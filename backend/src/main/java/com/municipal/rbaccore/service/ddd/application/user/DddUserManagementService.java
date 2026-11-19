@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class DddUserManagementService implements UserManagementUseCase {
+  private final com.municipal.rbaccore.service.port.security.ManagedApplications applications;
   private final AuthenticationUseCase authentication;
   private final UserRepository users;
   private final RoleRepository roles;
@@ -56,7 +57,8 @@ public class DddUserManagementService implements UserManagementUseCase {
                 subset(operator),
                 query.getQ(),
                 query.getPage(),
-                query.getSize()));
+                query.getSize(),
+                applications.codes()));
     return new AssignableRolePageResult(
         page.items().stream().map(DddResults::role).toList(),
         page.total(),
@@ -85,7 +87,7 @@ public class DddUserManagementService implements UserManagementUseCase {
               .allMatch(
                   role ->
                       RoleAssignmentPolicy.canAssign(
-                          role, operator.user().level(), custom, allowed))) {
+                          role, operator.user().level(), custom, allowed, applications.codes()))) {
             throw BusinessException.scopeDenied();
           }
           return DddResults.updated(users.save(target.replaceRoles(selected)));
@@ -176,7 +178,7 @@ public class DddUserManagementService implements UserManagementUseCase {
 
   /** 授予子集按完整权限编号比较，而非可执行API。 */
   private Set<Long> subset(AuthorizationFacts operator) {
-    return AuthorizationPolicy.directPermissions(operator).stream()
+    return AuthorizationPolicy.directPermissions(operator, applications.codes()).stream()
         .map(Permission::id)
         .collect(Collectors.toUnmodifiableSet());
   }

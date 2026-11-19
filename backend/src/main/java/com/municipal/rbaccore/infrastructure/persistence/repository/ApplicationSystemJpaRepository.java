@@ -11,6 +11,9 @@ import org.springframework.data.repository.query.Param;
 /** 系统目录按稳定编码定位，不把前端原型ID当成真实主键。 */
 public interface ApplicationSystemJpaRepository
     extends JpaRepository<ApplicationSystemEntity, Long> {
+  /** 仅按装配层提供的显式目录读取，不枚举未接入系统。 */
+  java.util.List<ApplicationSystemEntity> findByCodeInOrderByIdAsc(java.util.Set<String> codes);
+
   /** 本轮只选择RBAC系统，不加载Excel其他业务系统。 */
   Optional<ApplicationSystemEntity> findByCode(String code);
 
@@ -18,6 +21,6 @@ public interface ApplicationSystemJpaRepository
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("select system from ApplicationSystemEntity system where system.code = :code")
   Optional<ApplicationSystemEntity> lockForAuditAppend(
-      @Param("code")
-      String code);
+  @Param("code")
+  String code);
 }

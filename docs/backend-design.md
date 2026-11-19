@@ -8,9 +8,9 @@
 
 单仓库、单后端应用，提供structured/ddd两种业务实现，共用HTTP/数据库契约、前端与初始化来源。两种实现应在身份、授权、范围、错误、持久化状态、回滚和并发下保持一致。Java21、Boot3.5.6、JPA、MySQL8.4、AOP及老师真实CloneFactory沿当前技术基线，不因参考老师新版本而升级框架。
 
-本RBAC自己保存口令并认证，不照搬课程项目的外部统一身份。课程系统接入、Redis、语音、存储和其他示例集成不纳入当前设计实施。
+本RBAC自己保存口令并认证，不照搬课程项目的外部统一身份。课程身份适配按R29显式接入；Redis、语音、存储和其他示例集成不纳入本轮。
 
-正式产品仅管理RBAC自身权限，共用Vue、29项HTTP操作、18项HTTP错误、12表首次SQL、固定五级角色及17项完整维护能力集合K。18个外系统仅保留离线原型演示，不进入正式目录、授权或初始化。
+默认目录管理RBAC自身权限，显式配置按R29接入课程系统，共用Vue、29项管理HTTP操作与4项可选课程身份操作、19项HTTP错误、12表首次SQL、固定五级角色及17项完整维护能力集合K。18个外系统仅保留离线原型演示，不进入正式目录、授权或初始化。课程身份适配职责见[课程接入](course-integration.md)，两策略各自计算权限，不将业务实现放入共享port。
 
 参考老师项目的共享用例、领域仓储、互斥装配与按模块绘图方式；本项目保留本地账号认证，不移植课程业务、外部统一身份、Boot4或Redis。
 
@@ -257,7 +257,7 @@ OpenAPI定义29个操作（含部门及总览5个新增操作）；[业务约束
 
 认证技术共用IdentityTokenStore、PasswordHashing、RequestContext，业务链独立：UserRepository按同一输入精确匹配工号/手机号→AuthenticationPolicy要求唯一、启用、口令符合→AuthorizationPolicy要求本RBAC登记管理API→发令牌。未知/歧义/停用/错口令仍401 LOGIN_FAILED，正确口令但无管理准入仍403；不新增会话实体或外部统一身份。
 
-领域异常DomainViolation只包含领域原因和可公开提示，不携HTTP、SQL或JPA对象；application.support的DddFailureTranslator翻译为既有BusinessException和18项HTTP错误，API Advice保持共用。基础设施在保存发生处把数据库冲突翻译为既有错误，不在全局Advice按表名判断。框架路由404/405仍沿共用Advice；离线初始化错误保持既有CLI语义。
+领域异常DomainViolation只包含领域原因和可公开提示，不携HTTP、SQL或JPA对象；application.support的DddFailureTranslator翻译为既有BusinessException及现行HTTP错误；R29的课程准入错误为APPLICATION_ACCESS_DENIED，API Advice保持共用。基础设施在保存发生处把数据库冲突翻译为既有错误，不在全局Advice按表名判断。框架路由404/405仍沿共用Advice；离线初始化错误保持既有CLI语义。
 
 ## 11. 测试方案
 
@@ -564,3 +564,13 @@ Java新增或修改类/接口/记录及关键方法写中文Javadoc；明确局�
 | 两类离线命令与横切支撑 | importing/bootstrap/maintenance | 来源、原子发布、映射和K职责明确；不把共用Excel/密码/锁/日志技术流程重复画入顺序图        |
 
 HTTP总计29操作；初始化为离线命令，不混入HTTP计数。新增图件共29组（包2、类15、差异顺序12），每组同源SVG/PNG；另保留现有结构化类图1组。没有全套公共登录/HTTP/技术日志顺序图。
+
+## 18. 可选课程身份适配（R29）
+
+`api.course.CourseIdentityController`只做老师HTTP协议校验、DTO/Command与Result/VO映射；成功响应由`RawResponse`保持原始结构。共享`CourseIdentityUseCase`及`CourseContract`只放用例/协议取值，`ManagedApplications`由装配层构造不可变显式目录。
+
+结构化`StructuredCourseIdentityService`直接用JPA事实计算；DDD `DddCourseIdentityService`从领域仓储装配事实，由纯领域`CourseAuthorizationPolicy`投影有效短码。两者不相互调用。鉴权、教师准入与全部路由有效性在服务事务内处理，领域不引用port协议或JPA。
+
+原Bearer索引增加应用受众，不增加会话表；当前账号校验抽出verify/requireForSystem，课程用例检查准入后才签发课程身份。日志切面排除不承载业务执行的port协议值对象，避免为final record建立代理。资源及人员授权仍共根锁、锁后重鉴权和K；目录扩展不会让课程权限替代RBAC管理能力。
+
+原第17章图件描述R01—R28主业务模块，六实体及持久化边界未变；R29新增兼容模块的职责与调用以本章和[接入说明](course-integration.md)为准，不将老师课程业务类画入RBAC核心模型。

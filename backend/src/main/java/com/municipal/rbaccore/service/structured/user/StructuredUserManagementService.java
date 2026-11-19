@@ -11,8 +11,6 @@ import com.municipal.rbaccore.infrastructure.persistence.repository.UserJpaRepos
 import com.municipal.rbaccore.service.port.error.BusinessException;
 import com.municipal.rbaccore.service.port.role.RoleResult;
 import com.municipal.rbaccore.service.port.security.CurrentIdentity;
-import com.municipal.rbaccore.service.structured.security.StructuredPersonnelAuthority;
-import com.municipal.rbaccore.service.port.security.RbacCatalog;
 import com.municipal.rbaccore.service.port.security.RequestContext;
 import com.municipal.rbaccore.service.port.user.AssignableRolePageResult;
 import com.municipal.rbaccore.service.port.user.AssignableRoleQuery;
@@ -25,6 +23,7 @@ import com.municipal.rbaccore.service.structured.auth.StructuredAuthenticationSe
 import com.municipal.rbaccore.service.structured.security.StructuredDepartmentScopeService;
 import com.municipal.rbaccore.service.structured.security.StructuredEffectivePermissionService;
 import com.municipal.rbaccore.service.structured.security.StructuredMaintenanceGuard;
+import com.municipal.rbaccore.service.structured.security.StructuredPersonnelAuthority;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
@@ -52,6 +51,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class StructuredUserManagementService implements UserManagementUseCase {
+  private final com.municipal.rbaccore.service.port.security.ManagedApplications applications;
   private final StructuredAuthenticationService auth;
   private final RequestContext requestContext;
   private final StructuredEffectivePermissionService permissions;
@@ -78,8 +78,7 @@ public class StructuredUserManagementService implements UserManagementUseCase {
     StructuredPersonnelAuthority.AuthoritySnapshot operator = authority.snapshot(actor);
     if (!authority.canManage(operator, target(actor, id))) throw BusinessException.scopeDenied();
     String search = query.getQ() == null ? "" : query.getQ().toLowerCase(Locale.ROOT);
-    Specification<RoleEntity> filter =
-        assignableFilter(ownPermissionIds(actor), operator, search);
+    Specification<RoleEntity> filter = assignableFilter(ownPermissionIds(actor), operator, search);
     long total = roles.count(filter);
     long offset = (long) query.getPage() * query.getSize();
     if (offset >= total) {
@@ -238,7 +237,7 @@ public class StructuredUserManagementService implements UserManagementUseCase {
           .select(permission.get("id"))
           .where(
               builder.or(
-                  builder.notEqual(permission.get("system").get("code"), RbacCatalog.SYSTEM_CODE),
+                  builder.not(permission.get("system").get("code").in(applications.codes())),
                   builder.and(
                       builder.isTrue(permission.get("enabled")),
                       builder.isTrue(permission.get("system").get("enabled")),

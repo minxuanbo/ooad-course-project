@@ -29,7 +29,7 @@ const visible = computed(() =>
   ),
 )
 
-/** 只查询已登记的RBAC目录，不创建原型中的演示业务系统。 */
+/** 只查询服务端已接入目录，不创建原型中的演示业务系统。 */
 async function load(next = 0) {
   const version = generation.next()
   busy.value = true

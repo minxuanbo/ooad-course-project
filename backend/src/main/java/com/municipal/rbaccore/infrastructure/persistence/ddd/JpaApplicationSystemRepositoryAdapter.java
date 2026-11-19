@@ -13,6 +13,12 @@ import org.springframework.stereotype.Repository;
 public class JpaApplicationSystemRepositoryAdapter implements ApplicationSystemRepository {
   private final ApplicationSystemJpaRepository rows;
 
+  /** 查询已接入系统并映射领域值，不调用任何应用服务。 */
+  @Override
+  public java.util.List<ApplicationSystem> catalog(java.util.Set<String> codes) {
+    return rows.findByCodeInOrderByIdAsc(codes).stream().map(JpaDomainMapper::system).toList();
+  }
+
   /** 从真实目录定位系统而非固定主键。 */
   @Override
   public Optional<ApplicationSystem> findRbac() {

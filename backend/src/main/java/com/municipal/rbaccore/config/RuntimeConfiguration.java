@@ -4,8 +4,11 @@ import com.fasterxml.jackson.databind.cfg.CoercionAction;
 import com.fasterxml.jackson.databind.cfg.CoercionInputShape;
 import com.fasterxml.jackson.databind.type.LogicalType;
 import com.municipal.rbaccore.service.port.error.ImportException;
+import com.municipal.rbaccore.service.port.security.ManagedApplications;
+import com.municipal.rbaccore.service.port.security.RbacCatalog;
 import java.time.Clock;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -28,14 +31,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
     basePackages = "com.municipal.rbaccore.infrastructure.persistence.repository")
 @Import(RuntimeStrategySelector.class)
 @ComponentScan(
-    basePackages = {
-      "com.municipal.rbaccore.api",
-      "com.municipal.rbaccore.infrastructure"
-    },
+    basePackages = {"com.municipal.rbaccore.api", "com.municipal.rbaccore.infrastructure"},
     excludeFilters =
         @ComponentScan.Filter(
-        type = FilterType.REGEX,
-        pattern = "com\\.municipal\\.rbaccore\\.infrastructure\\.persistence\\.ddd\\..*"))
+            type = FilterType.REGEX,
+            pattern = "com\\.municipal\\.rbaccore\\.infrastructure\\.persistence\\.ddd\\..*"))
 public class RuntimeConfiguration {
   private static final Map<String, String> TEST_DATABASES =
       Map.of(
@@ -73,6 +73,17 @@ public class RuntimeConfiguration {
   @Bean
   Clock clock() {
     return Clock.systemUTC();
+  }
+
+  /** 只有显式启动课程联调时扩大目录，原型演示系统始终不进入正式范围。 */
+  @Bean
+  ManagedApplications managedApplications(Environment environment) {
+    return new ManagedApplications(
+        environment.getProperty("app.course-integration.enabled", Boolean.class, false)
+            ? Set.of(
+                RbacCatalog.SYSTEM_CODE,
+                com.municipal.rbaccore.service.port.course.CourseContract.SYSTEM_CODE)
+            : Set.of(RbacCatalog.SYSTEM_CODE));
   }
 
   /** 生产沿用BCrypt默认强度，专用测试profile仅降低夹具计算成本。 */

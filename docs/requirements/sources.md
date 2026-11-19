@@ -107,3 +107,7 @@ ER图应使用标准符号并只表达核心对象。User、Role、Permission及
 ## 3. 参考项目的使用边界
 
 参考[老师项目](https://gitee.com/mingqcn/course-project-mgt/tree/fde08d5dd417abc543145aff33ca8378deb9ca36)的requirements/domain-model/database-design/backend-design/api-map、api/openapi、prototype及deploy职责。采用其清晰分层、双Service条件装配、DTO/VO及真实CloneFactory思路，保留本项目已经确认的本地账号、部门范围和最小鉴权日志，不引入课程/成绩/预约、外部统一身份、Redis或对象存储需求。
+
+## 2026-11-19 课程真实接入启动
+
+用户确认阶段6后启动老师本地course-project-mgt联调。现行需求增加R29，老师提交19fbd1a为此次真实契约/生产界面来源，既有Gitee组织参考职责不变；不再沿用此前暂缓排期阻止此次授权。课程查看、学期维护及菜单/按钮先形成最小闭环，老师源码改动必须报告，见[课程接入](../course-integration.md)。历史“课程暂缓”保留其原时间语境。

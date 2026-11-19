@@ -1,5 +1,6 @@
 package com.municipal.rbaccore.service.ddd.domain.model.policy;
 
+import com.municipal.rbaccore.service.ddd.domain.model.ApplicationSystem;
 import com.municipal.rbaccore.service.ddd.domain.model.Permission;
 import com.municipal.rbaccore.service.ddd.domain.model.Role;
 import com.municipal.rbaccore.service.ddd.domain.model.User;
@@ -21,10 +22,25 @@ public final class RoleAssignmentPolicy {
   /** 停用角色不可授，直接外系统权限即使停用也拒绝整个角色。 */
   public static boolean canAssign(
       Role role, int actorLevel, boolean customPermitted, Set<Long> allowedPermissionIds) {
+    return canAssign(
+        role,
+        actorLevel,
+        customPermitted,
+        allowedPermissionIds,
+        Set.of(ApplicationSystem.CODE_RBAC));
+  }
+
+  /** 已接入系统仍受级别与完整权限子集约束，未知系统即使停用也拒绝。 */
+  public static boolean canAssign(
+      Role role,
+      int actorLevel,
+      boolean customPermitted,
+      Set<Long> allowedPermissionIds,
+      Set<String> systems) {
     if (!role.enabled() || !withinLevel(role, actorLevel, customPermitted)) return false;
     for (Permission permission : role.permissions()) {
-      if (!permission.system().isRbac()) return false;
-      if (AuthorizationPolicy.activeRbac(permission)
+      if (!systems.contains(permission.system().code())) return false;
+      if (AuthorizationPolicy.active(permission, systems)
           && !allowedPermissionIds.contains(permission.id())) {
         return false;
       }

@@ -2,6 +2,8 @@ package com.municipal.rbaccore.infrastructure.web;
 
 import com.municipal.rbaccore.service.port.audit.AuditEvent;
 import com.municipal.rbaccore.service.port.audit.AuditWriter;
+import com.municipal.rbaccore.service.port.course.CourseContract;
+import com.municipal.rbaccore.service.port.security.RbacCatalog;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import java.io.IOException;
@@ -63,8 +65,11 @@ public class RequestAuditFilter extends OncePerRequestFilter {
     } finally {
       String path = request.getRequestURI();
       int status = response.getStatus();
-      boolean login = path.equals("/api/auth/login") && request.getMethod().equals("POST");
-      if (path.startsWith("/api/")
+      boolean course = path.startsWith("/auth/");
+      boolean login =
+          (path.equals("/api/auth/login") || path.equals("/auth/login"))
+              && request.getMethod().equals("POST");
+      if ((path.startsWith("/api/") || course)
           && (login || status == 401 || status == 403)
           && !Boolean.TRUE.equals(request.getAttribute("auditRecorded"))) {
         String event =
@@ -81,7 +86,8 @@ public class RequestAuditFilter extends OncePerRequestFilter {
                 java.util.Objects.toString(request.getAttribute("errorCode"), "OK"),
                 request.getMethod(),
                 path,
-                status));
+                status,
+                course ? CourseContract.SYSTEM_CODE : RbacCatalog.SYSTEM_CODE));
       }
     }
   }

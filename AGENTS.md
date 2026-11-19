@@ -1,5 +1,7 @@
 # RBAC项目协作
 
+2026-11-19更新：阶段6约定的双策略UI验收已通过PR #37合入main（717345f）。用户明确启动老师course-project-mgt的本地联调，在codex/course-local-integration分支适配既有课程身份HTTP协议；旧“课程暂缓”仅为历史排期。课程目录须显式启用，18原型演示系统仍排除；老师原目录保留，变更必须报告。设计及本轮实测分别见docs/course-integration.md和docs/history/verification/course-integration-local.md。未经另行要求不合main、不自动关闭T14/T15、不部署服务器。
+
 2026-11-19阶段6 UI复验：structured通过PR #36交付窄屏日志计数、Modal键盘焦点及CollectionEditor失权事件修复，详见docs/structured-ui-acceptance.md。ddd在包含PR #36的main提交292a8a4上，用相同用例和夹具在独立库复验。两种策略各通过13项浏览器用例、26项前端测试及生产构建；ddd的S6-01～S6-09补充用例及重启回读也通过，详见docs/history/verification/stage6-ddd.md。
 
 截至2026-11-18，阶段5已完成双轴审核、修复及CloneFactory专项核对，用户批准PR #34合入main，合并提交e521f97，文件树与验收提交83dbf17一致。structured和ddd各178项后端测试、71次真实HTTP通过，前端26项测试/构建及运行器5项单测通过；两套空库各完成10001个BCrypt10账号导入及首次授权。桌面浏览器已复验登录、六个管理页面和关键写入；阶段6仍待窄屏、完整键盘及其他写入组合复验。组员从main复现并记录实际提交，见docs/reproduction.md及docs/testing-acceptance.md。T14/T15、课程接入及服务器部署仍按开发计划。

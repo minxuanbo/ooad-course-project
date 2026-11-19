@@ -53,8 +53,7 @@ public class JpaAuthorizationRepositoryAdapter implements AuthorizationRepositor
               .select(permission.get("id"))
               .where(
                   builder.or(
-                      builder.notEqual(
-                          permission.get("system").get("code"), ApplicationSystem.CODE_RBAC),
+                      builder.not(permission.get("system").get("code").in(criteria.systemCodes())),
                       builder.and(
                           builder.isTrue(permission.get("enabled")),
                           builder.isTrue(permission.get("system").get("enabled")),

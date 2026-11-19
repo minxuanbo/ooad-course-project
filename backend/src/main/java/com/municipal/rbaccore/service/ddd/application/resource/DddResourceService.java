@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class DddResourceService implements ResourceUseCase {
+  private final com.municipal.rbaccore.service.port.security.ManagedApplications applications;
   private final ApplicationSystemRepository systems;
   private final PermissionRepository permissions;
   private final ApiResourceRepository apis;
@@ -30,13 +31,18 @@ public class DddResourceService implements ResourceUseCase {
   @Override
   public List<SystemResult> systems(String header) {
     access.require(header);
-    ApplicationSystem system = selectSystem(null);
-    SystemResult result = new SystemResult();
-    result.setId(system.id());
-    result.setCode(system.code());
-    result.setName(system.name());
-    result.setEnabled(system.enabled());
-    return List.of(result);
+    selectSystem(null);
+    return systems.catalog(applications.codes()).stream()
+        .map(
+            system -> {
+              SystemResult result = new SystemResult();
+              result.setId(system.id());
+              result.setCode(system.code());
+              result.setName(system.name());
+              result.setEnabled(system.enabled());
+              return result;
+            })
+        .toList();
   }
 
   /** 按稳定ID组装父子层级，停用节点仍出现在维护目录。 */
@@ -158,9 +164,11 @@ public class DddResourceService implements ResourceUseCase {
 
   /** 限定到唯一正式系统，任何其他请求编号都拒绝。 */
   private ApplicationSystem selectSystem(Long requested) {
-    ApplicationSystem system = systems.findRbac().orElseThrow(this::notFound);
-    if (requested != null && !requested.equals(system.id())) throw BusinessException.scopeDenied();
-    return system;
+    if (requested == null) return systems.findRbac().orElseThrow(this::notFound);
+    return systems.catalog(applications.codes()).stream()
+        .filter(system -> requested.equals(system.id()))
+        .findFirst()
+        .orElseThrow(BusinessException::scopeDenied);
   }
 
   /** 已授权操作的未知资源返回404，直接的外系统目标返回403。 */

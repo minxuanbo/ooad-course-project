@@ -1,7 +1,6 @@
 package com.municipal.rbaccore.infrastructure.persistence.entity;
 
 import com.municipal.rbaccore.service.port.audit.AuditEvent;
-import com.municipal.rbaccore.service.port.security.RbacCatalog;
 import jakarta.persistence.*;
 import java.time.Instant;
 import lombok.AccessLevel;
@@ -58,12 +57,12 @@ public class AuthorizationLogEntity {
   @Column(name = "http_status", nullable = false)
   private int httpStatus;
 
-  /** 仅接收过滤器/AOP的安全事件；系统归属固定为rbac而非业务后台。 */
+  /** 仅接收过滤器/AOP的安全事件，归属由实际入口确定，不伪称课程业务审计。 */
   public AuthorizationLogEntity(AuditEvent event, Instant now) {
     this.occurredAt = now;
     this.userId = event.userId();
     this.username = event.username();
-    this.appCode = RbacCatalog.SYSTEM_CODE;
+    this.appCode = event.appCode();
     this.allowed = event.allowed();
     this.requestId = event.requestId();
     this.reason = event.reason();

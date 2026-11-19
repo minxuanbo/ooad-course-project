@@ -107,4 +107,8 @@ npm run dev
 6. 日志改变筛选/批量需重新查询，同一游标快照total不变；日志查询本身的新记录可能被下一次新查询看到，不代表同快照自动增加。
 7. 按[DDD隔离边界](backend-design.md#4-双实现选择方式)检查公共端口、技术适配器、结构化、DDD服务和互斥装配的区别；不要新增DDD占位类或用结构化服务套壳。
 
-反馈请附Git提交号、操作角色/部门、操作步骤、预期/实际、HTTP状态/业务code和requestId；不附口令、Bearer、万人CSV或完整隐私数据。[阶段5交接复核](testing-acceptance.md#阶段5-交接复核2026-11-17)已记录两策略桌面浏览器及关键操作结果；窄屏、完整键盘和其他写入组合仍待复验。
+反馈请附Git提交号、操作角色/部门、操作步骤、预期/实际、HTTP状态/业务code和requestId；不附口令、Bearer、万人CSV或完整隐私数据。[阶段5交接复核](testing-acceptance.md#阶段5-交接复核2026-11-17)已记录两策略桌面浏览器及关键操作结果；阶段6约定的窄屏、键盘及写入组合已按两策略复验并合入PR #37（717345f）。本轮课程联调另见[接入复现](course-integration.md)，使用独立空库和虚构夹具，不替换本页万人初始化。
+
+## 6. 课程系统本地联调
+
+本轮从main 717345f检出codex/course-local-integration。按[课程接入说明](course-integration.md)配置两个数据库、两后端及两前端，老师原目录不动，使用独立源码副本和虚构账号。实际覆盖与限制见[本地联调证据](history/verification/course-integration-local.md)，不以原阶段6成绩替代新增接口验证。
