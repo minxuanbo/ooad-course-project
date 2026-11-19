@@ -7,7 +7,7 @@
 | [业务约束](../docs/api-contract.md) | 共享授权、范围、错误顺序、完整K、原子性及日志快照 |
 | [页面对照](../docs/api-map.md) | 29项管理操作及4项身份兼容操作索引 |
 
-参照老师项目分开机器契约与业务说明，不移植课程系统接口。规范覆盖structured/ddd两种实现共同遵守的HTTP行为；x-initial-permission-code仅说明初始映射，不要求固定权限code才能调用API；x-maintenance-member标出17项K。
+参照老师项目分开机器契约与业务说明，不移植课程业务处理器；仅适配其既有身份协议。规范覆盖structured/ddd两种实现共同遵守的HTTP行为；x-initial-permission-code仅说明初始映射，不要求固定权限code才能调用API；x-maintenance-member标出17项K。
 
 YAML为唯一机器规范。使用PyYAML时可在仓库根重新导出JSON：
 

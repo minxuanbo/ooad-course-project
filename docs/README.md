@@ -13,6 +13,7 @@
 | [前端设计](frontend-design.md)                                                                                   | Vue页面、组件、权限能力、状态、交互与错误处理                           |
 | [API映射](api-map.md)、[业务契约](api-contract.md)、[OpenAPI](../api/openapi.yaml)                               | 页面/操作索引、Schema外语义及唯一字段规范                               |
 | [首次初始化](initialization.md)                                                                                  | 原件转换、五角色、来源、整批事务与重复执行保护                          |
+| [课程接入](course-integration.md)、[课程补丁](../integrations/course/README.md) | 老师现有身份协议、两个系统的本地配置、最小名单校验补丁及验证范围 |
 | [测试与验收](testing-acceptance.md)                                                                              | 需求矩阵、隔离、验证方案及实际结果引用                                  |
 | [本地复现](reproduction.md)、[后端运行](../backend/README.md)、[前端运行](../frontend/README.md)                 | 依赖、全新库初始化、命令与端口                                          |
 | [开发计划](development-plan.md)、[协作](../CONTRIBUTING.md)                                                      | 实施顺序和分支约定                                                      |

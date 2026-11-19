@@ -8,7 +8,7 @@
 
 main核对后修复代码2fd8d40：日志追加独立事务先锁稳定RBAC系统目录行再取号、提交，查询继续使用同一快照；两策略独立校验员工/admin来源覆盖全部账号；生产与测试Java注解独行。两套真实MySQL完整回归各180项、前端26项及构建、运行器5项通过，CloneFactory51个生成重载及183组同名同类型字段已核对。新增两项共享回归在两策略均先RED后GREEN；规范/需求复核均0项，实际记录见测试说明，不以本次成绩替代此前独立JAR或浏览器证据。
 
-业务依据为老师说明、原始资料和用户确认形成的docs/requirements.md；老师Gitee仅提供组织和框架参考。当前正式系统只管理RBAC自身权限，18业务系统及矩阵仅在离线原型演示，不进入正式目录/初始化/授权子集。课程系统暂不考虑；采用全新库首次SQL，不交付升级脚本。历史原型讨论以其时间语境保留在docs/history/design-decisions/prototype.md及requirements/sources.md，不覆盖最新范围。
+RBAC本体业务依据为老师说明、原始资料和用户确认形成的docs/requirements.md；老师Gitee提供本体组织/框架参考，并在R29提供课程真实协议与实现来源。默认目录仅RBAC，显式课程接入允许course-project-management；18业务系统及矩阵仍仅在离线原型演示，不进入正式目录/初始化/授权子集。采用全新库首次SQL，不交付升级脚本。历史原型讨论以其时间语境保留在docs/history/design-decisions/prototype.md及requirements/sources.md，不覆盖最新范围。
 
 HTTP字段主规范为api/openapi.yaml，JSON同源；业务语义见docs/api-contract.md。结构化实现归service/structured；service/port是共享用例/模型/协议取值，不放具体实现依赖或组织层级策略。共享基础设施不调用结构化或DDD应用服务，DDD持久化适配器实现领域仓储并映射领域模型。产品、导入与首次授权共用互斥装配，见docs/backend-design.md第4章。
 
