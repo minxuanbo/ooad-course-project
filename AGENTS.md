@@ -1,5 +1,7 @@
 # RBAC项目协作
 
+2026-11-19补充：用户指定的structured UI范围已在独立虚构库上完成，浏览器13项、前端26项及构建通过；修复窄屏日志计数隐藏、Modal键盘首尾循环及CollectionEditor失权事件声明，分支codex/structured-ui-acceptance待审核合入。详见docs/structured-ui-acceptance.md。ddd同项UI复验仍待执行，不把共用前端通过当作双策略总验收完成；下段保留阶段5历史基线。
+
 截至2026-11-18，阶段5已完成双轴审核、修复及CloneFactory专项核对，用户批准PR #34合入main，合并提交e521f97，文件树与验收提交83dbf17一致。structured和ddd各178项后端测试、71次真实HTTP通过，前端26项测试/构建及运行器5项单测通过；两套空库各完成10001个BCrypt10账号导入及首次授权。桌面浏览器已复验登录、六个管理页面和关键写入；阶段6仍待窄屏、完整键盘及其他写入组合复验。组员从main复现并记录实际提交，见docs/reproduction.md及docs/testing-acceptance.md。T14/T15、课程接入及服务器部署仍按开发计划。
 
 业务依据为老师说明、原始资料和用户确认形成的docs/requirements.md；老师Gitee仅提供组织和框架参考。当前正式系统只管理RBAC自身权限，18业务系统及矩阵仅在离线原型演示，不进入正式目录/初始化/授权子集。课程系统暂不考虑；采用全新库首次SQL，不交付升级脚本。历史原型讨论以其时间语境保留在docs/history/design-decisions/prototype.md及requirements/sources.md，不覆盖最新范围。

@@ -11,7 +11,7 @@ const props = defineProps({
   kind: String,
   readonly: Boolean,
 })
-const emit = defineEmits(['close', 'saved'])
+const emit = defineEmits(['close', 'saved', 'invalidated'])
 const selected = ref(new Set()),
   labels = ref(new Map()),
   ready = ref(false),

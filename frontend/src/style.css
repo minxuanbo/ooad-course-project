@@ -909,9 +909,6 @@ dialog footer span {
     flex: 1;
     width: 180px;
   }
-  .toolbar span {
-    display: none;
-  }
   .content-footer span {
     display: none;
   }
