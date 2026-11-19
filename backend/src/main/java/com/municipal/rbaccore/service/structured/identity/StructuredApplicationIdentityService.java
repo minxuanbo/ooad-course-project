@@ -71,6 +71,7 @@ public class StructuredApplicationIdentityService implements ApplicationIdentity
                 api ->
                     "GET".equals(api.getHttpMethod())
                         && "/auth/users/{userId}".equals(api.getPathTemplate()));
+    requests.authorizationDecision(allowed);
     if (!allowed) throw BusinessException.forbidden();
     UserEntity user =
         users

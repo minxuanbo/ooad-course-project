@@ -48,6 +48,7 @@ class R29ApplicationIdentityContractTest {
   private static final String USER_LOOKUP = "/auth/users/3";
   private static final String MISSING_USER_LOOKUP = "/auth/users/999999";
   private static final String INVALID_USER_LOOKUP = "/auth/users/0";
+  private static final String UNSAFE_USER_LOOKUP = "/auth/users/9007199254740992";
   private static final String UNKNOWN_PERMISSION = "/auth/permissions/CRS";
   private static final String TARGET_CANDIDATES = "/api/users/3/assignable-roles";
   private static final String TARGET_ROLES = "/api/users/3/roles";
@@ -346,6 +347,36 @@ class R29ApplicationIdentityContractTest {
     assertEquals(3, user.size());
     request(MISSING_USER_LOOKUP, HttpMethod.GET, token, null, 404);
     request(INVALID_USER_LOOKUP, HttpMethod.GET, token, null, 400);
+    assertEquals(
+        1,
+        jdbc.queryForObject(
+            "SELECT count(*) FROM authorization_logs WHERE request_path=? AND"
+                + " event_type='AUTHORIZATION' AND allowed=1 AND http_status=200",
+            Integer.class,
+            USER_LOOKUP));
+    assertEquals(
+        1,
+        jdbc.queryForObject(
+            "SELECT count(*) FROM authorization_logs WHERE request_path=? AND"
+                + " event_type='AUTHORIZATION' AND allowed=0 AND http_status=403",
+            Integer.class,
+            USER_LOOKUP));
+    assertEquals(
+        1,
+        jdbc.queryForObject(
+            "SELECT count(*) FROM authorization_logs WHERE request_path=? AND"
+                + " event_type='AUTHORIZATION' AND allowed=1 AND http_status=404",
+            Integer.class,
+            MISSING_USER_LOOKUP));
+  }
+
+  /** HTTP入口限制JavaScript安全整数，不能让超界Long进入查人用例。 */
+  @Test
+  @DisplayName("R29 身份用户ID拒绝安全整数上限之外的值")
+  void R29_UserIdentityRejectsUnsafeInteger() {
+    String token = courseLogin();
+    jdbc.update("INSERT INTO role_permissions VALUES(2,107)");
+    request(UNSAFE_USER_LOOKUP, HttpMethod.GET, token, null, 400);
   }
 
   /** 浏览器身份直连只允许配置来源，管理端不会沿用课程CORS规则。 */

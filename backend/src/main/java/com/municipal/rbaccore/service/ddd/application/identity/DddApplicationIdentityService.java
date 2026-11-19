@@ -66,6 +66,7 @@ public class DddApplicationIdentityService implements ApplicationIdentityUseCase
             .flatMap(permission -> permission.apis().stream())
             .anyMatch(
                 api -> api.route().equals(new ApiResource.Route("GET", "/auth/users/{userId}")));
+    requests.authorizationDecision(allowed);
     if (!allowed) throw BusinessException.forbidden();
     User user =
         users

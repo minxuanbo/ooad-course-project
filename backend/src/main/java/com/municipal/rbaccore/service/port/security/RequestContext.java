@@ -9,6 +9,9 @@ public interface RequestContext {
   /** 登记服务端核实的应用受众，用于安全日志。 */
   void application(String code);
 
+  /** 登记实际受控操作的最终访问判定，供统一过滤器去重记录。 */
+  void authorizationDecision(boolean allowed);
+
   /** 获取当前请求关联号，无HTTP请求时为空字符串。 */
   String requestId();
 

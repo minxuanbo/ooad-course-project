@@ -6,6 +6,7 @@ import com.municipal.rbaccore.api.identity.vo.ApplicationIdentityVO;
 import com.municipal.rbaccore.api.identity.vo.ApplicationLoginVO;
 import com.municipal.rbaccore.api.identity.vo.ApplicationPermissionVO;
 import com.municipal.rbaccore.api.identity.vo.ApplicationUserVO;
+import com.municipal.rbaccore.api.shared.ApiLimits;
 import com.municipal.rbaccore.api.shared.RawResponse;
 import com.municipal.rbaccore.service.port.auth.LoginCommand;
 import com.municipal.rbaccore.service.port.identity.ApplicationIdentityResult;
@@ -13,6 +14,7 @@ import com.municipal.rbaccore.service.port.identity.ApplicationIdentityUseCase;
 import com.municipal.rbaccore.service.port.identity.ApplicationLoginResult;
 import com.municipal.rbaccore.service.port.identity.ApplicationUserResult;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
@@ -72,6 +74,7 @@ public class ApplicationIdentityController {
       String header,
       @PathVariable
       @Positive
+      @Max(ApiLimits.MAX_ID)
       Long userId) {
     ApplicationUserResult result = service.user(header, userId);
     return new ApplicationUserVO(result.userId(), result.no(), result.name());

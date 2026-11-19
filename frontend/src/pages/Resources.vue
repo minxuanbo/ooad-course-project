@@ -137,7 +137,7 @@ onUnmounted(() => generation.cancel())
   <section class="card panel">
     <h2>权限资源与 API 映射</h2>
     <p class="muted">
-      当前管理RBAC自身的菜单、按钮及后端接口。菜单父子关系用于组织展示，不自动继承权限。
+      按所属系统维护权限项和接口映射。菜单父子关系用于组织展示，不自动继承权限。
     </p>
     <form class="toolbar" @submit.prevent="load(0)">
       <label>

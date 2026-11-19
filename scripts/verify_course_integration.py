@@ -216,7 +216,6 @@ class Verification:
             assert export[:2]==b'PK'
         logs=q('课程管理员查询真实业务日志',c,'/audit-logs?page=1&pageSize=100',200,token=manager)
         assert logs['total']>0
-        Path(__file__).resolve().parents[1].joinpath('.local/course-integration/full/scenario-ids.json').write_text(json.dumps({'group':group,'individualSubmission':individual['id'],'groupSubmission':grouped['id']})+'\n',encoding='utf-8')
 
 
 def main():
@@ -227,6 +226,7 @@ def main():
     parser.add_argument('--report',required=True,type=Path);args=parser.parse_args()
     if any(urlparse(value).hostname not in {'127.0.0.1','localhost'} for value in (args.rbac,args.course)):raise ValueError('只允许本机隔离联调')
     if not args.report.resolve().is_relative_to((Path(__file__).resolve().parents[1]/'.local').resolve()):raise ValueError('报告只允许.local目录')
+    args.report.parent.mkdir(parents=True, exist_ok=True)
     verification=Verification(args.rbac,args.course,os.environ['UI_FIXTURE_PASSWORD'])
     try:verification.run()
     finally:args.report.write_text(json.dumps(verification.evidence,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
