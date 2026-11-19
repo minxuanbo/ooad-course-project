@@ -23,7 +23,8 @@ def course_catalog():
     for entry in re.split(r'Map\.entry\s*\(', source)[1:]:
         code = re.match(r'\s*"([A-Z]+)"', entry).group(1)
         routes[code] = re.findall(r'new RbacCatalog\.Route\s*\(\s*"([A-Z]+)"\s*,\s*"([^"]+)"\s*\)', entry)
-    assert len(codes) == 17 and len(routes) == 16 and sum(map(len, routes.values())) == 19
+    assert len(codes) == 17 and len(routes) == 16 and sum(map(len, routes.values())) == 20
+    assert len({route for entries in routes.values() for route in entries}) == 19
     assert 'CRS' not in routes, '老师没有reset实现，不得编造API'
     return codes, routes
 
@@ -52,12 +53,16 @@ def rbac_sql():
         if code in operator:
             statements.append(f'INSERT INTO role_permissions VALUES(51,{ident});')
     next_api = 1000
+    api_ids = {}
     for code, entries in sorted(routes.items()):
         for method, path in entries:
-            enabled = 0 if code == 'AV' else 1
-            statements += [f"INSERT INTO api_resources VALUES({next_api},2,'{method}','{path}',{enabled});",
-                           f'INSERT INTO permission_apis VALUES({ids[code]},{next_api});']
-            next_api += 1
+            route = (method, path)
+            if route not in api_ids:
+                api_ids[route] = next_api
+                enabled = 0 if code == 'AV' else 1
+                statements.append(f"INSERT INTO api_resources VALUES({next_api},2,'{method}','{path}',{enabled});")
+                next_api += 1
+            statements.append(f'INSERT INTO permission_apis VALUES({ids[code]},{api_ids[route]});')
     statements.append('COMMIT;')
     return '\n'.join(statements) + '\n'
 

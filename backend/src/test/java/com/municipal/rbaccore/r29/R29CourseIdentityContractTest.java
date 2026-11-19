@@ -45,6 +45,12 @@ class R29CourseIdentityContractTest {
   private static final String API_STATE = "/api/api-resources/100";
   private static final String USER_ROLES = "/api/users/2/roles";
   private static final String USER_LOOKUP = "/auth/users/3";
+  private static final String MISSING_USER_LOOKUP = "/auth/users/999999";
+  private static final String INVALID_USER_LOOKUP = "/auth/users/0";
+  private static final String UNKNOWN_PERMISSION = "/auth/permissions/CRS";
+  private static final String TARGET_CANDIDATES = "/api/users/3/assignable-roles";
+  private static final String TARGET_ROLES = "/api/users/3/roles";
+  private static final String IDENTITY_API_STATE = "/api/api-resources/105";
   private static final String PASSWORD = "r29-fixture-password";
   @Autowired
   TestRestTemplate http;
@@ -154,6 +160,14 @@ class R29CourseIdentityContractTest {
             + " VALUES(105,2,'GET','/auth/users/{userId}',1)");
     jdbc.update("INSERT INTO permission_apis VALUES(107,105)");
     jdbc.update("INSERT INTO role_permissions VALUES(1,107)");
+    jdbc.update(
+        "INSERT INTO permissions(id,system_id,code,name,type,enabled)"
+            + " VALUES(108,2,'TEC','新增教师','BUTTON',1)");
+    jdbc.update(
+        "INSERT INTO api_resources(id,system_id,http_method,path_template,enabled)"
+            + " VALUES(106,2,'POST','/teachers',1)");
+    jdbc.update("INSERT INTO permission_apis VALUES(108,106),(108,105)");
+    jdbc.update("INSERT INTO role_permissions VALUES(1,108),(2,108)");
   }
 
   /** 工号认证与教师准入独立于RBAC管理准入，两个令牌受众不能混用。 */
@@ -302,9 +316,7 @@ class R29CourseIdentityContractTest {
             .asText());
     String token = courseLogin();
     assertFalse(
-        request("/auth/permissions/CRS", HttpMethod.GET, token, null, 200)
-            .path("allowed")
-            .asBoolean());
+        request(UNKNOWN_PERMISSION, HttpMethod.GET, token, null, 200).path("allowed").asBoolean());
     jdbc.update("UPDATE systems SET enabled=0 WHERE id=2");
     request(ME, HttpMethod.GET, token, null, 403);
   }
@@ -320,8 +332,8 @@ class R29CourseIdentityContractTest {
     assertEquals("r29-unassigned", user.path("no").asText());
     assertEquals("虚构员工3", user.path("name").asText());
     assertEquals(3, user.size());
-    request("/auth/users/999999", HttpMethod.GET, token, null, 404);
-    request("/auth/users/0", HttpMethod.GET, token, null, 400);
+    request(MISSING_USER_LOOKUP, HttpMethod.GET, token, null, 404);
+    request(INVALID_USER_LOOKUP, HttpMethod.GET, token, null, 400);
   }
 
   /** 浏览器身份直连只允许配置来源，管理端不会沿用课程CORS规则。 */
@@ -371,21 +383,17 @@ class R29CourseIdentityContractTest {
             .path("token")
             .asText();
     JsonNode before =
-        request("/api/users/3/assignable-roles", HttpMethod.GET, manager, null, 200)
-            .path("data")
-            .path("items");
+        request(TARGET_CANDIDATES, HttpMethod.GET, manager, null, 200).path("data").path("items");
     assertFalse(containsRole(before, 4));
     assertFalse(containsRole(before, 5));
-    request("/api/users/3/roles", HttpMethod.PUT, manager, Map.of("ids", List.of(4)), 403);
+    request(TARGET_ROLES, HttpMethod.PUT, manager, Map.of("ids", List.of(4)), 403);
     jdbc.update("INSERT INTO role_permissions VALUES(6,103)");
     JsonNode after =
-        request("/api/users/3/assignable-roles", HttpMethod.GET, manager, null, 200)
-            .path("data")
-            .path("items");
+        request(TARGET_CANDIDATES, HttpMethod.GET, manager, null, 200).path("data").path("items");
     assertTrue(containsRole(after, 4));
     assertFalse(containsRole(after, 5));
-    request("/api/users/3/roles", HttpMethod.PUT, manager, Map.of("ids", List.of(4)), 200);
-    request("/api/users/3/roles", HttpMethod.PUT, adminLogin(), Map.of("ids", List.of(5)), 403);
+    request(TARGET_ROLES, HttpMethod.PUT, manager, Map.of("ids", List.of(4)), 200);
+    request(TARGET_ROLES, HttpMethod.PUT, adminLogin(), Map.of("ids", List.of(5)), 403);
   }
 
   /** 检查真实分页候选，不能把显示名称或字符串包含当作角色身份。 */
@@ -394,6 +402,24 @@ class R29CourseIdentityContractTest {
       if (item.path("id").asLong() == id) return true;
     }
     return false;
+  }
+
+  /** 老师新增教师能力也保护身份查询，任一路由停用不能继续导出同一粗粒度短码。 */
+  @Test
+  @DisplayName("R29 TEC必须同时映射新增教师和老师真实身份查询路由")
+  void R29_TeacherCreateCoversItsLookupPrerequisite() {
+    String token = courseLogin();
+    assertTrue(
+        request(ME, HttpMethod.GET, token, null, 200)
+            .path("permissions")
+            .toString()
+            .contains("\"TEC\""));
+    request(IDENTITY_API_STATE, HttpMethod.PATCH, adminLogin(), Map.of("enabled", false), 200);
+    assertFalse(
+        request(ME, HttpMethod.GET, token, null, 200)
+            .path("permissions")
+            .toString()
+            .contains("\"TEC\""));
   }
 
   /** 从老师既有登录协议取得不透明课程令牌。 */

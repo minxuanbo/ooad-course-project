@@ -70,11 +70,16 @@ class Verification:
                 visit(item.get('children', []))
         visit(tree)
         q('课程真实身份查询路由要求UL', c, '/auth/users/7', 403, token=course)
-        q('临时授予UL以验证真实调用链', r, '/api/roles/51/permissions', 200, 'PUT', admin,
-          {'ids': all_ids + [ids['UL']]})
-        lookup = q('课程UL经原客户端读取RBAC身份', c, '/auth/users/7', 200, token=course)
-        assert lookup['no'] == 'ui-user-07'
-        q('恢复不含UL的原课程角色', r, '/api/roles/51/permissions', 200, 'PUT', admin, {'ids': all_ids})
+        try:
+            q('临时只授课程查询前置TEC', r, '/api/roles/51/permissions', 200, 'PUT', admin,
+              {'ids': all_ids + [ids['TEC']]})
+            q('有TEC但没有UL仍拒绝身份查询', c, '/auth/users/7', 403, token=course)
+            q('补齐UL以验证真实调用链', r, '/api/roles/51/permissions', 200, 'PUT', admin,
+              {'ids': all_ids + [ids['TEC'], ids['UL']]})
+            lookup = q('课程UL经原客户端读取RBAC身份', c, '/auth/users/7', 200, token=course)
+            assert lookup['no'] == 'ui-user-07'
+        finally:
+            q('恢复不含UL的原课程角色', r, '/api/roles/51/permissions', 200, 'PUT', admin, {'ids': all_ids})
         mappings = q('读取TC真实映射', r, f"/api/permissions/{ids['TC']}/apis", 200, token=admin)['data']['ids']
         term_ids = []
         def create(label, expected):

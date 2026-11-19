@@ -119,7 +119,7 @@
  
 --- /dev/null
 +++ b/backend/src/test/java/cn/edu/xmu/projectmgt/r42/R42BoundTeacherFilterTest.java
-@@ -0,0 +1,97 @@
+@@ -0,0 +1,98 @@
 +package cn.edu.xmu.projectmgt.r42;
 +
 +import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -144,6 +144,7 @@
 +
 +/** R42统一身份令牌的教师请求必须继续满足课程本地有效名单。 */
 +class R42BoundTeacherFilterTest {
++  private static final String COURSE_URL = "/admin/courses";
 +  private UnifiedIdentityGateway identity;
 +  private TeacherJpaRepository teachers;
 +  private BearerAuthenticationFilter filter;
@@ -210,7 +211,7 @@
 +
 +  /** 下游以204标记实际被执行，拒绝时只能观察过滤器自己的HTTP状态。 */
 +  private int request() throws Exception {
-+    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/admin/courses");
++    MockHttpServletRequest request = new MockHttpServletRequest("GET", COURSE_URL);
 +    request.addHeader("Authorization", "Bearer r42-synthetic-token");
 +    MockHttpServletResponse response = new MockHttpServletResponse();
 +    filter.doFilter(request, response, (incoming, outgoing) -> ((jakarta.servlet.http.HttpServletResponse) outgoing).setStatus(204));

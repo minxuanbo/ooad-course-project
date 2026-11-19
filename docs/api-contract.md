@@ -99,6 +99,6 @@ GET /api/overview在同一快照聚合范围人数、启停人数、有效组织
 
 四项`/auth/*`兼容接口仅在`APP_COURSE_INTEGRATION_ENABLED=true`时提供，成功使用老师原始JSON；错误仍含code/message/data/requestId。`/api/*`管理契约保持原包装。详情见[课程接入](course-integration.md)，OpenAPI同时列出兼容DTO/VO。
 
-课程登录复用同一账号校验，另查COURSE_TEACHER准入，不授管理级别；角色`teacher`为老师身份协议取值。两受众不能混用，旧课程令牌每次重查账号/角色/系统/权限/映射。缺少准入为403 APPLICATION_ACCESS_DENIED，停用账号为401。老师课程入口先按本地工号查Teacher，不能宣称课程入口支持手机号。菜单短码和后端短码分别授予；TCM/CV/CTM有多条路由，部分停用或映射撤回时关闭整个短码。
+课程登录复用同一账号校验，另查COURSE_TEACHER准入，不授管理级别；角色`teacher`为老师身份协议取值。两受众不能混用，旧课程令牌每次重查账号/角色/系统/权限/映射。缺少准入为403 APPLICATION_ACCESS_DENIED，停用账号为401。老师课程入口先按本地工号查Teacher，不能宣称课程入口支持手机号。菜单短码和后端短码分别授予；TCM/CV/CTM/TEC有多条路由，部分停用或映射撤回时关闭整个短码。老师课程GET /auth/users/{userId}先验证TEC，再调用本RBAC验证UL；两项同时有效才能返回身份，不把菜单或单个短码当整条调用链授权。
 
 资源/选权/人员候选仅扩大到显式接入目录，未知系统污染角色仍整体拒绝，跨系统映射仍400。K只按原17项RBAC路由，不以课程权限补足。CORS只对配置的课程UI来源开放`/auth/**`，不放宽管理端。身份登录/拒绝日志以课程appCode区分；老师业务操作日志不冒充RBAC身份鉴权日志。

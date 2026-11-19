@@ -39,7 +39,11 @@ public final class CourseContract {
                   new RbacCatalog.Route("PUT", "/courses/{courseId}/leaders"),
                   new RbacCatalog.Route("PUT", "/classes/{classId}/teachers"))),
           Map.entry("TV", List.of(new RbacCatalog.Route("GET", "/teachers"))),
-          Map.entry("TEC", List.of(new RbacCatalog.Route("POST", "/teachers"))),
+          Map.entry(
+              "TEC",
+              List.of(
+                  new RbacCatalog.Route("POST", "/teachers"),
+                  new RbacCatalog.Route("GET", "/auth/users/{userId}"))),
           Map.entry("TEE", List.of(new RbacCatalog.Route("PATCH", "/teachers/{teacherId}"))),
           Map.entry("TED", List.of(new RbacCatalog.Route("DELETE", "/teachers/{teacherId}"))),
           Map.entry("AV", List.of(new RbacCatalog.Route("GET", "/audit-logs"))),
