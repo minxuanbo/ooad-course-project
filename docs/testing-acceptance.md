@@ -4,7 +4,7 @@
 
 ## 1. 当前状态
 
-更新至2026-11-18：用户批准的[PR #34](https://github.com/minxuanbo/ooad-course-project/pull/34)已于2026-11-17合入main，合并提交e521f97与验收提交83dbf17文件树一致。阶段5交付完成；阶段6剩余UI复验见下文及[开发计划](development-plan.md#3-剩余工作)。
+更新至2026-11-19：用户批准的[PR #34](https://github.com/minxuanbo/ooad-course-project/pull/34)已于2026-11-17合入main，合并提交e521f97与验收提交83dbf17文件树一致。阶段5交付完成，阶段6两策略的UI复验见[需求验证矩阵](#2-需求验证矩阵)。
 
 | 对象 | 已有证据 | 本次/后续边界 |
 | --- | --- | --- |
@@ -53,7 +53,7 @@ CloneFactory 专项移除了两个字段均需显式转换的 `UserRolesVO` 空�
 
 ## 2. 需求验证矩阵
 
-阶段6于2026-11-19补齐用户指定的structured UI复验：新建隔离库上13项浏览器场景、26项前端测试及构建全部通过，修复窄屏日志计数隐藏、弹窗键盘首尾焦点和403事件声明问题。范围、失败先行证据及复现方法见[structured UI复验](structured-ui-acceptance.md)。本轮未执行ddd同项复验，不更新阶段5历史后端测试数字。
+阶段6于2026-11-19在两套独立MySQL测试库完成约定的UI复验。structured与ddd各通过同一组13项真实浏览器用例、26项前端测试及生产构建。structured修复窄屏日志计数、弹窗键盘焦点和403事件声明，见[structured UI复验](structured-ui-acceptance.md)。ddd在PR #36合入后的`292a8a4`运行相同套件，并通过S6-01～S6-09补充用例及重启回读，见[ddd UI复验及逐项对照](history/verification/stage6-ddd.md)。
 
 | 验收组 | 需求 | 必须验证的行为 |
 | --- | --- | --- |
