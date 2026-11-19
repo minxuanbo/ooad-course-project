@@ -23,6 +23,20 @@ public class HttpRequestContext implements RequestContext {
     RequestAuditFilter.actor(id, username);
   }
 
+  /** 只有身份用例核实过的应用才写入日志上下文。 */
+  @Override
+  public void application(String code) {
+    HttpServletRequest request = RequestAuditFilter.current();
+    if (request != null) request.setAttribute("auditAppCode", code);
+  }
+
+  /** 仅由已经执行实际访问控制的用例登记，不把元数据查询冒充业务鉴权。 */
+  @Override
+  public void authorizationDecision(boolean allowed) {
+    HttpServletRequest request = RequestAuditFilter.current();
+    if (request != null) request.setAttribute("applicationAuthorizationDecision", allowed);
+  }
+
   /** 后台用例不能伪造HTTP方法或路径模板。 */
   public Operation operation() {
     HttpServletRequest request = RequestAuditFilter.current();

@@ -14,7 +14,6 @@ import com.municipal.rbaccore.service.port.role.RoleQuery;
 import com.municipal.rbaccore.service.port.role.RoleResult;
 import com.municipal.rbaccore.service.port.role.RoleUseCase;
 import com.municipal.rbaccore.service.port.role.UpdateRoleCommand;
-import com.municipal.rbaccore.service.port.security.RbacCatalog;
 import com.municipal.rbaccore.service.structured.security.StructuredGlobalManagementAccess;
 import java.util.HashSet;
 import java.util.List;
@@ -37,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class StructuredRoleService implements RoleUseCase {
+  private final com.municipal.rbaccore.service.port.security.ManagedApplications applications;
   private final RoleJpaRepository roles;
   private final PermissionJpaRepository permissions;
   private final StructuredGlobalManagementAccess access;
@@ -112,8 +112,7 @@ public class StructuredRoleService implements RoleUseCase {
           RoleEntity role = role(id);
           if (role.getPermissions().stream()
               .anyMatch(
-                  permission ->
-                      !RbacCatalog.SYSTEM_CODE.equals(permission.getSystem().getCode()))) {
+                  permission -> !applications.codes().contains(permission.getSystem().getCode()))) {
             throw BusinessException.bad("INVALID_ARGUMENT", "角色包含当前范围之外的授权，请先复核所属系统");
           }
           List<PermissionEntity> selected = permissions.findAllById(command.getIds());
@@ -123,9 +122,10 @@ public class StructuredRoleService implements RoleUseCase {
                       permission ->
                           !permission.isEnabled()
                               || !permission.getSystem().isEnabled()
-                              || !RbacCatalog.SYSTEM_CODE.equals(
-                                  permission.getSystem().getCode()))) {
-            throw BusinessException.bad("INVALID_ARGUMENT", "只能保存本权限系统的启用权限");
+                              || !applications
+                                  .codes()
+                                  .contains(permission.getSystem().getCode()))) {
+            throw BusinessException.bad("INVALID_ARGUMENT", "只能保存已接入系统的启用权限");
           }
           Set<Long> wanted = new HashSet<>(command.getIds());
           for (PermissionEntity existing : List.copyOf(role.getPermissions())) {

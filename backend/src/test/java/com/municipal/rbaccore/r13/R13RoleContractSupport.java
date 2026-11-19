@@ -481,35 +481,28 @@ abstract class R13RoleContractSupport {
     assertEquals(List.of(userRead), savedIds(target));
   }
 
-  /** 真实外系统关联不能经本票整体替换被静默清除。 */
+  /** 角色可跨已登记应用选权，权限与API映射仍须同系统。 */
   @Test
-  @DisplayName("R13/R15 跨系统选权拒绝且保留目标已有外系统关系")
-  void R13_PreservesForeignAssignments() throws Exception {
+  @DisplayName("R13/R29 共享角色可以维护多个登记应用的权限")
+  void R13_RegisteredApplicationAssignments() throws Exception {
     long foreign =
         new TransactionTemplate(transactions)
             .execute(
                 status -> {
                   ApplicationSystemEntity system =
-                      systems.save(new ApplicationSystemEntity("other", "外系统测试夹具"));
+                      systems.save(new ApplicationSystemEntity("other", "已登记应用"));
                   return permissions
-                      .save(
-                          new PermissionEntity(system, "other.read", "外系统权限", PermissionType.MENU))
+                      .save(new PermissionEntity(system, "other.read", "应用权限", PermissionType.MENU))
                       .getId();
                 });
     String admin = token("t09-admin");
     long local = account("t09-local", rootId, List.of(permissionIds.get("rbac.users.read")));
-    List<Long> original = savedIds(local);
-    assertError(
-        request("PUT", selected(local), admin, Map.of("ids", List.of(foreign))),
-        400,
-        "INVALID_ARGUMENT");
-    assertEquals(original, savedIds(local));
+    success(request("PUT", selected(local), admin, Map.of("ids", List.of(foreign))), 200);
+    assertEquals(List.of(foreign), savedIds(local));
     long mixed =
         account("t09-mixed", rootId, List.of(foreign, permissionIds.get("rbac.users.read")));
-    List<Long> mixedOriginal = savedIds(mixed);
-    assertError(
-        request("PUT", selected(mixed), admin, Map.of("ids", List.of())), 400, "INVALID_ARGUMENT");
-    assertEquals(mixedOriginal, savedIds(mixed));
+    success(request("PUT", selected(mixed), admin, Map.of("ids", List.of())), 200);
+    assertTrue(savedIds(mixed).isEmpty());
   }
 
   /** 登录令牌不携带授权快照，保存和清空立即改变下一次真实请求。 */

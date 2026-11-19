@@ -11,5 +11,30 @@ public record AuthorizationFacts(User user) {
       Set<Long> allowedPermissionIds,
       String q,
       int page,
-      int size) {}
+      int size,
+      Set<String> systemCodes) {
+    /** 未扩展系统目录的调用维持原RBAC语义。 */
+    public AssignableRoleCriteria(
+        int level,
+        boolean customPermitted,
+        Set<Long> allowedPermissionIds,
+        String q,
+        int page,
+        int size) {
+      this(
+          level,
+          customPermitted,
+          allowedPermissionIds,
+          q,
+          page,
+          size,
+          Set.of(ApplicationSystem.CODE_RBAC));
+    }
+
+    /** 条件集合不可变，避免查询期间改变授权边界。 */
+    public AssignableRoleCriteria {
+      allowedPermissionIds = Set.copyOf(allowedPermissionIds);
+      systemCodes = Set.copyOf(systemCodes);
+    }
+  }
 }

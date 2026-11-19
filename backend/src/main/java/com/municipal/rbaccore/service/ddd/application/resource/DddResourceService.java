@@ -26,17 +26,22 @@ public class DddResourceService implements ResourceUseCase {
   private final ManagementAccessUseCase access;
   private final DddWrite writes;
 
-  /** 本系统目录只返回受管理的RBAC范围。 */
+  /** 按登记事实返回全部应用目录，保留停用项供维护。 */
   @Override
   public List<SystemResult> systems(String header) {
     access.require(header);
-    ApplicationSystem system = selectSystem(null);
-    SystemResult result = new SystemResult();
-    result.setId(system.id());
-    result.setCode(system.code());
-    result.setName(system.name());
-    result.setEnabled(system.enabled());
-    return List.of(result);
+    selectSystem(null);
+    return systems.catalog().stream()
+        .map(
+            system -> {
+              SystemResult result = new SystemResult();
+              result.setId(system.id());
+              result.setCode(system.code());
+              result.setName(system.name());
+              result.setEnabled(system.enabled());
+              return result;
+            })
+        .toList();
   }
 
   /** 按稳定ID组装父子层级，停用节点仍出现在维护目录。 */
@@ -156,14 +161,16 @@ public class DddResourceService implements ResourceUseCase {
         header, () -> result(apis.save(api(id).changeAvailability(command.getEnabled()))));
   }
 
-  /** 限定到唯一正式系统，任何其他请求编号都拒绝。 */
+  /** 缺省定位RBAC；显式编号必须存在于登记目录。 */
   private ApplicationSystem selectSystem(Long requested) {
-    ApplicationSystem system = systems.findRbac().orElseThrow(this::notFound);
-    if (requested != null && !requested.equals(system.id())) throw BusinessException.scopeDenied();
-    return system;
+    if (requested == null) return systems.findRbac().orElseThrow(this::notFound);
+    return systems.catalog().stream()
+        .filter(system -> requested.equals(system.id()))
+        .findFirst()
+        .orElseThrow(BusinessException::scopeDenied);
   }
 
-  /** 已授权操作的未知资源返回404，直接的外系统目标返回403。 */
+  /** 已授权操作的未知资源返回404，并核实其所属登记应用。 */
   private Permission permission(Long id) {
     Permission value = permissions.find(new Permission.Key(id)).orElseThrow(this::notFound);
     selectSystem(value.system().id());

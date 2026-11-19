@@ -33,7 +33,7 @@ public class StructuredPersonnelAuthority {
     return level(users.findById(actor.id()).orElseThrow(BusinessException::unauthorized));
   }
 
-  /** 本人、同级、上级和自定义角色持有人由系统管理员维护。停用自定义角色仍受保护。 */
+  /** 本人、同级、上级受保护；业务自定义角色不改变人员管理级别。 */
   public boolean canManage(CurrentIdentity actor, UserEntity target) {
     return canManage(snapshot(actor), target);
   }
@@ -49,7 +49,6 @@ public class StructuredPersonnelAuthority {
     return actor.administrator()
         || (actor.level() >= 2
             && !actor.userId().equals(target.getId())
-            && target.getRoles().stream().noneMatch(role -> role.getManagementLevel() == null)
             && level(target) < actor.level());
   }
 

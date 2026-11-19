@@ -13,4 +13,5 @@ import lombok.Setter;
 public class UserRolesResult {
   private UserWithRolesResult user;
   private List<RoleResult> roles;
+  private List<Long> lockedRoleIds;
 }

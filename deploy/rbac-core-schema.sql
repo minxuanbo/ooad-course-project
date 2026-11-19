@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS permissions (
   parent_id BIGINT,
   code VARCHAR(100) NOT NULL,
   name VARCHAR(191) NOT NULL,
-  type ENUM('MENU','BUTTON') NOT NULL,
+  type ENUM('MENU','BUTTON','API') NOT NULL,
   enabled BIT NOT NULL,
   PRIMARY KEY (id),
   CONSTRAINT uk_permission_system_code UNIQUE (system_id, code),

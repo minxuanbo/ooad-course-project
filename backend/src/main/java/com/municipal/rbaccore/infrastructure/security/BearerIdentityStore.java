@@ -2,6 +2,7 @@ package com.municipal.rbaccore.infrastructure.security;
 
 import com.municipal.rbaccore.service.port.error.BusinessException;
 import com.municipal.rbaccore.service.port.security.IdentityTokenStore;
+import com.municipal.rbaccore.service.port.security.RbacCatalog;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Duration;
@@ -28,17 +29,42 @@ public class BearerIdentityStore implements IdentityTokenStore {
 
   /** 只有账号、口令、状态及管理准入全部通过后才能调用。 */
   public String issue(Long userId) {
+    return issueForSystem(userId, RbacCatalog.SYSTEM_CODE);
+  }
+
+  /** 相同随机令牌机制按应用区分受众，权限仍只在请求时计算。 */
+  @Override
+  public String issueForSystem(Long userId, String system) {
     Instant now = clock.instant();
     identities.entrySet().removeIf(entry -> !entry.getValue().expiresAt().isAfter(now));
     byte[] bytes = new byte[32];
     random.nextBytes(bytes);
     String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-    identities.put(token, new Entry(userId, now.plusSeconds(EXPIRES_IN)));
+    identities.put(token, new Entry(userId, now.plusSeconds(EXPIRES_IN), system));
     return token;
   }
 
   /** 解析现有Bearer外形，账号状态与权限仍须每次访问重新查询。 */
   public Long require(String header) {
+    return requireForSystem(header, RbacCatalog.SYSTEM_CODE);
+  }
+
+  /** 受众不匹配只拒绝当前请求，不撤销另一个系统仍然有效的身份。 */
+  @Override
+  public Long requireForSystem(String header, String system) {
+    Entry entry = entry(header);
+    if (!entry.system().equals(system)) throw BusinessException.unauthorized();
+    return entry.userId();
+  }
+
+  /** 绑定应用来自服务端随机令牌索引，不信任客户端自报受众。 */
+  @Override
+  public String system(String header) {
+    return entry(header).system();
+  }
+
+  /** 只接受尚未过期的服务端身份索引。 */
+  private Entry entry(String header) {
     if (header == null || !header.startsWith("Bearer ")) {
       throw new BusinessException(401, "AUTHENTICATION_REQUIRED", "请先登录");
     }
@@ -48,7 +74,7 @@ public class BearerIdentityStore implements IdentityTokenStore {
       identities.remove(token);
       throw BusinessException.unauthorized();
     }
-    return entry.userId();
+    return entry;
   }
 
   /** 兼容原退出行为，不新增凭证持久化或认证端点。 */
@@ -59,5 +85,5 @@ public class BearerIdentityStore implements IdentityTokenStore {
   }
 
   /** 身份索引仅为运行支撑，不进入核心ER或数据库。 */
-  private record Entry(Long userId, Instant expiresAt) {}
+  private record Entry(Long userId, Instant expiresAt, String system) {}
 }

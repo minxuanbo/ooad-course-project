@@ -40,6 +40,7 @@ public class DddInitialAuthorizationService implements AuthorizationBootstrapUse
               entry ->
                   new BootstrapPlan.PermissionSeed(
                       entry.getKey(),
+                      RbacCatalog.displayNames().get(entry.getKey()),
                       entry.getValue().stream()
                           .map(route -> new ApiResource.Route(route.method(), route.path()))
                           .toList(),

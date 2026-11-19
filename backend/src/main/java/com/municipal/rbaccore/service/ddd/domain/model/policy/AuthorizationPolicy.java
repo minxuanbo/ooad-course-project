@@ -1,6 +1,7 @@
 package com.municipal.rbaccore.service.ddd.domain.model.policy;
 
 import com.municipal.rbaccore.service.ddd.domain.model.ApiResource;
+import com.municipal.rbaccore.service.ddd.domain.model.ApplicationSystem;
 import com.municipal.rbaccore.service.ddd.domain.model.AuthorizationFacts;
 import com.municipal.rbaccore.service.ddd.domain.model.Permission;
 import com.municipal.rbaccore.service.ddd.domain.model.Role;
@@ -14,17 +15,29 @@ public final class AuthorizationPolicy {
 
   /** 停用用户不产生任何权限；已经启用的直接子项不受祖先状态影响。 */
   public static Set<Permission> directPermissions(AuthorizationFacts facts) {
+    return directPermissions(facts, Set.of(ApplicationSystem.CODE_RBAC));
+  }
+
+  /** 授予子集包含显式接入目录中的完整有效权限，不要求菜单映射API。 */
+  public static Set<Permission> directPermissions(AuthorizationFacts facts, Set<String> systems) {
     if (!facts.user().enabled()) return Set.of();
     return facts.user().roles().stream()
         .filter(Role::enabled)
         .flatMap(role -> role.permissions().stream())
-        .filter(AuthorizationPolicy::activeRbac)
+        .filter(permission -> active(permission, systems))
         .collect(Collectors.toUnmodifiableSet());
   }
 
   /** 直接有效权限不要求存在可执行API，人员授予检查使用完整集合。 */
   public static boolean activeRbac(Permission permission) {
-    return permission.enabled() && permission.system().enabled() && permission.system().isRbac();
+    return active(permission, Set.of(ApplicationSystem.CODE_RBAC));
+  }
+
+  /** 系统归属和启用必须同时成立，不能把未知系统过滤成空权限。 */
+  public static boolean active(Permission permission, Set<String> systems) {
+    return permission.enabled()
+        && permission.system().enabled()
+        && systems.contains(permission.system().code());
   }
 
   /** 只返回能实际到达同系统启用API的直接权限。 */

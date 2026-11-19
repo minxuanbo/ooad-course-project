@@ -1,0 +1,98 @@
+--- a/backend/src/main/java/cn/edu/xmu/projectmgt/service/structured/course/StructuredCourseService.java
++++ b/backend/src/main/java/cn/edu/xmu/projectmgt/service/structured/course/StructuredCourseService.java
+@@ -346,14 +346,20 @@
+         if (teachersById.size() != teacherIds.size()) {
+             throw new NotFoundException("TEACHER_NOT_FOUND", "教师不存在。");
+         }
+-        leaderRepository.deleteAllInBatch(leaderRepository.findByCourseId(courseId));
++        List<CourseLeaderAssignmentEntity> existing = leaderRepository.findByCourseId(courseId);
++        List<CourseLeaderAssignmentEntity> removed = existing.stream()
++                .filter(assignment -> !teacherIds.contains(assignment.getTeacherId()))
++                .toList();
++        leaderRepository.deleteAll(removed);
+         List<CourseLeaderResult> leaders = teacherIds.stream()
+                 .map(teacherId -> {
+                     TeacherEntity teacher = teachersById.get(teacherId);
+-                    CourseLeaderAssignmentEntity assignment = new CourseLeaderAssignmentEntity();
+-                    assignment.setCourseId(courseId);
+-                    assignment.setTeacherId(teacherId);
+-                    leaderRepository.save(assignment);
++                    if (!currentLeaderIds.contains(teacherId)) {
++                        CourseLeaderAssignmentEntity assignment = new CourseLeaderAssignmentEntity();
++                        assignment.setCourseId(courseId);
++                        assignment.setTeacherId(teacherId);
++                        leaderRepository.save(assignment);
++                    }
+                     return new CourseLeaderResult(teacherId, teacher.getName());
+                 })
+                 .toList();
+--- a/backend/src/main/java/cn/edu/xmu/projectmgt/service/structured/milestone/StructuredMilestoneService.java
++++ b/backend/src/main/java/cn/edu/xmu/projectmgt/service/structured/milestone/StructuredMilestoneService.java
+@@ -27,6 +27,12 @@
+ import org.springframework.stereotype.Service;
+ import org.springframework.transaction.annotation.Transactional;
+ 
++import cn.edu.xmu.projectmgt.service.port.common.UnifiedIdentityGateway;
++import cn.edu.xmu.projectmgt.infrastructure.persistence.repository.StudentJpaRepository;
++import cn.edu.xmu.projectmgt.infrastructure.persistence.repository.EnrollmentJpaRepository;
++import cn.edu.xmu.projectmgt.service.ddd.domain.model.CurrentIdentity;
++import cn.edu.xmu.projectmgt.service.ddd.domain.model.Course;
++import cn.edu.xmu.projectmgt.service.ddd.domain.model.Student;
+ import java.time.ZoneId;
+ import java.util.List;
+ import java.util.Objects;
+@@ -52,6 +58,9 @@
+     private final MilestoneJpaRepository milestoneRepository;
+     private final CurrentTeacherProvider currentTeacherProvider;
+     private final MilestoneAuditRecorder milestoneAuditRecorder;
++    private final UnifiedIdentityGateway identityGateway;
++    private final StudentJpaRepository students;
++    private final EnrollmentJpaRepository enrollments;
+ 
+     /**
+      * 查询课程全部里程碑。
+@@ -60,8 +69,10 @@
+     @Transactional(readOnly = true)
+     public MilestoneListResult listMilestones(Long courseId) {
+         CourseEntity course = requireCourse(courseId);
+-        CurrentTeacherResult teacher = currentTeacherProvider.currentTeacher();
+-        if (!isLeader(courseId, teacher) && !teachesCourse(courseId, teacher)) {
++        CurrentTeacherResult teacher = currentTeacherProvider.findCurrentTeacher().orElse(null);
++        boolean teacherAllowed = teacher != null
++                && (isLeader(courseId, teacher) || teachesCourse(courseId, teacher));
++        if (!teacherAllowed && !isEnrolledStudent(course)) {
+             throw new ForbiddenException("只有本课程的教学组长、任课教师和该课程学生可以查看。");
+         }
+         int weightSum = milestoneRepository.sumWeightByCourseId(courseId);
+@@ -71,6 +82,19 @@
+                 .map(item -> toResult(item, weightSum))
+                 .toList();
+         return new MilestoneListResult(weightSum, weightSum == 100, items);
++    }
++
++    /** 仅开放课程的有效、已选课学生可读取，不将学生误走强制教师解析。 */
++    private boolean isEnrolledStudent(CourseEntity course) {
++        CurrentIdentity identity = identityGateway.currentIdentity();
++        if (course.getCourseStatus() != Course.OPEN
++                || !identity.roles().contains(Student.LOGIN_ROLE)) {
++            return false;
++        }
++        return students.findByUserId(identity.userId())
++                .filter(student -> Student.STATUS_ACTIVE.equals(student.getStatus()))
++                .map(student -> enrollments.existsByCourseIdAndStudentId(course.getId(), student.getId()))
++                .orElse(false);
+     }
+ 
+     /**
+--- a/backend/src/main/java/cn/edu/xmu/projectmgt/service/structured/teachingclass/StructuredTeachingClassService.java
++++ b/backend/src/main/java/cn/edu/xmu/projectmgt/service/structured/teachingclass/StructuredTeachingClassService.java
+@@ -205,7 +205,8 @@
+                 ? List.of()
+                 : classTeacherRepository.findByClassIdIn(classIds);
+         boolean teachesClass = teachesCourse(course.getId(), teacher);
+-        if (!isLeader(course.getId(), teacher) && !teachesClass) {
++        if (!isLeader(course.getId(), teacher) && !teachesClass
++                && !courseAuthorization.canView() && !courseAuthorization.canManageTeam()) {
+             throw new ForbiddenException("只有本课程的教学组长和任课教师可以查看教学班。");
+         }
+ 

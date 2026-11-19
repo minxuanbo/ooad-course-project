@@ -10,10 +10,10 @@ Java21、Spring Boot3.5.6、Spring Data JPA、MySQL8.4及老师真实CloneFactor
 backend/
 ├── pom.xml
 ├── src/main/java/com/municipal/rbaccore/
-│   ├── api/{auth,user,department,role,resource,audit,shared}
-│   ├── service/port/{auth,user,department,role,resource,audit,security,importing,bootstrap,error}
-│   ├── service/structured/{auth,user,department,role,resource,audit,security,importing,bootstrap}
-│   ├── service/ddd/application/{auth,user,department,role,resource,audit,security,importing,bootstrap,support}
+│   ├── api/{auth,user,department,role,resource,audit,course,shared}
+│   ├── service/port/{auth,user,department,role,resource,audit,course,security,importing,bootstrap,error}
+│   ├── service/structured/{auth,user,department,role,resource,audit,course,security,importing,bootstrap}
+│   ├── service/ddd/application/{auth,user,department,role,resource,audit,course,security,importing,bootstrap,support}
 │   ├── service/ddd/domain/{model,model/policy,repository}
 │   ├── infrastructure/{persistence,security,web,logging,excel}
 │   ├── config
@@ -69,8 +69,12 @@ java '-Dloader.main=com.municipal.rbaccore.bootstrap.BootstrapAuthorizationComma
 java -jar backend/target/rbac0-0.1.0.jar
 ```
 
-HTTP默认8081，前端代理/api不变。后端29个操作的机器契约见[OpenAPI](../api/openapi.yaml)。需要新空库端到端复现时，使用[accept-runtime.py](scripts/accept-runtime.py)并按[验收说明](../docs/testing-acceptance.md)提供实际私有datadir、MySQL客户端及JDK21。每次为所选 `APP_BACKEND_STRATEGY` 提供独立空库，报告会记录策略。探针拒绝非空库和额外Spring/JVM覆盖，不提供清库开关。若 Windows 上 JDK 报本机套接字 `Invalid argument: connect`，可在当前终端将 `TEMP` 和 `TMP` 指向实际存在、可写的短路径目录，再启动验收。
+HTTP默认8081，前端代理/api不变。后端29项管理操作与4项可选通用应用身份操作的机器契约见[OpenAPI](../api/openapi.yaml)。需要新空库端到端复现时，使用[accept-runtime.py](scripts/accept-runtime.py)并按[验收说明](../docs/testing-acceptance.md)提供实际私有datadir、MySQL客户端及JDK21。每次为所选 `APP_BACKEND_STRATEGY` 提供独立空库，报告会记录策略。探针拒绝非空库和额外Spring/JVM覆盖，不提供清库开关。若 Windows 上 JDK 报本机套接字 `Invalid argument: connect`，可在当前终端将 `TEMP` 和 `TMP` 指向实际存在、可写的短路径目录，再启动验收。
 
 ## 4. 当前部署边界
 
 用户确认后续会增加服务器，云拓扑/镜像/Stack发布留待新方案。现有根Dockerfile、.dockerignore及deploy中旧容器脚本未适配本轮backend目录，不能据此宣称当前镜像或线上可用。本阶段只验证本地构建、私有MySQL和默认JAR，不操作服务器。
+
+## 5. 可选通用应用身份服务
+
+`APP_IDENTITY_ENABLED`默认false；显式开启后提供4项老师已有身份协议，资源目录来自所有已登记应用；teacher/student/课程管理员由配置角色表达，API类型要求非空有效映射。课程业务仍只在老师工程。配置、独立空库夹具及双系统验证脚本见[课程接入](../docs/course-integration.md)，不得向真实员工库导入虚构验收SQL。

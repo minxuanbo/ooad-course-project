@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: 市政公司统一权限管理系统 API
-  version: 1.2.0
-  description: 阶段4正式Vue与结构化后端共享契约，共29个操作；当前仅管理RBAC自身权限。原型18业务系统仅作演示，不进入正式目录；课程接入及DDD尚未实施。x-initial-permission-code仅追溯首次映射，实际授权依服务端方法/模板与最新有效关系判定。
+  version: 1.3.0
+  description: structured/ddd共享契约：29项RBAC管理操作及4项可选通用应用身份操作。应用目录来自登记数据及状态，APP_IDENTITY_ENABLED默认false。角色可包含多个应用的权限，Permission—API映射必须同系统。接入应用的业务接口由其自身实现；K仍为17项RBAC路由。
 servers:
 - url: /
   description: 同源部署；路径已包含/api，避免重复拼接
@@ -13,6 +13,8 @@ tags:
 - name: 角色与权限
 - name: 资源与映射
 - name: 鉴权日志
+- name: 应用身份
+  description: 通用应用身份兼容接口，不包含接入系统业务逻辑。
 security:
 - BearerAuth: []
 paths:
@@ -286,7 +288,7 @@ paths:
       tags:
       - 人员授权
       summary: 整体替换人员角色
-      description: 整组重验，[]清空；不能提交过期/超权/停用角色；部门账号不能改自身或有效全局管理员。根锁后重验和完整K保护。 同时检查固定授予级别、当前RBAC全部有效Permission子集（含无API菜单）；本人、同级、上级及仅管理员可授的自定义角色持有人对局部管理者只读，停用自定义角色不解除保护。
+      description: 锁后读取当前角色集合，只对新增与删除项检查授予级别及完整有效权限子集。无权改变的现有项可以原样保留，非法变化整次回滚。自定义角色仅可信根直属有效五级管理员可增删；人员停用/调动按原级别和部门范围判断。
       responses:
         '200':
           description: 成功
@@ -347,7 +349,7 @@ paths:
       tags:
       - 人员授权
       summary: 受限候选角色分页
-      description: q匹配角色名称/编码。只启用且全部有效Permission ID是本人集合子集的角色，外系统部分不得先过滤。先过滤再计数分页。 同时检查固定授予级别、当前RBAC全部有效Permission子集（含无API菜单）；本人、同级、上级及仅管理员可授的自定义角色持有人对局部管理者只读，停用自定义角色不解除保护。
+      description: q匹配角色名称/编码。只启用且全部有效Permission ID是本人集合子集的角色，外系统部分不得先过滤。先过滤再计数分页。 同时检查固定授予级别、当前已接入系统全部有效Permission子集（含无API菜单）；本人、同级、上级及仅管理员可授的自定义角色持有人对局部管理者只读，停用自定义角色不解除保护。
       responses:
         '200':
           description: 成功
@@ -399,7 +401,7 @@ paths:
       tags:
       - 人员授权
       summary: 停用人员
-      description: 仅接受enabled:false；保留角色和部门。停用后旧身份401，再登录401 LOGIN_FAILED；共根锁及完整K保护。 同时检查固定授予级别、当前RBAC全部有效Permission子集（含无API菜单）；本人、同级、上级及仅管理员可授的自定义角色持有人对局部管理者只读，停用自定义角色不解除保护。
+      description: 仅接受enabled:false；保留角色和部门。停用后旧身份401，再登录401 LOGIN_FAILED；共根锁及完整K保护。 同时检查固定授予级别、当前已接入系统全部有效Permission子集（含无API菜单）；本人、同级、上级及仅管理员可授的自定义角色持有人对局部管理者只读，停用自定义角色不解除保护。
       responses:
         '200':
           description: 成功
@@ -460,7 +462,7 @@ paths:
       tags:
       - 人员授权
       summary: 跨部门调动
-      description: 原/目标部门都须在本人子树，保持同一用户/角色，后续范围随归属变化；部门账号自身及全局管理员保护，根锁后重验。 同时检查固定授予级别、当前RBAC全部有效Permission子集（含无API菜单）；本人、同级、上级及仅管理员可授的自定义角色持有人对局部管理者只读，停用自定义角色不解除保护。
+      description: 原/目标部门都须在本人子树，保持同一用户/角色，后续范围随归属变化；部门账号自身及全局管理员保护，根锁后重验。 同时检查固定授予级别、当前已接入系统全部有效Permission子集（含无API菜单）；本人、同级、上级及仅管理员可授的自定义角色持有人对局部管理者只读，停用自定义角色不解除保护。
       responses:
         '200':
           description: 成功
@@ -728,7 +730,7 @@ paths:
       tags:
       - 角色与权限
       summary: 整体替换角色权限
-      description: 仅本系统启用权限，[]清空；整组校验，不静默保留/去重；修改后完整K至少保留一人。
+      description: 仅已接入系统的启用权限，[]清空；整组校验，不静默保留/去重；修改后完整K至少保留一人。
       responses:
         '200':
           description: 成功
@@ -789,7 +791,7 @@ paths:
       tags:
       - 资源与映射
       summary: 本轮系统目录
-      description: 当前仅rbac，真实ID非固定1；不开放系统CRUD。
+      description: 返回全部已登记应用（含停用项供维护），真实ID不固定；系统/权限/API的新增登记通过经过核对的首次SQL完成，本轮不开放系统CRUD。
       responses:
         '200':
           description: 成功
@@ -1083,7 +1085,7 @@ paths:
       tags:
       - 资源与映射
       summary: 整体替换权限API映射
-      description: 只同系统API，可保存停用API但不贡献有效授权；直接外系统目标403、已获本系统目标的跨系统关联400。根锁及完整K保护。
+      description: 只同系统API，可保存停用API但不贡献有效授权；未接入系统目标403、已获准目标的跨系统关联400。根锁及完整K保护。
       responses:
         '200':
           description: 成功
@@ -1469,6 +1471,213 @@ paths:
       x-management-scope: subtree
       x-initial-permission-code: rbac.overview.read
       x-maintenance-member: false
+  /auth/login:
+    post:
+      operationId: applicationIdentityLogin
+      tags:
+      - 应用身份
+      summary: 课程既有身份协议登录
+      description: 仅接收单个已登记外部应用，账号启用且至少有该应用有效授权时签发受众隔离令牌。RBAC管理端沿原登录入口及准入规则。
+      x-maintenance-member: false
+      x-management-scope: application-identity
+      responses:
+        '200':
+          description: 老师既有协议原始响应，不包裹data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationLoginVO'
+        '400':
+          description: 输入不合法
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 身份、账号状态或令牌受众不正确
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 缺少课程教师准入或UL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 功能未启用或目标用户不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 内部故障，失败关闭
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplicationLoginDTO'
+  /auth/me:
+    get:
+      operationId: applicationIdentityMe
+      tags:
+      - 应用身份
+      summary: 课程当前实时身份权限
+      description: 按令牌受众实时返回角色编码、权限编码和system；角色须启用且贡献本应用有效权限。无API映射权限直接导出，有映射短码须全部同系统且启用。
+      x-maintenance-member: false
+      x-management-scope: application-identity
+      responses:
+        '200':
+          description: 老师既有协议原始响应，不包裹data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationIdentityVO'
+        '400':
+          description: 输入不合法
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 身份、账号状态或令牌受众不正确
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 缺少课程教师准入或UL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 功能未启用或目标用户不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 内部故障，失败关闭
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /auth/permissions/{permission}:
+    get:
+      operationId: applicationIdentityPermission
+      tags:
+      - 应用身份
+      summary: 课程菜单按钮短码检查
+      description: 检查当前应用实时有效权限，不补父菜单、不按角色名称或职位推断。
+      x-maintenance-member: false
+      x-management-scope: application-identity
+      responses:
+        '200':
+          description: 老师既有协议原始响应，不包裹data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationPermissionVO'
+        '400':
+          description: 输入不合法
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 身份、账号状态或令牌受众不正确
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 缺少课程教师准入或UL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 功能未启用或目标用户不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 内部故障，失败关闭
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: permission
+        in: path
+        required: true
+        schema:
+          type: string
+          maxLength: 191
+  /auth/users/{userId}:
+    get:
+      operationId: applicationIdentityUser
+      tags:
+      - 应用身份
+      summary: 课程教师维护所需员工身份
+      description: 先验证当前应用身份及GET /auth/users/{userId}对应的有效API映射，再返回最小用户信息。
+      x-maintenance-member: false
+      x-management-scope: application-identity
+      responses:
+        '200':
+          description: 老师既有协议原始响应，不包裹data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationUserVO'
+        '400':
+          description: 输入不合法
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 身份、账号状态或令牌受众不正确
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 缺少课程教师准入或UL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 功能未启用或目标用户不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 内部故障，失败关闭
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
 components:
   securitySchemes:
     BearerAuth:
@@ -1528,7 +1737,7 @@ components:
     SystemId:
       name: systemId
       in: query
-      description: 省略为真实rbac系统ID；不固定为1，外系统目录403
+      description: 省略为真实rbac系统ID；显式课程接入时可选择课程系统，未接入系统403
       schema:
         type: integer
         minimum: 1
@@ -1792,6 +2001,7 @@ components:
           enum:
           - MENU
           - BUTTON
+          - API
         code:
           type: string
           maxLength: 100
@@ -1828,6 +2038,7 @@ components:
           enum:
           - MENU
           - BUTTON
+          - API
         code:
           type: string
           maxLength: 100
@@ -1867,6 +2078,7 @@ components:
           enum:
           - MENU
           - BUTTON
+          - API
         code:
           type: string
           maxLength: 100
@@ -2008,9 +2220,16 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RoleVO'
+        lockedRoleIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+          description: 当前已授且操作者不能删除的角色ID；可原样保留，不能增删伪造，保存时锁后重新校验。
       required:
       - user
       - roles
+      - lockedRoleIds
     RolePermissionsVO:
       type: object
       additionalProperties: false
@@ -2319,6 +2538,7 @@ components:
           enum:
           - MENU
           - BUTTON
+          - API
         enabled:
           type: boolean
       required: []
@@ -2382,6 +2602,7 @@ components:
           - DATA_CONFLICT
           - LAST_ADMIN_REQUIRED
           - INTERNAL_ERROR
+          - APPLICATION_ACCESS_DENIED
         message:
           type: string
           description: 安全的中文业务提示，不回显内部异常或秘密
@@ -2990,3 +3211,116 @@ components:
       - message
       - data
       - requestId
+    ApplicationLoginDTO:
+      type: object
+      additionalProperties: false
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: 老师课程入口使用工号；RBAC兼容入口可解析工号或手机号
+        password:
+          type: string
+          minLength: 1
+          maxLength: 200
+          writeOnly: true
+        systems:
+          type: array
+          minItems: 1
+          maxItems: 1
+          items:
+            type: string
+            minLength: 1
+            maxLength: 100
+          description: 单个已登记应用编码，不允许客户端自报角色。
+      required:
+      - username
+      - password
+      - systems
+    ApplicationLoginVO:
+      type: object
+      additionalProperties: false
+      properties:
+        accessToken:
+          type: string
+          minLength: 1
+        tokenType:
+          type: string
+          const: Bearer
+        expiresIn:
+          type: integer
+          format: int64
+          const: 43200
+      required:
+      - accessToken
+      - tokenType
+      - expiresIn
+    ApplicationIdentityVO:
+      type: object
+      additionalProperties: false
+      properties:
+        subject:
+          type: string
+          pattern: ^[1-9][0-9]*$
+          description: 本项目主键按老师协议投影为字符串
+        roles:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          description: 已配置并实际授予的启用角色编码，不固定teacher或student。
+        permissions:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+          description: 当前有效短码，不导出COURSE_TEACHER身份标记；不是令牌快照
+        system:
+          type: string
+          description: 服务端核实的令牌受众应用编码
+        permissionApis:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: object
+              required:
+              - method
+              - path
+              properties:
+                method:
+                  type: string
+                path:
+                  type: string
+          description: 按权限编码投影当前有效API映射事实；接入适配器可据自身协议配置核实粗粒度权限的全部必要路由。
+      required:
+      - subject
+      - roles
+      - permissions
+      - system
+      - permissionApis
+      description: 实时应用身份。API类型权限必须具有至少一个映射且全部同系统启用；菜单、按钮可无API独立控制展示或资格。
+    ApplicationPermissionVO:
+      type: object
+      additionalProperties: false
+      properties:
+        allowed:
+          type: boolean
+      required:
+      - allowed
+    ApplicationUserVO:
+      type: object
+      additionalProperties: false
+      properties:
+        userId:
+          type: string
+          pattern: ^[1-9][0-9]*$
+        'no':
+          type: string
+        name:
+          type: string
+      required:
+      - userId
+      - 'no'
+      - name

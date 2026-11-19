@@ -16,7 +16,8 @@ public class LayerLoggingAspect {
 
   /** 禁止打印参数、对象、响应体、令牌、SQL或原异常消息。 */
   @Around(
-      "within(com.municipal.rbaccore.api..*) || within(com.municipal.rbaccore.service..*) ||"
+      "within(com.municipal.rbaccore.api..*) || (within(com.municipal.rbaccore.service..*) &&"
+          + " !within(com.municipal.rbaccore.service.port..*)) ||"
           + " (within(com.municipal.rbaccore.infrastructure..*) &&"
           + " !within(com.municipal.rbaccore.infrastructure.logging.LayerLoggingAspect) &&"
           + " !within(com.municipal.rbaccore.infrastructure.web.RequestAuditFilter))")

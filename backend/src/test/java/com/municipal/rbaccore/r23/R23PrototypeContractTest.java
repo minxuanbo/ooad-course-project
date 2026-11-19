@@ -187,8 +187,8 @@ class R23PrototypeContractTest {
   @DisplayName("R24 非空部门改名返回真实人数且不可删除")
   void R24_RenamedDepartmentReportsCurrentUsage() {
     String admin = token(1);
-    ResponseEntity<JsonNode> renamed = call(HttpMethod.PATCH, DEPARTMENTS + "/2", admin,
-        Map.of("name", "新部门名称"));
+    ResponseEntity<JsonNode> renamed =
+        call(HttpMethod.PATCH, DEPARTMENTS + "/2", admin, Map.of("name", "新部门名称"));
     assertEquals(200, renamed.getStatusCode().value());
     JsonNode node = renamed.getBody().path("data");
     assertEquals(3, node.path("directUsers").asInt());
@@ -202,11 +202,13 @@ class R23PrototypeContractTest {
   @DisplayName("R10/R24 人员筛选拒绝已删除部门并保留未知目标错误")
   void R24_UserSearchRejectsDepartmentTombstone() {
     String admin = token(1);
-    assertEquals(200, call(HttpMethod.DELETE, DEPARTMENTS + "/3", admin, null).getStatusCode().value());
+    assertEquals(
+        200, call(HttpMethod.DELETE, DEPARTMENTS + "/3", admin, null).getStatusCode().value());
     ResponseEntity<JsonNode> deleted = call(HttpMethod.GET, USERS + "?departmentId=3", admin, null);
     assertEquals(403, deleted.getStatusCode().value());
     assertEquals("MANAGEMENT_SCOPE_DENIED", deleted.getBody().path("code").asText());
-    ResponseEntity<JsonNode> unknown = call(HttpMethod.GET, USERS + "?departmentId=99999", admin, null);
+    ResponseEntity<JsonNode> unknown =
+        call(HttpMethod.GET, USERS + "?departmentId=99999", admin, null);
     assertEquals(404, unknown.getStatusCode().value());
     assertEquals("RESOURCE_NOT_FOUND", unknown.getBody().path("code").asText());
   }
@@ -235,9 +237,9 @@ class R23PrototypeContractTest {
     assertEquals(25, identity.path("routes").size());
   }
 
-  /** 级别与权限子集叠加，授为本级后按新级别保护；自定义角色停用仍保护持有人。 */
+  /** 级别与权限子集叠加；自定义角色不冻结人员，但仍只能由管理员增删。 */
   @Test
-  @DisplayName("R23/R27 授予上限和目标级别保护不因停用自定义角色绕过")
+  @DisplayName("R23/R27 自定义角色不冻结人员且不可由局部管理员撤回")
   void R27_GrantLevelAndCustomProtection() {
     String manager = token(2);
     jdbc.update("DELETE FROM role_permissions WHERE role_id=3");
@@ -260,13 +262,54 @@ class R23PrototypeContractTest {
     jdbc.update("INSERT INTO user_roles VALUES(4,4)");
     jdbc.update("UPDATE roles SET enabled=0 WHERE id=4");
     assertEquals(
-        403,
+        200,
         call(HttpMethod.PATCH, USERS + "/4/status", manager, Map.of("enabled", false))
             .getStatusCode()
             .value());
     assertEquals(
         200,
         call(HttpMethod.PUT, USERS + "/4/roles", token(1), Map.of("ids", List.of()))
+            .getStatusCode()
+            .value());
+  }
+
+  /** 原样保留项与增删项分别处理；伪造保留和非法删除必须整次回滚。 */
+  @Test
+  @DisplayName("R27 锁后按角色差集校验，保留自定义角色时可调整普通角色")
+  void R27_PreservedCustomRoleDoesNotBlockOtherChanges() {
+    String manager = token(2);
+    jdbc.update("DELETE FROM role_permissions WHERE role_id=3");
+    jdbc.update("INSERT INTO user_roles VALUES(4,4)");
+    JsonNode current =
+        call(HttpMethod.GET, USERS + "/4/roles", manager, null).getBody().path("data");
+    assertEquals("[4]", current.path("lockedRoleIds").toString());
+    assertEquals(
+        200,
+        call(HttpMethod.PUT, USERS + "/4/roles", manager, Map.of("ids", List.of(4)))
+            .getStatusCode()
+            .value());
+    assertEquals(
+        403,
+        call(HttpMethod.PUT, USERS + "/4/roles", manager, Map.of("ids", List.of(3)))
+            .getStatusCode()
+            .value());
+    assertEquals(
+        List.of(4L),
+        jdbc.queryForList(
+            "SELECT role_id FROM user_roles WHERE user_id=4 ORDER BY role_id", Long.class));
+    assertEquals(
+        200,
+        call(HttpMethod.PUT, USERS + "/4/department", manager, Map.of("departmentId", 3))
+            .getStatusCode()
+            .value());
+    assertEquals(
+        200,
+        call(HttpMethod.PUT, USERS + "/4/roles", token(1), Map.of("ids", List.of(3)))
+            .getStatusCode()
+            .value());
+    assertEquals(
+        403,
+        call(HttpMethod.PUT, USERS + "/4/roles", manager, Map.of("ids", List.of(3, 4)))
             .getStatusCode()
             .value());
   }

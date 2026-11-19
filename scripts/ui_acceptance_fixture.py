@@ -12,12 +12,13 @@ ROOT = Path(__file__).resolve().parents[1]
 def fixture_sql():
     """生成固定ID虚构夹具，主键冲突使误用非空库失败，不清理已有数据。"""
     source = (ROOT/'backend/src/main/java/com/municipal/rbaccore/service/port/security/RbacCatalog.java').read_text(encoding='utf-8')
+    names = dict(re.findall(r'Map.entry\(\s*"(rbac[^"]+)",\s*"([^"]+)"', source))
     entries = re.findall(r'definitions\.put\(\s*"([^"]+)",(.*?)\);', source, re.S)
     statements = ['START TRANSACTION;']
     statements += ["INSERT INTO departments(id,code,name,parent_id,type) VALUES (1,'ui-root','验收总公司',NULL,'HEADQUARTERS'),(2,'ui-engineering','工程部',1,'DEPARTMENT'),(3,'ui-project','道路项目',2,'PROJECT'),(4,'ui-finance','财务部',1,'DEPARTMENT');", "INSERT INTO import_sources(source_type,source_key,source_json,department_id) VALUES('ORGANIZATION','总公司','[]',1);", "INSERT INTO systems VALUES(1,'rbac','权限管理系统',1);", "INSERT INTO roles VALUES(1,'system-admin','系统管理员',1,5),(2,'department-manager','部门经理',1,3),(3,'project-manager','项目经理',1,2),(4,'employee','普通员工',1,1);"]
     api_id = 0
     for permission_id,(code,definition) in enumerate(entries,1):
-        statements += [f"INSERT INTO permissions VALUES({permission_id},1,NULL,'{code}','{code}','BUTTON',1);", f"INSERT INTO role_permissions VALUES(1,{permission_id});"]
+        statements += [f"INSERT INTO permissions VALUES({permission_id},1,NULL,'{code}','{names[code]}','BUTTON',1);", f"INSERT INTO role_permissions VALUES(1,{permission_id});"]
         if code.startswith(('rbac.users.','rbac.departments.','rbac.overview.')):
             statements += [f"INSERT INTO role_permissions VALUES(2,{permission_id}),(3,{permission_id});"]
         for method,path in re.findall(r'route\("([^"]+)", "([^"]+)"\)',definition):

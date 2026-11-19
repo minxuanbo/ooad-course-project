@@ -28,14 +28,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
     basePackages = "com.municipal.rbaccore.infrastructure.persistence.repository")
 @Import(RuntimeStrategySelector.class)
 @ComponentScan(
-    basePackages = {
-      "com.municipal.rbaccore.api",
-      "com.municipal.rbaccore.infrastructure"
-    },
+    basePackages = {"com.municipal.rbaccore.api", "com.municipal.rbaccore.infrastructure"},
     excludeFilters =
         @ComponentScan.Filter(
-        type = FilterType.REGEX,
-        pattern = "com\\.municipal\\.rbaccore\\.infrastructure\\.persistence\\.ddd\\..*"))
+            type = FilterType.REGEX,
+            pattern = "com\\.municipal\\.rbaccore\\.infrastructure\\.persistence\\.ddd\\..*"))
 public class RuntimeConfiguration {
   private static final Map<String, String> TEST_DATABASES =
       Map.of(
