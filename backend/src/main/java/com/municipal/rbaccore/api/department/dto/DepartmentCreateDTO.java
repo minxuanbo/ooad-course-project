@@ -18,7 +18,8 @@ public class DepartmentCreateDTO {
   @Max(ApiLimits.MAX_ID)
   private Long parentId;
 
-  @NotNull private DepartmentType type;
+  @NotNull
+  private DepartmentType type;
 
   @NotBlank
   @Size(max = 100)

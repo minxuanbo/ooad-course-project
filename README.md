@@ -24,6 +24,8 @@
 
 截至2026-11-18，阶段5已通过审核并随[PR #34](https://github.com/minxuanbo/ooad-course-project/pull/34)合入main（e521f97，验收代码83dbf17）。structured和ddd各178项后端测试、71次真实HTTP检查通过；两套空库各完成10001个BCrypt10账号导入及首次授权。前端26项测试/构建及运行器5项单测通过，CloneFactory生成的51个重载均有实际赋值。
 
+随后main核对修复日志晚提交污染快照、重复导入无来源账号及注解格式。两套独立MySQL实例各180项完整后端测试通过，前端26项测试/构建与运行器5项单测通过，51个CloneFactory生成重载再次核对。新增回归的RED/GREEN及实际验证边界见[测试说明](docs/testing-acceptance.md)。
+
 桌面浏览器已分别复验两种策略的登录、六个管理页面及关键权限操作。阶段6仍需补齐窄屏、完整键盘交互和其他写入组合；实际证据与限制见[测试验收](docs/testing-acceptance.md)，后续安排见[开发计划](docs/development-plan.md)。
 
 ## 本地运行

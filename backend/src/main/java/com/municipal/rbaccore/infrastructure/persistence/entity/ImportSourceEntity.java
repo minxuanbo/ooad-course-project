@@ -57,11 +57,13 @@ public class ImportSourceEntity {
   private String sourceJson;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "department_id", foreignKey = @ForeignKey(name = "fk_import_department"))
+  @JoinColumn(name = "department_id", foreignKey =
+      @ForeignKey(name = "fk_import_department"))
   private DepartmentEntity department;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", foreignKey = @ForeignKey(name = "fk_import_user"))
+  @JoinColumn(name = "user_id", foreignKey =
+      @ForeignKey(name = "fk_import_user"))
   private UserEntity user;
 
   /** 保存原组织三列；公司领导与总公司可分别追溯到同一个目标部门。 */

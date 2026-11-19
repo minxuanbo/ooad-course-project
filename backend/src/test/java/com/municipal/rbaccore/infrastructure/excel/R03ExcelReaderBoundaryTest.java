@@ -16,7 +16,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 /** T12保留原基础设施测试中与旧业务无关的工作簿读取边界。 */
 class R03ExcelReaderBoundaryTest {
-  @TempDir Path directory;
+  @TempDir
+  Path directory;
 
   /** 共享字符串富文本、数值与跨Z稀疏列不丢失，原名优先于带序号备选名。 */
   @Test

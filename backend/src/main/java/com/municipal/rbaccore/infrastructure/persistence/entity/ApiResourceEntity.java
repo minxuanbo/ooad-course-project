@@ -26,7 +26,8 @@ public class ApiResourceEntity {
   @JoinColumn(
       name = "system_id",
       nullable = false,
-      foreignKey = @ForeignKey(name = "fk_api_system"))
+      foreignKey =
+          @ForeignKey(name = "fk_api_system"))
   private ApplicationSystemEntity system;
 
   @Column(name = "http_method", nullable = false, length = 16)

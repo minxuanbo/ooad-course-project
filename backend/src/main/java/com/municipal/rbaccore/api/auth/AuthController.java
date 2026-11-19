@@ -23,7 +23,10 @@ public class AuthController {
 
   /** 工号或手机号共用一个账号输入；失败不会产生成功身份。 */
   @PostMapping("/auth/login")
-  public LoginVO login(@Valid @RequestBody LoginDTO dto) {
+  public LoginVO login(
+  @Valid
+  @RequestBody
+  LoginDTO dto) {
     LoginResult result = service.login(CloneFactory.copy(new LoginCommand(), dto));
     LoginVO view = CloneFactory.copy(new LoginVO(), result);
     view.setUser(CloneFactory.copy(new IdentityVO(), result.getUser()));
@@ -32,20 +35,25 @@ public class AuthController {
 
   /** 保留退出的既有行为，不新增认证机制。 */
   @PostMapping("/auth/logout")
-  public void logout(@RequestHeader(value = "Authorization", required = false) String header) {
+  public void logout(
+  @RequestHeader(value = "Authorization", required = false)
+  String header) {
     service.logout(header);
   }
 
   /** 本人查询只要求有效身份，不要求人员管理权限。 */
   @GetMapping("/me")
-  public MeVO me(@RequestHeader(value = "Authorization", required = false) String header) {
+  public MeVO me(
+  @RequestHeader(value = "Authorization", required = false)
+  String header) {
     return new MeVO(CloneFactory.copy(new IdentityVO(), service.me(header)));
   }
 
   /** 只返回本系统实际有效权限，不补导航祖先或整包业务目录。 */
   @GetMapping("/me/permissions")
   public List<EffectivePermissionVO> permissions(
-      @RequestHeader(value = "Authorization", required = false) String header) {
+      @RequestHeader(value = "Authorization", required = false)
+      String header) {
     return service.myPermissions(header).stream()
         .map(result -> CloneFactory.copy(new EffectivePermissionVO(), result))
         .toList();

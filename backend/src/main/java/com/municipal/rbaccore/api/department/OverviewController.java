@@ -19,7 +19,8 @@ public class OverviewController {
   /** 不接收客户端范围参数，身份和范围始终来自服务端。 */
   @GetMapping("/api/overview")
   public OverviewVO overview(
-      @RequestHeader(value = "Authorization", required = false) String header) {
+      @RequestHeader(value = "Authorization", required = false)
+      String header) {
     OverviewResult result = service.overview(header);
     OverviewVO view = CloneFactory.copy(new OverviewVO(), result);
     view.setDistribution(

@@ -11,5 +11,6 @@ import lombok.Setter;
 @Setter
 @CopyTo(UpdateApiCommand.class)
 public class ResourceApiPatchDTO {
-  @NotNull private Boolean enabled;
+  @NotNull
+  private Boolean enabled;
 }

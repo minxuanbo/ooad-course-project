@@ -5,11 +5,18 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.municipal.rbaccore.infrastructure.logging.JpaAuditWriter;
+import com.municipal.rbaccore.infrastructure.persistence.entity.AuthorizationLogEntity;
 import com.municipal.rbaccore.infrastructure.persistence.entity.RoleEntity;
 import com.municipal.rbaccore.infrastructure.persistence.entity.UserEntity;
+import com.municipal.rbaccore.infrastructure.persistence.repository.AuthorizationLogJpaRepository;
 import com.municipal.rbaccore.infrastructure.persistence.repository.DepartmentJpaRepository;
 import com.municipal.rbaccore.infrastructure.persistence.repository.RoleJpaRepository;
 import com.municipal.rbaccore.infrastructure.persistence.repository.UserJpaRepository;
+import com.municipal.rbaccore.service.port.audit.AuditEvent;
+import com.municipal.rbaccore.service.port.audit.AuditQueryGateway;
+import com.municipal.rbaccore.service.port.audit.AuditWriter;
+import com.municipal.rbaccore.service.port.audit.LogPageResult;
+import com.municipal.rbaccore.service.port.audit.LogQuery;
 import com.municipal.rbaccore.service.port.bootstrap.AuthorizationBootstrapUseCase;
 import com.municipal.rbaccore.service.port.bootstrap.BootstrapReport;
 import com.municipal.rbaccore.service.port.bootstrap.RoleBootstrapPlan;
@@ -21,11 +28,20 @@ import com.municipal.rbaccore.service.port.security.Managed;
 import com.municipal.rbaccore.shared.TestProjectPaths;
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import org.aopalliance.intercept.MethodInterceptor;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.context.annotation.Bean;
@@ -34,6 +50,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -52,18 +70,34 @@ abstract class R07AuthenticationContractSupport {
   private static final String UNKNOWN_ENDPOINT = "/api/r18-unknown-endpoint";
   private static final String PASSWORD = "t05-employee-password";
   private static final String ADMIN_PASSWORD = "t05-admin-password";
-  @Autowired TestRestTemplate http;
-  @Autowired ObjectMapper json;
-  @Autowired JdbcTemplate jdbc;
-  @Autowired ImportUseCase importer;
-  @Autowired AuthorizationBootstrapUseCase bootstrap;
-  @Autowired PasswordEncoder encoder;
-  @Autowired UserJpaRepository users;
-  @Autowired RoleJpaRepository roles;
-  @Autowired DepartmentJpaRepository departments;
-  @Autowired PlatformTransactionManager transactions;
-  @Autowired MaintenanceProtection maintenance;
-  @Autowired FailureEvents failures;
+  @Autowired
+  TestRestTemplate http;
+  @Autowired
+  ObjectMapper json;
+  @Autowired
+  JdbcTemplate jdbc;
+  @Autowired
+  ImportUseCase importer;
+  @Autowired
+  AuthorizationBootstrapUseCase bootstrap;
+  @Autowired
+  PasswordEncoder encoder;
+  @Autowired
+  UserJpaRepository users;
+  @Autowired
+  RoleJpaRepository roles;
+  @Autowired
+  DepartmentJpaRepository departments;
+  @Autowired
+  PlatformTransactionManager transactions;
+  @Autowired
+  MaintenanceProtection maintenance;
+  @Autowired
+  FailureEvents failures;
+  @Autowired
+  AuditWriter auditWriter;
+  @Autowired
+  AuditQueryGateway auditQueries;
   private long rootId;
   private long departmentManagerId;
   private String departmentManager;
@@ -71,6 +105,36 @@ abstract class R07AuthenticationContractSupport {
   /** 测试辅助入口只在本测试上下文注册，不进入产品目录。 */
   @TestConfiguration(proxyBeanMethods = false)
   static class Fixtures {
+    static final AuditCommitGate AUDIT_GATE = new AuditCommitGate();
+
+    /** 仅给日志仓储加提交门闩，不替换持久化或事务，精确安排晚提交场景。 */
+    @Bean
+    static BeanPostProcessor auditCommitProbe() {
+      return new BeanPostProcessor() {
+        /** 真实save分配ID后，在实际事务提交前交给门闩控制。 */
+        @Override
+        public Object postProcessAfterInitialization(Object bean, String beanName) {
+          if (!(bean instanceof AuthorizationLogJpaRepository)) {
+            return bean;
+          }
+          ProxyFactory proxy = new ProxyFactory();
+          proxy.setTarget(bean);
+          proxy.setInterfaces(AuthorizationLogJpaRepository.class);
+          proxy.addAdvice(
+              (MethodInterceptor)
+                  invocation -> {
+                    Object result = invocation.proceed();
+                    if (invocation.getMethod().getName().equals("save")
+                        && invocation.getArguments()[0] instanceof AuthorizationLogEntity row) {
+                      AUDIT_GATE.deferCommit(row);
+                    }
+                    return result;
+                  });
+          return proxy.getProxy();
+        }
+      };
+    }
+
     /** 捕获安全运维事件，以真实数据库故障验证日志降级行为。 */
     @Bean
     FailureEvents failureEvents() {
@@ -81,6 +145,41 @@ abstract class R07AuthenticationContractSupport {
     @Bean
     UnregisteredController unregisteredController() {
       return new UnregisteredController();
+    }
+  }
+
+  /** 指定合成事件保存后暂停提交，其余事件及其他测试不受影响。 */
+  static final class AuditCommitGate {
+    private volatile CountDownLatch stored = new CountDownLatch(0);
+    private volatile CountDownLatch release = new CountDownLatch(0);
+
+    /** 每个测试重新准备同步点，避免按线程运行速度猜测事务先后。 */
+    void arm() {
+      stored = new CountDownLatch(1);
+      release = new CountDownLatch(1);
+    }
+
+    /** 在实际提交回调内暂停，保证自增ID已由真实MySQL分配。 */
+    void deferCommit(AuthorizationLogEntity row) {
+      if (!row.getRequestId().equals("r16-delayed-commit") || release.getCount() == 0) {
+        return;
+      }
+      TransactionSynchronizationManager.registerSynchronization(
+          new TransactionSynchronization() {
+            /** 放行只由测试控制；超时必须令测试失败而非留下挂起事务。 */
+            @Override
+            public void beforeCommit(boolean readOnly) {
+              stored.countDown();
+              try {
+                if (!release.await(15, TimeUnit.SECONDS)) {
+                  throw new AssertionError("日志事务提交门闩超时");
+                }
+              } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                throw new AssertionError("日志事务提交被中断", interrupted);
+              }
+            }
+          });
     }
   }
 
@@ -697,6 +796,63 @@ abstract class R07AuthenticationContractSupport {
             .get("data")
             .get("total")
             .asLong());
+  }
+
+  /** 用真实日志入口暂停较小ID的提交，确保后续追加不能污染已有快照。 */
+  @Test
+  @DisplayName("R16 低ID日志延迟提交时同一快照的记录集合与总数保持稳定")
+  void R16_ConcurrentAuditCommitsPreserveSnapshotMembership() throws Exception {
+    String username = "r16-concurrent-snapshot";
+    jdbc.update("DELETE FROM authorization_logs WHERE username=?", username);
+    auditWriter.record(snapshotEvent(username, "r16-seed-one"));
+    auditWriter.record(snapshotEvent(username, "r16-seed-two"));
+    Fixtures.AUDIT_GATE.arm();
+    ExecutorService workers = Executors.newFixedThreadPool(2);
+    try {
+      Future<?> delayed =
+          workers.submit(
+              () -> auditWriter.record(snapshotEvent(username, "r16-delayed-commit")));
+      assertTrue(Fixtures.AUDIT_GATE.stored.await(5, TimeUnit.SECONDS));
+      CountDownLatch secondStarted = new CountDownLatch(1);
+      Future<?> following =
+          workers.submit(
+              () -> {
+                secondStarted.countDown();
+                auditWriter.record(snapshotEvent(username, "r16-following-commit"));
+              });
+      assertTrue(secondStarted.await(5, TimeUnit.SECONDS));
+      try {
+        following.get(1, TimeUnit.SECONDS);
+      } catch (TimeoutException waitingForEarlierCommit) {
+        // 正确实现应等待前一追加事务提交；旧实现会在此之前先提交较大ID。
+      }
+      LogQuery query = new LogQuery();
+      query.setUsername(username);
+      query.setLimit(1);
+      LogPageResult first = auditQueries.list(query);
+      Fixtures.AUDIT_GATE.release.countDown();
+      delayed.get(5, TimeUnit.SECONDS);
+      following.get(5, TimeUnit.SECONDS);
+      assertNotNull(first.getNextCursor());
+      query.setCursor(first.getNextCursor());
+      LogPageResult next = auditQueries.list(query);
+      assertEquals(first.getSnapshotId(), next.getSnapshotId());
+      assertEquals(first.getTotal(), next.getTotal(), "晚提交日志不能进入已经建立的快照");
+      assertEquals(2, first.getTotal());
+      assertEquals(1, next.getItems().size());
+      assertEquals("r16-seed-one", next.getItems().getFirst().getRequestId());
+      query.setCursor(null);
+      assertEquals(4, auditQueries.list(query).getTotal(), "刷新查询后仍应能看到全部已提交日志");
+    } finally {
+      Fixtures.AUDIT_GATE.release.countDown();
+      workers.shutdownNow();
+    }
+  }
+
+  /** 使用不含真实人员和秘密的合法安全事件调用生产日志入口。 */
+  private AuditEvent snapshotEvent(String username, String requestId) {
+    return new AuditEvent(
+        null, username, "AUTHORIZATION", true, requestId, "ALLOWED", "GET", LOGS, 200);
   }
 
   /** API格式错误在DTO边界返回400，而非进入服务或悄悄强制转换。 */

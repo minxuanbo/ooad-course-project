@@ -90,15 +90,24 @@ class R03ImportJpaContractTest {
     }
   }
 
-  @Autowired ImportUseCase service;
-  @Autowired UserJpaRepository users;
-  @Autowired DepartmentJpaRepository departments;
-  @Autowired RoleJpaRepository roles;
-  @Autowired ImportSourceJpaRepository sources;
-  @Autowired JdbcTemplate jdbc;
-  @Autowired PlatformTransactionManager transactionManager;
-  @Autowired PasswordEncoder encoder;
-  @PersistenceContext EntityManager entityManager;
+  @Autowired
+  ImportUseCase service;
+  @Autowired
+  UserJpaRepository users;
+  @Autowired
+  DepartmentJpaRepository departments;
+  @Autowired
+  RoleJpaRepository roles;
+  @Autowired
+  ImportSourceJpaRepository sources;
+  @Autowired
+  JdbcTemplate jdbc;
+  @Autowired
+  PlatformTransactionManager transactionManager;
+  @Autowired
+  PasswordEncoder encoder;
+  @PersistenceContext
+  EntityManager entityManager;
 
   private static final BootstrapCredentials CREDENTIALS =
       new BootstrapCredentials("test-employee-password", "test-admin-password", "admin");
@@ -335,6 +344,34 @@ class R03ImportJpaContractTest {
             .getCode());
     assertEquals(10002, users.count());
     assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM user_roles", Integer.class));
+  }
+
+  /** 来源原件均完整时仍拒绝无碰撞的额外账号，不删除或自动认领。 */
+  @Test
+  @DisplayName("R03 完整来源存在时重复导入仍拒绝额外的无来源账号")
+  void R03_RejectsAdditionalAccountWithoutSource() {
+    ImportReport first = service.importDirectory(TestProjectPaths.sources(), CREDENTIALS);
+    new TransactionTemplate(transactionManager)
+        .executeWithoutResult(
+            status -> {
+              UserEntity additional =
+                  new UserEntity(
+                      "r03-unmapped-extra",
+                      encoder.encode("test-only"),
+                      "无来源测试账号",
+                      users.findById(first.adminId()).orElseThrow().getDepartment(),
+                      true);
+              users.save(additional);
+            });
+    assertEquals(
+        "SOURCE_MAPPING_INCOMPLETE",
+        assertThrows(
+                ImportException.class,
+                () -> service.importDirectory(TestProjectPaths.sources(), CREDENTIALS))
+            .getCode());
+    assertEquals(10002, users.count());
+    assertEquals(10112, sources.count());
+    assertEquals(0, roles.count());
   }
 
   /** 模拟损坏后调用真实导入Service，检查拒绝并回滚样例损坏，保持后续断言独立。 */

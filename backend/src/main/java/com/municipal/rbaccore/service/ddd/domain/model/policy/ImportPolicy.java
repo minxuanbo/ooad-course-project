@@ -84,6 +84,16 @@ public final class ImportPolicy {
         state.accounts().stream()
             .map(account -> new Identity(account.username(), account.phone()))
             .toList());
+    Set<Long> sourceUsers =
+        state.sources().stream()
+            .filter(source -> source.kind() != InitializationState.Kind.ORGANIZATION)
+            .map(InitializationState.Source::userId)
+            .collect(Collectors.toSet());
+    Set<Long> actualUsers =
+        state.accounts().stream().map(InitializationState.Account::id).collect(Collectors.toSet());
+    if (!sourceUsers.equals(actualUsers)) {
+      throw missing();
+    }
     return new ImportBatch.Receipt(
         targetCodes(plan).size(), 0, state.accounts().size(), administrator.id());
   }

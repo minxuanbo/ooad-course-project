@@ -75,17 +75,27 @@ class R01JpaConstraintTest {
     }
   }
 
-  @Autowired DepartmentJpaRepository departments;
+  @Autowired
+  DepartmentJpaRepository departments;
 
-  @Autowired ApplicationSystemJpaRepository systems;
-  @Autowired ApiResourceJpaRepository apis;
-  @Autowired PermissionJpaRepository permissions;
-  @Autowired RoleJpaRepository roles;
-  @Autowired UserJpaRepository users;
-  @Autowired ApplicationContext context;
-  @Autowired DataSource dataSource;
-  @Autowired PlatformTransactionManager transactionManager;
-  @PersistenceContext EntityManager em;
+  @Autowired
+  ApplicationSystemJpaRepository systems;
+  @Autowired
+  ApiResourceJpaRepository apis;
+  @Autowired
+  PermissionJpaRepository permissions;
+  @Autowired
+  RoleJpaRepository roles;
+  @Autowired
+  UserJpaRepository users;
+  @Autowired
+  ApplicationContext context;
+  @Autowired
+  DataSource dataSource;
+  @Autowired
+  PlatformTransactionManager transactionManager;
+  @PersistenceContext
+  EntityManager em;
 
   /** 关联同一测试场景的持久化夹具，便于重读后比较完整关系。 */
   record Sample(
