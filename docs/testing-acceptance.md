@@ -1,5 +1,7 @@
 # 测试与验收说明
 
+本文各项成绩保留其记录日期与源码基线。后续两策略阶段6结果见[阶段6复验](history/verification/stage6-ddd.md)，通用课程接入的614a0c4版本证据见[本轮记录](history/verification/course-integration-generic.md)。2026-11-20文档核对未重新执行这些运行回归。
+
 本文定义验证对象、证据及当前边界；设计、参考原型和旧报告不作为新阶段完成证据。
 
 ## 1. 当前状态

@@ -1,5 +1,7 @@
 # structured UI复验（2026-11-19）
 
+本文各项成绩保留其记录日期与源码基线。后续两策略阶段6结果见[阶段6复验](history/verification/stage6-ddd.md)，通用课程接入的614a0c4版本证据见[本轮记录](history/verification/course-integration-generic.md)。2026-11-20文档核对未重新执行这些运行回归。
+
 本轮完成用户指定的structured模式UI复验与修复。起点为main `9c95e7a`，修复位于`codex/structured-ui-acceptance`；交付前合入远端main `4744f5f`，在合并提交`00186e5`上重新验证。用户于2026-11-19明确批准[PR #36](https://github.com/minxuanbo/ooad-course-project/pull/36)合入main。阶段6的ddd同项复验仍未执行，不将共用前端结果视为ddd业务链通过。
 
 ## 1. 环境与结果

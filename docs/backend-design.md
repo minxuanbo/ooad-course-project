@@ -72,7 +72,7 @@ application→domain.model/domain.repository/service.port；domain仅依赖领�
 
 | 区域                                | 当前内容                                                                     | DDD边界                                                                                                                                   |
 | ----------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| api、frontend、OpenAPI              | HTTP DTO/VO、校验、错误/信封、Vue和29操作契约                                | 复用同一接口/页面，Controller只调service.port，不写实现分支                                                                                   |
+| api、frontend、OpenAPI              | HTTP DTO/VO、校验、错误/信封、Vue和33操作契约（29管理、4通用身份）                                | 复用同一接口/页面，Controller只调service.port，不写实现分支                                                                                   |
 | service.port                        | 用例/支撑接口、Command/Query/Result、协议枚举、错误码、固定角色/方法路径目录 | 不导入Entity、Spring、Servlet、结构化或DDD类型；目录是协议/首次数据元信息，不执行动态权限、范围或组织层级策略                                 |
 | infrastructure.security/web/logging | BCrypt/Bearer、请求/游标/技术日志、MVC预检及门禁                             | 通过AuthenticationUseCase、ManagementAuthorization、ManagementAccessUseCase等端口调用当次装配实现，不能直接调用StructuredService或DDD应用服务 |
 | infrastructure.excel                | Excel解析、原件/源字段校验、LoginIdentifiers离线标识碰撞检查                 | 复用来源读取端口与技术预检；不依赖结构化服务，DDD业务仍独立保证身份不变量                                                                     |
@@ -247,7 +247,7 @@ K校验必须看见本事务的待提交变更。适配器保存时同步完整�
 
 ## 10. API、安全与错误
 
-OpenAPI定义29个操作（含部门及总览5个新增操作）；[业务约束](api-contract.md)解释实际API OR、同系统、范围、可授予子集和17项K。API门禁按服务端方法/模板，不依据固定权限code、角色名或客户端admin标识。本人查询与退出沿独立兼容契约。
+OpenAPI定义33个操作（29项管理操作，含部门及总览5项扩展；另有4项可选通用应用身份操作）；[业务约束](api-contract.md)解释实际API OR、同系统、范围、可授予子集和17项K。API门禁按服务端方法/模板，不依据固定权限code、角色名或客户端admin标识。本人查询与退出沿独立兼容契约。
 
 账号唯一性和口令校验后还需管理端准入。Bearer索引保留在进程内，重启失效；每次管理请求重读最新状态/授权/部门，不把token内旧权限当真。用户停用后已有身份不能管理。统一{code,message,data,requestId}，401/403/404/409各按规范，500不泄露栈、SQL或输入。
 
@@ -556,16 +556,24 @@ Java新增或修改类/接口/记录及关键方法写中文Javadoc；明确局�
 | ---------------------- | ------------------------------- | ---------------------------------------------------------------------------------------- |
 | 认证/本人4操作         | identity及maintenance           | authorization对比SQL授权链和领域事实策略；工号口令/Bearer公共技术不重复画                |
 | 部门树/人员分页2操作   | query                           | user-query；树范围、批量摘要和空页规则见正文                                             |
-| 人员管理5操作          | personnel                       | personnel代表整组授权；停用/调动复用相同写事务边界，领域行为见类图及正文，不画重复锁/K链 |
+| 人员管理5操作          | personnel                       | personnel展示锁后角色差集授权；停用/调动复用相同写事务边界，领域行为见类图及正文，不画重复锁/K链 |
 | 角色5操作              | role                            | role-permissions展示集合替换；创建/改名/启停的factory及不变量见静态设计                  |
 | 资源7操作              | resource/api-resource/systems   | permission-tree展示JPA局部保护与领域策略；API启停/映射同事务约束不重复整链               |
 | 部门4操作、总览1操作   | department/overview             | department-create展示层级规则和factory；改名/空删及聚合职责见正文                        |
 | 日志1操作              | audit                           | 共同准入不画，复杂技术查询经Gateway；游标快照协议保持                                    |
 | 两类离线命令与横切支撑 | importing/bootstrap/maintenance | 来源、原子发布、映射和K职责明确；不把共用Excel/密码/锁/日志技术流程重复画入顺序图        |
 
-HTTP总计29操作；初始化为离线命令，不混入HTTP计数。新增图件共29组（包2、类15、差异顺序12），每组同源SVG/PNG；另保留现有结构化类图1组。没有全套公共登录/HTTP/技术日志顺序图。
+管理HTTP共29操作，另有4项通用应用身份操作，合计33操作、27路径、66 Schema；初始化为离线命令，不混入HTTP计数。第17章图件共29组（包2、类15、差异顺序12），每组同源SVG/PNG；另保留现有结构化类图1组。第18章补充通用应用身份的3组图源。没有全套公共登录/HTTP/技术日志顺序图。
 
 ## 18. 通用应用身份与课程本地接入（R29）
+
+本节实现图从当前Java类型及方法提取，Service居中，顺序图只画DDD领域投影差异，不重复两策略共同的认证、令牌受众与HTTP链。可编辑PlantUML与同源SVG/PNG保存在docs/design：
+
+- [通用身份类图](design/class-ddd-application-identity.svg)（[图源](design/class-ddd-application-identity.puml)）。
+- [正常领域投影](design/sequence-application-identity-normal.svg)（[图源](design/sequence-application-identity-normal.puml)）。
+- [空授权异常](design/sequence-application-identity-exception.svg)（[图源](design/sequence-application-identity-exception.puml)）。
+
+采用PlantUML 1.2025.10，执行 `java -jar plantuml.jar -charset UTF-8 -tsvg <图源.puml>` 或 `-tpng` 重生。图中的view为应用服务私有投影片段，授权事实来自AuthorizationRepository.facts；空投影由应用服务抛APPLICATION_ACCESS_DENIED直达调用者，不转画共同失败链。
 
 `api.identity.ApplicationIdentityController`负责统一身份HTTP适配与DTO/Command、Result/VO转换；`RawResponse`保留外部既有成功结构。共享`ApplicationIdentityUseCase`只定义用例，`ManagedApplications`为登记事实读取端口，由`JpaManagedApplications`适配；应用编码、教师/学生角色和业务权限短码不得硬编码进RBAC。
 

@@ -1,0 +1,27 @@
+@startuml
+skinparam defaultFontName Microsoft YaHei
+skinparam defaultFontSize 15
+skinparam participantFontSize 16
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam sequenceMessageAlign center
+skinparam ParticipantPadding 15
+skinparam BoxPadding 12
+hide footbox
+autonumber
+participant "obj: 调用者" as obj
+participant "service: DddApplicationIdentityService" as service
+participant "authorization: AuthorizationRepository" as authorization
+participant ": ApplicationAuthorizationPolicy" as policy <<MetaClass>>
+activate obj
+obj -> service : view(id, system)
+activate service
+service -> authorization : facts = facts(User.Key(id))
+activate authorization
+deactivate authorization
+service -> policy : direct = exported(facts, system)
+activate policy
+deactivate policy
+deactivate service
+deactivate obj
+@enduml
