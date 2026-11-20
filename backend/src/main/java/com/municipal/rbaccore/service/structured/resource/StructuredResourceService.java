@@ -37,18 +37,24 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class StructuredResourceService implements ResourceUseCase {
+  private final com.municipal.rbaccore.service.port.security.ManagedApplications applications;
   private final ApplicationSystemJpaRepository systems;
   private final PermissionJpaRepository permissions;
   private final ApiResourceJpaRepository apis;
   private final StructuredGlobalManagementAccess access;
 
-  /** 仅选择本权限系统；目录查询本身也必须满足实际API和共同根。 */
+  /** 枚举已登记应用；目录查询本身仍须实际API和共同根。 */
   public List<SystemResult> systems(String header) {
     access.require(header);
-    ApplicationSystemEntity system = currentSystem();
-    SystemResult result = CloneFactory.copy(new SystemResult(), system);
-    result.setEnabled(system.isEnabled());
-    return List.of(result);
+    currentSystem();
+    return systems.findByCodeInOrderByIdAsc(applications.codes()).stream()
+        .map(
+            system -> {
+              SystemResult result = CloneFactory.copy(new SystemResult(), system);
+              result.setEnabled(system.isEnabled());
+              return result;
+            })
+        .toList();
   }
 
   /** 同系统权限一次读取，按ID组合树，保留停用项且不补角色授权。 */
@@ -202,12 +208,13 @@ public class StructuredResourceService implements ResourceUseCase {
     }
   }
 
-  /** 外系统及未知系统查询统一按范围拒绝，不泄露外系统存在性。 */
+  /** 选择已登记应用，未知编号按范围拒绝。 */
   private ApplicationSystemEntity selectSystem(Long requested) {
-    ApplicationSystemEntity system = currentSystem();
-    if (requested != null && !requested.equals(system.getId()))
-      throw BusinessException.scopeDenied();
-    return system;
+    if (requested == null) return currentSystem();
+    return systems
+        .findById(requested)
+        .filter(system -> applications.codes().contains(system.getCode()))
+        .orElseThrow(BusinessException::scopeDenied);
   }
 
   /** 稳定code仅定位系统，不能用固定主键或角色名称替代授权。 */
@@ -221,16 +228,14 @@ public class StructuredResourceService implements ResourceUseCase {
   private PermissionEntity permission(Long id) {
     PermissionEntity permission =
         permissions.findById(id).orElseThrow(StructuredResourceService::notFound);
-    if (!permission.getSystem().getId().equals(currentSystem().getId()))
-      throw BusinessException.scopeDenied();
+    selectSystem(permission.getSystem().getId());
     return permission;
   }
 
   /** API直接目标与权限目标共用同一系统范围语义。 */
   private ApiResourceEntity api(Long id) {
     ApiResourceEntity api = apis.findById(id).orElseThrow(StructuredResourceService::notFound);
-    if (!api.getSystem().getId().equals(currentSystem().getId()))
-      throw BusinessException.scopeDenied();
+    selectSystem(api.getSystem().getId());
     return api;
   }
 

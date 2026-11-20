@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class DddRoleService implements RoleUseCase {
+  private final com.municipal.rbaccore.service.port.security.ManagedApplications applications;
   private final RoleRepository roles;
   private final PermissionRepository permissions;
   private final ManagementAccessUseCase access;
@@ -80,7 +81,8 @@ public class DddRoleService implements RoleUseCase {
               permissions.select(new Permission.Selection(Set.copyOf(command.getIds())));
           return selection(
               roles.save(
-                  PermissionSelectionPolicy.replace(role, selected, command.getIds().size())));
+                  PermissionSelectionPolicy.replace(
+                      role, selected, command.getIds().size(), applications.codes())));
         });
   }
 

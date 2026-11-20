@@ -1,12 +1,14 @@
 # RBAC项目协作
 
+2026-11-20更新：课程本地接入按用户澄清改为通用应用目录和身份协议，不维护应用代码白名单、教师标记或课程专用RBAC服务。应用角色由配置数据表达；RBAC管理端准入保持原规则。自定义角色不冻结人员，角色差集锁后校验且不可改现有项可原样保留；自定义项仍仅可信根直属有效五级管理员可增删，不增加委托机制。老师原目录保留；副本仅修复structured课程组长重复保存、学生里程碑读取和管理员教学班读取，旧教师名单安全补丁撤除。外部业务审计由integrations/course独立本地支撑持久保存，不混入RBAC鉴权日志；来源限制和实测见docs/course-integration.md及本轮验证记录。未经要求不合main、不关闭T14/T15、不部署服务器。
+
 2026-11-19阶段6 UI复验：structured通过PR #36交付窄屏日志计数、Modal键盘焦点及CollectionEditor失权事件修复，详见docs/structured-ui-acceptance.md。ddd在包含PR #36的main提交292a8a4上，用相同用例和夹具在独立库复验。两种策略各通过13项浏览器用例、26项前端测试及生产构建；ddd的S6-01～S6-09补充用例及重启回读也通过，详见docs/history/verification/stage6-ddd.md。
 
 截至2026-11-18，阶段5已完成双轴审核、修复及CloneFactory专项核对，用户批准PR #34合入main，合并提交e521f97，文件树与验收提交83dbf17一致。structured和ddd各178项后端测试、71次真实HTTP通过，前端26项测试/构建及运行器5项单测通过；两套空库各完成10001个BCrypt10账号导入及首次授权。桌面浏览器已复验登录、六个管理页面和关键写入；阶段6仍待窄屏、完整键盘及其他写入组合复验。组员从main复现并记录实际提交，见docs/reproduction.md及docs/testing-acceptance.md。T14/T15、课程接入及服务器部署仍按开发计划。
 
 main核对后修复代码2fd8d40：日志追加独立事务先锁稳定RBAC系统目录行再取号、提交，查询继续使用同一快照；两策略独立校验员工/admin来源覆盖全部账号；生产与测试Java注解独行。两套真实MySQL完整回归各180项、前端26项及构建、运行器5项通过，CloneFactory51个生成重载及183组同名同类型字段已核对。新增两项共享回归在两策略均先RED后GREEN；规范/需求复核均0项，实际记录见测试说明，不以本次成绩替代此前独立JAR或浏览器证据。
 
-业务依据为老师说明、原始资料和用户确认形成的docs/requirements.md；老师Gitee仅提供组织和框架参考。当前正式系统只管理RBAC自身权限，18业务系统及矩阵仅在离线原型演示，不进入正式目录/初始化/授权子集。课程系统暂不考虑；采用全新库首次SQL，不交付升级脚本。历史原型讨论以其时间语境保留在docs/history/design-decisions/prototype.md及requirements/sources.md，不覆盖最新范围。
+RBAC本体业务依据为老师说明、原始资料和用户确认形成的docs/requirements.md；老师Gitee提供本体组织/框架参考，并在R29提供课程真实协议与实现来源。默认万人初始化仅登记RBAC；正式目录按数据库登记事实读取，课程接入配置独立角色/权限；18业务系统及矩阵仍仅在离线原型演示，不进入正式目录/初始化/授权子集。采用全新库首次SQL，不交付升级脚本。历史原型讨论以其时间语境保留在docs/history/design-decisions/prototype.md及requirements/sources.md，不覆盖最新范围。
 
 HTTP字段主规范为api/openapi.yaml，JSON同源；业务语义见docs/api-contract.md。结构化实现归service/structured；service/port是共享用例/模型/协议取值，不放具体实现依赖或组织层级策略。共享基础设施不调用结构化或DDD应用服务，DDD持久化适配器实现领域仓储并映射领域模型。产品、导入与首次授权共用互斥装配，见docs/backend-design.md第4章。
 
@@ -15,3 +17,5 @@ HTTP字段主规范为api/openapi.yaml，JSON同源；业务语义见docs/api-co
 两套策略分别保留业务实现，共用正式接口和数据模型。完整K保留原17项并要求有效基础级别5及可信根；人员目标/授予级别和部门规则见R23—R27。文档写目标职责，实际测试和限制独立记验收；不以历史成绩替代新版本通过。
 
 按CONTRIBUTING.md协作，保留原Excel、用户未跟踪DOCX/Markdown、原库及历史日志；临时凭据/CSV/数据库/日志/产物不提交。按文件提交并以main为草稿PR目标。Apifox写入须明确要求。类图/顺序图用新版UML skill，图件应与代码实际类和方法对应；包图使用UML包语义，不宣称该skill适用于包图。顺序图只画两套差异，共同部分一律不画。
+
+2026-11-20本轮交付：通用身份查人日志、安全ID与多角色Schema经双轴审核修复复核为0项；两RBAC各195项完整回归，真实HTTP structured141/ddd142、各27项浏览器通过，前端27项与构建、脚本8项通过。CloneFactory53个非空重载及185组同名同类型核对。R30中文权限名在两策略初始化、夹具、本地数据和文档一致；稳定编码不变。详见docs/history/verification/course-integration-generic.md，不以此覆盖老师原项目来源缺口。

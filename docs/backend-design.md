@@ -8,9 +8,9 @@
 
 单仓库、单后端应用，提供structured/ddd两种业务实现，共用HTTP/数据库契约、前端与初始化来源。两种实现应在身份、授权、范围、错误、持久化状态、回滚和并发下保持一致。Java21、Boot3.5.6、JPA、MySQL8.4、AOP及老师真实CloneFactory沿当前技术基线，不因参考老师新版本而升级框架。
 
-本RBAC自己保存口令并认证，不照搬课程项目的外部统一身份。课程系统接入、Redis、语音、存储和其他示例集成不纳入当前设计实施。
+本RBAC自己保存口令并认证，不照搬课程项目的外部统一身份。课程身份适配按R29显式接入；Redis、语音、存储和其他示例集成不纳入本轮。
 
-正式产品仅管理RBAC自身权限，共用Vue、29项HTTP操作、18项HTTP错误、12表首次SQL、固定五级角色及17项完整维护能力集合K。18个外系统仅保留离线原型演示，不进入正式目录、授权或初始化。
+默认首次授权管理RBAC自身权限，通用应用目录按登记事实读取，课程按R29接入，共用Vue、29项管理HTTP操作与4项可选通用应用身份操作、19项HTTP错误、12表首次SQL、固定五级角色及17项完整维护能力集合K。18个外系统仅保留离线原型演示，不进入正式目录、授权或初始化。课程身份适配职责见[课程接入](course-integration.md)，两策略各自计算权限，不将业务实现放入共享port。
 
 参考老师项目的共享用例、领域仓储、互斥装配与按模块绘图方式；本项目保留本地账号认证，不移植课程业务、外部统一身份、Boot4或Redis。
 
@@ -72,7 +72,7 @@ application→domain.model/domain.repository/service.port；domain仅依赖领�
 
 | 区域                                | 当前内容                                                                     | DDD边界                                                                                                                                   |
 | ----------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| api、frontend、OpenAPI              | HTTP DTO/VO、校验、错误/信封、Vue和29操作契约                                | 复用同一接口/页面，Controller只调service.port，不写实现分支                                                                                   |
+| api、frontend、OpenAPI              | HTTP DTO/VO、校验、错误/信封、Vue和33操作契约（29管理、4通用身份）                                | 复用同一接口/页面，Controller只调service.port，不写实现分支                                                                                   |
 | service.port                        | 用例/支撑接口、Command/Query/Result、协议枚举、错误码、固定角色/方法路径目录 | 不导入Entity、Spring、Servlet、结构化或DDD类型；目录是协议/首次数据元信息，不执行动态权限、范围或组织层级策略                                 |
 | infrastructure.security/web/logging | BCrypt/Bearer、请求/游标/技术日志、MVC预检及门禁                             | 通过AuthenticationUseCase、ManagementAuthorization、ManagementAccessUseCase等端口调用当次装配实现，不能直接调用StructuredService或DDD应用服务 |
 | infrastructure.excel                | Excel解析、原件/源字段校验、LoginIdentifiers离线标识碰撞检查                 | 复用来源读取端口与技术预检；不依赖结构化服务，DDD业务仍独立保证身份不变量                                                                     |
@@ -247,7 +247,7 @@ K校验必须看见本事务的待提交变更。适配器保存时同步完整�
 
 ## 10. API、安全与错误
 
-OpenAPI定义29个操作（含部门及总览5个新增操作）；[业务约束](api-contract.md)解释实际API OR、同系统、范围、可授予子集和17项K。API门禁按服务端方法/模板，不依据固定权限code、角色名或客户端admin标识。本人查询与退出沿独立兼容契约。
+OpenAPI定义33个操作（29项管理操作，含部门及总览5项扩展；另有4项可选通用应用身份操作）；[业务约束](api-contract.md)解释实际API OR、同系统、范围、可授予子集和17项K。API门禁按服务端方法/模板，不依据固定权限code、角色名或客户端admin标识。本人查询与退出沿独立兼容契约。
 
 账号唯一性和口令校验后还需管理端准入。Bearer索引保留在进程内，重启失效；每次管理请求重读最新状态/授权/部门，不把token内旧权限当真。用户停用后已有身份不能管理。统一{code,message,data,requestId}，401/403/404/409各按规范，500不泄露栈、SQL或输入。
 
@@ -257,7 +257,7 @@ OpenAPI定义29个操作（含部门及总览5个新增操作）；[业务约束
 
 认证技术共用IdentityTokenStore、PasswordHashing、RequestContext，业务链独立：UserRepository按同一输入精确匹配工号/手机号→AuthenticationPolicy要求唯一、启用、口令符合→AuthorizationPolicy要求本RBAC登记管理API→发令牌。未知/歧义/停用/错口令仍401 LOGIN_FAILED，正确口令但无管理准入仍403；不新增会话实体或外部统一身份。
 
-领域异常DomainViolation只包含领域原因和可公开提示，不携HTTP、SQL或JPA对象；application.support的DddFailureTranslator翻译为既有BusinessException和18项HTTP错误，API Advice保持共用。基础设施在保存发生处把数据库冲突翻译为既有错误，不在全局Advice按表名判断。框架路由404/405仍沿共用Advice；离线初始化错误保持既有CLI语义。
+领域异常DomainViolation只包含领域原因和可公开提示，不携HTTP、SQL或JPA对象；application.support的DddFailureTranslator翻译为既有BusinessException及现行HTTP错误；R29的课程准入错误为APPLICATION_ACCESS_DENIED，API Advice保持共用。基础设施在保存发生处把数据库冲突翻译为既有错误，不在全局Advice按表名判断。框架路由404/405仍沿共用Advice；离线初始化错误保持既有CLI语义。
 
 ## 11. 测试方案
 
@@ -556,11 +556,38 @@ Java新增或修改类/接口/记录及关键方法写中文Javadoc；明确局�
 | ---------------------- | ------------------------------- | ---------------------------------------------------------------------------------------- |
 | 认证/本人4操作         | identity及maintenance           | authorization对比SQL授权链和领域事实策略；工号口令/Bearer公共技术不重复画                |
 | 部门树/人员分页2操作   | query                           | user-query；树范围、批量摘要和空页规则见正文                                             |
-| 人员管理5操作          | personnel                       | personnel代表整组授权；停用/调动复用相同写事务边界，领域行为见类图及正文，不画重复锁/K链 |
+| 人员管理5操作          | personnel                       | personnel展示锁后角色差集授权；停用/调动复用相同写事务边界，领域行为见类图及正文，不画重复锁/K链 |
 | 角色5操作              | role                            | role-permissions展示集合替换；创建/改名/启停的factory及不变量见静态设计                  |
 | 资源7操作              | resource/api-resource/systems   | permission-tree展示JPA局部保护与领域策略；API启停/映射同事务约束不重复整链               |
 | 部门4操作、总览1操作   | department/overview             | department-create展示层级规则和factory；改名/空删及聚合职责见正文                        |
 | 日志1操作              | audit                           | 共同准入不画，复杂技术查询经Gateway；游标快照协议保持                                    |
 | 两类离线命令与横切支撑 | importing/bootstrap/maintenance | 来源、原子发布、映射和K职责明确；不把共用Excel/密码/锁/日志技术流程重复画入顺序图        |
 
-HTTP总计29操作；初始化为离线命令，不混入HTTP计数。新增图件共29组（包2、类15、差异顺序12），每组同源SVG/PNG；另保留现有结构化类图1组。没有全套公共登录/HTTP/技术日志顺序图。
+管理HTTP共29操作，另有4项通用应用身份操作，合计33操作、27路径、66 Schema；初始化为离线命令，不混入HTTP计数。第17章图件共29组（包2、类15、差异顺序12），每组同源SVG/PNG；另保留现有结构化类图1组。第18章补充通用应用身份的3组图源。没有全套公共登录/HTTP/技术日志顺序图。
+
+## 18. 通用应用身份与课程本地接入（R29）
+
+本节实现图从当前Java类型及方法提取，Service居中，顺序图只画DDD领域投影差异，不重复两策略共同的认证、令牌受众与HTTP链。可编辑PlantUML与同源SVG/PNG保存在docs/design：
+
+- [通用身份类图](design/class-ddd-application-identity.svg)（[图源](design/class-ddd-application-identity.puml)）。
+- [正常领域投影](design/sequence-application-identity-normal.svg)（[图源](design/sequence-application-identity-normal.puml)）。
+- [空授权异常](design/sequence-application-identity-exception.svg)（[图源](design/sequence-application-identity-exception.puml)）。
+
+采用PlantUML 1.2025.10，执行 `java -jar plantuml.jar -charset UTF-8 -tsvg <图源.puml>` 或 `-tpng` 重生。图中的view为应用服务私有投影片段，授权事实来自AuthorizationRepository.facts；空投影由应用服务抛APPLICATION_ACCESS_DENIED直达调用者，不转画共同失败链。
+
+`api.identity.ApplicationIdentityController`负责统一身份HTTP适配与DTO/Command、Result/VO转换；`RawResponse`保留外部既有成功结构。共享`ApplicationIdentityUseCase`只定义用例，`ManagedApplications`为登记事实读取端口，由`JpaManagedApplications`适配；应用编码、教师/学生角色和业务权限短码不得硬编码进RBAC。
+
+结构化`StructuredApplicationIdentityService`直接从JPA读取账号、角色、权限和系统；DDD `DddApplicationIdentityService`从领域仓储装配事实，由纯领域`ApplicationAuthorizationPolicy`计算有效投影。两种实现不相互调用；DDD应用层不依赖JPA。角色全局共享，可组合多个应用的权限；权限与API映射须同系统。
+
+`/auth/login`接收单个登记外部应用，验证本地凭据、应用状态及有效授权后签发独立受众。`/auth/me`每次重算账号与授权，返回subject/roles/permissions/system。roles为贡献该应用有效权限的启用角色配置编码。API类型权限须有至少一条映射且所有映射同系统启用；菜单、按钮可独立表达展示或资格。管理受众不能通过外部入口绕过管理准入。最小身份查询按该应用实际GET /auth/users/{userId}映射控制，不写死UL、TEC等课程短码。
+
+人员角色替换在共同根锁后重读目标集合并计算差集；仅对新增和删除关联检查资格，非法变化整次回滚。不可改的现有项可原样保留；自定义角色增删仍只允许可信根直属有效五级管理员。当前角色返回lockedRoleIds供界面锁定，但客户端结果不构成授权证据。自定义角色不使人员整体只读，停用、调动仍按现有部门和人员级别规则判断。
+
+课程角色与路由配置位于`integrations/course/catalog.json`及显式联调夹具，不进入service/port。课程业务、Teacher/Student关联及对象规则均由老师工程维护。老师现有外部审计依赖由独立本地支撑工具提供持久存储，不写入RBAC鉴权日志表，也不向RBAC领域增加课程实体。该工具只用于本地联调，不能作为服务器部署方案，安全与限制见[课程接入](course-integration.md)。
+
+原第17章图件保持核心六实体与双实现边界；本章补充的通用身份模块不把老师课程业务类画入RBAC核心模型。共享身份协议及技术支撑不重复绘制顺序图。
+
+
+权限展示名称采用完整中文（如“查看总览”“分配人员角色”“查询鉴权日志”），稳定编码仍保留供关联、排错和接口使用，不按中文名称鉴权。两套首次授权与本地夹具读取同一RBAC中文目录；课程显示名称也来自独立接入配置，不在Vue按英文编码硬翻译。
+
+通用/auth/me还返回permissionApis，即每个有效权限当前实际映射的方法/模板事实。RBAC不内置接入系统的预期路由；本地课程适配器依据catalog.json核实老师同一粗粒度短码的全部必要路由，缺少一条即保守关闭整个短码，菜单检查也采用相同投影。这样删除多路由权限的部分映射不能借另一条映射继续调用已撤路由，映射变更仍即时生效。

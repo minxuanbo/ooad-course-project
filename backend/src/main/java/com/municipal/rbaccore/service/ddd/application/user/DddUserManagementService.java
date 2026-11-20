@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class DddUserManagementService implements UserManagementUseCase {
+  private final com.municipal.rbaccore.service.port.security.ManagedApplications applications;
   private final AuthenticationUseCase authentication;
   private final UserRepository users;
   private final RoleRepository roles;
@@ -35,8 +36,26 @@ public class DddUserManagementService implements UserManagementUseCase {
   @Override
   public UserRolesResult roles(String header, Long id) {
     CurrentIdentity actor = authentication.require(header);
-    User user = target(actor, scope.facts(), id);
-    return new UserRolesResult(DddResults.updated(user), DddResults.assigned(user));
+    OrganizationFacts organization = scope.facts();
+    target(actor, organization, id);
+    User user = operator(id).user();
+    AuthorizationFacts operator = operator(actor.id());
+    Set<Long> allowed = subset(operator);
+    boolean custom = customPermitted(operator.user(), organization);
+    boolean editable =
+        RoleAssignmentPolicy.canManage(
+            operator.user(), OrganizationPolicy.global(organization, actor.departmentId()), user);
+    java.util.List<Long> locked =
+        user.roles().stream()
+            .filter(
+                role ->
+                    !editable
+                        || !RoleAssignmentPolicy.canRemove(
+                            role, operator.user().level(), custom, allowed, applications.codes()))
+            .map(Role::id)
+            .sorted()
+            .toList();
+    return new UserRolesResult(DddResults.updated(user), DddResults.assigned(user), locked);
   }
 
   /** 校验目标后将明确的授权子集条件传给分页仓储。 */
@@ -56,7 +75,8 @@ public class DddUserManagementService implements UserManagementUseCase {
                 subset(operator),
                 query.getQ(),
                 query.getPage(),
-                query.getSize()));
+                query.getSize(),
+                applications.codes()));
     return new AssignableRolePageResult(
         page.items().stream().map(DddResults::role).toList(),
         page.total(),
@@ -72,7 +92,8 @@ public class DddUserManagementService implements UserManagementUseCase {
         header,
         actor -> {
           OrganizationFacts organization = scope.facts();
-          User target = target(actor, organization, id);
+          target(actor, organization, id);
+          User target = operator(id).user();
           AuthorizationFacts operator = operator(actor.id());
           requireEditable(operator.user(), organization, target);
           Set<Long> ids = Set.copyOf(command.getIds());
@@ -81,11 +102,24 @@ public class DddUserManagementService implements UserManagementUseCase {
             throw BusinessException.bad("INVALID_ARGUMENT", "存在未知的角色ID");
           Set<Long> allowed = subset(operator);
           boolean custom = customPermitted(operator.user(), organization);
+          Set<Long> existing =
+              target.roles().stream().map(Role::id).collect(Collectors.toUnmodifiableSet());
           if (!selected.stream()
-              .allMatch(
-                  role ->
-                      RoleAssignmentPolicy.canAssign(
-                          role, operator.user().level(), custom, allowed))) {
+                  .filter(role -> !existing.contains(role.id()))
+                  .allMatch(
+                      role ->
+                          RoleAssignmentPolicy.canAssign(
+                              role, operator.user().level(), custom, allowed, applications.codes()))
+              || !target.roles().stream()
+                  .filter(role -> !ids.contains(role.id()))
+                  .allMatch(
+                      role ->
+                          RoleAssignmentPolicy.canRemove(
+                              role,
+                              operator.user().level(),
+                              custom,
+                              allowed,
+                              applications.codes()))) {
             throw BusinessException.scopeDenied();
           }
           return DddResults.updated(users.save(target.replaceRoles(selected)));
@@ -176,7 +210,7 @@ public class DddUserManagementService implements UserManagementUseCase {
 
   /** 授予子集按完整权限编号比较，而非可执行API。 */
   private Set<Long> subset(AuthorizationFacts operator) {
-    return AuthorizationPolicy.directPermissions(operator).stream()
+    return AuthorizationPolicy.directPermissions(operator, applications.codes()).stream()
         .map(Permission::id)
         .collect(Collectors.toUnmodifiableSet());
   }

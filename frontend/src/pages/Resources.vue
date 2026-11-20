@@ -29,7 +29,7 @@ const visible = computed(() =>
   ),
 )
 
-/** 只查询已登记的RBAC目录，不创建原型中的演示业务系统。 */
+/** 只查询服务端已接入目录，不创建原型中的演示业务系统。 */
 async function load(next = 0) {
   const version = generation.next()
   busy.value = true
@@ -137,7 +137,7 @@ onUnmounted(() => generation.cancel())
   <section class="card panel">
     <h2>权限资源与 API 映射</h2>
     <p class="muted">
-      当前管理RBAC自身的菜单、按钮及后端接口。菜单父子关系用于组织展示，不自动继承权限。
+      按所属系统维护权限项和接口映射。菜单父子关系用于组织展示，不自动继承权限。
     </p>
     <form class="toolbar" @submit.prevent="load(0)">
       <label>
@@ -156,7 +156,7 @@ onUnmounted(() => generation.cancel())
     </form>
     <div class="tabs">
       <button :class="{ active: tab === 'permissions' }" @click="selectTab('permissions')">
-        菜单与按钮
+        权限项
       </button>
       <button :class="{ active: tab === 'apis' }" @click="selectTab('apis')">API资源</button>
     </div>
@@ -181,7 +181,7 @@ onUnmounted(() => generation.cancel())
             {{ node.name }}
             <small>{{ node.code }}</small>
           </td>
-          <td>{{ node.type === 'MENU' ? '菜单' : '按钮' }}</td>
+          <td>{{ node.type === 'MENU' ? '菜单' : node.type === 'API' ? 'API权限' : '按钮' }}</td>
           <td>
             <span class="badge" :class="node.enabled ? 'green' : 'red'">
               {{ node.enabled ? '启用' : '停用' }}
@@ -279,6 +279,7 @@ onUnmounted(() => generation.cancel())
           <select v-model="form.type">
             <option value="MENU">菜单</option>
             <option value="BUTTON">按钮</option>
+            <option value="API">API权限（必须映射接口）</option>
           </select>
         </label>
       </template>

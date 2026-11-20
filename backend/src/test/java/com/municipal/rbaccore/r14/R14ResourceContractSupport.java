@@ -524,26 +524,20 @@ abstract class R14ResourceContractSupport {
     String admin = token("t07-admin");
     ResponseEntity<String> denied =
         request("PATCH", PERMISSIONS + "/" + foreign[0], admin, Map.of("name", "readonly"));
-    assertError(denied, 403, "MANAGEMENT_SCOPE_DENIED");
+    assertError(denied, 400, "INVALID_ARGUMENT");
     assertEquals(
-        1,
+        0,
         jdbc.queryForObject(
             "SELECT count(*) FROM authorization_logs WHERE request_id=?",
             Integer.class,
             denied.getHeaders().getFirst("X-Request-Id")));
-    assertEquals(
-        "AUTHORIZATION",
-        jdbc.queryForObject(
-            "SELECT event_type FROM authorization_logs WHERE request_id=?",
-            String.class,
-            denied.getHeaders().getFirst("X-Request-Id")));
     assertError(
-        request("PATCH", APIS + "/" + foreign[1], admin, Map.of()), 403, "MANAGEMENT_SCOPE_DENIED");
+        request("PATCH", APIS + "/" + foreign[1], admin, Map.of()), 400, "INVALID_ARGUMENT");
   }
 
   /** 目录、直接目标和关联输入的系统边界使用不同的已评审错误语义。 */
   @Test
-  @DisplayName("R14/R15 外系统目录目标403、跨系统关联400且不改变映射")
+  @DisplayName("R14/R15 登记应用可维护，跨系统关联400且不改变映射")
   void R14_IsolatesExternalSystems() throws Exception {
     long[] foreign =
         new TransactionTemplate(transactions)
@@ -560,22 +554,16 @@ abstract class R14ResourceContractSupport {
                   return new long[] {system.getId(), permission.getId(), api.getId()};
                 });
     String token = token("t07-admin");
-    assertEquals(1, data(request("GET", SYSTEMS, token, null)).size());
+    assertEquals(2, data(request("GET", SYSTEMS, token, null)).size());
     for (String path :
         List.of(
             TREE + "?systemId=" + foreign[0],
             APIS + "?systemId=" + foreign[0],
             mapping(foreign[1]))) {
-      assertError(request("GET", path, token, null), 403, "MANAGEMENT_SCOPE_DENIED");
+      data(request("GET", path, token, null));
     }
-    assertError(
-        request("PATCH", PERMISSIONS + "/" + foreign[1], token, Map.of("enabled", false)),
-        403,
-        "MANAGEMENT_SCOPE_DENIED");
-    assertError(
-        request("PATCH", APIS + "/" + foreign[2], token, Map.of("enabled", false)),
-        403,
-        "MANAGEMENT_SCOPE_DENIED");
+    data(request("PATCH", PERMISSIONS + "/" + foreign[1], token, Map.of("enabled", false)));
+    data(request("PATCH", APIS + "/" + foreign[2], token, Map.of("enabled", false)));
     long target = permissionIds.get("rbac.logs.read");
     List<Long> original = savedApiIds(target);
     assertError(

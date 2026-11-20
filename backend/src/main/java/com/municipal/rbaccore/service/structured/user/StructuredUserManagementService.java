@@ -11,8 +11,6 @@ import com.municipal.rbaccore.infrastructure.persistence.repository.UserJpaRepos
 import com.municipal.rbaccore.service.port.error.BusinessException;
 import com.municipal.rbaccore.service.port.role.RoleResult;
 import com.municipal.rbaccore.service.port.security.CurrentIdentity;
-import com.municipal.rbaccore.service.structured.security.StructuredPersonnelAuthority;
-import com.municipal.rbaccore.service.port.security.RbacCatalog;
 import com.municipal.rbaccore.service.port.security.RequestContext;
 import com.municipal.rbaccore.service.port.user.AssignableRolePageResult;
 import com.municipal.rbaccore.service.port.user.AssignableRoleQuery;
@@ -25,6 +23,7 @@ import com.municipal.rbaccore.service.structured.auth.StructuredAuthenticationSe
 import com.municipal.rbaccore.service.structured.security.StructuredDepartmentScopeService;
 import com.municipal.rbaccore.service.structured.security.StructuredEffectivePermissionService;
 import com.municipal.rbaccore.service.structured.security.StructuredMaintenanceGuard;
+import com.municipal.rbaccore.service.structured.security.StructuredPersonnelAuthority;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
@@ -52,6 +51,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class StructuredUserManagementService implements UserManagementUseCase {
+  private final com.municipal.rbaccore.service.port.security.ManagedApplications applications;
   private final StructuredAuthenticationService auth;
   private final RequestContext requestContext;
   private final StructuredEffectivePermissionService permissions;
@@ -67,7 +67,7 @@ public class StructuredUserManagementService implements UserManagementUseCase {
   public UserRolesResult roles(String header, Long id) {
     CurrentIdentity actor = auth.require(header);
     UserEntity target = target(actor, id);
-    return rolesView(target);
+    return rolesView(actor, target);
   }
 
   /** 候选只包含启用角色，且其有效权限ID集合为本人有效权限ID集合的子集。 */
@@ -78,8 +78,7 @@ public class StructuredUserManagementService implements UserManagementUseCase {
     StructuredPersonnelAuthority.AuthoritySnapshot operator = authority.snapshot(actor);
     if (!authority.canManage(operator, target(actor, id))) throw BusinessException.scopeDenied();
     String search = query.getQ() == null ? "" : query.getQ().toLowerCase(Locale.ROOT);
-    Specification<RoleEntity> filter =
-        assignableFilter(ownPermissionIds(actor), operator, search);
+    Specification<RoleEntity> filter = assignableFilter(ownPermissionIds(actor), operator, search);
     long total = roles.count(filter);
     long offset = (long) query.getPage() * query.getSize();
     if (offset >= total) {
@@ -109,10 +108,20 @@ public class StructuredUserManagementService implements UserManagementUseCase {
           if (selected.size() != wanted.size()) {
             throw BusinessException.bad("INVALID_ARGUMENT", "存在未知的角色ID");
           }
-          Specification<RoleEntity> allowed =
-              assignableFilter(ownPermissionIds(actor), operator, "")
-                  .and((role, query, builder) -> role.get("id").in(wanted));
-          if (!wanted.isEmpty() && roles.count(allowed) != wanted.size()) {
+          Set<Long> existingIds =
+              target.getRoles().stream()
+                  .map(RoleEntity::getId)
+                  .collect(Collectors.toUnmodifiableSet());
+          Set<Long> ownIds = ownPermissionIds(actor);
+          boolean invalidAdded =
+              selected.stream()
+                  .filter(role -> !existingIds.contains(role.getId()))
+                  .anyMatch(role -> !role.isEnabled() || !canRemove(role, operator, ownIds));
+          boolean invalidRemoved =
+              target.getRoles().stream()
+                  .filter(role -> !wanted.contains(role.getId()))
+                  .anyMatch(role -> !canRemove(role, operator, ownIds));
+          if (invalidAdded || invalidRemoved) {
             throw BusinessException.scopeDenied();
           }
           for (RoleEntity existing : List.copyOf(target.getRoles())) {
@@ -238,7 +247,7 @@ public class StructuredUserManagementService implements UserManagementUseCase {
           .select(permission.get("id"))
           .where(
               builder.or(
-                  builder.notEqual(permission.get("system").get("code"), RbacCatalog.SYSTEM_CODE),
+                  builder.not(permission.get("system").get("code").in(applications.codes())),
                   builder.and(
                       builder.isTrue(permission.get("enabled")),
                       builder.isTrue(permission.get("system").get("enabled")),
@@ -264,14 +273,38 @@ public class StructuredUserManagementService implements UserManagementUseCase {
     return result;
   }
 
-  /** 当前角色包含停用项及不可再分配项，供前端清理而非静默保留。 */
-  private UserRolesResult rolesView(UserEntity user) {
+  /** 删除关联必须满足级别与完整有效子集，自定义项只允许可信根管理员调整。 */
+  private boolean canRemove(
+      RoleEntity role, StructuredPersonnelAuthority.AuthoritySnapshot actor, Set<Long> ownIds) {
+    Integer level = role.getManagementLevel();
+    if (level == null ? !actor.administrator() : level > actor.level()) return false;
+    Set<String> systems = applications.codes();
+    return role.getPermissions().stream()
+        .allMatch(
+            permission ->
+                systems.contains(permission.getSystem().getCode())
+                    && (!permission.isEnabled()
+                        || !permission.getSystem().isEnabled()
+                        || ownIds.contains(permission.getId())));
+  }
+
+  /** 返回不可改变的现有角色ID；客户端保留项仍由锁后的数据库集合重新核实。 */
+  private UserRolesResult rolesView(CurrentIdentity actor, UserEntity user) {
     List<RoleResult> assigned =
         user.getRoles().stream()
             .sorted(Comparator.comparing(RoleEntity::getId))
             .map(this::roleResult)
             .toList();
-    return new UserRolesResult(withRoles(user), assigned);
+    StructuredPersonnelAuthority.AuthoritySnapshot operator = authority.snapshot(actor);
+    Set<Long> ownIds = ownPermissionIds(actor);
+    List<Long> locked =
+        user.getRoles().stream()
+            .filter(
+                role -> !authority.canManage(operator, user) || !canRemove(role, operator, ownIds))
+            .map(RoleEntity::getId)
+            .sorted()
+            .toList();
+    return new UserRolesResult(withRoles(user), assigned, locked);
   }
 
   /** 同名字段由课程CloneFactory映射，关系和状态在事务内显式补充。 */

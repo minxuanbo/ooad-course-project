@@ -20,7 +20,7 @@
 
 后端backend使用Java21、Spring Boot3.5.6、JPA、MySQL8.4、AOP与真实CloneFactory。service.structured为已实现的事务脚本，Controller只经service.port调用，持久化/认证/日志/Excel归infrastructure。DDD在service.ddd中独立计算领域规则，持久化由领域仓储适配器完成。通过APP_BACKEND_STRATEGY选择structured（默认）或ddd。
 
-正式前端frontend使用Vue3/Vite，包含登录、总览、部门、人员、角色、资源和日志工作区。正式系统仅管理RBAC自身权限；18业务系统仅在[离线原型](prototype/README.md)演示，课程管理系统暂不接入，T14/T15等待后续要求。
+正式前端frontend使用Vue3/Vite，包含登录、总览、部门、人员、角色、资源和日志工作区。默认正式目录仅管理RBAC自身；2026-11-19用户启动[课程本地接入](docs/course-integration.md)，显式配置后接入老师课程系统。18业务系统仍仅在[离线原型](prototype/README.md)演示。阶段6约定验收已完成，课程接入证据独立记录。
 
 截至2026-11-18，阶段5已通过审核并随[PR #34](https://github.com/minxuanbo/ooad-course-project/pull/34)合入main（e521f97，验收代码83dbf17）。structured和ddd各178项后端测试、71次真实HTTP检查通过；两套空库各完成10001个BCrypt10账号导入及首次授权。前端26项测试/构建及运行器5项单测通过，CloneFactory生成的51个重载均有实际赋值。
 

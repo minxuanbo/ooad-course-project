@@ -1,6 +1,6 @@
 # 组员本地复现与核对
 
-更新至2026-11-18：[PR #34](https://github.com/minxuanbo/ooad-course-project/pull/34)已合入main（e521f97），当前main包含structured/ddd双实现，文件树与验收提交83dbf17一致。组员统一从main获取并记录实际提交号；需要固定本轮验收版本时检出e521f97。只通过Git获取项目，不复制其他人的`.local`、数据库文件、node_modules、口令或预检CSV。
+当前基线导航（2026-11-20）：main为717345f，课程接入在codex/course-local-integration的614a0c4（草稿PR #38，尚未合入main）。课程场景请按本文末节及接入说明检出对应分支。以下万人库复现保留阶段5来源：[PR #34](https://github.com/minxuanbo/ooad-course-project/pull/34)已合入main（e521f97），当时main已包含structured/ddd双实现，该阶段文件树与验收提交83dbf17一致。组员统一从main获取并记录实际提交号；需要固定本轮验收版本时检出e521f97。只通过Git获取项目，不复制其他人的`.local`、数据库文件、node_modules、口令或预检CSV。
 
 ## 1. 获取正确版本及工具
 
@@ -107,4 +107,10 @@ npm run dev
 6. 日志改变筛选/批量需重新查询，同一游标快照total不变；日志查询本身的新记录可能被下一次新查询看到，不代表同快照自动增加。
 7. 按[DDD隔离边界](backend-design.md#4-双实现选择方式)检查公共端口、技术适配器、结构化、DDD服务和互斥装配的区别；不要新增DDD占位类或用结构化服务套壳。
 
-反馈请附Git提交号、操作角色/部门、操作步骤、预期/实际、HTTP状态/业务code和requestId；不附口令、Bearer、万人CSV或完整隐私数据。[阶段5交接复核](testing-acceptance.md#阶段5-交接复核2026-11-17)已记录两策略桌面浏览器及关键操作结果；窄屏、完整键盘和其他写入组合仍待复验。
+反馈请附Git提交号、操作角色/部门、操作步骤、预期/实际、HTTP状态/业务code和requestId；不附口令、Bearer、万人CSV或完整隐私数据。[阶段5交接复核](testing-acceptance.md#阶段5-交接复核2026-11-17)已记录两策略桌面浏览器及关键操作结果；阶段6约定的窄屏、键盘及写入组合已按两策略复验并合入PR #37（717345f）。本轮课程联调另见[接入复现](course-integration.md)，使用独立空库和虚构夹具，不替换本页万人初始化。
+
+## 6. 课程系统本地联调
+
+本轮从main 717345f检出codex/course-local-integration。按[课程接入说明](course-integration.md)配置两个数据库、两后端及两前端，老师原目录不动，使用独立源码副本和虚构账号。实际覆盖与限制见[本轮联调证据](history/verification/course-integration-generic.md)，不以原阶段6成绩替代新增接口验证。
+
+课程联调当前由PR #38交付，复现前检出origin/codex/course-local-integration并记录实际提交；main尚不包含此次修改。先完成两项目npm ci，并安装Chrome与Python依赖`python -m pip install -r scripts/requirements-course-integration.txt`；初始化和端口按课程接入说明，不向真实员工库导入虚构夹具。

@@ -198,7 +198,10 @@ public class StructuredInitialAuthorizationService implements AuthorizationBoots
         RbacCatalog.definitions().entrySet()) {
       PermissionEntity permission =
           new PermissionEntity(
-              system, definition.getKey(), definition.getKey(), PermissionType.BUTTON);
+              system,
+              definition.getKey(),
+              RbacCatalog.displayNames().get(definition.getKey()),
+              PermissionType.BUTTON);
       permission.moveTo(workspace);
       for (RbacCatalog.Route route : definition.getValue()) {
         ApiResourceEntity api =

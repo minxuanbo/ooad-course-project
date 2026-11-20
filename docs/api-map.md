@@ -1,6 +1,6 @@
 # 页面与API对照
 
-> 接口字段与响应的唯一机器规范为[OpenAPI](../api/openapi.yaml)，JSON为同源派生；[业务约束](api-contract.md)解释鉴权、范围与原子性。此表只作29项操作索引。
+> 接口字段与响应的唯一机器规范为[OpenAPI](../api/openapi.yaml)，JSON为同源派生；[业务约束](api-contract.md)解释鉴权、范围与原子性。此表索引29项RBAC管理操作；下文补充4项课程兼容身份操作。
 
 | 页面/操作组 | 操作 | 用途 | 请求模型 | 成功data |
 | --- | --- | --- | --- | --- |
@@ -34,6 +34,15 @@
 | 资源与映射 | `PUT /api/permissions/{id}/apis` | 整体替换权限API映射 | IdsDTO | PermissionApisVO |
 | 鉴权日志 | `GET /api/authorization-logs` | 最小鉴权日志快照查询 | 路径/query/无body，见规范 | LogPageVO |
 
-前端目标页面与状态见[前端设计](frontend-design.md)。获批离线原型见[prototype](../prototype/index.html)，正式Vue已在本阶段对接RBAC自身API，不提供演示业务系统目录或课程接口。原型不作为真实HTTP或完整界面验收。
+前端目标页面与状态见[前端设计](frontend-design.md)。获批离线原型见[prototype](../prototype/index.html)，正式Vue维护RBAC及显式接入的课程权限目录，不提供演示业务系统目录；课程业务界面继续使用老师前端。原型不作为真实HTTP或完整界面验收。
 
-初始化走离线命令，不新增HTTP初始化入口。课程系统及T14/T15等待老师要求，本次不加入课程路径、模拟外系统路径或旧应用/交接/归档接口。
+初始化走离线命令，不新增HTTP初始化入口。课程接入见[专门记录](course-integration.md)，RBAC不承载老师的课程业务路径、模拟外系统路径或旧归档接口。
+
+| 通用应用身份（课程既有客户端使用） | 操作 | 成功原始响应 |
+| --- | --- | --- |
+| 登录 | `POST /auth/login` | ApplicationLoginVO |
+| 每次Bearer请求 | `GET /auth/me` | ApplicationIdentityVO |
+| 菜单/按钮检查 | `GET /auth/permissions/{permission}` | ApplicationPermissionVO |
+| 添加教师时身份查询 | `GET /auth/users/{userId}` | ApplicationUserVO |
+
+四项仅显式启用时提供，不属于管理API或K；其业务处理器仍在老师工程。

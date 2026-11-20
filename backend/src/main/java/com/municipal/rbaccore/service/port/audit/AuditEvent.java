@@ -10,4 +10,29 @@ public record AuditEvent(
     String reason,
     String httpMethod,
     String requestPath,
-    int httpStatus) {}
+    int httpStatus,
+    String appCode) {
+  /** 保持RBAC原调用语义，课程兼容入口必须显式给出归属。 */
+  public AuditEvent(
+      Long userId,
+      String username,
+      String eventType,
+      boolean allowed,
+      String requestId,
+      String reason,
+      String httpMethod,
+      String requestPath,
+      int httpStatus) {
+    this(
+        userId,
+        username,
+        eventType,
+        allowed,
+        requestId,
+        reason,
+        httpMethod,
+        requestPath,
+        httpStatus,
+        com.municipal.rbaccore.service.port.security.RbacCatalog.SYSTEM_CODE);
+  }
+}

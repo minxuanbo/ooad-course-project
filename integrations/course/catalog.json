@@ -1,0 +1,179 @@
+{
+  "system": "course-project-management",
+  "display": [
+    "LOGIN",
+    "MCO",
+    "MTR",
+    "MTE",
+    "MLG",
+    "MCOR",
+    "MCOE",
+    "MCOD",
+    "MCOT",
+    "MTRC",
+    "MTRE",
+    "MTRD",
+    "MTRM",
+    "MTEC",
+    "MTEE",
+    "MTED",
+    "MTEL"
+  ],
+  "routes": {
+    "TC": [
+      [
+        "POST",
+        "/terms"
+      ]
+    ],
+    "TE": [
+      [
+        "PATCH",
+        "/terms/{termId}"
+      ]
+    ],
+    "TD": [
+      [
+        "DELETE",
+        "/terms/{termId}"
+      ]
+    ],
+    "TCM": [
+      [
+        "PUT",
+        "/current-term"
+      ],
+      [
+        "DELETE",
+        "/current-term"
+      ]
+    ],
+    "CV": [
+      [
+        "GET",
+        "/admin/courses"
+      ],
+      [
+        "GET",
+        "/courses/{courseId}"
+      ],
+      [
+        "GET",
+        "/courses/{courseId}/classes"
+      ]
+    ],
+    "CR": [
+      [
+        "POST",
+        "/courses/{courseId}/review"
+      ]
+    ],
+    "CE": [
+      [
+        "PATCH",
+        "/courses/{courseId}"
+      ]
+    ],
+    "CD": [
+      [
+        "DELETE",
+        "/courses/{courseId}"
+      ]
+    ],
+    "CC": [
+      [
+        "POST",
+        "/courses/copy"
+      ]
+    ],
+    "CTM": [
+      [
+        "PUT",
+        "/courses/{courseId}/leaders"
+      ],
+      [
+        "PUT",
+        "/classes/{classId}/teachers"
+      ],
+      [
+        "GET",
+        "/courses/{courseId}/classes"
+      ]
+    ],
+    "TV": [
+      [
+        "GET",
+        "/teachers"
+      ]
+    ],
+    "TEC": [
+      [
+        "POST",
+        "/teachers"
+      ],
+      [
+        "GET",
+        "/auth/users/{userId}"
+      ]
+    ],
+    "TEE": [
+      [
+        "PATCH",
+        "/teachers/{teacherId}"
+      ]
+    ],
+    "TED": [
+      [
+        "DELETE",
+        "/teachers/{teacherId}"
+      ]
+    ],
+    "AV": [
+      [
+        "GET",
+        "/audit-logs"
+      ]
+    ],
+    "UL": [
+      [
+        "GET",
+        "/auth/users/{userId}"
+      ]
+    ]
+  },
+  "names": {
+    "LOGIN": "应用登录资格",
+    "MCO": "课程管理菜单",
+    "MTR": "学期管理菜单",
+    "MTE": "教师管理菜单",
+    "MLG": "日志查询菜单",
+    "MCOR": "审核课程按钮",
+    "MCOE": "编辑课程按钮",
+    "MCOD": "删除课程按钮",
+    "MCOT": "配置课程团队按钮",
+    "MTRC": "新建学期按钮",
+    "MTRE": "编辑学期按钮",
+    "MTRD": "删除学期按钮",
+    "MTRM": "设置当前学期按钮",
+    "MTEC": "新增教师按钮",
+    "MTEE": "编辑教师按钮",
+    "MTED": "删除教师按钮",
+    "MTEL": "查看教师列表按钮",
+    "TC": "新建学期接口",
+    "TE": "编辑学期接口",
+    "TD": "删除学期接口",
+    "TCM": "设置与取消当前学期接口",
+    "CV": "查看课程与教学班接口",
+    "CR": "审核课程接口",
+    "CE": "编辑课程接口",
+    "CD": "删除课程接口",
+    "CC": "拷贝课程接口",
+    "CTM": "配置课程团队接口",
+    "TV": "查看教师列表接口",
+    "TEC": "新增教师接口",
+    "TEE": "编辑教师资料接口",
+    "TED": "删除教师接口",
+    "AV": "查看课程日志接口",
+    "UL": "查询用户身份接口"
+  }
+}

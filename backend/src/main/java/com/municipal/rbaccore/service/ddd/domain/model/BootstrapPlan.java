@@ -18,7 +18,7 @@ public record BootstrapPlan(
 
   /** RBAC固定权限目录及清单追踪所用的顺序。 */
   public record PermissionSeed(
-      String code, List<ApiResource.Route> routes, boolean scopedManagers) {}
+      String code, String name, List<ApiResource.Route> routes, boolean scopedManagers) {}
 
   /** 角色目录数据及该角色应有的直接权限。 */
   public record RoleSeed(String code, String name, int level, Set<String> permissions) {}

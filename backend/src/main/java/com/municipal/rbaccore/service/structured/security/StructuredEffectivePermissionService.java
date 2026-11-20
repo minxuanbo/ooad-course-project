@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class StructuredEffectivePermissionService implements ManagementAuthorization {
   private final ApiResourceJpaRepository apis;
   private final PermissionJpaRepository permissions;
+  private final com.municipal.rbaccore.service.port.security.ManagedApplications applications;
 
   /** 当前账号的有效API按完整同系统启用链计算。 */
   public Set<RbacCatalog.Route> routes(Long userId) {
@@ -42,8 +43,8 @@ public class StructuredEffectivePermissionService implements ManagementAuthoriza
     return permissions.effectivePermissions(userId, RbacCatalog.SYSTEM_CODE);
   }
 
-  /** 当前RBAC授权子集独立于API可达性，包含无API映射的有效菜单和按钮。 */
+  /** 已接入目录的授权子集独立于API可达性，包含无API菜单、按钮和身份标记。 */
   public List<PermissionEntity> assignablePermissions(Long userId) {
-    return permissions.effectiveRbacPermissions(userId);
+    return permissions.directPermissions(userId, applications.codes());
   }
 }

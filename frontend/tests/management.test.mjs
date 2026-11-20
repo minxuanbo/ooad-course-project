@@ -108,3 +108,19 @@ test('R17 保存403后保留草稿但禁重复提交失效操作', async () => {
   await page.run('save()'); assert.equal(writes, 1)
   assert.deepEqual([...page.run('selected.value')], [7])
 })
+
+
+test('R27 锁定现有角色无法删除，其他角色可以调整并保留锁定项提交', async () => {
+  let saved
+  const page = editor(async (path, method, body) => {
+    if (method === 'PUT') { saved = body.ids; return {} }
+    if (path === '/roles/1/permissions') return { ids: [7, 9], lockedRoleIds: [7] }
+    if (path === '/systems') return [{ id: 1, name: 'RBAC' }]
+    return []
+  })
+  await page.run('loadInitial()')
+  page.run('toggle(7, false); toggle(9, false)')
+  assert.deepEqual([...page.run('selected.value')], [7])
+  await page.run('save()'); await page.run('save()')
+  assert.deepEqual([...saved], [7])
+})

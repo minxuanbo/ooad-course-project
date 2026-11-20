@@ -1,0 +1,41 @@
+@startuml
+!pragma layout smetana
+skinparam defaultFontName Microsoft YaHei
+skinparam defaultFontSize 17
+skinparam classFontSize 18
+skinparam classAttributeFontSize 16
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam linetype polyline
+skinparam nodesep 65
+skinparam ranksep 60
+skinparam padding 8
+hide circle
+class "DddApplicationIdentityService" as C0 {
+  -authentication:\n  AuthenticationUseCase
+  -tokens: IdentityTokenStore
+  -authorization:\n  AuthorizationRepository
+  -users: UserRepository
+  -systems:\n  ApplicationSystemRepository
+  -requests: RequestContext
+  --
+  +login(command:\n  LoginCommand, system:\n  String):\n  ApplicationLoginResult
+  +current(header: String):\n  ApplicationIdentityResult
+  +allowed(header: String,\n  code: String): boolean
+  +user(header: String, id:\n  Long):\n  ApplicationUserResult
+  -view(id: Long, system:\n  String):\n  ApplicationIdentityResult
+}
+interface "AuthorizationRepository" as C1 <<interface>> {
+  --
+  +facts(key: User.Key):\n  Optional<AuthorizationFacts>
+  +candidates(criteria:\n  AuthorizationFacts.AssignableRoleCriteria):\n  DomainPage<Role>
+  +rootAccounts(root:\n  Department.Key):\n  List<AuthorizationFacts>
+}
+class "ApplicationAuthorizationPolicy" as C2 {
+  --
+  {static} +exported(facts:\n  AuthorizationFacts, system:\n  String): Set<Permission>
+}
+C0 "1" -left-> "1" C1 : authorization
+C0 .right.> C2
+@enduml
