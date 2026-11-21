@@ -114,3 +114,15 @@ npm run dev
 本轮从main 717345f检出codex/course-local-integration。按[课程接入说明](course-integration.md)配置两个数据库、两后端及两前端，老师原目录不动，使用独立源码副本和虚构账号。实际覆盖与限制见[本轮联调证据](history/verification/course-integration-generic.md)，不以原阶段6成绩替代新增接口验证。
 
 课程联调当前由PR #38交付，复现前检出origin/codex/course-local-integration并记录实际提交；main尚不包含此次修改。先完成两项目npm ci，并安装Chrome与Python依赖`python -m pip install -r scripts/requirements-course-integration.txt`；初始化和端口按课程接入说明，不向真实员工库导入虚构夹具。
+
+### 2026-11-21新增的R31万人接入
+
+上面PR #38与32人夹具保留原时间语境。本轮R31在`codex/course-identity-initialization`分支，复现时获取该分支并记录实际提交；不要向32人夹具直接追加万人身份。先按[依赖安装](../deploy/README.md#本机依赖安装)安装老师干净提交40583ff的真实CloneFactory0.0.2；普通依赖和注解处理器版本均由backend/pom.xml的clonefactory.version管理。
+
+在独立全新实例执行本文第2—3节的万人导入和五角色授权、老师课程原Flyway，再按[课程接入第8节](course-integration.md#8-本部教师与分公司学生首次接入r31)预览并显式apply。维护窗口中串行执行，完成后开放服务。当前原件的首次核对值为191教师（190员工及admin）、9810学生、1名兼任管理员；运行期不强行恢复这些人数。
+
+本机本轮structured/RBAC8081、课程8080、支撑8085共用新实例3351；DDD/RBAC8083、第二课程8084、第二支撑8086共用新实例3352。前端5173/5174当前展示第一组。原3349/3350实例和历史日志保留。两策略用独立库，不同时写同一库；两组课程后端均为老师structured。
+
+独立admin在10000名员工之后创建，初始ID为10001；人员列表按ID升序、每页20条时，它在第501页，搜索`admin`即可定位，不因其排列位置改变权限。课程端使用教师登录入口。课程页面的localhost/127.0.0.1是不同Origin，须按[本机跨域配置](course-integration.md#本机浏览器入口与跨域配置)同时显式允许；当前第一组已配置并实测两个入口登录均成功。
+
+验证脚本`scripts/verify_course_initialization.py`会经生产HTTP创建演示学期、课程、教学班及里程碑，并临时撤回后恢复学生资格；只能指向明确的本地验收环境。参数见`--help`。本轮成绩及限制见[独立验证记录](history/verification/course-initialization-r31.md)。口令仅由本地私有说明和环境提供，不存在正式默认口令。

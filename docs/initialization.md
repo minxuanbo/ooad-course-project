@@ -58,6 +58,8 @@ users.id只负责新库关联；username来自“用户名”即工号，phone�
 
 默认万人导入/首次授权仍只有RBAC自身，不能因设置课程开关就自动批量建立教师或授课程权。R29采用独立空库、显式课程目录及虚构Teacher绑定，见[课程接入](course-integration.md)。RBAC首次结构SQL包含API权限类型，老师Flyway保持原样，不生成升级SQL；夹具、持久审计和凭据只写.local。课程角色teacher/student/course-admin由显式配置授予，不随系统开关自动建立或批量授给员工。
 
+2026-11-21新增R31显式课程首次接入步骤：完成上述RBAC万人导入和五角色授权后，运行`scripts/initialize_course_integration.py`预览并按`--apply`执行。本部职能部门/项目及领导、普通员工均为teacher，分公司及下属为student；符合现行管理员资格的根直属五级人员兼course-admin，独立admin也建立同一user_id的课程教师绑定。该步骤单独配置，不改变RBAC通用模型与默认启动行为。使用[课程首次接入说明](course-integration.md#8-本部教师与分公司学生首次接入r31)，不能向已有32人验收夹具强行追加新规则。
+
 
 ## 权限中文展示名称（R30）
 

@@ -1,0 +1,12 @@
+{
+  "seedKey": "course-initial-identity-v1",
+  "headquartersSourceKey": "总公司",
+  "systemName": "课程项目管理系统",
+  "roles": {
+    "teacher": "teacher",
+    "student": "student",
+    "administrator": "course-admin"
+  },
+  "admissionPermission": "LOGIN",
+  "menuCodes": ["MCO", "MTR", "MTE", "MLG"]
+}
