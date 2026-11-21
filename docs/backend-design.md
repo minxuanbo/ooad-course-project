@@ -1,6 +1,6 @@
 # 市政公司统一权限管理系统 · 后端设计方案
 
-版本1.4。业务依据为[需求说明](requirements.md)，领域语义见[领域模型](domain-model.md)，存储见[数据库设计](database-design.md)，HTTP契约见[OpenAPI](../api/openapi.yaml)。文档按老师[后端设计](https://gitee.com/mingqcn/course-project-mgt/blob/ca90f1cb7faa7d73b71b93a125460513f46b730e/docs/backend-design.md)的章节职责组织，全部设计对象均为本RBAC项目。
+版本1.5。业务依据为[需求说明](requirements.md)，领域语义见[领域模型](domain-model.md)，存储见[数据库设计](database-design.md)，HTTP契约见[OpenAPI](../api/openapi.yaml)。文档按老师[后端设计](https://gitee.com/mingqcn/course-project-mgt/blob/ca90f1cb7faa7d73b71b93a125460513f46b730e/docs/backend-design.md)的章节职责组织，全部设计对象均为本RBAC项目。
 
 同一后端工程提供 structured 和 DDD 两套实现，共用 HTTP 契约、Vue 和 MySQL。实际验证范围见[测试与验收](testing-acceptance.md)。
 
@@ -90,19 +90,19 @@ DepartmentType只声明HEADQUARTERS/COMPANY/DEPARTMENT/PROJECT；结构化层级
 
 Command/Query/Result与HTTP DTO/VO分离，Controller及预检/AOP注入service.port接口，不注入具体实现。
 
-| 用例/支撑                   | 实际接口                                        | 当前实现/适配                                                     |
+| 用例/支撑                   | 实际接口                                        | 当前双策略实现/共用适配                                                     |
 | --------------------------- | ----------------------------------------------- | ----------------------------------------------------------------- |
-| 登录、本人                  | AuthenticationUseCase                           | StructuredAuthenticationService                                   |
-| 范围树、人员列表            | UserQueryUseCase                                | StructuredUserQueryService                                        |
-| 人员角色/停用/调动          | UserManagementUseCase                           | StructuredUserManagementService                                   |
-| 角色定义、选权              | RoleUseCase                                     | StructuredRoleService                                             |
-| 资源与API映射               | ResourceUseCase                                 | StructuredResourceService                                         |
-| 部门维护 / 范围总览         | DepartmentUseCase / OverviewUseCase             | StructuredDepartmentService / StructuredOverviewService           |
-| 最小日志查询                | AuditLogUseCase                                 | StructuredAuditLogService                                         |
-| 全局范围与操作预检          | ManagementAccessUseCase                         | StructuredGlobalManagementAccess                                  |
-| 新项目账号导入 / 首次五角色 | ImportUseCase / AuthorizationBootstrapUseCase   | StructuredImportService / StructuredInitialAuthorizationService   |
-| 最新API集合 / 根锁及K       | ManagementAuthorization / MaintenanceProtection | StructuredEffectivePermissionService / StructuredMaintenanceGuard |
-| 口令 / 身份索引             | PasswordHashing / IdentityTokenStore            | BCryptPasswordHashing / BearerIdentityStore                       |
+| 登录、本人                  | AuthenticationUseCase                           | StructuredAuthenticationService / DddAuthenticationService                                   |
+| 范围树、人员列表            | UserQueryUseCase                                | StructuredUserQueryService / DddUserQueryService                                        |
+| 人员角色/停用/调动          | UserManagementUseCase                           | StructuredUserManagementService / DddUserManagementService                                   |
+| 角色定义、选权              | RoleUseCase                                     | StructuredRoleService / DddRoleService                                             |
+| 资源与API映射               | ResourceUseCase                                 | StructuredResourceService / DddResourceService                                         |
+| 部门维护 / 范围总览         | DepartmentUseCase / OverviewUseCase             | StructuredDepartmentService / DddDepartmentService / StructuredOverviewService / DddOverviewService           |
+| 最小日志查询                | AuditLogUseCase                                 | StructuredAuditLogService / DddAuditLogService                                         |
+| 全局范围与操作预检          | ManagementAccessUseCase                         | StructuredGlobalManagementAccess / DddManagementAccess                                  |
+| 新项目账号导入 / 首次五角色 | ImportUseCase / AuthorizationBootstrapUseCase   | StructuredImportService / DddImportService / StructuredInitialAuthorizationService / DddInitialAuthorizationService   |
+| 最新API集合 / 根锁及K       | ManagementAuthorization / MaintenanceProtection | StructuredEffectivePermissionService / DddAuthorizationService / StructuredMaintenanceGuard / DddMaintenanceGuard |
+| 口令 / 身份索引             | PasswordHashing / IdentityTokenStore            | BCryptPasswordHashing / JwtIdentityStore                       |
 | 请求操作与追踪 / 事件记录   | RequestContext / AuditWriter                    | HttpRequestContext / JpaAuditWriter                               |
 | 原始资料读取                | SourceWorkbookReader                            | WorkbookImportPlanner（复用ExcelXmlReader）                       |
 
@@ -292,13 +292,13 @@ R19R21StructuredBoundaryTest使用仅测试依赖ArchUnit1.4.1导入生产字节
 
 领域仅依赖JDK与自身模型，领域仓储签名仅模型及JDK容器；应用不依赖JPA/结构化/HTTP。R19BackendStrategyTest检查同一配置入口的互斥装配和未知值，同时保留公共端口和基础设施的单向依赖检查。基础设施依赖DDD领域模型/仓储是合法适配，不得调用DDD应用服务。
 
-R03、R07、R11、R13、R14、R23 等共享契约在两个策略实例分别运行。生成的 CloneFactory 和显式领域映射使用字段断言验证。[阶段5交接复核](testing-acceptance.md#阶段5-交接复核2026-11-17)已记录两策略的真实数据库、默认JAR及桌面浏览器结果；窄屏、完整键盘交互和其他写入组合仍待复验。
+R03、R07、R11、R13、R14、R23 等共享契约在两个策略实例分别运行。生成的 CloneFactory 和显式领域映射使用字段断言验证。[阶段5交接复核](history/verification/testing-acceptance-through-r32.md#阶段5-交接复核2026-11-17)已记录两策略的真实数据库、默认JAR及桌面浏览器结果；窄屏、完整键盘交互和其他写入组合仍待复验。
 
 ## 12. 实施顺序
 
 DDD设计确认后，先建立架构与互斥装配测试，再按认证/查询→人员写→角色资源/部门→日志/初始化切片实施。每个切片先取得真实业务行为RED，再完成领域和适配实现，随后执行共享契约及完整回归。
 
-结构化基线在新增DDD时持续回归；前端保持一套，通过相同HTTP契约检查兼容。各阶段实际结果进入历史验证记录。整体进度见[开发计划](development-plan.md)。
+结构化基线在新增DDD时持续回归；前端保持一套，通过相同HTTP契约检查兼容。各阶段实际结果进入历史验证记录。整体进度见[开发计划](history/planning/development-plan-through-r32.md)。
 
 ## 13. 关键设计决策
 
@@ -352,261 +352,654 @@ Java新增或修改类/接口/记录及关键方法写中文Javadoc；明确局�
 
 ## 17. 结构化与DDD UML
 
-本章统一列出两套实现的包图、类图和差异顺序图，生成时核对当前源码的类和方法锚点。类图/顺序图按新版UML skill绘制，包图按UML包语义检查。图件生成与维护见[设计资源说明](design/README.md)。
+以当前源码为准，两套实现的类图按相同15个模块成对展示，通用应用身份另有1对；不再只展示DDD。共享技术和两个策略的静态依赖可以出现在类图，顺序图只画实际实现差异。
 
 ### 17.1 结构化与DDD包图
 
-两套实现分别展开包边界；DDD中的蓝色实现箭头表示包内类型实现接口，不能理解为包本身是Java接口。
+![structured包图](design/package-structured-current.png)
 
-![结构化现状包图](design/package-structured-current.png)
-
-[结构化SVG](design/package-structured-current.svg)
+[SVG](design/package-structured-current.svg)
 
 ![DDD包图](design/package-ddd-design.png)
 
-[DDD SVG](design/package-ddd-design.svg)
+[SVG](design/package-ddd-design.svg)
 
 ### 17.2 模块类图
 
-每张以Service为几何中心，只列本切片关键字段/操作；完整业务和其余依赖见本设计第6章。实线空心箭头为字段关联并标role，虚线空心箭头为局部/类型依赖，虚线空心三角由实现指向接口。Repository方法签名表达领域返回值；日志明确用Gateway返回公共读模型，不能误认为领域Repository允许Result。
+每张以实际Service为中心，字段关联标role；Repository/Entity与领域仓储/领域模型分别展示。列出关键成员，省略无关getter/setter。两套技术存储和HTTP契约共用，并不表示业务实现只有一套。
 
 #### 身份与准入（identity）
 
-![身份与准入类图](design/class-ddd-identity.png)
+structured：`StructuredAuthenticationService`，直接依赖`UserJpaRepository`及`StructuredEffectivePermissionService`。
 
-[可编辑SVG](design/class-ddd-identity.svg)；Service：DddAuthenticationService。
+![structured 身份与准入](design/class-structured-identity.png)
+
+[structured SVG](design/class-structured-identity.svg)
+
+DDD：`DddAuthenticationService`，领域仓储/模型及策略边界如下。
+
+![DDD 身份与准入](design/class-ddd-identity.png)
+
+[DDD SVG](design/class-ddd-identity.svg)
 
 #### 人员角色、停用与调动（personnel）
 
-![人员角色、停用与调动类图](design/class-ddd-personnel.png)
+structured：`StructuredUserManagementService`，直接依赖`UserJpaRepository`及`StructuredPersonnelAuthority`。
 
-[可编辑SVG](design/class-ddd-personnel.svg)；Service：DddUserManagementService。
+![structured 人员角色、停用与调动](design/class-structured-personnel.png)
+
+[structured SVG](design/class-structured-personnel.svg)
+
+DDD：`DddUserManagementService`，领域仓储/模型及策略边界如下。
+
+![DDD 人员角色、停用与调动](design/class-ddd-personnel.png)
+
+[DDD SVG](design/class-ddd-personnel.svg)
 
 #### 范围内人员查询（query）
 
-![范围内人员查询类图](design/class-ddd-query.png)
+structured：`StructuredUserQueryService`，直接依赖`UserJpaRepository`及`StructuredDepartmentScopeService`。
 
-[可编辑SVG](design/class-ddd-query.svg)；Service：DddUserQueryService。
+![structured 范围内人员查询](design/class-structured-query.png)
+
+[structured SVG](design/class-structured-query.svg)
+
+DDD：`DddUserQueryService`，领域仓储/模型及策略边界如下。
+
+![DDD 范围内人员查询](design/class-ddd-query.png)
+
+[DDD SVG](design/class-ddd-query.svg)
 
 #### 共享角色及直接权限（role）
 
-![共享角色及直接权限类图](design/class-ddd-role.png)
+structured：`StructuredRoleService`，直接依赖`RoleJpaRepository`及`StructuredGlobalManagementAccess`。
 
-[可编辑SVG](design/class-ddd-role.svg)；Service：DddRoleService。
+![structured 共享角色及直接权限](design/class-structured-role.png)
+
+[structured SVG](design/class-structured-role.svg)
+
+DDD：`DddRoleService`，领域仓储/模型及策略边界如下。
+
+![DDD 共享角色及直接权限](design/class-ddd-role.png)
+
+[DDD SVG](design/class-ddd-role.svg)
 
 #### 权限树及API映射（resource）
 
-![权限树及API映射类图](design/class-ddd-resource.png)
+structured：`StructuredResourceService`，直接依赖`PermissionJpaRepository`及`StructuredGlobalManagementAccess`。
 
-[可编辑SVG](design/class-ddd-resource.svg)；Service：DddResourceService。
+![structured 权限树及API映射](design/class-structured-resource.png)
+
+[structured SVG](design/class-structured-resource.svg)
+
+DDD：`DddResourceService`，领域仓储/模型及策略边界如下。
+
+![DDD 权限树及API映射](design/class-ddd-resource.png)
+
+[DDD SVG](design/class-ddd-resource.svg)
 
 #### 部门维护（department）
 
-![部门维护类图](design/class-ddd-department.png)
+structured：`StructuredDepartmentService`，直接依赖`DepartmentJpaRepository`及`StructuredDepartmentScopeService`。
 
-[可编辑SVG](design/class-ddd-department.svg)；Service：DddDepartmentService。
+![structured 部门维护](design/class-structured-department.png)
+
+[structured SVG](design/class-structured-department.svg)
+
+DDD：`DddDepartmentService`，领域仓储/模型及策略边界如下。
+
+![DDD 部门维护](design/class-ddd-department.png)
+
+[DDD SVG](design/class-ddd-department.svg)
 
 #### 范围总览（overview）
 
-![范围总览类图](design/class-ddd-overview.png)
+structured：`StructuredOverviewService`，直接依赖`UserJpaRepository`及`StructuredDepartmentService`。
 
-[可编辑SVG](design/class-ddd-overview.svg)；Service：DddOverviewService。
+![structured 范围总览](design/class-structured-overview.png)
+
+[structured SVG](design/class-structured-overview.svg)
+
+DDD：`DddOverviewService`，领域仓储/模型及策略边界如下。
+
+![DDD 范围总览](design/class-ddd-overview.png)
+
+[DDD SVG](design/class-ddd-overview.svg)
 
 #### 最小鉴权日志查询（audit）
 
-![最小鉴权日志查询类图](design/class-ddd-audit.png)
+structured：`StructuredAuditLogService`，直接依赖`AuditQueryGateway`及`StructuredDepartmentScopeService`。
 
-[可编辑SVG](design/class-ddd-audit.svg)；Service：DddAuditLogService。
+![structured 最小鉴权日志查询](design/class-structured-audit.png)
+
+[structured SVG](design/class-structured-audit.svg)
+
+DDD：`DddAuditLogService`，领域仓储/模型及策略边界如下。
+
+![DDD 最小鉴权日志查询](design/class-ddd-audit.png)
+
+[DDD SVG](design/class-ddd-audit.svg)
 
 #### 新项目组织账号导入（importing）
 
-![新项目组织账号导入类图](design/class-ddd-importing.png)
+structured：`StructuredImportService`，直接依赖`ImportSourceJpaRepository`及`SourceWorkbookReader`。
 
-[可编辑SVG](design/class-ddd-importing.svg)；Service：DddImportService。
+![structured 新项目组织账号导入](design/class-structured-importing.png)
+
+[structured SVG](design/class-structured-importing.svg)
+
+DDD：`DddImportService`，领域仓储/模型及策略边界如下。
+
+![DDD 新项目组织账号导入](design/class-ddd-importing.png)
+
+[DDD SVG](design/class-ddd-importing.svg)
 
 #### 首次批量授权（bootstrap）
 
-![首次批量授权类图](design/class-ddd-bootstrap.png)
+structured：`StructuredInitialAuthorizationService`，直接依赖`RoleJpaRepository`及`RoleBootstrapPlanner`。
 
-[可编辑SVG](design/class-ddd-bootstrap.svg)；Service：DddInitialAuthorizationService。
+![structured 首次批量授权](design/class-structured-bootstrap.png)
+
+[structured SVG](design/class-structured-bootstrap.svg)
+
+DDD：`DddInitialAuthorizationService`，领域仓储/模型及策略边界如下。
+
+![DDD 首次批量授权](design/class-ddd-bootstrap.png)
+
+[DDD SVG](design/class-ddd-bootstrap.svg)
 
 #### 完整维护者保护（maintenance）
 
-![完整维护者保护类图](design/class-ddd-maintenance.png)
+structured：`StructuredMaintenanceGuard`，直接依赖`UserJpaRepository`及`StructuredEffectivePermissionService`。
 
-[可编辑SVG](design/class-ddd-maintenance.svg)；Service：DddMaintenanceGuard。
+![structured 完整维护者保护](design/class-structured-maintenance.png)
+
+[structured SVG](design/class-structured-maintenance.svg)
+
+DDD：`DddMaintenanceGuard`，领域仓储/模型及策略边界如下。
+
+![DDD 完整维护者保护](design/class-ddd-maintenance.png)
+
+[DDD SVG](design/class-ddd-maintenance.svg)
 
 #### API资源启停（api-resource）
 
-![API资源启停类图](design/class-ddd-api-resource.png)
+structured：`StructuredResourceService`，直接依赖`ApiResourceJpaRepository`及`StructuredGlobalManagementAccess`。
 
-[可编辑SVG](design/class-ddd-api-resource.svg)；Service：DddResourceService。
+![structured API资源启停](design/class-structured-api-resource.png)
 
-#### RBAC应用系统目录（systems）
+[structured SVG](design/class-structured-api-resource.svg)
 
-![RBAC应用系统目录类图](design/class-ddd-systems.png)
+DDD：`DddResourceService`，领域仓储/模型及策略边界如下。
 
-[可编辑SVG](design/class-ddd-systems.svg)；Service：DddResourceService。
+![DDD API资源启停](design/class-ddd-api-resource.png)
+
+[DDD SVG](design/class-ddd-api-resource.svg)
+
+#### 已登记应用目录（systems）
+
+structured：`StructuredResourceService`，直接依赖`ApplicationSystemJpaRepository`及`ManagedApplications`。
+
+![structured 已登记应用目录](design/class-structured-systems.png)
+
+[structured SVG](design/class-structured-systems.svg)
+
+DDD：`DddResourceService`，领域仓储/模型及策略边界如下。
+
+![DDD 已登记应用目录](design/class-ddd-systems.png)
+
+[DDD SVG](design/class-ddd-systems.svg)
 
 #### 逐请求有效授权（authorization）
 
-![逐请求有效授权类图](design/class-ddd-authorization.png)
+structured：`StructuredEffectivePermissionService`，直接依赖`ApiResourceJpaRepository`及`ManagedApplications`。
 
-[可编辑SVG](design/class-ddd-authorization.svg)；Service：DddAuthorizationService。
+![structured 逐请求有效授权](design/class-structured-authorization.png)
+
+[structured SVG](design/class-structured-authorization.svg)
+
+DDD：`DddAuthorizationService`，领域仓储/模型及策略边界如下。
+
+![DDD 逐请求有效授权](design/class-ddd-authorization.png)
+
+[DDD SVG](design/class-ddd-authorization.svg)
 
 #### 实际API与共同根门禁（management-access）
 
-![实际API与共同根门禁类图](design/class-ddd-management-access.png)
+structured：`StructuredGlobalManagementAccess`，直接依赖`StructuredEffectivePermissionService`及`StructuredDepartmentScopeService`。
 
-[可编辑SVG](design/class-ddd-management-access.svg)；Service：DddManagementAccess。
+![structured 实际API与共同根门禁](design/class-structured-management-access.png)
 
-#### 现有结构化身份校验静态参考
+[structured SVG](design/class-structured-management-access.svg)
 
-![现有结构化身份类图](design/current-auth-class.png)
+DDD：`DddManagementAccess`，领域仓储/模型及策略边界如下。
 
-[现有类图SVG](design/current-auth-class.svg)。此类图依据实际require代码，保留作静态边界参考；不再配套绘制完整共同身份流程顺序图。
+![DDD 实际API与共同根门禁](design/class-ddd-management-access.png)
+
+[DDD SVG](design/class-ddd-management-access.svg)
+
+#### 通用应用身份（application-identity）
+
+![structured通用身份](design/class-structured-application-identity.png)
+
+[SVG](design/class-structured-application-identity.svg) · [PlantUML](design/class-structured-application-identity.puml)
+
+![DDD通用身份](design/class-ddd-application-identity.png)
+
+[SVG](design/class-ddd-application-identity.svg) · [PlantUML](design/class-ddd-application-identity.puml)
 
 ### 17.3 差异顺序图
 
-共同HTTP绑定/校验、Controller、DTO/VO、Bearer解析、AOP/预检、通用日志、根锁取得/锁后重新鉴权、最终K检查与事务提交，不放进顺序图。它们作为文字前置/后置约束在本节和第9章说明，不能被误解为删掉这些行为。即使具体实现类不同，只要外部协作语义相同，也不重复画公共链路。
+逐项核对37个HTTP操作、2个离线入口及横切支撑后，按24组独立差异编排，每组structured/DDD各1张，共48张。重复使用同一实现模式的接口只引用同一组图，具体对应见17.4；不是将每个接口复制两遍。
 
-六组差异片段：有效授权计算、人员角色替换、角色权限替换、权限树修改、部门新增、人员分页查询。每组各一张Structured现状和DDD，共12张；每张仅从“所需身份/范围/锁后事实已准备”的差异切入点到“变更/读模型准备好”的切出点。调用者统一obj: 调用者，表示调用该差异片段的外层流程，不冒称新增公共方法。两套图均使用当前类、仓储和领域方法。异常只在该差异片段发生时从实际抛出对象直接回复obj，不重复画技术错误响应。
+共同HTTP绑定/校验、Controller、DTO/VO映射、JWT签发/解析、AOP、技术日志、根锁取得、锁后重鉴权、最终保护调用、保存后的提交/回滚不画。普通保存本身不再作为两套差异重复展示；ImportBatch/Publication是领域批次边界，属于真实接口差异。`maintenance`组只画完整维护者资格算法，不重复最终保护/锁的共同编排。
 
-查询、总览、日志和初始化其余流程采用本章覆盖矩阵解释复用关系；不另外绘制相同的HTTP/令牌/日志时序。原完整require顺序图退出当前设计图集，源码历史仍可追溯。类图和包图用于展示静态边界，可出现共用接口，不能据此把共用运行流程再画进顺序图。
+每图从所列实际方法的差异片段切入；片段名称不是新增方法。同步调用编号，赋值消息不重复画普通回复；每次调用各有短执行条，静态类标MetaClass。循环与条件框只包含实际分支。共用拒绝码和事务失败路径在第9—10章、API契约规定，不因成功片段省略而消失。
 
-第一条调用是外层方法进入成功路径差异片段的边界标记，不新增同名公共方法。赋值消息已表达返回，正常回复不重复；元类用于真实静态factory，独立调用各自有短执行条，循环框完整包住循环接收执行条。
+#### 有效API计算（authorization）
 
-这些图不是全面异常流程图。身份/API/范围拒绝、未知对象、冲突及事务回滚在正文和既有错误契约约定；实现中不得因成功片段未展开而省略异常。若后续补画领域特有异常，须从实际抛出对象仍激活的执行条直接返回obj，不经Service重复转发。
+structured直接查询有效API链；DDD读取AuthorizationFacts并调用AuthorizationPolicy。
 
-#### 有效API计算
+源码：`service/structured/security/StructuredEffectivePermissionService.java`的`routes`；DDD：`DddAuthorizationService.routes`。
 
-结构化来源：backend/src/main/java/com/municipal/rbaccore/service/structured/security/StructuredEffectivePermissionService.java。差异片段展示仓储调用、领域行为与策略。
+![structured 有效API计算差异](design/sequence-authorization-structured.png)
 
-![有效API计算Structured现状差异](design/sequence-authorization-structured.png)
+[structured SVG](design/sequence-authorization-structured.svg)
 
-[Structured现状差异 SVG](design/sequence-authorization-structured.svg)
+![DDD 有效API计算差异](design/sequence-authorization-ddd.png)
 
-![有效API计算DDD差异](design/sequence-authorization-ddd.png)
+[DDD SVG](design/sequence-authorization-ddd.svg)
 
-[DDD差异 SVG](design/sequence-authorization-ddd.svg)
+#### 人员角色整体替换（personnel）
 
-#### 人员角色整体替换
+锁后仅校验角色差集：structured在Service操作Entity关联，DDD以RoleAssignmentPolicy校验并返回新的User。
 
-结构化来源：backend/src/main/java/com/municipal/rbaccore/service/structured/user/StructuredUserManagementService.java。差异片段展示仓储调用、领域行为与策略。
+源码：`service/structured/user/StructuredUserManagementService.java`的`replaceRoles`；DDD：`DddUserManagementService.replaceRoles`。
 
-![人员角色整体替换Structured现状差异](design/sequence-personnel-structured.png)
+![structured 人员角色整体替换差异](design/sequence-personnel-structured.png)
 
-[Structured现状差异 SVG](design/sequence-personnel-structured.svg)
+[structured SVG](design/sequence-personnel-structured.svg)
 
-![人员角色整体替换DDD差异](design/sequence-personnel-ddd.png)
+![DDD 人员角色整体替换差异](design/sequence-personnel-ddd.png)
 
-[DDD差异 SVG](design/sequence-personnel-ddd.svg)
+[DDD SVG](design/sequence-personnel-ddd.svg)
 
-#### 角色权限整体替换
+#### 角色权限整体替换（role-permissions）
 
-结构化来源：backend/src/main/java/com/municipal/rbaccore/service/structured/role/StructuredRoleService.java。差异片段展示仓储调用、领域行为与策略。
+structured校验集合后增删Entity关联；DDD由PermissionSelectionPolicy一次校验并替换不可变Role。
 
-![角色权限整体替换Structured现状差异](design/sequence-role-permissions-structured.png)
+源码：`service/structured/role/StructuredRoleService.java`的`replacePermissions`；DDD：`DddRoleService.replacePermissions`。
 
-[Structured现状差异 SVG](design/sequence-role-permissions-structured.svg)
+![structured 角色权限整体替换差异](design/sequence-role-permissions-structured.png)
 
-![角色权限整体替换DDD差异](design/sequence-role-permissions-ddd.png)
+[structured SVG](design/sequence-role-permissions-structured.svg)
 
-[DDD差异 SVG](design/sequence-role-permissions-ddd.svg)
+![DDD 角色权限整体替换差异](design/sequence-role-permissions-ddd.png)
 
-#### 权限树修改
+[DDD SVG](design/sequence-role-permissions-ddd.svg)
 
-结构化来源：backend/src/main/java/com/municipal/rbaccore/service/structured/resource/StructuredResourceService.java。差异片段展示仓储调用、领域行为与策略。
+#### 权限树修改（permission-tree）
 
-![权限树修改Structured现状差异](design/sequence-permission-tree-structured.png)
+structured调用Entity局部树保护；DDD读取完整树后由PermissionTreePolicy生成新Permission。
 
-[Structured现状差异 SVG](design/sequence-permission-tree-structured.svg)
+源码：`service/structured/resource/StructuredResourceService.java`的`patchPermission`；DDD：`DddResourceService.patchPermission`。
 
-![权限树修改DDD差异](design/sequence-permission-tree-ddd.png)
+![structured 权限树修改差异](design/sequence-permission-tree-structured.png)
 
-[DDD差异 SVG](design/sequence-permission-tree-ddd.svg)
+[structured SVG](design/sequence-permission-tree-structured.svg)
 
-#### 新增合法下级部门
+![DDD 权限树修改差异](design/sequence-permission-tree-ddd.png)
 
-结构化来源：backend/src/main/java/com/municipal/rbaccore/service/structured/department/StructuredDepartmentService.java。差异片段展示仓储调用、领域行为与策略。
+[DDD SVG](design/sequence-permission-tree-ddd.svg)
 
-![新增合法下级部门Structured现状差异](design/sequence-department-create-structured.png)
+#### 新增合法下级部门（department-create）
 
-[Structured现状差异 SVG](design/sequence-department-create-structured.svg)
+structured的Service校验类型/重名并移动Entity；DDD调用OrganizationPolicy与Department.child。
 
-![新增合法下级部门DDD差异](design/sequence-department-create-ddd.png)
+源码：`service/structured/department/StructuredDepartmentService.java`的`create`；DDD：`DddDepartmentService.create`。
 
-[DDD差异 SVG](design/sequence-department-create-ddd.svg)
+![structured 新增合法下级部门差异](design/sequence-department-create-structured.png)
 
-#### 范围内人员分页
+[structured SVG](design/sequence-department-create-structured.svg)
 
-结构化来源：backend/src/main/java/com/municipal/rbaccore/service/structured/user/StructuredUserQueryService.java。差异片段展示仓储调用、领域行为与策略。
+![DDD 新增合法下级部门差异](design/sequence-department-create-ddd.png)
 
-![范围内人员分页Structured现状差异](design/sequence-user-query-structured.png)
+[DDD SVG](design/sequence-department-create-ddd.svg)
 
-[Structured现状差异 SVG](design/sequence-user-query-structured.svg)
+#### 范围内人员分页（user-query）
 
-![范围内人员分页DDD差异](design/sequence-user-query-ddd.png)
+structured直接count/findAll；DDD构造Users条件，由领域仓储返回DomainPage。角色/API分页复用此访问边界模式，类型在覆盖矩阵列明。
 
-[DDD差异 SVG](design/sequence-user-query-ddd.svg)
+源码：`service/structured/user/StructuredUserQueryService.java`的`list`；DDD：`DddUserQueryService.list`。
+
+![structured 范围内人员分页差异](design/sequence-user-query-structured.png)
+
+[structured SVG](design/sequence-user-query-structured.svg)
+
+![DDD 范围内人员分页差异](design/sequence-user-query-ddd.png)
+
+[DDD SVG](design/sequence-user-query-ddd.svg)
+
+#### 凭据匹配与账号有效性（credentials）
+
+structured的Service检查匹配数和enabled；DDD由AuthenticationPolicy筛选领域User。共同口令校验与JWT签发不画。
+
+源码：`service/structured/auth/StructuredAuthenticationService.java`的`verify`；DDD：`DddAuthenticationService.verify`。
+
+![structured 凭据匹配与账号有效性差异](design/sequence-credentials-structured.png)
+
+[structured SVG](design/sequence-credentials-structured.svg)
+
+![DDD 凭据匹配与账号有效性差异](design/sequence-credentials-ddd.png)
+
+[DDD SVG](design/sequence-credentials-ddd.svg)
+
+#### 组织子树范围（organization-scope）
+
+structured由递归SQL取得子树；DDD用OrganizationPolicy从组织事实计算范围。外部目录复用同一差异模式。
+
+源码：`service/structured/security/StructuredDepartmentScopeService.java`的`allowedIds`；DDD：`DddScope.filter`。
+
+![structured 组织子树范围差异](design/sequence-organization-scope-structured.png)
+
+[structured SVG](design/sequence-organization-scope-structured.svg)
+
+![DDD 组织子树范围差异](design/sequence-organization-scope-ddd.png)
+
+[DDD SVG](design/sequence-organization-scope-ddd.svg)
+
+#### 可信共同根判断（global-scope）
+
+structured比较来源根、父级及SQL覆盖数；DDD由OrganizationPolicy.global判断可信共同根。实际API门禁沿authorization复用。
+
+源码：`service/structured/security/StructuredDepartmentScopeService.java`的`isGlobal`；DDD：`DddManagementAccess.require`。
+
+![structured 可信共同根判断差异](design/sequence-global-scope-structured.png)
+
+[structured SVG](design/sequence-global-scope-structured.svg)
+
+![DDD 可信共同根判断差异](design/sequence-global-scope-ddd.png)
+
+[DDD SVG](design/sequence-global-scope-ddd.svg)
+
+#### 候选角色的数据库筛选（assignable-roles）
+
+structured构造JPA Specification并分别计数/分页；DDD将完整AssignableRoleCriteria交给AuthorizationRepository。
+
+源码：`service/structured/user/StructuredUserManagementService.java`的`assignableRoles`；DDD：`DddUserManagementService.assignableRoles`。
+
+![structured 候选角色的数据库筛选差异](design/sequence-assignable-roles-structured.png)
+
+[structured SVG](design/sequence-assignable-roles-structured.svg)
+
+![DDD 候选角色的数据库筛选差异](design/sequence-assignable-roles-ddd.png)
+
+[DDD SVG](design/sequence-assignable-roles-ddd.svg)
+
+#### 人员停用的状态修改（user-disable）
+
+structured修改受管Entity.enabled；DDD调用User.disable返回新领域对象。目标保护分别位于辅助Service和领域策略。
+
+源码：`service/structured/user/StructuredUserManagementService.java`的`disable`；DDD：`DddUserManagementService.disable`。
+
+![structured 人员停用的状态修改差异](design/sequence-user-disable-structured.png)
+
+[structured SVG](design/sequence-user-disable-structured.svg)
+
+![DDD 人员停用的状态修改差异](design/sequence-user-disable-ddd.png)
+
+[DDD SVG](design/sequence-user-disable-ddd.svg)
+
+#### 人员调动的双范围与归属（user-transfer）
+
+structured校验范围后调用Entity.moveTo；DDD用领域范围和User.transfer形成新User。共同写事务及保存省略。
+
+源码：`service/structured/user/StructuredUserManagementService.java`的`move`；DDD：`DddUserManagementService.move`。
+
+![structured 人员调动的双范围与归属差异](design/sequence-user-transfer-structured.png)
+
+[structured SVG](design/sequence-user-transfer-structured.svg)
+
+![DDD 人员调动的双范围与归属差异](design/sequence-user-transfer-ddd.png)
+
+[DDD SVG](design/sequence-user-transfer-ddd.svg)
+
+#### 空权限角色创建（role-create）
+
+structured检查编码后创建空权限RoleEntity；DDD调用Role.custom，持久化适配器兜底编码唯一性。
+
+源码：`service/structured/role/StructuredRoleService.java`的`create`；DDD：`DddRoleService.create`。
+
+![structured 空权限角色创建差异](design/sequence-role-create-structured.png)
+
+[structured SVG](design/sequence-role-create-structured.svg)
+
+![DDD 空权限角色创建差异](design/sequence-role-create-ddd.png)
+
+[DDD SVG](design/sequence-role-create-ddd.svg)
+
+#### 角色名称与状态修改（role-update）
+
+structured通过CloneFactory原地更新Entity；DDD调用Role.revise。说明框标明本地赋值，不展开共用映射器技术链。
+
+源码：`service/structured/role/StructuredRoleService.java`的`patch`；DDD：`DddRoleService.patch`。
+
+![structured 角色名称与状态修改差异](design/sequence-role-update-structured.png)
+
+[structured SVG](design/sequence-role-update-structured.svg)
+
+![DDD 角色名称与状态修改差异](design/sequence-role-update-ddd.png)
+
+[DDD SVG](design/sequence-role-update-ddd.svg)
+
+#### API启停的状态修改（api-availability）
+
+structured原地更新ApiResourceEntity；DDD调用ApiResource.changeAvailability生成新值。
+
+源码：`service/structured/resource/StructuredResourceService.java`的`patchApi`；DDD：`DddResourceService.patchApi`。
+
+![structured API启停的状态修改差异](design/sequence-api-availability-structured.png)
+
+[structured SVG](design/sequence-api-availability-structured.svg)
+
+![DDD API启停的状态修改差异](design/sequence-api-availability-ddd.png)
+
+[DDD SVG](design/sequence-api-availability-ddd.svg)
+
+#### 权限与API的同系统映射（permission-mapping）
+
+structured逐项更改Entity关系差集；DDD用PermissionTreePolicy.map核实完整同系统集合并返回新Permission。
+
+源码：`service/structured/resource/StructuredResourceService.java`的`replaceMapping`；DDD：`DddResourceService.replaceMapping`。
+
+![structured 权限与API的同系统映射差异](design/sequence-permission-mapping-structured.png)
+
+[structured SVG](design/sequence-permission-mapping-structured.svg)
+
+![DDD 权限与API的同系统映射差异](design/sequence-permission-mapping-ddd.png)
+
+[DDD SVG](design/sequence-permission-mapping-ddd.svg)
+
+#### 部门改名与唯一性（department-rename）
+
+structured在Service判同父重名后修改Entity；DDD用OrganizationPolicy判重及Department.rename。
+
+源码：`service/structured/department/StructuredDepartmentService.java`的`rename`；DDD：`DddDepartmentService.rename`。
+
+![structured 部门改名与唯一性差异](design/sequence-department-rename-structured.png)
+
+[structured SVG](design/sequence-department-rename-structured.svg)
+
+![DDD 部门改名与唯一性差异](design/sequence-department-rename-ddd.png)
+
+[DDD SVG](design/sequence-department-rename-ddd.svg)
+
+#### 部门空节点与可信根保护（department-delete）
+
+structured直接查人员/下级并设墓碑；DDD用usage事实、requireNonRoot/requireEmpty和Department.tombstone。
+
+源码：`service/structured/department/StructuredDepartmentService.java`的`delete`；DDD：`DddDepartmentService.delete`。
+
+![structured 部门空节点与可信根保护差异](design/sequence-department-delete-structured.png)
+
+[structured SVG](design/sequence-department-delete-structured.svg)
+
+![DDD 部门空节点与可信根保护差异](design/sequence-department-delete-ddd.png)
+
+[DDD SVG](design/sequence-department-delete-ddd.svg)
+
+#### 组织树及人数投影（department-view）
+
+structured在部门Service计数、排序及递归组树；DDD部门Service委托DddDepartmentView装配领域事实投影。
+
+源码：`service/structured/department/StructuredDepartmentService.java`的`list`；DDD：`DddDepartmentService.list`。
+
+![structured 组织树及人数投影差异](design/sequence-department-view-structured.png)
+
+[structured SVG](design/sequence-department-view-structured.svg)
+
+![DDD 组织树及人数投影差异](design/sequence-department-view-ddd.png)
+
+[DDD SVG](design/sequence-department-view-ddd.svg)
+
+#### 总览统计的协作边界（overview）
+
+structured调用另一个具体部门Service并单查启用人数；DDD调用同层View，以同份统计投影组织树及人数。
+
+源码：`service/structured/department/StructuredOverviewService.java`的`overview`；DDD：`DddOverviewService.overview`。
+
+![structured 总览统计的协作边界差异](design/sequence-overview-structured.png)
+
+[structured SVG](design/sequence-overview-structured.svg)
+
+![DDD 总览统计的协作边界差异](design/sequence-overview-ddd.png)
+
+[DDD SVG](design/sequence-overview-ddd.svg)
+
+#### 完整维护者判定（maintenance）
+
+只比较完整维护者规则的实现位置：structured遍历根用户并检查级别/K；DDD由MaintenancePolicy判断单人的授权事实。根锁及最终保护调用顺序不画。
+
+源码：`service/structured/security/StructuredMaintenanceGuard.java`的`retainOne`；DDD：`DddMaintenanceGuard.retainOne`。
+
+![structured 完整维护者判定差异](design/sequence-maintenance-structured.png)
+
+[structured SVG](design/sequence-maintenance-structured.svg)
+
+![DDD 完整维护者判定差异](design/sequence-maintenance-ddd.png)
+
+[DDD SVG](design/sequence-maintenance-ddd.svg)
+
+#### 来源核对与导入批次（importing）
+
+structured核对来源、逐项创建Entity；DDD由ImportPolicy产出ImportBatch并交领域仓储。已有来源与首次导入分支明确区分。
+
+源码：`service/structured/importing/StructuredImportService.java`的`importDirectory`；DDD：`DddImportService.importDirectory`。
+
+![structured 来源核对与导入批次差异](design/sequence-importing-structured.png)
+
+[structured SVG](design/sequence-importing-structured.svg)
+
+![DDD 来源核对与导入批次差异](design/sequence-importing-ddd.png)
+
+[DDD SVG](design/sequence-importing-ddd.svg)
+
+#### 首次授权规划与发布（bootstrap）
+
+structured的规划器/Service直接核来源、账号与目录；DDD由InitialAuthorizationPolicy规划/校验并发布领域Publication。重复回执和共同根锁不展开。
+
+源码：`service/structured/bootstrap/StructuredInitialAuthorizationService.java`的`initialize`；DDD：`DddInitialAuthorizationService.initialize`。
+
+![structured 首次授权规划与发布差异](design/sequence-bootstrap-structured.png)
+
+[structured SVG](design/sequence-bootstrap-structured.svg)
+
+![DDD 首次授权规划与发布差异](design/sequence-bootstrap-ddd.png)
+
+[DDD SVG](design/sequence-bootstrap-ddd.svg)
+
+#### 通用应用角色与短码投影（application-projection）
+
+structured的Service执行exportable筛选并投影角色/短码；DDD由ApplicationAuthorizationPolicy计算导出集合。未知/空授权错误契约相同，不重复失败时序。
+
+源码：`service/structured/identity/StructuredApplicationIdentityService.java`的`view`；DDD：`DddApplicationIdentityService.view`。
+
+![structured 通用应用角色与短码投影差异](design/sequence-application-projection-structured.png)
+
+[structured SVG](design/sequence-application-projection-structured.svg)
+
+![DDD 通用应用角色与短码投影差异](design/sequence-application-projection-ddd.png)
+
+[DDD SVG](design/sequence-application-projection-ddd.svg)
 
 ### 17.4 覆盖与省略矩阵
 
-| 范围                   | 静态设计/类图                   | 顺序差异与省略理由                                                                       |
-| ---------------------- | ------------------------------- | ---------------------------------------------------------------------------------------- |
-| 认证/本人4操作         | identity及maintenance           | authorization对比SQL授权链和领域事实策略；工号口令/Bearer公共技术不重复画                |
-| 部门树/人员分页2操作   | query                           | user-query；树范围、批量摘要和空页规则见正文                                             |
-| 人员管理5操作          | personnel                       | personnel展示锁后角色差集授权；停用/调动复用相同写事务边界，领域行为见类图及正文，不画重复锁/K链 |
-| 角色5操作              | role                            | role-permissions展示集合替换；创建/改名/启停的factory及不变量见静态设计                  |
-| 资源7操作              | resource/api-resource/systems   | permission-tree展示JPA局部保护与领域策略；API启停/映射同事务约束不重复整链               |
-| 部门4操作、总览1操作   | department/overview             | department-create展示层级规则和factory；改名/空删及聚合职责见正文                        |
-| 日志1操作              | audit                           | 共同准入不画，复杂技术查询经Gateway；游标快照协议保持                                    |
-| 两类离线命令与横切支撑 | importing/bootstrap/maintenance | 来源、原子发布、映射和K职责明确；不把共用Excel/密码/锁/日志技术流程重复画入顺序图        |
+每个操作均有明确结论。“共同流程”表示两套语义和协作相同；纯类型/结果装配差异由类图说明，不制造仅换类名的顺序图。
 
-管理HTTP共29操作，另有8项通用应用身份操作，合计37操作、31路径、71 Schema；初始化为离线命令，不混入HTTP计数。第17章图件共29组（包2、类15、差异顺序12），每组同源SVG/PNG；另保留现有结构化类图1组。第18章补充通用应用身份的3组图源。没有全套公共登录/HTTP/技术日志顺序图。
+<!-- GENERATED: backend-coverage -->
+| HTTP操作 | 用例方法 | 差异图或省略理由 | 核对结论 |
+| --- | --- | --- | --- |
+| `POST /api/auth/login` | `AuthenticationUseCase.login` | credentials / authorization / global-scope | 两类实现独立校验账号和管理准入；JWT签发共用。 |
+| `POST /api/auth/logout` | `AuthenticationUseCase.logout` | 共同流程，不画 | 两套均调用IdentityTokenStore.revoke；幂等管理退出完全相同。 |
+| `GET /api/me` | `AuthenticationUseCase.me` | credentials / authorization / global-scope | 账号读取和有效能力按上述差异复用；DTO/Result装配相同，不再画。 |
+| `GET /api/me/permissions` | `AuthenticationUseCase.myPermissions` | authorization | 使用同一有效授权差异，按稳定ID排序与输出为共同后置。 |
+| `GET /api/departments/tree` | `UserQueryUseCase.tree` | organization-scope / department-view | 可见树最终委托对应部门查询；无第二套相同树流程。 |
+| `GET /api/users` | `UserQueryUseCase.list` | organization-scope / user-query | UserJpaRepository.count/findAll 对 UserRepository.search(Users)。 |
+| `GET /api/users/{id}/roles` | `UserManagementUseCase.roles` | personnel / assignable-roles | 完整角色与lockedRoleIds基于同一目标保护/角色资格差异；集合读取和排序相同。 |
+| `PUT /api/users/{id}/roles` | `UserManagementUseCase.replaceRoles` | personnel | 只检查新增/删除角色，保留无权改变的现有项。 |
+| `GET /api/users/{id}/assignable-roles` | `UserManagementUseCase.assignableRoles` | assignable-roles | 完整权限子集、有效级别、自定义资格及范围均在分页前过滤。 |
+| `PATCH /api/users/{id}/status` | `UserManagementUseCase.disable` | user-disable | 目标保护后实体修改与领域行为不同，原JWT停用即时拒绝相同。 |
+| `PUT /api/users/{id}/department` | `UserManagementUseCase.move` | user-transfer | 原部门和目标部门的双范围及不可变归属修改。 |
+| `GET /api/roles` | `RoleUseCase.list` | user-query（分页模式复用） | RoleJpaRepository.count/findAll 对 RoleRepository.search(Roles)；无新分页算法。 |
+| `POST /api/roles` | `RoleUseCase.create` | role-create | 空权限角色构造及唯一约束翻译边界。 |
+| `PATCH /api/roles/{id}` | `RoleUseCase.patch` | role-update | 字段原地拷贝对领域Role.revise。 |
+| `GET /api/roles/{id}/permissions` | `RoleUseCase.selected` | 共同集合读取，不画 | Entity/领域Role读取直接权限编号后排序；类型差异由两套role类图说明。 |
+| `PUT /api/roles/{id}/permissions` | `RoleUseCase.replacePermissions` | role-permissions | 直接权限完整集合替换，不按API子集误判。 |
+| `GET /api/systems` | `ResourceUseCase.systems` | 共同目录读取，不画 | 均按已登记应用及状态读取；ApplicationSystemJpaRepository对领域ApplicationSystemRepository，静态边界见systems类图。 |
+| `GET /api/permissions/tree` | `ResourceUseCase.tree` | 共同只读投影，不画 | 按系统读取并转换权限树；PermissionJpaRepository对领域PermissionRepository，静态边界见resource类图。 |
+| `GET /api/api-resources` | `ResourceUseCase.apis` | user-query（分页模式复用） | ApiResourceJpaRepository.count/findAll 对 ApiResourceRepository.search(Apis)；同一范围先筛后分页模式。 |
+| `PATCH /api/permissions/{id}` | `ResourceUseCase.patchPermission` | permission-tree | 父级显式null、类型及循环/同系统不变量。 |
+| `PATCH /api/api-resources/{id}` | `ResourceUseCase.patchApi` | api-availability | API启停的实体状态对不可变领域值。 |
+| `GET /api/permissions/{id}/apis` | `ResourceUseCase.mapping` | 共同集合读取，不画 | 读取完整映射、包含停用项并排序；不重复画与getRolePermissions相同的关联读取模式。 |
+| `PUT /api/permissions/{id}/apis` | `ResourceUseCase.replaceMapping` | permission-mapping | 差集关联对完整同系统映射领域策略。 |
+| `GET /api/authorization-logs` | `AuditLogUseCase.list` | global-scope / authorization | 日志准入复用；两套都调用同一AuditQueryGateway，游标/快照/脱敏流程相同，不画双份。 |
+| `GET /api/departments` | `DepartmentUseCase.list` | organization-scope / department-view | 与部门树相同用例，复用同一图。 |
+| `POST /api/departments` | `DepartmentUseCase.create` | department-create | 合法父子类型、同父重名及构造。 |
+| `PATCH /api/departments/{id}` | `DepartmentUseCase.rename` | department-rename | 保留组织身份及真实人数。 |
+| `DELETE /api/departments/{id}` | `DepartmentUseCase.delete` | department-delete | 可信根和空节点保护后软删除。 |
+| `GET /api/overview` | `OverviewUseCase.overview` | overview / department-view | 同快照人数、直接下级分布及两种协作边界。 |
+| `POST /auth/login` | `ApplicationIdentityUseCase.login` | credentials / application-projection | 登记应用检查及JWT签发相同；只画账号和有效投影差异。 |
+| `GET /auth/me` | `ApplicationIdentityUseCase.current` | application-projection | 逐请求重算本应用角色/短码/API事实。 |
+| `GET /auth/permissions/{permission}` | `ApplicationIdentityUseCase.allowed` | application-projection | current后contains(code)完全相同，不增加重复顺序图。 |
+| `GET /auth/users/{userId}` | `ApplicationIdentityUseCase.user` | application-projection | 实际查人API映射门禁复用投影；按ID读取与最小3字段响应相同，JPA/领域仓储边界见类图。 |
+| `POST /auth/logout` | `ApplicationIdentityUseCase.logout` | 共同流程，不画 | 受众核对及当前会话撤销完全相同，不绘制两张JWT退出图。 |
+| `GET /auth/departments` | `ApplicationIdentityUseCase.departments` | application-projection / organization-scope | 目录门禁和范围依上述差异；IdentityDirectoryGateway的计数/分页SQL是共用实现，不画双份。 |
+| `GET /auth/departments/{departmentId}/users` | `ApplicationIdentityUseCase.departmentUsers` | application-projection / organization-scope | 直属部门范围差异同上；五字段及page/pageSize查询共用。 |
+| `GET /auth/api-permissions/{operationId}` | `ApplicationIdentityUseCase.apiAllowed` | application-projection | ApiOperationCatalog定位、permissionRoles和路由匹配算法相同，仅current投影依两套实现。 |
+<!-- END: backend-coverage -->
 
-## 18. 通用应用身份与课程本地接入（R29）
+| 非HTTP入口/支撑 | 对应差异 | 共同部分 |
+| --- | --- | --- |
+| ImportUseCase.importDirectory | importing；来源校验与领域批次 | Excel读取、BCrypt口令编码及整批事务 |
+| AuthorizationBootstrapUseCase.preview/initialize | bootstrap；规划、账号/来源核验及Publication | 只读预览、已有回执不重置、锁和K调用 |
+| ManagementAccessUseCase/ManagementAuthorization | global-scope / authorization | 同一服务端实际方法/模板门禁 |
+| MaintenanceProtection | maintenance（资格算法） | 根锁、锁后重鉴权、最终保护的顺序 |
+| JWT、AuditQueryGateway、IdentityDirectoryGateway、ApiOperationCatalog | 共用技术实现，不画双份 | 签名、单会话撤销、快照、目录SQL与操作配置 |
 
-本节实现图从当前Java类型及方法提取，Service居中，顺序图只画DDD领域投影差异，不重复两策略共同的认证、令牌受众与HTTP链。可编辑PlantUML与同源SVG/PNG保存在docs/design：
+当前图集82组：包图2、类图32、差异顺序图48。生成数据、源码锚点及运行命令见[图件说明](design/README.md)。旧片段类图、单侧投影/异常图与重复目录范围图归档到history/design-assets/through-r32，退出当前图集，原证据未删除。
 
-- [通用身份类图](design/class-ddd-application-identity.svg)（[图源](design/class-ddd-application-identity.puml)）。
-- [正常领域投影](design/sequence-application-identity-normal.svg)（[图源](design/sequence-application-identity-normal.puml)）。
-- [空授权异常](design/sequence-application-identity-exception.svg)（[图源](design/sequence-application-identity-exception.puml)）。
+## 18. 通用应用身份与课程本地接入
 
-采用PlantUML 1.2025.10，执行 `java -jar plantuml.jar -charset UTF-8 -tsvg <图源.puml>` 或 `-tpng` 重生。图中的view为应用服务私有投影片段，授权事实来自AuthorizationRepository.facts；空投影由应用服务抛APPLICATION_ACCESS_DENIED直达调用者，不转画共同失败链。
+RBAC负责通用应用、角色、权限、API资源与身份协议。`ApplicationIdentityController`适配8项外部协议；shared port不承载实现，structured直接使用JPA，DDD从领域仓储装配事实并调用ApplicationAuthorizationPolicy。类图与application-projection、organization-scope差异统一收在第17章。
 
-`api.identity.ApplicationIdentityController`负责统一身份HTTP适配与DTO/Command、Result/VO转换；`RawResponse`保留外部既有成功结构。共享`ApplicationIdentityUseCase`只定义用例，`ManagedApplications`为登记事实读取端口，由`JpaManagedApplications`适配；应用编码、教师/学生角色和业务权限短码不得硬编码进RBAC。
+管理端`/api/auth/login`与外部`/auth/login`统一经`JwtIdentityStore`和`JwtIdentityCodec`签发HS256 JWT，只有sub/aud/iss/iat/exp/jti，没有角色权限快照。管理aud固定rbac；外部aud为单个已登记启用应用。两种入口保持原字段token/accessToken及响应包装，均通过Authorization: Bearer携带；相同格式不能越过受众或管理准入。
 
-结构化`StructuredApplicationIdentityService`直接从JPA读取账号、角色、权限和系统；DDD `DddApplicationIdentityService`从领域仓储装配事实，由纯领域`ApplicationAuthorizationPolicy`计算有效投影。两种实现不相互调用；DDD应用层不依赖JPA。角色全局共享，可组合多个应用的权限；权限与API映射须同系统。
+JWT签名、issuer、严格到期和主体/单受众由标准JOSE/Nimbus校验。进程内会话索引用于单会话即时退出，重启后旧会话失效；固定签名秘密也不代表已支持多实例共享会话。IDENTITY_JWT_SECRET可配置至少256位Base64密钥，未配置每进程随机；IDENTITY_JWT_ISSUER配置issuer，两者同时用于两类JWT，APP_IDENTITY_ENABLED只控制外部8项端点，不控制管理JWT。
 
-`/auth/login`接收单个登记外部应用，验证本地凭据、应用状态及有效授权后签发独立受众。`/auth/me`每次重算账号与授权，返回subject/roles/permissions/system。roles为贡献该应用有效权限的启用角色配置编码。API类型权限须有至少一条映射且所有映射同系统启用；菜单、按钮可独立表达展示或资格。管理受众不能通过外部入口绕过管理准入。最小身份查询按该应用实际GET /auth/users/{userId}映射控制，不写死UL、TEC等课程短码。
+角色、账号启停、权限及部门范围逐请求读取。API类型短码须有实际映射且全部映射同应用启用；通用/auth/me返回subject、roles、permissions、system、permissionApis。角色可跨应用拥有权限，Permission与ApiResource映射必须同应用。
 
-人员角色替换在共同根锁后重读目标集合并计算差集；仅对新增和删除关联检查资格，非法变化整次回滚。不可改的现有项可原样保留；自定义角色增删仍只允许可信根直属有效五级管理员。当前角色返回lockedRoleIds供界面锁定，但客户端结果不构成授权证据。自定义角色不使人员整体只读，停用、调动仍按现有部门和人员级别规则判断。
+外部目录采用page从1、pageSize默认20最多100，按人员子树逐层展开直接子部门，直属人员只返回5个最小字段。IdentityDirectoryGateway在同一数据库快照先筛选、计数、分页。operationId只由IDENTITY_OPERATIONS_FILE显式配置定位，未知操作404、损坏/重复配置启动失败；permissionRoles只决定全局门禁适用角色，课程对象权限仍由课程Service判断。
 
-课程角色与路由配置位于`integrations/course/catalog.json`及显式联调夹具，不进入service/port。课程业务、Teacher/Student关联及对象规则均由老师工程维护。老师现有外部审计依赖由独立本地支撑工具提供持久存储，不写入RBAC鉴权日志表，也不向RBAC领域增加课程实体。该工具只用于本地联调，不能作为服务器部署方案，安全与限制见[课程接入](course-integration.md)。
+课程teacher/student/course-admin及路由保存在integrations/course配置中。R31首次接入按总公司本部范围分配teacher、其余student，合格根直属五级RBAC管理员同账号兼course-admin，并建立老师课程本地绑定；由独立初始化脚本显式执行，不加入RBAC领域。课程先提交绑定、RBAC后在根锁事务发布通用授权和回执，不宣称分布式原子事务；重复回执不重置后续授权。
 
-原第17章图件保持核心六实体与双实现边界；本章补充的通用身份模块不把老师课程业务类画入RBAC核心模型。共享身份协议及技术支撑不重复绘制顺序图。
-
-
-权限展示名称采用完整中文（如“查看总览”“分配人员角色”“查询鉴权日志”），稳定编码仍保留供关联、排错和接口使用，不按中文名称鉴权。两套首次授权与本地夹具读取同一RBAC中文目录；课程显示名称也来自独立接入配置，不在Vue按英文编码硬翻译。
-
-通用/auth/me还返回permissionApis，即每个有效权限当前实际映射的方法/模板事实。RBAC不内置接入系统的预期路由；本地课程适配器依据catalog.json核实老师同一粗粒度短码的全部必要路由，缺少一条即保守关闭整个短码，菜单检查也采用相同投影。这样删除多路由权限的部分映射不能借另一条映射继续调用已撤路由，映射变更仍即时生效。
-
-R31课程首次身份分配由独立配置和`scripts/initialize_course_integration.py`执行：本部领导及普通员工为teacher，分公司子树为student；合格RBAC管理员同一账号兼course-admin。它在完成原RBAC导入/五角色授权及老师Flyway后单独预览、执行，课程本地身份先提交，RBAC通用目录/角色/权限/人员关联和独立完成回执后在根锁事务中发布；不声称两系统分布式原子提交。没有把Teacher/Student或分配策略添加到structured/DDD业务包，当前包图、核心类图与运行时授权差异仍适用。重复接入不重置运行期授权，具体见[课程接入第8节](course-integration.md#8-本部教师与分公司学生首次接入r31)。
-
-
-### 18.1 R32完整统一身份协议
-
-![DDD完整身份类图](design/class-ddd-application-identity.png)
-
-![structured完整身份类图](design/class-structured-application-identity.png)
-
-![DDD身份目录差异](design/sequence-identity-directory-ddd.png)
-
-![structured身份目录差异](design/sequence-identity-directory-structured.png)
-
-上述图件的同名.puml及.svg位于docs/design，由`scripts/build-identity-design.py --plantuml <plantuml.jar> --java <java>`同源生成。共同认证、JWT和目录SQL不重复放入差异顺序图；既有正常投影/空授权异常图仍描述相同真实方法。
-
-八项协议、JWT和目录/操作查询的职责见[完整身份设计](design/identity-eight-contract.md)。ApplicationIdentityUseCase新增logout、departments、departmentUsers和apiAllowed；两策略各自决定有效API及组织范围。DDD使用OrganizationRepository和OrganizationPolicy，structured使用StructuredDepartmentScopeService。共享IdentityDirectoryGateway仅执行数据库过滤、计数和最小字段投影，不依赖任一应用实现；ConfiguredApiOperationCatalog以(system,operationId)定位显式元数据，不充当应用白名单。
-
-ApplicationJwtCodec使用Spring Security OAuth2 JOSE及Nimbus固定HS256，外部JWT不含权限；BearerIdentityStore同时保留当前会话撤销索引，管理端随机Bearer不变。目录分页为老师page从1开始/pageSize约定；内部管理端page/size不变。新增协议不扩大17项K，不新增表或课程实体。统一身份审计2项不纳入本轮。
+老师原目录保持独立；本地副本只保留3个structured生产补丁。统一身份审计另2项不在RBAC8项契约中，原独立本地支撑持久保存课程业务日志；老师缺少的Controller等来源限制继续保留。配置、端口及已知缺口以[课程接入](course-integration.md)为准。服务器部署仍搁置，详设外部文件不改。

@@ -1,0 +1,403 @@
+[
+  {
+    "id": "identity",
+    "name": "class-structured-identity",
+    "service": "StructuredAuthenticationService",
+    "repository": "UserJpaRepository",
+    "support": "StructuredEffectivePermissionService",
+    "model": "UserEntity",
+    "port": "AuthenticationUseCase",
+    "selected": {
+      "repo": [
+        "findByUsernameOrPhone",
+        "findById"
+      ],
+      "model": [],
+      "support": [
+        "canEnter",
+        "permissions"
+      ],
+      "fields": [
+        "id",
+        "username",
+        "passwordHash",
+        "enabled",
+        "department"
+      ]
+    }
+  },
+  {
+    "id": "personnel",
+    "name": "class-structured-personnel",
+    "service": "StructuredUserManagementService",
+    "repository": "UserJpaRepository",
+    "support": "StructuredPersonnelAuthority",
+    "model": "UserEntity",
+    "port": "UserManagementUseCase",
+    "selected": {
+      "repo": [
+        "findById",
+        "saveAndFlush"
+      ],
+      "model": [
+        "assignRole",
+        "removeRole",
+        "moveTo"
+      ],
+      "support": [
+        "snapshot",
+        "canManage",
+        "requireManage"
+      ],
+      "fields": [
+        "id",
+        "department",
+        "enabled",
+        "roles"
+      ]
+    }
+  },
+  {
+    "id": "query",
+    "name": "class-structured-query",
+    "service": "StructuredUserQueryService",
+    "repository": "UserJpaRepository",
+    "support": "StructuredDepartmentScopeService",
+    "model": "UserEntity",
+    "port": "UserQueryUseCase",
+    "selected": {
+      "repo": [
+        "count",
+        "findAll",
+        "withRoles"
+      ],
+      "model": [],
+      "support": [
+        "filteredIds",
+        "allowedIds"
+      ],
+      "fields": [
+        "id",
+        "username",
+        "name",
+        "department"
+      ]
+    }
+  },
+  {
+    "id": "role",
+    "name": "class-structured-role",
+    "service": "StructuredRoleService",
+    "repository": "RoleJpaRepository",
+    "support": "StructuredGlobalManagementAccess",
+    "model": "RoleEntity",
+    "port": "RoleUseCase",
+    "selected": {
+      "repo": [
+        "existsByCode",
+        "findById",
+        "saveAndFlush"
+      ],
+      "model": [
+        "grantPermission",
+        "revokePermission"
+      ],
+      "support": [
+        "require",
+        "write"
+      ],
+      "fields": [
+        "id",
+        "code",
+        "enabled",
+        "permissions"
+      ]
+    }
+  },
+  {
+    "id": "resource",
+    "name": "class-structured-resource",
+    "service": "StructuredResourceService",
+    "repository": "PermissionJpaRepository",
+    "support": "StructuredGlobalManagementAccess",
+    "model": "PermissionEntity",
+    "port": "ResourceUseCase",
+    "selected": {
+      "repo": [
+        "findById",
+        "findAllById"
+      ],
+      "model": [
+        "changeType",
+        "moveTo",
+        "mapApi",
+        "unmapApi"
+      ],
+      "support": [
+        "require",
+        "write"
+      ],
+      "fields": [
+        "id",
+        "system",
+        "parent",
+        "type",
+        "enabled"
+      ]
+    }
+  },
+  {
+    "id": "department",
+    "name": "class-structured-department",
+    "service": "StructuredDepartmentService",
+    "repository": "DepartmentJpaRepository",
+    "support": "StructuredDepartmentScopeService",
+    "model": "DepartmentEntity",
+    "port": "DepartmentUseCase",
+    "selected": {
+      "repo": [
+        "siblingNameExists",
+        "existsByParentIdAndDeletedFalse",
+        "saveAndFlush"
+      ],
+      "model": [
+        "moveTo",
+        "setDeleted"
+      ],
+      "support": [
+        "allowedIds",
+        "trustedRootId",
+        "isGlobal"
+      ],
+      "fields": [
+        "id",
+        "parent",
+        "name",
+        "type",
+        "deleted"
+      ]
+    }
+  },
+  {
+    "id": "overview",
+    "name": "class-structured-overview",
+    "service": "StructuredOverviewService",
+    "repository": "UserJpaRepository",
+    "support": "StructuredDepartmentService",
+    "model": "DepartmentResult",
+    "port": "OverviewUseCase",
+    "selected": {
+      "repo": [
+        "countByDepartmentIdInAndEnabledTrue"
+      ],
+      "model": [],
+      "support": [
+        "list"
+      ],
+      "fields": [
+        "id",
+        "parentId",
+        "directUsers",
+        "totalUsers"
+      ]
+    }
+  },
+  {
+    "id": "audit",
+    "name": "class-structured-audit",
+    "service": "StructuredAuditLogService",
+    "repository": "AuditQueryGateway",
+    "support": "StructuredDepartmentScopeService",
+    "model": "LogPageResult",
+    "port": "AuditLogUseCase",
+    "selected": {
+      "repo": [
+        "list"
+      ],
+      "model": [],
+      "support": [
+        "isGlobal"
+      ],
+      "fields": [
+        "items",
+        "total"
+      ]
+    }
+  },
+  {
+    "id": "importing",
+    "name": "class-structured-importing",
+    "service": "StructuredImportService",
+    "repository": "ImportSourceJpaRepository",
+    "support": "SourceWorkbookReader",
+    "model": "UserEntity",
+    "port": "ImportUseCase",
+    "selected": {
+      "repo": [
+        "findAll",
+        "saveAllAndFlush"
+      ],
+      "model": [
+        "updateProfile"
+      ],
+      "support": [
+        "read"
+      ],
+      "fields": [
+        "username",
+        "passwordHash",
+        "department"
+      ]
+    }
+  },
+  {
+    "id": "bootstrap",
+    "name": "class-structured-bootstrap",
+    "service": "StructuredInitialAuthorizationService",
+    "repository": "RoleJpaRepository",
+    "support": "RoleBootstrapPlanner",
+    "model": "RoleEntity",
+    "port": "AuthorizationBootstrapUseCase",
+    "selected": {
+      "repo": [
+        "saveAndFlush"
+      ],
+      "model": [
+        "grantPermission"
+      ],
+      "support": [
+        "plan"
+      ],
+      "fields": [
+        "code",
+        "managementLevel",
+        "permissions"
+      ]
+    }
+  },
+  {
+    "id": "maintenance",
+    "name": "class-structured-maintenance",
+    "service": "StructuredMaintenanceGuard",
+    "repository": "UserJpaRepository",
+    "support": "StructuredEffectivePermissionService",
+    "model": "UserEntity",
+    "port": "MaintenanceProtection",
+    "selected": {
+      "repo": [
+        "findByDepartmentIdAndEnabledTrue"
+      ],
+      "model": [],
+      "support": [
+        "routes"
+      ],
+      "fields": [
+        "id",
+        "enabled",
+        "department",
+        "roles"
+      ]
+    }
+  },
+  {
+    "id": "api-resource",
+    "name": "class-structured-api-resource",
+    "service": "StructuredResourceService",
+    "repository": "ApiResourceJpaRepository",
+    "support": "StructuredGlobalManagementAccess",
+    "model": "ApiResourceEntity",
+    "port": "ResourceUseCase",
+    "selected": {
+      "repo": [
+        "findById",
+        "count",
+        "findAll",
+        "saveAndFlush"
+      ],
+      "model": [
+        "setEnabled"
+      ],
+      "support": [
+        "require",
+        "write"
+      ],
+      "fields": [
+        "id",
+        "system",
+        "httpMethod",
+        "pathTemplate",
+        "enabled"
+      ]
+    }
+  },
+  {
+    "id": "systems",
+    "name": "class-structured-systems",
+    "service": "StructuredResourceService",
+    "repository": "ApplicationSystemJpaRepository",
+    "support": "ManagedApplications",
+    "model": "ApplicationSystemEntity",
+    "port": "ResourceUseCase",
+    "selected": {
+      "repo": [
+        "findByCode"
+      ],
+      "model": [],
+      "support": [
+        "codes"
+      ],
+      "fields": [
+        "id",
+        "code",
+        "name",
+        "enabled"
+      ]
+    }
+  },
+  {
+    "id": "authorization",
+    "name": "class-structured-authorization",
+    "service": "StructuredEffectivePermissionService",
+    "repository": "ApiResourceJpaRepository",
+    "support": "ManagedApplications",
+    "model": "PermissionEntity",
+    "port": "ManagementAuthorization",
+    "selected": {
+      "repo": [
+        "effectiveApis"
+      ],
+      "model": [],
+      "support": [
+        "codes"
+      ],
+      "fields": [
+        "system",
+        "type",
+        "enabled",
+        "apis"
+      ]
+    }
+  },
+  {
+    "id": "management-access",
+    "name": "class-structured-management-access",
+    "service": "StructuredGlobalManagementAccess",
+    "repository": "StructuredEffectivePermissionService",
+    "support": "StructuredDepartmentScopeService",
+    "model": "CurrentIdentity",
+    "port": "ManagementAccessUseCase",
+    "selected": {
+      "repo": [
+        "allows"
+      ],
+      "model": [],
+      "support": [
+        "isGlobal"
+      ],
+      "fields": [
+        "id",
+        "departmentId"
+      ]
+    }
+  }
+]

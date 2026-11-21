@@ -6,7 +6,7 @@
 
 | 策略 | 实际验证提交 | 真实浏览器套件 | 前端检查 |
 | --- | --- | --- | --- |
-| structured | `00186e5`，见 [PR #36 验收记录](../../structured-ui-acceptance.md) | 13 通过，0 失败，0 跳过 | 26 项通过，生产构建通过 |
+| structured | `00186e5`，见 [PR #36 验收记录](structured-ui-acceptance.md) | 13 通过，0 失败，0 跳过 | 26 项通过，生产构建通过 |
 | ddd | `292a8a4` | 13 通过，0 失败，0 跳过，用时 29.8 秒 | 26 项通过，生产构建通过 |
 
 本地 Git 核对两提交间只有 `AGENTS.md`、开发计划和 structured 验收记录变化。后端、前端和首次 SQL 的文件树一致，Playwright 测试、依赖锁定和夹具生成器也一致。DDD 运行于 Windows、JDK 21.0.12.1、MySQL 8.4.8、Node 24.18.0、Playwright 1.58.2 / Chromium。后端通过 `mvn -B -o -f backend/pom.xml -DskipTests clean package` 重新打包，后端 Maven 回归沿用[已有记录](../../testing-acceptance.md)。

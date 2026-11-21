@@ -2,7 +2,7 @@ package com.municipal.rbaccore.r29;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.municipal.rbaccore.infrastructure.security.ApplicationJwtCodec;
+import com.municipal.rbaccore.infrastructure.security.JwtIdentityCodec;
 import com.municipal.rbaccore.service.port.error.BusinessException;
 import java.time.Clock;
 import java.time.Instant;
@@ -20,8 +20,7 @@ class R32JwtCodecTest {
   @Test
   @DisplayName("R32 JWT签名正确仍须核对主体及受众")
   void R32_VerifiesIdentityAndAudience() {
-    ApplicationJwtCodec codec =
-        new ApplicationJwtCodec(CLOCK, secret(), "https://rbac.example.test");
+    JwtIdentityCodec codec = new JwtIdentityCodec(CLOCK, secret(), "https://rbac.example.test");
     String token = codec.encode(7L, "application-a", NOW, NOW.plusSeconds(60), "test-id");
     assertDoesNotThrow(() -> codec.verify(token, 7L, "application-a"));
     assertThrows(BusinessException.class, () -> codec.verify(token, 8L, "application-a"));
@@ -33,10 +32,10 @@ class R32JwtCodecTest {
   @DisplayName("R32 JWT到期立即失效且签发者必须一致")
   void R32_RejectsExpiryAndIssuer() {
     String key = secret();
-    ApplicationJwtCodec codec = new ApplicationJwtCodec(CLOCK, key, "https://rbac.example.test");
+    JwtIdentityCodec codec = new JwtIdentityCodec(CLOCK, key, "https://rbac.example.test");
     String expired = codec.encode(7L, "application-a", NOW.minusSeconds(60), NOW, "expired");
     assertThrows(BusinessException.class, () -> codec.verify(expired, 7L, "application-a"));
-    ApplicationJwtCodec other = new ApplicationJwtCodec(CLOCK, key, "https://other.example.test");
+    JwtIdentityCodec other = new JwtIdentityCodec(CLOCK, key, "https://other.example.test");
     String foreign = other.encode(7L, "application-a", NOW, NOW.plusSeconds(60), "other");
     assertThrows(BusinessException.class, () -> codec.verify(foreign, 7L, "application-a"));
   }
@@ -45,10 +44,8 @@ class R32JwtCodecTest {
   @Test
   @DisplayName("R32 JWT拒绝其他密钥及篡改签名")
   void R32_RejectsForeignSignature() {
-    ApplicationJwtCodec codec =
-        new ApplicationJwtCodec(CLOCK, secret(), "https://rbac.example.test");
-    ApplicationJwtCodec other =
-        new ApplicationJwtCodec(CLOCK, secret(), "https://rbac.example.test");
+    JwtIdentityCodec codec = new JwtIdentityCodec(CLOCK, secret(), "https://rbac.example.test");
+    JwtIdentityCodec other = new JwtIdentityCodec(CLOCK, secret(), "https://rbac.example.test");
     String foreign = other.encode(7L, "application-a", NOW, NOW.plusSeconds(60), "foreign");
     assertThrows(BusinessException.class, () -> codec.verify(foreign, 7L, "application-a"));
     String[] parts = foreign.split("\\.");
@@ -62,9 +59,8 @@ class R32JwtCodecTest {
   @DisplayName("R32 JWT拒绝短密钥及非法编码")
   void R32_RejectsInvalidConfiguration() {
     assertThrows(
-        IllegalStateException.class, () -> new ApplicationJwtCodec(CLOCK, "invalid!", "issuer"));
-    assertThrows(
-        IllegalStateException.class, () -> new ApplicationJwtCodec(CLOCK, "YQ==", "issuer"));
+        IllegalStateException.class, () -> new JwtIdentityCodec(CLOCK, "invalid!", "issuer"));
+    assertThrows(IllegalStateException.class, () -> new JwtIdentityCodec(CLOCK, "YQ==", "issuer"));
   }
 
   /** 测试秘密每次独立生成，不给产品引入测试默认密钥。 */

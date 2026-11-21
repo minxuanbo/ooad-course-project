@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "市政公司统一权限管理系统 API",
-    "version": "1.4.0",
-    "description": "structured/ddd共享契约：29项RBAC管理操作及8项可选通用应用身份鉴权操作。应用目录来自登记数据及状态，APP_IDENTITY_ENABLED默认false。外部应用使用无角色权限快照的JWT，管理端保留独立Bearer。角色可包含多个应用的权限，Permission—API映射必须同系统。接入应用的业务接口由其自身实现；统一身份审计2项不在本契约，K仍为17项RBAC路由。"
+    "version": "1.5.0",
+    "description": "structured/ddd共享契约：29项RBAC管理操作及8项可选通用应用身份鉴权操作。两类登录统一使用HS256身份JWT，不包含角色或权限快照，管理端与外部应用受众隔离。应用目录来自登记数据及状态，APP_IDENTITY_ENABLED只控制外部8项入口。角色可跨应用拥有权限，Permission—API映射必须同系统。统一身份审计2项不在本契约，K仍为17项RBAC路由。"
   },
   "servers": [
     {
@@ -48,7 +48,7 @@
           "认证与本人"
         ],
         "summary": "工号或手机号登录",
-        "description": "两种入口定位同一用户、共用口令/启用状态/有效管理API准入。跨用户歧义、未知、错口令、停用统一401 LOGIN_FAILED；无有效管理API为403 MANAGEMENT_ACCESS_DENIED。",
+        "description": "工号或手机号加口令定位同一账号，核实启用状态和实际管理API准入后签发aud=rbac的身份JWT；普通员工仅有外部应用角色仍不能进入管理端。",
         "responses": {
           "200": {
             "description": "成功",
@@ -3098,7 +3098,8 @@
       "BearerAuth": {
         "type": "http",
         "scheme": "bearer",
-        "bearerFormat": "opaque"
+        "bearerFormat": "JWT",
+        "description": "RBAC管理受众JWT；通过Authorization: Bearer携带。只含身份与会话字段，不包含角色或权限；不能与外部应用JWT混用。"
       },
       "applicationJwt": {
         "type": "http",
@@ -3335,7 +3336,8 @@
           "token": {
             "type": "string",
             "minLength": 1,
-            "description": "沿现有基础设施的opaque Bearer，不承诺JWT格式"
+            "description": "标准HS256身份JWT，仅含sub、aud、iss、iat、exp、jti，不含角色或权限快照。管理受众为rbac，外部受众为单一登记应用。",
+            "pattern": "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$"
           },
           "user": {
             "$ref": "#/components/schemas/IdentityVO"
@@ -5209,7 +5211,8 @@
           "accessToken": {
             "type": "string",
             "minLength": 1,
-            "description": "标准HS256 JWT，仅含身份与单应用受众，不含角色或权限。"
+            "description": "标准HS256身份JWT，仅含sub、aud、iss、iat、exp、jti，不含角色或权限快照。管理受众为rbac，外部受众为单一登记应用。",
+            "pattern": "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$"
           },
           "tokenType": {
             "type": "string",

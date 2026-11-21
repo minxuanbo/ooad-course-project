@@ -21,6 +21,13 @@ def run(args):
     try:
         management = q('管理员进入管理端', args.rbac, '/api/auth/login', 200, 'POST',
                        body={'account': accounts['admin']['username'], 'password': passwords['adminPassword']})['data']['token']
+        management_parts = management.split('.')
+        assert len(management_parts) == 3, 'MANAGEMENT_JWT_REQUIRED'
+        management_claims = json.loads(base64.urlsafe_b64decode(
+            management_parts[1] + '=' * (-len(management_parts[1]) % 4)))
+        assert management_claims['aud'] in ('rbac', ['rbac'])
+        assert not {'roles', 'permissions'} & management_claims.keys()
+        result['managementJwtIdentityOnly'] = True
         me = q('读取真实管理身份', args.rbac, '/api/me', 200, token=management)['data']['user']
         root_id, admin_id = me['departmentId'], me['id']
 

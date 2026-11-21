@@ -97,12 +97,12 @@ ER图应使用标准符号并只表达核心对象。User、Role、Permission及
 | 运行时授权 | 依据实际有效链及本人部门子树，不按岗位/角色名放行；完整K按同一启用根用户判断 | [API业务约束](../api-contract.md) |
 | 实时鉴权与日志补充（2026-11-12） | 用户确认先明确：撤权提交后原身份的新请求立即按最新有效链判断；日志明确事件/主体/目标/结果/原因/追踪信息、筛选及同快照total，后续有调整再改 | [需求3.1—3.2](../requirements.md#31-实时鉴权与撤权生效r08r09r12r15) |
 | 两套RBAC实现 | 同仓库同应用，共享API、表结构及前端，structured与ddd可通过互斥配置选择 | [后端设计](../backend-design.md) |
-| 课程系统 | 早期决定暂缓；2026-11-20已按R29完成独立本地接入，T14/T15仍open，不据联调结果自动关闭 | [开发计划](../development-plan.md) |
+| 课程系统 | 早期决定暂缓；2026-11-20已按R29完成独立本地接入，T14/T15仍open，不据联调结果自动关闭 | [开发计划](../history/planning/development-plan-through-r32.md) |
 | 文档阶段 | 2026-11-13用户完成审核并授权合入PR #29，历史清单保留 | [审核指南](../history/documentation/docs-cleanup.md) |
 | 当前授权（2026-11-13） | 整理结构化代码/测试、按需求编号命名、确定用例/基础设施边界并修复格式/CloneFactory/职责；DDD后续实现，部署待新增服务器方案 | [代码归类](../backend-design.md#3-包结构) |
 | 第三阶段后续确认（2026-11-13） | 部门支持局部下级增删改名，无层级调整；本人/同级/上级人员只读；体现原Excel其他系统矩阵与按系统配置；先迭代离线原型，满意后统一前后端 | [需求R23—R28](../requirements.md)、[原型记录](../history/design-decisions/prototype.md) |
 | 第四轮六点澄清（2026-11-13） | 部门类型限制；全部仅为同行操作并集；删除角色模板套用；区分账号与角色状态；18系统仅能力展示且API空态正确，不在RBAC实现其业务API，未来仅课程管理系统实际接入 | [需求R24/R26/R28](../requirements.md)、[第四轮记录](../history/design-decisions/prototype.md) |
-| 阶段5交付时的历史进度（2026-11-18） | 用户批准PR #34合入main（e521f97），包含双实现、审核修复及CloneFactory专项核对；阶段6剩余UI复验，课程接入和服务器部署仍待后续要求 | [开发计划](../development-plan.md)、[阶段5验收](../testing-acceptance.md#阶段5-交接复核2026-11-17) |
+| 阶段5交付时的历史进度（2026-11-18） | 用户批准PR #34合入main（e521f97），包含双实现、审核修复及CloneFactory专项核对；阶段6剩余UI复验，课程接入和服务器部署仍待后续要求 | [开发计划](../history/planning/development-plan-through-r32.md)、[阶段5验收](../history/verification/testing-acceptance-through-r32.md#阶段5-交接复核2026-11-17) |
 
 ## 3. 参考项目的使用边界
 
@@ -128,3 +128,7 @@ ER图应使用标准符号并只表达核心对象。User、Role、Permission及
 ## R32完整统一身份来源
 
 2026-11-21用户提供老师Apifox共享链接https://s.apifox.cn/775094d6-9f5f-4b75-9600-2332c43948d3，并明确8项统一身份鉴权由RBAC实现，要求补齐、对齐JWT及同步本项目Apifox。后确认另分组2项统一身份审计不纳入本轮；此前4项实现只是部分覆盖。用户授权将有效任务分支合入main，不自动关闭T14/T15或部署服务器；详设Word/PDF/PPT保持原版。协议清单见requirements R32。
+
+## R33全JWT及文档/UML整理来源
+
+2026-11-21—22用户进一步要求管理端也统一JWT，参考本机老师项目docs补齐structured类图，核实顺序图覆盖全部实现差异且省略两套共同流程，整理过多文档并保留有效资料。用户提醒使用已提供的画图skill；实际采用项目保存的20261117新版uml-class-sequence-diagrams。用户另指出Apifox“应用身份”旧空目录，核查无接口/子目录/文档后清理。老师原目录仅作只读参考，当前核对提交以本轮验证记录为准，不把老师文档中的旧阶段状态或框架选择当成本RBAC要求。

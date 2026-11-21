@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1820" height="1120" viewBox="0 0 1820 1120"><defs>
+  <marker id="open" markerWidth="12" markerHeight="12" refX="11" refY="6" orient="auto"><path d="M1,1 L11,6 L1,11" fill="none" stroke="#223046" stroke-width="1.5"/></marker>
+  <marker id="triangle" markerWidth="14" markerHeight="14" refX="13" refY="7" orient="auto"><path d="M1,1 L13,7 L1,13 Z" fill="white" stroke="#245a93" stroke-width="1.4"/></marker>
+  <marker id="filled" markerWidth="12" markerHeight="12" refX="11" refY="6" orient="auto"><path d="M1,1 L11,6 L1,11 Z" fill="#223046"/></marker></defs>
+  <rect width="100%" height="100%" fill="white"/><g font-family="Microsoft YaHei,Noto Sans CJK SC,Arial,sans-serif"><text x="28" y="38" font-size="26" text-anchor="start" fill="#223046">structured · 新项目组织账号导入类图</text><text x="28" y="70" font-size="16" text-anchor="start" fill="#223046">Service居中；依赖来自当前Java字段，相关实体或读模型不冒充DDD领域对象。</text><polyline points="900,400 900,295" fill="none" stroke="#245a93" stroke-width="1.7" stroke-dasharray="8 5" marker-end="url(#triangle)"/><polyline points="580,550 470,550" fill="none" stroke="#223046" stroke-width="1.7"  marker-end="url(#open)"/><text x="478" y="531" font-size="16" text-anchor="start" fill="#223046">sources</text><polyline points="1220,550 1330,550" fill="none" stroke="#223046" stroke-width="1.7" stroke-dasharray="8 5" marker-end="url(#open)"/><polyline points="900,720 900,850" fill="none" stroke="#223046" stroke-width="1.7"  marker-end="url(#open)"/><text x="750" y="788" font-size="17" text-anchor="start" fill="#223046">planner</text><rect x="580" y="400" width="640" height="320" rx="2" fill="#eef5ff" stroke="#245a93" stroke-width="2.5"/>
+  <path d="M580,448H1220 M580,524H1220" stroke="#223046"/>
+  <text x="900" y="432" font-size="23" text-anchor="middle" fill="#223046">StructuredImportService</text>
+  <text x="593" y="476" font-size="18" text-anchor="start" fill="#223046">- sources: ImportSourceJpaRepository</text><text x="593" y="504" font-size="18" text-anchor="start" fill="#223046">- planner: SourceWorkbookReader</text>
+  <text x="593" y="550" font-size="18" text-anchor="start" fill="#223046">+ importDirectory(directory, credentials): ImportReport</text><rect x="580" y="105" width="640" height="190" rx="2" fill="white" stroke="#223046" stroke-width="1.5"/>
+  <path d="M580,153H1220 M580,201H1220" stroke="#223046"/>
+  <text x="900" y="137" font-size="23" text-anchor="middle" fill="#223046">«interface» ImportUseCase</text>
+  <text x="593" y="181" font-size="18" text-anchor="start" fill="#223046">—</text>
+  <text x="593" y="227" font-size="18" text-anchor="start" fill="#223046">+ importDirectory(directory, credentials): ImportReport</text><rect x="20" y="405" width="450" height="285" rx="2" fill="white" stroke="#223046" stroke-width="1.5"/>
+  <path d="M20,453H470 M20,501H470" stroke="#223046"/>
+  <text x="245" y="437" font-size="19.23957856161246" text-anchor="middle" fill="#223046">«interface» ImportSourceJpaRepository</text>
+  <text x="33" y="481" font-size="18" text-anchor="start" fill="#223046">—</text>
+  <text x="33" y="527" font-size="18" text-anchor="start" fill="#223046">+ findAll(...)</text><text x="33" y="555" font-size="18" text-anchor="start" fill="#223046">+ saveAllAndFlush(...)</text><rect x="1330" y="405" width="450" height="370" rx="2" fill="white" stroke="#223046" stroke-width="1.5"/>
+  <path d="M1330,453H1780 M1330,557H1780" stroke="#223046"/>
+  <text x="1555" y="437" font-size="23" text-anchor="middle" fill="#223046">UserEntity</text>
+  <text x="1343" y="481" font-size="18" text-anchor="start" fill="#223046">- username: String</text><text x="1343" y="509" font-size="18" text-anchor="start" fill="#223046">- passwordHash: String</text><text x="1343" y="537" font-size="18" text-anchor="start" fill="#223046">- department: DepartmentEntity</text>
+  <text x="1343" y="583" font-size="18" text-anchor="start" fill="#223046">+ updateProfile(...)</text><rect x="580" y="850" width="640" height="240" rx="2" fill="white" stroke="#223046" stroke-width="1.5"/>
+  <path d="M580,898H1220 M580,946H1220" stroke="#223046"/>
+  <text x="900" y="882" font-size="23" text-anchor="middle" fill="#223046">«interface» SourceWorkbookReader</text>
+  <text x="593" y="926" font-size="18" text-anchor="start" fill="#223046">—</text>
+  <text x="593" y="972" font-size="18" text-anchor="start" fill="#223046">+ read(...)</text></g></svg>

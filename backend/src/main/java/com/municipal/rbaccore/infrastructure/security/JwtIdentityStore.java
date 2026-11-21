@@ -13,13 +13,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/** 沿用32字节随机Bearer和12小时支撑，仅将旧数据库会话改为进程内身份索引。 */
+/** 管理端与外部应用统一使用身份JWT，并以进程内索引支持即时撤销。 */
 @Component
 @RequiredArgsConstructor
-public class BearerIdentityStore implements IdentityTokenStore {
+public class JwtIdentityStore implements IdentityTokenStore {
   public static final long EXPIRES_IN = Duration.ofHours(12).toSeconds();
   private final Clock clock;
-  private final ApplicationJwtCodec jwt;
+  private final JwtIdentityCodec jwt;
   private final SecureRandom random = new SecureRandom();
   private final Map<String, Entry> identities = new ConcurrentHashMap<>();
 
@@ -30,36 +30,34 @@ public class BearerIdentityStore implements IdentityTokenStore {
 
   /** 只有账号、口令、状态及管理准入全部通过后才能调用。 */
   public String issue(Long userId) {
-    return issueToken(userId, RbacCatalog.SYSTEM_CODE, false);
+    return issueToken(userId, RbacCatalog.SYSTEM_CODE);
   }
 
-  /** 相同随机令牌机制按应用区分受众，权限仍只在请求时计算。 */
+  /** 同一JWT机制按应用区分受众，权限仍只在请求时计算。 */
   @Override
   public String issueForSystem(Long userId, String system) {
-    return issueToken(userId, system, true);
+    return issueToken(userId, system);
   }
 
-  /** 管理端保留随机Bearer，外部应用签发JWT，两者共用可撤销的身份索引。 */
-  private String issueToken(Long userId, String system, boolean external) {
+  /** 所有令牌只签身份与单受众，随机jti使同一账号的不同会话可独立撤销。 */
+  private String issueToken(Long userId, String system) {
     Instant now = clock.instant();
     identities.entrySet().removeIf(entry -> !entry.getValue().expiresAt().isAfter(now));
     byte[] bytes = new byte[32];
     random.nextBytes(bytes);
     Instant expiresAt = now.plusSeconds(EXPIRES_IN);
     String token =
-        external
-            ? jwt.encode(
-                userId,
-                system,
-                now,
-                expiresAt,
-                Base64.getUrlEncoder().withoutPadding().encodeToString(bytes))
-            : Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-    identities.put(token, new Entry(userId, expiresAt, system, external));
+        jwt.encode(
+            userId,
+            system,
+            now,
+            expiresAt,
+            Base64.getUrlEncoder().withoutPadding().encodeToString(bytes));
+    identities.put(token, new Entry(userId, expiresAt, system));
     return token;
   }
 
-  /** 解析现有Bearer外形，账号状态与权限仍须每次访问重新查询。 */
+  /** 读取RBAC管理受众的JWT，账号状态与权限仍须每次访问重新查询。 */
   public Long require(String header) {
     return requireForSystem(header, RbacCatalog.SYSTEM_CODE);
   }
@@ -72,7 +70,7 @@ public class BearerIdentityStore implements IdentityTokenStore {
     return entry.userId();
   }
 
-  /** 绑定应用来自服务端随机令牌索引，不信任客户端自报受众。 */
+  /** 绑定应用来自已校验的当前会话索引，不信任客户端自报受众。 */
   @Override
   public String system(String header) {
     return entry(header).system();
@@ -89,7 +87,7 @@ public class BearerIdentityStore implements IdentityTokenStore {
       identities.remove(token);
       throw BusinessException.unauthorized();
     }
-    if (entry.external()) jwt.verify(token, entry.userId(), entry.system());
+    jwt.verify(token, entry.userId(), entry.system());
     return entry;
   }
 
@@ -101,5 +99,5 @@ public class BearerIdentityStore implements IdentityTokenStore {
   }
 
   /** 身份索引仅为运行支撑，不进入核心ER或数据库。 */
-  private record Entry(Long userId, Instant expiresAt, String system, boolean external) {}
+  private record Entry(Long userId, Instant expiresAt, String system) {}
 }

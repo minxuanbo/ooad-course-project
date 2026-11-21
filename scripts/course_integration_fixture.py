@@ -12,11 +12,14 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def course_catalog():
-    """从共享协议取值读取权限与真实API，断言数量以防静默漏登记。"""
+    """从当前接入配置读取权限与真实API，校验结构而不写死旧阶段数量。"""
     catalog = json.loads((ROOT / 'integrations/course/catalog.json').read_text(encoding='utf-8'))
     codes, routes = catalog['display'], {code: [tuple(route) for route in entries] for code,entries in catalog['routes'].items()}
-    assert len(codes) == 17 and len(routes) == 16 and sum(map(len, routes.values())) == 22
-    assert len({route for entries in routes.values() for route in entries}) == 20
+    assert len(codes) == len(set(codes)) and not set(codes).intersection(routes)
+    assert (set(codes) | set(routes)).issubset(catalog['names'])
+    assert all(entries and len(entries) == len(set(entries)) for entries in routes.values())
+    assert all(method in {'GET', 'POST', 'PUT', 'PATCH', 'DELETE'} and path.startswith('/')
+               for entries in routes.values() for method, path in entries)
     assert 'CRS' not in routes, '老师没有reset实现，不得编造API'
 
     return codes, routes

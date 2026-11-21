@@ -83,4 +83,8 @@ HTTP默认8081，前端代理/api不变。后端29项管理操作与8项可选�
 
 R31需在原万人导入、五角色授权后，使用独立`scripts/initialize_course_integration.py`预览及apply，为本部员工授teacher、其余授student、合格管理员兼course-admin，并建立课程本地绑定。此工具不进入后端业务装配，不由身份开关自动执行；课程角色与RBAC管理准入仍独立。
 
-R32操作查询须配置IDENTITY_OPERATIONS_FILE=file:///绝对路径/integrations/course/operations.json；JWT秘密/签发者、两种本机Origin及分页差异见[完整身份设计](../docs/design/identity-eight-contract.md)。身份协议由RBAC实现，课程业务仍在老师工程。
+R32操作查询须配置IDENTITY_OPERATIONS_FILE=file:///绝对路径/integrations/course/operations.json；JWT秘密/签发者、两种本机Origin及分页差异见[完整身份设计](../docs/backend-design.md#18-通用应用身份与课程本地接入)。身份协议由RBAC实现，课程业务仍在老师工程。
+
+## 管理与外部应用统一JWT（R33）
+
+两类登录通过JwtIdentityStore/JwtIdentityCodec统一签发及校验HS256 JWT；管理aud为rbac，外部aud为单一登记应用，使用Bearer请求头，继续实时读取权限。IDENTITY_JWT_SECRET/IDENTITY_JWT_ISSUER同时用于两类JWT，APP_IDENTITY_ENABLED仅控制外部8项端点。未配秘密时每进程随机；无论密钥是否固定，当前进程内会话索引在重启后丢失，须重新登录。当前测试与证据从[验收入口](../docs/testing-acceptance.md)阅读。

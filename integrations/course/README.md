@@ -38,4 +38,4 @@ mvn -f backend/pom.xml -DskipTests clean package
 
 ## R32完整身份契约
 
-RBAC提供8项身份鉴权及JWT，另2项统一身份审计不纳入本轮。将IDENTITY_OPERATIONS_FILE设为[operations.json](operations.json)的file:///绝对URI；[catalog.json](catalog.json)登记IDR/IDU目录API权限。JWT、操作名、目录范围及旧回执边界见[完整设计](../../docs/design/identity-eight-contract.md)及[接入第9节](../../docs/course-integration.md#9-完整八项鉴权接入r32)。支撑转接保持上游原始状态和204空响应，不缓存或伪造身份授权。
+RBAC提供8项身份鉴权及JWT，另2项统一身份审计不纳入本轮。将IDENTITY_OPERATIONS_FILE设为[operations.json](operations.json)的file:///绝对URI；[catalog.json](catalog.json)登记IDR/IDU目录API权限。JWT、操作名、目录范围及旧回执边界见[完整设计](../../docs/backend-design.md#18-通用应用身份与课程本地接入)及[接入第9节](../../docs/course-integration.md#9-完整八项鉴权接入r32)。支撑转接保持上游原始状态和204空响应，不缓存或伪造身份授权。

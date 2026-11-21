@@ -1,6 +1,6 @@
 {
   "status": "IMPLEMENTED",
-  "baseline": "614a0c4a4cb82889eaad2bb2bde910edfce885c1",
+  "baseline": "62907464ba76d035c758f4867ed22219a3484271",
   "entries": [
     {
       "id": "identity",
@@ -581,11 +581,6 @@
             1,
             3,
             "assignRole(role)"
-          ],
-          [
-            1,
-            4,
-            "saved = saveAndFlush(target)"
           ]
         ],
         "loops": [
@@ -657,11 +652,6 @@
             1,
             5,
             "changed = replaceRoles(selected)"
-          ],
-          [
-            1,
-            2,
-            "saved = save(changed)"
           ]
         ],
         "loops": [
@@ -712,11 +702,6 @@
             1,
             3,
             "grantPermission(permission)"
-          ],
-          [
-            1,
-            4,
-            "saved = saveAndFlush(role)"
           ]
         ],
         "loops": [
@@ -762,11 +747,6 @@
             1,
             3,
             "changed = replace(role, selected, requested)"
-          ],
-          [
-            1,
-            4,
-            "saved = save(changed)"
           ]
         ],
         "loops": []
@@ -810,19 +790,37 @@
             1,
             3,
             "setEnabled(enabled)"
-          ],
-          [
-            1,
-            2,
-            "saved = saveAndFlush(permission)"
           ]
+        ],
+        "opts": [
+          {
+            "first": 1,
+            "last": 1,
+            "text": "parentId明确提供且非null"
+          },
+          {
+            "first": 2,
+            "last": 2,
+            "text": "type != null"
+          },
+          {
+            "first": 3,
+            "last": 3,
+            "text": "parentId明确提供（含null）"
+          },
+          {
+            "first": 4,
+            "last": 4,
+            "text": "enabled != null"
+          }
         ]
       },
       "ddd": {
         "lifelines": [
           "service: DddResourceService",
-          "repository: PermissionRepository",
-          "PermissionTreePolicy"
+          "permissions: PermissionRepository",
+          "PermissionTreePolicy",
+          "current: Permission"
         ],
         "meta": [
           3
@@ -836,11 +834,6 @@
           [
             1,
             2,
-            "current = find(Permission.Key(id))"
-          ],
-          [
-            1,
-            2,
             "tree = tree(system)"
           ],
           [
@@ -850,11 +843,20 @@
           ],
           [
             1,
-            2,
-            "saved = save(changed)"
+            4,
+            "changed = revise(parent, null, null, enabled)"
           ]
         ],
-        "loops": []
+        "alts": [
+          {
+            "first": 1,
+            "last": 2,
+            "text": "parentId明确提供或type != null",
+            "elseFirst": 3,
+            "elseLast": 3,
+            "elseText": "仅修改enabled，无需读取整棵树"
+          }
+        ]
       },
       "dddSource": "DddResourceService",
       "dddAnchor": "patchPermission"
@@ -890,11 +892,6 @@
             1,
             2,
             "moveTo(parent)"
-          ],
-          [
-            1,
-            3,
-            "saved = saveAndFlush(department)"
           ]
         ]
       },
@@ -929,11 +926,6 @@
             1,
             3,
             "child = child(code, name, parentId, type)"
-          ],
-          [
-            1,
-            4,
-            "saved = save(child)"
           ]
         ],
         "loops": []
@@ -997,6 +989,1179 @@
       },
       "dddSource": "DddUserQueryService",
       "dddAnchor": "list"
+    },
+    {
+      "id": "credentials",
+      "title": "凭据匹配与账号有效性",
+      "source": "service/structured/auth/StructuredAuthenticationService.java",
+      "anchor": "verify(",
+      "dddSource": "DddAuthenticationService",
+      "dddAnchor": "verify",
+      "structured": {
+        "lifelines": [
+          "service: StructuredAuthenticationService",
+          "users: UserJpaRepository"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "verify 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "matches = findByUsernameOrPhone(account, account)"
+          ]
+        ],
+        "notes": [
+          {
+            "who": 1,
+            "lines": [
+              "Service检查唯一结果与enabled；失败为LOGIN_FAILED。",
+              "口令哈希校验、日志与JWT签发是共同流程，省略。"
+            ]
+          }
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddAuthenticationService",
+          "users: UserRepository",
+          "AuthenticationPolicy"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "verify 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "matches = match(User.LoginIdentity(account))"
+          ],
+          [
+            1,
+            3,
+            "eligible = eligibleAccount(matches)"
+          ]
+        ],
+        "meta": [
+          3
+        ]
+      }
+    },
+    {
+      "id": "organization-scope",
+      "title": "组织子树范围",
+      "source": "service/structured/security/StructuredDepartmentScopeService.java",
+      "anchor": "allowedIds(",
+      "dddSource": "DddScope",
+      "dddAnchor": "filter",
+      "structured": {
+        "lifelines": [
+          "service: StructuredDepartmentScopeService",
+          "departments: DepartmentJpaRepository"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "allowedIds 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "allowed = subtreeIds(actor.departmentId())"
+          ]
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddScope",
+          "OrganizationPolicy"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "filter 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "allowed = scope(facts, own)"
+          ]
+        ],
+        "meta": [
+          2
+        ]
+      }
+    },
+    {
+      "id": "global-scope",
+      "title": "可信共同根判断",
+      "source": "service/structured/security/StructuredDepartmentScopeService.java",
+      "anchor": "isGlobal(",
+      "dddSource": "DddManagementAccess",
+      "dddAnchor": "require",
+      "structured": {
+        "lifelines": [
+          "service: StructuredDepartmentScopeService",
+          "sources: ImportSourceJpaRepository",
+          "departments: DepartmentJpaRepository"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "isGlobal 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "source = findByKindAndSourceKey(ORGANIZATION, rootKey)"
+          ],
+          [
+            1,
+            3,
+            "ids = subtreeIds(actor.departmentId())"
+          ],
+          [
+            1,
+            3,
+            "total = countByDeletedFalse()"
+          ]
+        ],
+        "notes": [
+          {
+            "who": 1,
+            "lines": [
+              "Service比较来源根、父级、直属部门及子树人数。"
+            ]
+          }
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddManagementAccess",
+          "scope: DddScope",
+          "OrganizationPolicy"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "require 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "facts = facts()"
+          ],
+          [
+            1,
+            3,
+            "global = global(facts, actor.departmentId())"
+          ]
+        ],
+        "meta": [
+          3
+        ]
+      }
+    },
+    {
+      "id": "assignable-roles",
+      "title": "候选角色的数据库筛选",
+      "source": "service/structured/user/StructuredUserManagementService.java",
+      "anchor": "assignableRoles(",
+      "dddSource": "DddUserManagementService",
+      "dddAnchor": "assignableRoles",
+      "structured": {
+        "lifelines": [
+          "service: StructuredUserManagementService",
+          "roles: RoleJpaRepository"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "assignableRoles 的差异片段"
+          ],
+          [
+            1,
+            1,
+            "filter = assignableFilter(ownIds, operator, search)"
+          ],
+          [
+            1,
+            2,
+            "total = count(filter)"
+          ],
+          [
+            1,
+            2,
+            "page = findAll(filter, pageRequest)"
+          ]
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddUserManagementService",
+          "authorization: AuthorizationRepository"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "assignableRoles 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "page = candidates(criteria)"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "user-disable",
+      "title": "人员停用的状态修改",
+      "source": "service/structured/user/StructuredUserManagementService.java",
+      "anchor": "disable(",
+      "dddSource": "DddUserManagementService",
+      "dddAnchor": "disable",
+      "structured": {
+        "lifelines": [
+          "service: StructuredUserManagementService",
+          "authority: StructuredPersonnelAuthority",
+          "target: UserEntity"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "disable 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "requireManage(actor, target)"
+          ],
+          [
+            1,
+            3,
+            "setEnabled(false)"
+          ]
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddUserManagementService",
+          "target: User"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "disable 的差异片段"
+          ],
+          [
+            1,
+            1,
+            "requireEditable(actor, organization, target)"
+          ],
+          [
+            1,
+            2,
+            "changed = disable()"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "user-transfer",
+      "title": "人员调动的双范围与归属",
+      "source": "service/structured/user/StructuredUserManagementService.java",
+      "anchor": "move(",
+      "dddSource": "DddUserManagementService",
+      "dddAnchor": "move",
+      "structured": {
+        "lifelines": [
+          "service: StructuredUserManagementService",
+          "target: UserEntity"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "move 的差异片段"
+          ],
+          [
+            1,
+            1,
+            "requireInScope(actor, departmentId)"
+          ],
+          [
+            1,
+            2,
+            "moveTo(department)"
+          ]
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddUserManagementService",
+          "scope: DddScope",
+          "target: User"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "move 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "filter(organization, actor.departmentId(), departmentId)"
+          ],
+          [
+            1,
+            3,
+            "changed = transfer(department)"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "role-create",
+      "title": "空权限角色创建",
+      "source": "service/structured/role/StructuredRoleService.java",
+      "anchor": "create(",
+      "dddSource": "DddRoleService",
+      "dddAnchor": "create",
+      "structured": {
+        "lifelines": [
+          "service: StructuredRoleService",
+          "roles: RoleJpaRepository",
+          "RoleEntity"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "create 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "exists = existsByCode(code)"
+          ],
+          [
+            1,
+            3,
+            "new RoleEntity(code, name)"
+          ]
+        ],
+        "meta": [
+          3
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddRoleService",
+          "Role"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "create 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "role = custom(code, name, null)"
+          ]
+        ],
+        "meta": [
+          2
+        ]
+      }
+    },
+    {
+      "id": "role-update",
+      "title": "角色名称与状态修改",
+      "source": "service/structured/role/StructuredRoleService.java",
+      "anchor": "patch(",
+      "dddSource": "DddRoleService",
+      "dddAnchor": "patch",
+      "structured": {
+        "lifelines": [
+          "service: StructuredRoleService"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "patch 的差异片段"
+          ]
+        ],
+        "notes": [
+          {
+            "who": 1,
+            "lines": [
+              "CloneFactory.copyNotNull(role, command)原地更新Entity。",
+              "这里只说明差异，不绘制共用映射器的技术调用链。"
+            ]
+          }
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddRoleService",
+          "role: Role"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "patch 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "changed = revise(name, enabled)"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "api-availability",
+      "title": "API启停的状态修改",
+      "source": "service/structured/resource/StructuredResourceService.java",
+      "anchor": "patchApi(",
+      "dddSource": "DddResourceService",
+      "dddAnchor": "patchApi",
+      "structured": {
+        "lifelines": [
+          "service: StructuredResourceService"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "patchApi 的差异片段"
+          ]
+        ],
+        "notes": [
+          {
+            "who": 1,
+            "lines": [
+              "CloneFactory.copyNotNull(api, command)更新Entity.enabled。",
+              "既有映射保留；保存、锁后鉴权和K是共同后置。"
+            ]
+          }
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddResourceService",
+          "api: ApiResource"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "patchApi 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "changed = changeAvailability(enabled)"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "permission-mapping",
+      "title": "权限与API的同系统映射",
+      "source": "service/structured/resource/StructuredResourceService.java",
+      "anchor": "replaceMapping(",
+      "dddSource": "DddResourceService",
+      "dddAnchor": "replaceMapping",
+      "structured": {
+        "lifelines": [
+          "service: StructuredResourceService",
+          "permission: PermissionEntity"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "replaceMapping 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "unmapApi(current)"
+          ],
+          [
+            1,
+            2,
+            "mapApi(selected)"
+          ]
+        ],
+        "notes": [
+          {
+            "who": 1,
+            "lines": [
+              "Service先检查完整API数量与同系统；仅更改关系差集。"
+            ]
+          }
+        ],
+        "loops": [
+          {
+            "first": 1,
+            "last": 1,
+            "text": "逐项删除不再需要的映射"
+          },
+          {
+            "first": 2,
+            "last": 2,
+            "text": "逐项关联选中API"
+          }
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddResourceService",
+          "PermissionTreePolicy"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "replaceMapping 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "changed = map(current, selected, requestedCount)"
+          ]
+        ],
+        "meta": [
+          2
+        ]
+      }
+    },
+    {
+      "id": "department-rename",
+      "title": "部门改名与唯一性",
+      "source": "service/structured/department/StructuredDepartmentService.java",
+      "anchor": "rename(",
+      "dddSource": "DddDepartmentService",
+      "dddAnchor": "rename",
+      "structured": {
+        "lifelines": [
+          "service: StructuredDepartmentService"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "rename 的差异片段"
+          ],
+          [
+            1,
+            1,
+            "requireUnique(parentId, name, id)"
+          ]
+        ],
+        "notes": [
+          {
+            "who": 1,
+            "lines": [
+              "通过CloneFactory.copyNotNull原地修改Entity名称。"
+            ]
+          }
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddDepartmentService",
+          "OrganizationPolicy",
+          "node: Department"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "rename 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "requireUnique(facts, parentId, name, id)"
+          ],
+          [
+            1,
+            3,
+            "changed = rename(name)"
+          ]
+        ],
+        "meta": [
+          2
+        ]
+      }
+    },
+    {
+      "id": "department-delete",
+      "title": "部门空节点与可信根保护",
+      "source": "service/structured/department/StructuredDepartmentService.java",
+      "anchor": "delete(",
+      "dddSource": "DddDepartmentService",
+      "dddAnchor": "delete",
+      "structured": {
+        "lifelines": [
+          "service: StructuredDepartmentService",
+          "users: UserJpaRepository",
+          "departments: DepartmentJpaRepository",
+          "node: DepartmentEntity"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "delete 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "occupied = existsByDepartmentId(id)"
+          ],
+          [
+            1,
+            3,
+            "children = existsByParentIdAndDeletedFalse(id)"
+          ],
+          [
+            1,
+            4,
+            "setDeleted(true)"
+          ]
+        ],
+        "notes": [
+          {
+            "who": 1,
+            "lines": [
+              "可信根检查及占用判断由Service直接完成。"
+            ]
+          }
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddDepartmentService",
+          "OrganizationPolicy",
+          "departments: OrganizationRepository",
+          "node: Department"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "delete 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "requireNonRoot(node, facts)"
+          ],
+          [
+            1,
+            3,
+            "usage = usage(Department.Key(id))"
+          ],
+          [
+            1,
+            2,
+            "requireEmpty(usage)"
+          ],
+          [
+            1,
+            4,
+            "changed = tombstone()"
+          ]
+        ],
+        "meta": [
+          2
+        ]
+      }
+    },
+    {
+      "id": "department-view",
+      "title": "组织树及人数投影",
+      "source": "service/structured/department/StructuredDepartmentService.java",
+      "anchor": "list(",
+      "dddSource": "DddDepartmentService",
+      "dddAnchor": "list",
+      "structured": {
+        "lifelines": [
+          "service: StructuredDepartmentService",
+          "users: UserJpaRepository"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "list 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "counts = departmentCounts(ids)"
+          ],
+          [
+            1,
+            1,
+            "append(root, indexed, ordered)"
+          ]
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddDepartmentService",
+          "view: DddDepartmentView"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "list 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "projection = build(actor, facts)"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "overview",
+      "title": "总览统计的协作边界",
+      "source": "service/structured/department/StructuredOverviewService.java",
+      "anchor": "overview(",
+      "dddSource": "DddOverviewService",
+      "dddAnchor": "overview",
+      "structured": {
+        "lifelines": [
+          "service: StructuredOverviewService",
+          "departments: StructuredDepartmentService",
+          "users: UserJpaRepository"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "overview 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "tree = list(header)"
+          ],
+          [
+            1,
+            3,
+            "enabled = countByDepartmentIdInAndEnabledTrue(scopeIds)"
+          ]
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddOverviewService",
+          "departments: DddDepartmentView"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "overview 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "view = build(actor, facts)"
+          ]
+        ],
+        "notes": [
+          {
+            "who": 1,
+            "lines": [
+              "启用人数与组织树来自同一View/领域统计快照。"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "maintenance",
+      "title": "完整维护者判定",
+      "source": "service/structured/security/StructuredMaintenanceGuard.java",
+      "anchor": "retainOne(",
+      "dddSource": "DddMaintenanceGuard",
+      "dddAnchor": "retainOne",
+      "structured": {
+        "lifelines": [
+          "service: StructuredMaintenanceGuard",
+          "users: UserJpaRepository",
+          "authority: StructuredPersonnelAuthority",
+          "permissions: StructuredEffectivePermissionService"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "完整维护者判定差异片段"
+          ],
+          [
+            1,
+            2,
+            "people = findByDepartmentIdAndEnabledTrue(rootId)"
+          ],
+          [
+            1,
+            3,
+            "level = level(user)"
+          ],
+          [
+            1,
+            4,
+            "effective = routes(user.id)"
+          ]
+        ],
+        "notes": [
+          {
+            "who": 1,
+            "lines": [
+              "同一人须为有效五级且覆盖全部K；不拼多人权限。"
+            ]
+          }
+        ],
+        "loops": [
+          {
+            "first": 2,
+            "last": 3,
+            "text": "逐个根直属启用人员，发现合格者即停止"
+          }
+        ],
+        "opts": [
+          {
+            "first": 3,
+            "last": 3,
+            "text": "该人员有效基础级别为5"
+          }
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddMaintenanceGuard",
+          "authorization: AuthorizationRepository",
+          "MaintenancePolicy"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "完整维护者判定差异片段"
+          ],
+          [
+            1,
+            2,
+            "facts = rootAccounts(root)"
+          ],
+          [
+            1,
+            3,
+            "qualified = qualifies(facts, rootId, required)"
+          ]
+        ],
+        "meta": [
+          3
+        ],
+        "loops": [
+          {
+            "first": 2,
+            "last": 2,
+            "text": "逐个根直属授权事实，发现合格者即停止"
+          }
+        ]
+      }
+    },
+    {
+      "id": "importing",
+      "title": "来源核对与导入批次",
+      "source": "service/structured/importing/StructuredImportService.java",
+      "anchor": "importDirectory(",
+      "dddSource": "DddImportService",
+      "dddAnchor": "importDirectory",
+      "structured": {
+        "lifelines": [
+          "service: StructuredImportService",
+          "sources: ImportSourceJpaRepository",
+          "LoginIdentifiers"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "importDirectory 的差异片段"
+          ],
+          [
+            1,
+            3,
+            "validate(plannedIdentities)"
+          ],
+          [
+            1,
+            2,
+            "existing = findAll()"
+          ],
+          [
+            1,
+            1,
+            "verifyExisting(plan, credentials, existing)"
+          ],
+          [
+            1,
+            1,
+            "initialize(plan, credentials)"
+          ]
+        ],
+        "notes": [
+          {
+            "who": 1,
+            "lines": [
+              "新库分支由initialize创建Entity并逐项保存来源；",
+              "重复分支按来源逐项核对，公共Excel及口令编码省略。"
+            ]
+          }
+        ],
+        "opts": [
+          {
+            "first": 3,
+            "last": 3,
+            "text": "已有来源：只核对，不重置"
+          },
+          {
+            "first": 4,
+            "last": 4,
+            "text": "无来源且空库：首次导入"
+          }
+        ],
+        "meta": [
+          3
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddImportService",
+          "ImportPolicy",
+          "initialization: InitializationRepository"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "importDirectory 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "validateIdentifiers(identifiers)"
+          ],
+          [
+            1,
+            3,
+            "state = inspect()"
+          ],
+          [
+            1,
+            2,
+            "receipt = existing(manifest, state, admin)"
+          ],
+          [
+            1,
+            2,
+            "batch = batch(manifest, accounts, admin)"
+          ],
+          [
+            1,
+            3,
+            "receipt = save(batch)"
+          ]
+        ],
+        "meta": [
+          2
+        ],
+        "opts": [
+          {
+            "first": 4,
+            "last": 5,
+            "text": "receipt == null：首次导入"
+          }
+        ]
+      }
+    },
+    {
+      "id": "bootstrap",
+      "title": "首次授权规划与发布",
+      "source": "service/structured/bootstrap/StructuredInitialAuthorizationService.java",
+      "anchor": "initialize(",
+      "dddSource": "DddInitialAuthorizationService",
+      "dddAnchor": "initialize",
+      "structured": {
+        "lifelines": [
+          "service: StructuredInitialAuthorizationService",
+          "planner: RoleBootstrapPlanner"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "initialize 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "plan = plan(directory)"
+          ],
+          [
+            1,
+            1,
+            "validateSources(plan)"
+          ],
+          [
+            1,
+            1,
+            "accounts = validateAccounts(plan)"
+          ],
+          [
+            1,
+            1,
+            "catalog = createCatalog()"
+          ]
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddInitialAuthorizationService",
+          "InitialAuthorizationPolicy",
+          "initialization: InitializationRepository"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "initialize 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "plan = plan(manifest, permissions, codes)"
+          ],
+          [
+            1,
+            2,
+            "assignments = validate(plan, state, catalog)"
+          ],
+          [
+            1,
+            3,
+            "publish(publication)"
+          ]
+        ],
+        "meta": [
+          2
+        ]
+      }
+    },
+    {
+      "id": "application-projection",
+      "title": "通用应用角色与短码投影",
+      "source": "service/structured/identity/StructuredApplicationIdentityService.java",
+      "anchor": "view(",
+      "dddSource": "DddApplicationIdentityService",
+      "dddAnchor": "view",
+      "structured": {
+        "lifelines": [
+          "service: StructuredApplicationIdentityService",
+          "permissions: PermissionJpaRepository"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "view 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "direct = directPermissions(id, systems)"
+          ],
+          [
+            1,
+            1,
+            "exportable(permission)"
+          ]
+        ],
+        "notes": [
+          {
+            "who": 1,
+            "lines": [
+              "Service筛选贡献本应用有效权限的角色，装配短码/API事实。"
+            ]
+          }
+        ],
+        "loops": [
+          {
+            "first": 2,
+            "last": 2,
+            "text": "逐个直接权限核对完整映射"
+          }
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddApplicationIdentityService",
+          "authorization: AuthorizationRepository",
+          "ApplicationAuthorizationPolicy"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "view 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "facts = facts(User.Key(id))"
+          ],
+          [
+            1,
+            3,
+            "direct = exported(facts, system)"
+          ]
+        ],
+        "meta": [
+          3
+        ]
+      }
     }
   ],
   "sharedSequenceExcluded": [
@@ -1011,5 +2176,311 @@
     "retainOne",
     "commit",
     "rollback"
-  ]
+  ],
+  "coverage": {
+    "http": [
+      {
+        "operationId": "login",
+        "method": "POST",
+        "path": "/api/auth/login",
+        "useCase": "AuthenticationUseCase.login",
+        "fragments": "credentials / authorization / global-scope",
+        "reason": "两类实现独立校验账号和管理准入；JWT签发共用。"
+      },
+      {
+        "operationId": "logout",
+        "method": "POST",
+        "path": "/api/auth/logout",
+        "useCase": "AuthenticationUseCase.logout",
+        "fragments": "共同流程，不画",
+        "reason": "两套均调用IdentityTokenStore.revoke；幂等管理退出完全相同。"
+      },
+      {
+        "operationId": "getMe",
+        "method": "GET",
+        "path": "/api/me",
+        "useCase": "AuthenticationUseCase.me",
+        "fragments": "credentials / authorization / global-scope",
+        "reason": "账号读取和有效能力按上述差异复用；DTO/Result装配相同，不再画。"
+      },
+      {
+        "operationId": "getMyPermissions",
+        "method": "GET",
+        "path": "/api/me/permissions",
+        "useCase": "AuthenticationUseCase.myPermissions",
+        "fragments": "authorization",
+        "reason": "使用同一有效授权差异，按稳定ID排序与输出为共同后置。"
+      },
+      {
+        "operationId": "listDepartments",
+        "method": "GET",
+        "path": "/api/departments/tree",
+        "useCase": "UserQueryUseCase.tree",
+        "fragments": "organization-scope / department-view",
+        "reason": "可见树最终委托对应部门查询；无第二套相同树流程。"
+      },
+      {
+        "operationId": "listUsers",
+        "method": "GET",
+        "path": "/api/users",
+        "useCase": "UserQueryUseCase.list",
+        "fragments": "organization-scope / user-query",
+        "reason": "UserJpaRepository.count/findAll 对 UserRepository.search(Users)。"
+      },
+      {
+        "operationId": "getUserRoles",
+        "method": "GET",
+        "path": "/api/users/{id}/roles",
+        "useCase": "UserManagementUseCase.roles",
+        "fragments": "personnel / assignable-roles",
+        "reason": "完整角色与lockedRoleIds基于同一目标保护/角色资格差异；集合读取和排序相同。"
+      },
+      {
+        "operationId": "replaceUserRoles",
+        "method": "PUT",
+        "path": "/api/users/{id}/roles",
+        "useCase": "UserManagementUseCase.replaceRoles",
+        "fragments": "personnel",
+        "reason": "只检查新增/删除角色，保留无权改变的现有项。"
+      },
+      {
+        "operationId": "listAssignableRoles",
+        "method": "GET",
+        "path": "/api/users/{id}/assignable-roles",
+        "useCase": "UserManagementUseCase.assignableRoles",
+        "fragments": "assignable-roles",
+        "reason": "完整权限子集、有效级别、自定义资格及范围均在分页前过滤。"
+      },
+      {
+        "operationId": "disableUser",
+        "method": "PATCH",
+        "path": "/api/users/{id}/status",
+        "useCase": "UserManagementUseCase.disable",
+        "fragments": "user-disable",
+        "reason": "目标保护后实体修改与领域行为不同，原JWT停用即时拒绝相同。"
+      },
+      {
+        "operationId": "moveUser",
+        "method": "PUT",
+        "path": "/api/users/{id}/department",
+        "useCase": "UserManagementUseCase.move",
+        "fragments": "user-transfer",
+        "reason": "原部门和目标部门的双范围及不可变归属修改。"
+      },
+      {
+        "operationId": "listRoles",
+        "method": "GET",
+        "path": "/api/roles",
+        "useCase": "RoleUseCase.list",
+        "fragments": "user-query（分页模式复用）",
+        "reason": "RoleJpaRepository.count/findAll 对 RoleRepository.search(Roles)；无新分页算法。"
+      },
+      {
+        "operationId": "createRole",
+        "method": "POST",
+        "path": "/api/roles",
+        "useCase": "RoleUseCase.create",
+        "fragments": "role-create",
+        "reason": "空权限角色构造及唯一约束翻译边界。"
+      },
+      {
+        "operationId": "patchRole",
+        "method": "PATCH",
+        "path": "/api/roles/{id}",
+        "useCase": "RoleUseCase.patch",
+        "fragments": "role-update",
+        "reason": "字段原地拷贝对领域Role.revise。"
+      },
+      {
+        "operationId": "getRolePermissions",
+        "method": "GET",
+        "path": "/api/roles/{id}/permissions",
+        "useCase": "RoleUseCase.selected",
+        "fragments": "共同集合读取，不画",
+        "reason": "Entity/领域Role读取直接权限编号后排序；类型差异由两套role类图说明。"
+      },
+      {
+        "operationId": "replaceRolePermissions",
+        "method": "PUT",
+        "path": "/api/roles/{id}/permissions",
+        "useCase": "RoleUseCase.replacePermissions",
+        "fragments": "role-permissions",
+        "reason": "直接权限完整集合替换，不按API子集误判。"
+      },
+      {
+        "operationId": "listSystems",
+        "method": "GET",
+        "path": "/api/systems",
+        "useCase": "ResourceUseCase.systems",
+        "fragments": "共同目录读取，不画",
+        "reason": "均按已登记应用及状态读取；ApplicationSystemJpaRepository对领域ApplicationSystemRepository，静态边界见systems类图。"
+      },
+      {
+        "operationId": "getPermissionTree",
+        "method": "GET",
+        "path": "/api/permissions/tree",
+        "useCase": "ResourceUseCase.tree",
+        "fragments": "共同只读投影，不画",
+        "reason": "按系统读取并转换权限树；PermissionJpaRepository对领域PermissionRepository，静态边界见resource类图。"
+      },
+      {
+        "operationId": "listApiResources",
+        "method": "GET",
+        "path": "/api/api-resources",
+        "useCase": "ResourceUseCase.apis",
+        "fragments": "user-query（分页模式复用）",
+        "reason": "ApiResourceJpaRepository.count/findAll 对 ApiResourceRepository.search(Apis)；同一范围先筛后分页模式。"
+      },
+      {
+        "operationId": "patchPermission",
+        "method": "PATCH",
+        "path": "/api/permissions/{id}",
+        "useCase": "ResourceUseCase.patchPermission",
+        "fragments": "permission-tree",
+        "reason": "父级显式null、类型及循环/同系统不变量。"
+      },
+      {
+        "operationId": "patchApiResource",
+        "method": "PATCH",
+        "path": "/api/api-resources/{id}",
+        "useCase": "ResourceUseCase.patchApi",
+        "fragments": "api-availability",
+        "reason": "API启停的实体状态对不可变领域值。"
+      },
+      {
+        "operationId": "getPermissionApis",
+        "method": "GET",
+        "path": "/api/permissions/{id}/apis",
+        "useCase": "ResourceUseCase.mapping",
+        "fragments": "共同集合读取，不画",
+        "reason": "读取完整映射、包含停用项并排序；不重复画与getRolePermissions相同的关联读取模式。"
+      },
+      {
+        "operationId": "replacePermissionApis",
+        "method": "PUT",
+        "path": "/api/permissions/{id}/apis",
+        "useCase": "ResourceUseCase.replaceMapping",
+        "fragments": "permission-mapping",
+        "reason": "差集关联对完整同系统映射领域策略。"
+      },
+      {
+        "operationId": "listAuthorizationLogs",
+        "method": "GET",
+        "path": "/api/authorization-logs",
+        "useCase": "AuditLogUseCase.list",
+        "fragments": "global-scope / authorization",
+        "reason": "日志准入复用；两套都调用同一AuditQueryGateway，游标/快照/脱敏流程相同，不画双份。"
+      },
+      {
+        "operationId": "listDepartmentDirectory",
+        "method": "GET",
+        "path": "/api/departments",
+        "useCase": "DepartmentUseCase.list",
+        "fragments": "organization-scope / department-view",
+        "reason": "与部门树相同用例，复用同一图。"
+      },
+      {
+        "operationId": "createDepartment",
+        "method": "POST",
+        "path": "/api/departments",
+        "useCase": "DepartmentUseCase.create",
+        "fragments": "department-create",
+        "reason": "合法父子类型、同父重名及构造。"
+      },
+      {
+        "operationId": "renameDepartment",
+        "method": "PATCH",
+        "path": "/api/departments/{id}",
+        "useCase": "DepartmentUseCase.rename",
+        "fragments": "department-rename",
+        "reason": "保留组织身份及真实人数。"
+      },
+      {
+        "operationId": "deleteDepartment",
+        "method": "DELETE",
+        "path": "/api/departments/{id}",
+        "useCase": "DepartmentUseCase.delete",
+        "fragments": "department-delete",
+        "reason": "可信根和空节点保护后软删除。"
+      },
+      {
+        "operationId": "getOverview",
+        "method": "GET",
+        "path": "/api/overview",
+        "useCase": "OverviewUseCase.overview",
+        "fragments": "overview / department-view",
+        "reason": "同快照人数、直接下级分布及两种协作边界。"
+      },
+      {
+        "operationId": "applicationIdentityLogin",
+        "method": "POST",
+        "path": "/auth/login",
+        "useCase": "ApplicationIdentityUseCase.login",
+        "fragments": "credentials / application-projection",
+        "reason": "登记应用检查及JWT签发相同；只画账号和有效投影差异。"
+      },
+      {
+        "operationId": "applicationIdentityMe",
+        "method": "GET",
+        "path": "/auth/me",
+        "useCase": "ApplicationIdentityUseCase.current",
+        "fragments": "application-projection",
+        "reason": "逐请求重算本应用角色/短码/API事实。"
+      },
+      {
+        "operationId": "applicationIdentityPermission",
+        "method": "GET",
+        "path": "/auth/permissions/{permission}",
+        "useCase": "ApplicationIdentityUseCase.allowed",
+        "fragments": "application-projection",
+        "reason": "current后contains(code)完全相同，不增加重复顺序图。"
+      },
+      {
+        "operationId": "applicationIdentityUser",
+        "method": "GET",
+        "path": "/auth/users/{userId}",
+        "useCase": "ApplicationIdentityUseCase.user",
+        "fragments": "application-projection",
+        "reason": "实际查人API映射门禁复用投影；按ID读取与最小3字段响应相同，JPA/领域仓储边界见类图。"
+      },
+      {
+        "operationId": "logoutApplication",
+        "method": "POST",
+        "path": "/auth/logout",
+        "useCase": "ApplicationIdentityUseCase.logout",
+        "fragments": "共同流程，不画",
+        "reason": "受众核对及当前会话撤销完全相同，不绘制两张JWT退出图。"
+      },
+      {
+        "operationId": "listApplicationDepartments",
+        "method": "GET",
+        "path": "/auth/departments",
+        "useCase": "ApplicationIdentityUseCase.departments",
+        "fragments": "application-projection / organization-scope",
+        "reason": "目录门禁和范围依上述差异；IdentityDirectoryGateway的计数/分页SQL是共用实现，不画双份。"
+      },
+      {
+        "operationId": "listApplicationDepartmentUsers",
+        "method": "GET",
+        "path": "/auth/departments/{departmentId}/users",
+        "useCase": "ApplicationIdentityUseCase.departmentUsers",
+        "fragments": "application-projection / organization-scope",
+        "reason": "直属部门范围差异同上；五字段及page/pageSize查询共用。"
+      },
+      {
+        "operationId": "checkApplicationApiAuthority",
+        "method": "GET",
+        "path": "/auth/api-permissions/{operationId}",
+        "useCase": "ApplicationIdentityUseCase.apiAllowed",
+        "fragments": "application-projection",
+        "reason": "ApiOperationCatalog定位、permissionRoles和路由匹配算法相同，仅current投影依两套实现。"
+      }
+    ],
+    "offline": [
+      "ImportUseCase.importDirectory",
+      "AuthorizationBootstrapUseCase.preview/initialize"
+    ],
+    "scenarioCount": 24,
+    "classDiagramPairs": 16
+  }
 }

@@ -1,5 +1,7 @@
 # RBAC项目协作
 
+2026-11-22 R33当前规则：管理端与外部应用统一HS256身份JWT，JwtIdentityStore/JwtIdentityCodec替代原随机管理令牌；仍按aud隔离管理准入与各应用，不缓存权限，保留单会话即时撤销及重启失效。后端UML为16对类图、24对差异顺序图，37操作/两类离线入口逐项追溯；共同流程不得重复画。当前docs导航与验收已精简，旧阶段计划、设计说明、验收及重复图归history，历史数量按当时版本理解。规范仍用用户提供的20261117代码/UML skill，双轴审核；详设外部文件、老师原工程、服务器与T14/T15边界保持。以下R32/R31为阶段记录，不覆盖本条全JWT现行规则。
+
 2026-11-21 R32：按老师共享契约补齐统一身份鉴权8项，外部应用采用无角色权限快照的HS256 JWT，管理端原Bearer保留；新增部门/直属人员分页及operationId权限查询，两策略独立决策、即时撤权，统一身份审计2项依用户澄清不纳入。当前OpenAPI1.4.0为37操作、31路径、71 Schema、22错误、K17。各208项真实MySQL回归与独立JAR身份61次/课程43次HTTP通过，Python25项、RBAC前端27项及两Vue构建通过，浏览器范围见docs/history/verification/identity-eight-contract.md。用户明确授权本轮同步Apifox9042431并将有效分支合入main，覆盖旧“本轮不合main/不写Apifox”限制；不删除分支、不关闭T14/T15、不部署服务器，详设Word/PDF/PPT不改。
 
 2026-11-21 R31实测：两套新本机万人库逐人核对191教师（190员工+admin）、9810学生、1名同账号课程管理员。真实CloneFactory0.0.2下两策略各195项回归，最终HTTP各43项；第一组正式Vue24项交互、RBAC前端27项、课程构建通过。Python含MySQL配置覆盖/失败停止修复共24项通过，生成53个非空重载及185组字段无遗漏，双轴修复复核0项。见docs/history/verification/course-initialization-r31.md；详设Word/PDF/PPT依用户最新要求不改，服务器部署搁置。
@@ -10,7 +12,7 @@
 
 2026-11-20更新：课程本地接入按用户澄清改为通用应用目录和身份协议，不维护应用代码白名单、教师标记或课程专用RBAC服务。应用角色由配置数据表达；RBAC管理端准入保持原规则。自定义角色不冻结人员，角色差集锁后校验且不可改现有项可原样保留；自定义项仍仅可信根直属有效五级管理员可增删，不增加委托机制。老师原目录保留；副本仅修复structured课程组长重复保存、学生里程碑读取和管理员教学班读取，旧教师名单安全补丁撤除。外部业务审计由integrations/course独立本地支撑持久保存，不混入RBAC鉴权日志；来源限制和实测见docs/course-integration.md及本轮验证记录。未经要求不合main、不关闭T14/T15、不部署服务器。
 
-2026-11-19阶段6 UI复验：structured通过PR #36交付窄屏日志计数、Modal键盘焦点及CollectionEditor失权事件修复，详见docs/structured-ui-acceptance.md。ddd在包含PR #36的main提交292a8a4上，用相同用例和夹具在独立库复验。两种策略各通过13项浏览器用例、26项前端测试及生产构建；ddd的S6-01～S6-09补充用例及重启回读也通过，详见docs/history/verification/stage6-ddd.md。
+2026-11-19阶段6 UI复验：structured通过PR #36交付窄屏日志计数、Modal键盘焦点及CollectionEditor失权事件修复，详见docs/history/verification/structured-ui-acceptance.md。ddd在包含PR #36的main提交292a8a4上，用相同用例和夹具在独立库复验。两种策略各通过13项浏览器用例、26项前端测试及生产构建；ddd的S6-01～S6-09补充用例及重启回读也通过，详见docs/history/verification/stage6-ddd.md。
 
 截至2026-11-18，阶段5已完成双轴审核、修复及CloneFactory专项核对，用户批准PR #34合入main，合并提交e521f97，文件树与验收提交83dbf17一致。structured和ddd各178项后端测试、71次真实HTTP通过，前端26项测试/构建及运行器5项单测通过；两套空库各完成10001个BCrypt10账号导入及首次授权。桌面浏览器已复验登录、六个管理页面和关键写入；阶段6仍待窄屏、完整键盘及其他写入组合复验。组员从main复现并记录实际提交，见docs/reproduction.md及docs/testing-acceptance.md。T14/T15、课程接入及服务器部署仍按开发计划。
 
