@@ -58,12 +58,18 @@ Permission.type为MENU/BUTTON/API。菜单、按钮可无API独立控制展示�
 1. 准备独立MySQL实例及空rbac_core/course_project，记录端口；原有库全部保留。RBAC执行当前两份首次SQL；课程按原Flyway建表。只对空库生成并导入`scripts/course_integration_fixture.py --output-dir .local/your-run/fixtures`的两份SQL，先通过UI_FIXTURE_PASSWORD提供虚构口令。
 2. 老师工程从原提交复制到忽略目录，按[integrations/course](../integrations/course/README.md)应用必要修复补丁，保留原目录。Java21、Boot4.1.2、Lombok1.18.48、CloneFactory0.0.2沿老师pom；历史课程构建使用真实38fd817源码。2026-11-21本RBAC依用户提供源码更新为真实40583ff提交的0.0.2，构建指引见[依赖安装](../deploy/README.md#本机依赖安装)，不是改名旧jar；不因此替换已验课程副本。
 3. RBAC设置数据库凭据、APP_BACKEND_STRATEGY=structured或ddd、APP_IDENTITY_ENABLED=true、IDENTITY_ALLOWED_ORIGINS=http://127.0.0.1:5174，启动8081。不要并行用两策略修改同一测试库。
-4. 启动本地支撑：`python integrations/course/local_identity_gateway.py --database .local/your-run/audit.sqlite3 --port 8085 --origin http://127.0.0.1:5174 --mysql-config <本地只读客户端配置绝对路径>`。客户端配置指向课程实例，数据库名称仍为course_project，文件不入Git。
+4. 启动本地支撑：`python integrations/course/local_identity_gateway.py --database .local/your-run/audit.sqlite3 --port 8085 --origin http://127.0.0.1:5174 --origin http://localhost:5174 --mysql-config <本地只读客户端配置绝对路径>`。客户端配置指向课程实例，数据库名称仍为course_project，文件不入Git。
 5. 课程设置APP_BACKEND_STRATEGY=structured、DB_HOST/PORT/NAME/USER/PASSWORD及IDENTITY_BASE_URL=http://127.0.0.1:8085；原JAR8080，Flyway启用、ddl-auto=validate。老师DDD另有当前学期切换冲突，本轮不将其全部功能宣称通过；RBAC两种策略分别联调老师structured。
 6. RBAC Vue5173沿原代理8081；老师Vue5174设置VITE_API_BASE_URL=http://127.0.0.1:8080、VITE_IDENTITY_BASE_URL=http://127.0.0.1:8085、VITE_MOCK_ENABLED=false。使用两个正式前端，不使用离线原型或mock替代真实RBAC。
 7. 通过环境提供口令后执行`python scripts/verify_course_integration.py --fixture --report .local/your-run/http.json`与`node scripts/verify_course_browser.mjs`；执行Python辅助测试、前端测试/构建及两RBAC完整回归。脚本有真实写入，仅在明确的虚构夹具环境使用。
 
 本机当前实例及实际成绩以本轮验证记录为准。首次SQL不承担已有未知库升级，不交付升级脚本。服务端口8082被Windows保留，因此本轮支撑使用8085，不修改系统保留端口。
+
+### 本机浏览器入口与跨域配置
+
+浏览器把`http://localhost:5174`与`http://127.0.0.1:5174`视为不同Origin。课程Vue直接调用8080；只允许后者时，前者会被浏览器跨域检查阻止，登录页可能只显示“请求失败，请稍后重试”，不能据此判断口令或身份出错。
+
+启动课程JAR前设置`CORS_ALLOWED_ORIGINS=http://127.0.0.1:5174,http://localhost:5174`。独立本地支撑使用上面两个`--origin`；需要浏览器直接访问RBAC通用身份入口时，相应将`IDENTITY_ALLOWED_ORIGINS`设为这两个Origin。继续显式允许本机入口，不使用通配放行。已运行进程需读取新配置后重启对应服务，不必重新导入或授权。
 
 ## 7. 老师项目的实际限制
 

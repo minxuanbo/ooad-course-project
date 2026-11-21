@@ -57,3 +57,11 @@ HTTP覆盖同一admin双系统登录、本部领导与普通员工教师、分�
 e2e4b8b后两轴独立复核：Standards硬规范0项、判断性问题0项，Spec0项。249个受影响Markdown本地文件目标存在；课程副本对固定原始快照仍仅上述3个Java文件有差异。桌面体验说明只在本地保存，不进入Git；包含两系统入口、代表账号和临时口令。
 
 首次接入在开放业务前维护窗口串行执行，课程及RBAC分别提交，不是分布式事务；运行期调动、后续管理员变更不自动重推课程身份。旧32人夹具不是升级目标。老师5项Controller缺失、个人制批改、学生建组归属和DDD当前学期等限制继续见[课程接入第7节](../../course-integration.md#7-老师项目的实际限制)。本轮没有扩写这些业务，也未测得吞吐量或服务器部署结论。
+
+## 5. 本机入口问题复现与修复
+
+用户反馈admin似乎不在人员名单且课程登录显示“请求失败，请稍后重试”。真实Chrome确认：搜索admin可以看到系统管理员、课程教师资格和课程管理员；未筛选时按ID升序，10001条数据每页20条，admin在第501页（该页1条）。记录为admin-pagination-check.json及browser/admin-search-recheck.png，没有修改人员排序或账号数据。
+
+课程页从127.0.0.1:5174登录200，但localhost:5174可复现浏览器CORS拒绝，页面显示同样的通用错误。原配置只显式允许127.0.0.1，两个域名不是同一Origin。仅调整第一组课程CORS_ALLOWED_ORIGINS及本地支撑的两个--origin，重启课程和支撑，未重启RBAC或数据库，不改变口令、授权和绑定。修复后真实Chrome从两个入口均完成POST /login与GET /me，各返回200且无CORS错误，admin人员搜索仍正常；用户随后确认可以登录。
+
+证据位于.local/course-initialization-20261121的admin-login-diagnostic.json、diagnose-admin-login.mjs、course/gateway-access日志和restart-course-access.ps1。此项是本地配置修复，不修改老师原工程、课程生产补丁或OpenAPI，不把此前195项完整回归算成新的执行成绩。
