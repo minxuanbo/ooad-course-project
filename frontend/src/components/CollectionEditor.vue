@@ -13,6 +13,7 @@ const props = defineProps({
 })
 const emit = defineEmits(['close', 'saved', 'invalidated'])
 const selected = ref(new Set()),
+  locked = ref(new Set()),
   labels = ref(new Map()),
   ready = ref(false),
   loading = ref(false),
@@ -48,6 +49,7 @@ async function loadInitial() {
     const value = await api(props.readPath)
     if (!initialGeneration.current(version)) return
     selected.value = new Set(value.ids || value.roles?.map((item) => item.id) || [])
+    locked.value = new Set(value.lockedRoleIds || [])
     for (const item of value.items || value.roles || [])
       labels.value.set(item.id, item.name || `${item.method} ${item.path}`)
     ready.value = true
@@ -126,6 +128,7 @@ async function loadCandidates(next = 0) {
   }
 }
 function toggle(id, checked) {
+  if (locked.value.has(id)) return
   confirmEmpty.value = false
   confirmSave.value = false
   const value = new Set(selected.value)
@@ -175,8 +178,9 @@ onUnmounted(() => {
         <div class="selected-chips">
           <span v-for="id in selected" :key="id" class="selection-chip">
             {{ labels.get(id) || `ID ${id}（不在当前候选）` }}
+            <small v-if="locked.has(id)">（锁定，保留现有授权）</small>
             <button
-              v-if="!readonly"
+              v-if="!readonly && !locked.has(id)"
               :disabled="saving"
               :aria-label="'移除ID ' + id"
               @click="toggle(id, false)"
@@ -216,7 +220,7 @@ onUnmounted(() => {
             <input
               type="checkbox"
               :checked="selected.has(item.id)"
-              :disabled="saving || (!item.enabled && !selected.has(item.id))"
+              :disabled="saving || locked.has(item.id) || (!item.enabled && !selected.has(item.id))"
               @change="toggle(item.id, $event.target.checked)"
             />
             <span>

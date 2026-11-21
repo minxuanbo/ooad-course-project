@@ -15,10 +15,10 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 public class ApiResponseAdvice implements ResponseBodyAdvice<Object> {
   private final RequestContext requests;
 
-  /** 所有Controller响应均经过同一包装入口。 */
+  /** 管理端使用统一包装，外部既有身份协议保留原成功结构。 */
   public boolean supports(
       MethodParameter method, Class<? extends HttpMessageConverter<?>> converter) {
-    return true;
+    return !method.getContainingClass().isAnnotationPresent(RawResponse.class);
   }
 
   /** 已是标准响应时保留；普通VO附带本请求的追踪标识。 */

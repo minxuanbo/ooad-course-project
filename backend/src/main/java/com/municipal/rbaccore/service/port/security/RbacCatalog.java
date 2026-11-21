@@ -71,6 +71,24 @@ public final class RbacCatalog {
     return java.util.Collections.unmodifiableMap(definitions);
   }
 
+  /** 提供通俗的中文展示名称；编码用于稳定关联，不按展示名称鉴权。 */
+  public static Map<String, String> displayNames() {
+    return Map.ofEntries(
+        Map.entry("rbac.overview.read", "查看总览"),
+        Map.entry("rbac.departments.read", "查询部门"),
+        Map.entry("rbac.departments.write", "维护部门"),
+        Map.entry("rbac.users.read", "查询人员"),
+        Map.entry("rbac.users.roles.write", "分配人员角色"),
+        Map.entry("rbac.users.disable", "停用人员账号"),
+        Map.entry("rbac.users.department.write", "调整人员部门"),
+        Map.entry("rbac.resources.read", "查询权限与API资源"),
+        Map.entry("rbac.resources.write", "配置权限与API映射"),
+        Map.entry("rbac.roles.read", "查询角色"),
+        Map.entry("rbac.roles.write", "维护角色定义"),
+        Map.entry("rbac.roles.permissions.write", "配置角色权限"),
+        Map.entry("rbac.logs.read", "查询鉴权日志"));
+  }
+
   /** 登录准入与实际请求都使用同一方法及模板键，不以角色或岗位名称判断。 */
   public static Set<Route> managementRoutes() {
     return definitions().values().stream()

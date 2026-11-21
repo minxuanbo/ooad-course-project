@@ -12,10 +12,11 @@ public record Permission(
     Type type,
     boolean enabled,
     Set<ApiResource> apis) {
-  /** 本系统只定义菜单与按钮两个权限类型。 */
+  /** 本系统定义菜单、按钮及必须映射真实API的权限类型。 */
   public enum Type {
     MENU,
-    BUTTON
+    BUTTON,
+    API
   }
 
   /** 持久化身份与协议字段分离。 */

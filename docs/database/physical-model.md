@@ -105,7 +105,7 @@ MySQL8.4、InnoDB、utf8mb4/utf8mb4_0900_bin。实体BIGINT主键自增，对外
 | parent_id | BIGINT | 是 | 直接上级标识；NULL为根/顶层 |
 | code | VARCHAR(100) | 否 | 稳定业务编码 |
 | name | VARCHAR(191) | 否 | 显示名称 |
-| type | ENUM('MENU','BUTTON') | 否 | MENU或BUTTON |
+| type | ENUM('MENU','BUTTON','API') | 否 | MENU、BUTTON或API |
 | enabled | BIT | 否 | 是否启用，影响实际有效性 |
 
 现有约束/索引：
@@ -218,7 +218,7 @@ MySQL8.4、InnoDB、utf8mb4/utf8mb4_0900_bin。实体BIGINT主键自增，对外
 | 场景 | 数据库兜底 | 业务层补足 |
 | --- | --- | --- |
 | 登录标识 | username、phone各自唯一，NULL手机号可多条 | 导入校验跨用户跨列碰撞；登录仍拒绝多用户歧义，不能误认两个索引已防跨列 |
-| 组织/权限树 | 可空自引用FK、非空归属FK | 单根连通无环；权限父子同系统，BUTTON无子 |
+| 组织/权限树 | 可空自引用FK、非空归属FK | 单根连通无环；权限父子同系统，仅MENU可有子节点 |
 | 授权关联 | 联合主键、两端FK | 角色有效Permission子集、同系统、整体替换、实际API OR |
 | 共享维护 | 独立事务和根行锁所需行 | 锁后重验及同一启用根用户完整K，拒绝拼人 |
 | 来源/回执 | 来源键/用户唯一、目标CHECK、seed主键 | 原件摘要、源行与新ID核对；重复执行不重置变更 |

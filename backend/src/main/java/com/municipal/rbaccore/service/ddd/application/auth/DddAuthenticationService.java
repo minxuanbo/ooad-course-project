@@ -34,6 +34,17 @@ public class DddAuthenticationService implements AuthenticationUseCase {
   /** 同一工号或手机号定位唯一启用账号，再依当前权限判断管理准入。 */
   @Override
   public LoginResult login(LoginCommand command) {
+    CurrentIdentity actor = verify(command);
+    if (!authorization.canEnter(actor.id())) {
+      throw new BusinessException(403, "MANAGEMENT_ACCESS_DENIED", "该账号没有本权限系统的有效管理权限");
+    }
+    User user = active(actor.id());
+    return new LoginResult(tokens.issue(user.id()), result(user), tokens.expiresIn());
+  }
+
+  /** 使用领域匹配和口令端口核实身份，不在凭据校验时签发应用身份。 */
+  @Override
+  public CurrentIdentity verify(LoginCommand command) {
     requests.actor(null, null);
     User matched =
         AuthenticationPolicy.eligibleAccount(
@@ -41,17 +52,19 @@ public class DddAuthenticationService implements AuthenticationUseCase {
             .filter(user -> passwords.matches(command.getPassword(), user.passwordHash()))
             .orElseThrow(() -> new BusinessException(401, "LOGIN_FAILED", "账号或密码错误"));
     requests.actor(matched.id(), matched.username());
-    if (!authorization.canEnter(matched.id())) {
-      throw new BusinessException(403, "MANAGEMENT_ACCESS_DENIED", "该账号没有本权限系统的有效管理权限");
-    }
-    User user = active(matched.id());
-    return new LoginResult(tokens.issue(user.id()), result(user), tokens.expiresIn());
+    return new CurrentIdentity(matched.id(), matched.username(), matched.department().id());
   }
 
   /** 令牌定位主体，不携带启停、部门或权限快照。 */
   @Override
   public CurrentIdentity require(String header) {
-    User user = active(tokens.require(header));
+    return requireForSystem(header, RbacCatalog.SYSTEM_CODE);
+  }
+
+  /** 领域账号状态与令牌受众分别校验，外部应用会话不能进入管理身份接口。 */
+  @Override
+  public CurrentIdentity requireForSystem(String header, String system) {
+    User user = active(tokens.requireForSystem(header, system));
     requests.actor(user.id(), user.username());
     return new CurrentIdentity(user.id(), user.username(), user.department().id());
   }

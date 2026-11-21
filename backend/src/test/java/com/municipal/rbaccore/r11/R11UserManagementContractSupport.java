@@ -645,11 +645,14 @@ abstract class R11UserManagementContractSupport {
 
   /** 完整K必须同时满足根归属，不能把范围内的非根人员当成全局维护者。 */
   @Test
-  @DisplayName("R11/R12/R15 非根完整K人员仍可按正常范围规则撤权停用与调动")
+  @DisplayName("R11/R12/R15 非根完整K人员可按范围停用调动，无权撤回的角色保持锁定")
   void R11_DoesNotTreatNonRootKUserAsGlobalAdministrator() throws Exception {
     String dept = token(DEPT);
 
-    success(request("PUT", userRoles(childAdminUserId), dept, Map.of("ids", List.of())), 200);
+    assertError(
+        request("PUT", userRoles(childAdminUserId), dept, Map.of("ids", List.of())),
+        403,
+        "MANAGEMENT_SCOPE_DENIED");
 
     success(request("PATCH", status(childAdminUserId), dept, Map.of("enabled", false)), 200);
 
@@ -664,16 +667,25 @@ abstract class R11UserManagementContractSupport {
   @DisplayName("R23 只有可信根直属五级人员可以授予自定义角色")
   void R23_RestrictsCustomRolesToRootLevelFive() throws Exception {
     String root = token(ROOT);
-    long custom = success(request("POST", ROLES, root,
-        Map.of("code", "t11-root-custom", "name", "可信根专属自定义角色")), 201).get("id").asLong();
+    long custom =
+        success(
+                request(
+                    "POST", ROLES, root, Map.of("code", "t11-root-custom", "name", "可信根专属自定义角色")),
+                201)
+            .get("id")
+            .asLong();
     String candidates = assignable(employeeUserId) + "?q=t11-root-custom";
     assertEquals(1, success(request("GET", candidates, root, null), 200).get("total").asInt());
     success(request("PUT", department(rootUserId), root, Map.of("departmentId", childId)), 200);
     assertEquals(0, success(request("GET", candidates, root, null), 200).get("total").asInt());
-    assertError(request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(custom))),
-        403, "MANAGEMENT_SCOPE_DENIED");
+    assertError(
+        request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of(custom))),
+        403,
+        "MANAGEMENT_SCOPE_DENIED");
     assertTrue(savedRoleIds(employeeUserId).isEmpty());
-    success(request("PUT", userRoles(employeeUserId), token(ROOT2), Map.of("ids", List.of(custom))), 200);
+    success(
+        request("PUT", userRoles(employeeUserId), token(ROOT2), Map.of("ids", List.of(custom))),
+        200);
     assertEquals(List.of(custom), savedRoleIds(employeeUserId));
   }
 
