@@ -27,6 +27,7 @@ password=$(openssl rand -hex 24)
     printf '%s=jdbc:mysql://127.0.0.1:3306/%s?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&allowPublicKeyRetrieval=true&useSSL=false\n' "${pair%%:*}" "${pair#*:}"
   done
   printf 'RBAC_CORE_TEST_DB_USER=rbac_test\nRBAC_CORE_TEST_DB_PASSWORD=%s\n' "$password"
+  printf 'APP_BACKEND_STRATEGY=%s\n' "${APP_BACKEND_STRATEGY:-ddd}"
   printf 'MAVEN_OPTS=-Xmx192m\n'
 } > "$test_dir/test.env"
 unset password
@@ -60,19 +61,24 @@ docker run --rm --network "container:$test_name" --memory 800m \
   -v "$report_dir:/reports" "$RBAC_BUILD_IMAGE" \
   sh -c '
     mkdir /tmp/test-project && cd /tmp/test-project || exit 1
-    cp /project/pom.xml . && cp -R /project/src /project/deploy . && cp /source/*.xlsx . || exit 1
+    cp -R /project/backend /project/deploy /project/api . && cp /source/*.xlsx . || exit 1
+    cp /project/Dockerfile /project/.dockerignore . || exit 1
     mkdir frontend && cp -R /project/frontend/src /project/frontend/tests frontend/ || exit 1
-    /opt/apache-maven-3.9.9/bin/mvn -B -ntp -s /opt/maven-settings.xml clean verify
+    /opt/apache-maven-3.9.9/bin/mvn -B -ntp -s /opt/maven-settings.xml -f backend/pom.xml clean test jacoco:report
     result=$?
-    if [ -s target/site/jacoco/index.html ]; then
-      test -s target/site/jacoco/index.html && test -s target/jacoco.exec || exit 1
-      cp -R target/site/jacoco/. /reports/ || exit 1
-      cp target/jacoco.exec /reports/ || exit 1
-      for f in target/surefire-reports/*.txt; do
-        sed -n "/Tests run:/p" "$f"
+    if [ -s backend/target/site/jacoco/index.html ]; then
+      test -s backend/target/site/jacoco/index.html && test -s backend/target/jacoco.exec || exit 1
+      cp -R backend/target/site/jacoco/. /reports/ || exit 1
+      cp backend/target/jacoco.exec /reports/ || exit 1
+      for f in backend/target/surefire-reports/*.txt; do
+        test -f "$f" || exit 1
+        sed -n "/Tests run:/p" "$f" || exit 1
       done > /reports/test-summary.txt
-      find target/classes/com/municipal -name '*.class' | sort | xargs sha256sum > /reports/class-sha256.txt
-      find src/main/java src/test/java -name '*.java' | sort | xargs sha256sum > /reports/source-sha256.txt
+      find backend/target/classes/com/municipal -name '*.class' | sort | xargs sha256sum > /reports/class-sha256.txt
+      find backend/src/main/java backend/src/test/java -name '*.java' | sort | xargs sha256sum > /reports/source-sha256.txt
+    fi
+    if [ "$result" = 0 ]; then
+      test -s /reports/test-summary.txt && test -s /reports/class-sha256.txt && test -s /reports/source-sha256.txt || exit 1
     fi
     exit "$result"
   '

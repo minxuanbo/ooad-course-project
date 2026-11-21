@@ -108,7 +108,7 @@ python scripts/initialize_course_integration.py --mysql <mysql.exe绝对路径> 
 
 回执使用通用bootstrap_receipts表的独立seed_key，不新增业务表或老师Flyway迁移。匹配回执重复执行直接跳过，不恢复被手动撤回的角色和权限；原件来源、账号全集或初始化配置变化会拒绝自动覆盖。此入口不是已有课程库升级或动态组织调动同步，后续身份修改仍由管理端明确授撤，并维护课程本地业务身份。
 
-R31原始职责及维护窗口约束见[历史初始化设计](history/design-decisions/course-initialization-r31.md)，真实人数、两策略HTTP与界面结果见[独立验证记录](history/verification/course-initialization-r31.md)；不能把历史32人夹具成绩当作新规则通过。服务与数据库仍仅本地运行，服务器方案待老师部署说明。
+R31原始职责及维护窗口约束见[历史初始化设计](history/design-decisions/course-initialization-r31.md)，真实人数、两策略HTTP与界面结果见[独立验证记录](history/verification/course-initialization-r31.md)；不能把历史32人夹具成绩当作新规则通过。服务与数据库仍仅本地运行，当前服务器适配见第11节，云端发布尚未执行。
 
 
 ## 9. 完整八项鉴权接入（R32）
@@ -129,3 +129,14 @@ $env:IDENTITY_ALLOWED_ORIGINS='http://127.0.0.1:5174,http://localhost:5174'
 ## 10. R33管理端与外部应用全JWT
 
 两类登录现在共用JwtIdentityStore/JwtIdentityCodec及HS256签名验证；管理受众rbac，课程受众仍是登记应用编码。管理token与外部accessToken字段及原角色/对象权限不变，权限不进入JWT。两组本机后端切换后旧会话均需重新登录；当前JAR及原始验证报告位于忽略目录.local/jwt-design-20261121，课程、网关及3351/3352数据保留。完整差异图统一在后端设计第17章，旧R31/R32说明按历史版本归档。
+
+
+## 11. R34双DDD部署适配
+
+用户于2026-11-22要求RBAC和课程系统均采用DDD。当前[七服务Stack及步骤](../deploy/README.md)已适配，老师新来源990cea2的独立副本在原structured三补丁外增加DDD对等修复、学期当前标记释放及安全日志；老师原目录、旧副本、原库保留。通过prepare_course_source.py从固定干净提交复现，不直接复用旧JAR。
+
+服务器版使用Waitress运行独立deployment_gateway.py，MySQL持久保存外部业务审计、数据库内分页、唯一键保证同应用requestId幂等。身份八项仍实时调用RBAC并保留204及错误状态；多路由权限短码按catalog全集核查，未加课程实体或白名单到RBAC。原local_identity_gateway.py继续只用于本机联调。
+
+老师dump中的工号user_id须在新部署库首次校正为数字subject，保留业务ID。独立initialize_deployment.py默认预览，显式离线首发apply才执行；有效191教师/9810学生/1同账号管理员，另两条演示对象保留无自动授权，物理表192/9811。重复回执不恢复后来撤回的角色；不是升级旧库的脚本。
+
+两个前端及后端均在Swarm配置中，C公开80（课程）和8088（RBAC），后端内部DNS与浏览器公网身份地址分开配置。公开/auth保持RBAC通用八项协议；课程浏览器使用8088/course-identity挂载独立接入层，以免课程单应用投影限制其他登记应用。挂载是Nginx部署路径，不新增RBAC业务Controller。真实Chrome已验证六个RBAC菜单均有对应HTTP和DDD Logback日志，未改前端源码；现场以浏览器配合docker service logs展示，无需前端增加日志页。当前完整结果及未上线边界见[本轮验收](history/verification/ddd-deployment-adaptation.md)。

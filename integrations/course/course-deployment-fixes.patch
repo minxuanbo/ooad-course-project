@@ -1,0 +1,384 @@
+--- a/backend/src/main/java/cn/edu/xmu/projectmgt/infrastructure/http/ExternalHttpLoggingInterceptor.java
++++ b/backend/src/main/java/cn/edu/xmu/projectmgt/infrastructure/http/ExternalHttpLoggingInterceptor.java
+@@ -1,6 +1,6 @@
+ package cn.edu.xmu.projectmgt.infrastructure.http;
+ 
+-import lombok.extern.slf4j.Slf4j;
++import cn.edu.xmu.projectmgt.infrastructure.logging.LayerLoggingAspect;
+ import org.springframework.http.HttpRequest;
+ import org.springframework.http.client.ClientHttpRequestExecution;
+ import org.springframework.http.client.ClientHttpRequestInterceptor;
+@@ -13,7 +13,6 @@
+  *
+  * <p>不记录 Authorization、请求体或响应体，避免泄漏令牌、密码和业务数据。</p>
+  */
+-@Slf4j
+ public class ExternalHttpLoggingInterceptor implements ClientHttpRequestInterceptor {
+ 
+     /**
+@@ -27,26 +26,14 @@
+     ) throws IOException {
+         long startedAt = System.currentTimeMillis();
+         String method = request.getMethod().name();
+-        String uri = request.getURI().toString();
+-        log.debug("外部 HTTP 请求开始，method={}, uri={}", method, uri);
++        String path = request.getURI().getPath();
+         try {
+             ClientHttpResponse response = execution.execute(request, body);
+-            log.debug(
+-                    "外部 HTTP 请求完成，method={}, uri={}, status={}, elapsed={}ms",
+-                    method,
+-                    uri,
+-                    response.getStatusCode().value(),
+-                    System.currentTimeMillis() - startedAt
+-            );
++            LayerLoggingAspect.logExternal(method, path, response.getStatusCode().value(),
++                    System.currentTimeMillis() - startedAt);
+             return response;
+         } catch (IOException exception) {
+-            log.debug(
+-                    "外部 HTTP 请求失败，method={}, uri={}, elapsed={}ms",
+-                    method,
+-                    uri,
+-                    System.currentTimeMillis() - startedAt,
+-                    exception
+-            );
++            LayerLoggingAspect.logExternal(method, path, 0, System.currentTimeMillis() - startedAt);
+             throw exception;
+         }
+     }
+--- a/backend/src/main/java/cn/edu/xmu/projectmgt/infrastructure/logging/LayerLoggingAspect.java
++++ b/backend/src/main/java/cn/edu/xmu/projectmgt/infrastructure/logging/LayerLoggingAspect.java
+@@ -43,12 +43,11 @@
+             return result;
+         } catch (Throwable exception) {
+             log.debug(
+-                    "[{}] {}.{} 失败, error={}, message = {}",
++                    "[{}] {}.{} 失败, error={}",
+                     layerOf(targetClass),
+                     target,
+                     method,
+-                    exception.getClass().getSimpleName(),
+-                    exception.getMessage()
++                    exception.getClass().getSimpleName()
+             );
+             throw exception;
+         }
+@@ -70,4 +69,10 @@
+         }
+         return "INFRA";
+     }
++
++    /** 外部请求仅记录方法、无查询串路径、状态和耗时，禁止异常消息及响应体。 */
++    public static void logExternal(String method, String path, int status, long elapsedMillis) {
++        log.debug("[HTTP] method={}, path={}, status={}, elapsed={}ms", method, path, status, elapsedMillis);
++    }
++
+ }
+\ No newline at end of file
+--- a/backend/src/main/java/cn/edu/xmu/projectmgt/infrastructure/persistence/gateway/JpaCourseRepositoryAdapter.java
++++ b/backend/src/main/java/cn/edu/xmu/projectmgt/infrastructure/persistence/gateway/JpaCourseRepositoryAdapter.java
+@@ -78,8 +78,12 @@
+      */
+     @Override
+     public void replaceLeaders(Long courseId, List<CourseLeader> leaders) {
+-        leaderRepository.deleteAllInBatch(leaderRepository.findByCourseId(courseId));
+-        saveLeaders(courseId, leaders);
++        List<CourseLeaderAssignmentEntity> existing = leaderRepository.findByCourseId(courseId);
++        List<Long> desired = leaders.stream().map(CourseLeader::getId).toList();
++        List<Long> retained = existing.stream().map(CourseLeaderAssignmentEntity::getTeacherId).toList();
++        leaderRepository.deleteAll(existing.stream()
++                .filter(item -> !desired.contains(item.getTeacherId())).toList());
++        saveLeaders(courseId, leaders.stream().filter(item -> !retained.contains(item.getId())).toList());
+     }
+     /**
+      * 判断课程代码是否已经存在。
+--- a/backend/src/main/java/cn/edu/xmu/projectmgt/infrastructure/persistence/gateway/JpaStudentRosterRepositoryAdapter.java
++++ b/backend/src/main/java/cn/edu/xmu/projectmgt/infrastructure/persistence/gateway/JpaStudentRosterRepositoryAdapter.java
+@@ -54,6 +54,15 @@
+     @Override
+     public Optional<Student> findByUserId(String userId) {
+         return studentRepository.findByUserId(userId).map(this::restore);
++    }
++
++    /** 只在基础设施层查询账号状态和选课关系，领域仓储返回领域学生。 */
++    @Override
++    public Optional<Student> findActiveInCourse(String userId, Long courseId) {
++        return studentRepository.findByUserId(userId)
++                .filter(student -> Student.STATUS_ACTIVE.equals(student.getStatus()))
++                .filter(student -> enrollmentRepository.existsByCourseIdAndStudentId(courseId, student.getId()))
++                .map(this::restore);
+     }
+ 
+     /**
+--- a/backend/src/main/java/cn/edu/xmu/projectmgt/infrastructure/persistence/gateway/JpaTermRepositoryAdapter.java
++++ b/backend/src/main/java/cn/edu/xmu/projectmgt/infrastructure/persistence/gateway/JpaTermRepositoryAdapter.java
+@@ -95,10 +95,7 @@
+      */
+     @Override
+     public void clearCurrent() {
+-        repository.findByCurrentTrue().ifPresent(current -> {
+-            current.setCurrent(Boolean.FALSE);
+-            repository.save(current);
+-        });
++        repository.clearCurrentMarker();
+     }
+ 
+     /**
+--- a/backend/src/main/java/cn/edu/xmu/projectmgt/infrastructure/persistence/repository/TermJpaRepository.java
++++ b/backend/src/main/java/cn/edu/xmu/projectmgt/infrastructure/persistence/repository/TermJpaRepository.java
+@@ -2,6 +2,8 @@
+ 
+ import cn.edu.xmu.projectmgt.infrastructure.persistence.entity.TermEntity;
+ import org.springframework.data.jpa.repository.JpaRepository;
++import org.springframework.data.jpa.repository.Modifying;
++import org.springframework.data.jpa.repository.Query;
+ 
+ import java.util.List;
+ import java.util.Optional;
+@@ -25,4 +27,9 @@
+      * 查询当前学期记录。
+      */
+     Optional<TermEntity> findByCurrentTrue();
++
++    /** 先执行SQL释放唯一当前标记，再清理上下文以便目标学期重新读取。 */
++    @Modifying(flushAutomatically = true, clearAutomatically = true)
++    @Query("update TermEntity t set t.current = false where t.current = true")
++    void clearCurrentMarker();
+ }
+--- a/backend/src/main/java/cn/edu/xmu/projectmgt/service/ddd/application/auth/DddLoginService.java
++++ b/backend/src/main/java/cn/edu/xmu/projectmgt/service/ddd/application/auth/DddLoginService.java
+@@ -14,7 +14,6 @@
+ import cn.edu.xmu.projectmgt.service.port.error.NotFoundException;
+ import cn.edu.xmu.projectmgt.service.port.error.UnauthorizedException;
+ import lombok.RequiredArgsConstructor;
+-import lombok.extern.slf4j.Slf4j;
+ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+ import org.springframework.stereotype.Service;
+ import org.springframework.transaction.annotation.Transactional;
+@@ -29,7 +28,6 @@
+ @RequiredArgsConstructor
+ @Transactional
+ @ConditionalOnProperty(name = "app.backend-strategy", havingValue = "ddd")
+-@Slf4j
+ public class DddLoginService implements LoginUseCase {
+ 
+     private static final String SYSTEM_ID = "course-project-management";
+@@ -49,7 +47,6 @@
+         } else {
+             result = loginTeacher(command);
+         }
+-        log.debug("login: result = {}",result);
+         return result;
+     }
+ 
+--- a/backend/src/main/java/cn/edu/xmu/projectmgt/service/ddd/application/milestone/DddMilestoneService.java
++++ b/backend/src/main/java/cn/edu/xmu/projectmgt/service/ddd/application/milestone/DddMilestoneService.java
+@@ -1,6 +1,10 @@
+ package cn.edu.xmu.projectmgt.service.ddd.application.milestone;
+ 
+ import cn.edu.xmu.projectmgt.service.ddd.domain.model.Course;
++import cn.edu.xmu.projectmgt.service.ddd.domain.model.CurrentIdentity;
++import cn.edu.xmu.projectmgt.service.ddd.domain.model.Student;
++import cn.edu.xmu.projectmgt.service.ddd.domain.repository.StudentRosterRepository;
++import cn.edu.xmu.projectmgt.service.port.common.UnifiedIdentityGateway;
+ import cn.edu.xmu.projectmgt.service.ddd.domain.model.Milestone;
+ import cn.edu.xmu.projectmgt.service.ddd.domain.repository.CourseRepository;
+ import cn.edu.xmu.projectmgt.service.ddd.domain.repository.MilestoneRepository;
+@@ -39,6 +43,8 @@
+     private final MilestoneRepository milestoneRepository;
+     private final CurrentTeacherProvider currentTeacherProvider;
+     private final MilestoneAuditRecorder milestoneAuditRecorder;
++    private final StudentRosterRepository studentRepository;
++    private final UnifiedIdentityGateway identityGateway;
+ 
+     /**
+      * 查询课程全部里程碑。
+@@ -47,8 +53,10 @@
+     @Transactional(readOnly = true)
+     public MilestoneListResult listMilestones(Long courseId) {
+         Course course = requireCourse(courseId);
+-        CurrentTeacherResult teacher = currentTeacherProvider.currentTeacher();
+-        if (!isLeader(course, teacher) && !teachesCourse(courseId, teacher)) {
++        CurrentTeacherResult teacher = currentTeacherProvider.findCurrentTeacher().orElse(null);
++        boolean teacherAllowed = teacher != null
++                && (isLeader(course, teacher) || teachesCourse(courseId, teacher));
++        if (!teacherAllowed && !isEnrolledStudent(course)) {
+             throw new ForbiddenException("只有本课程的教学组长、任课教师和该课程学生可以查看。");
+         }
+         int weightSum = milestoneRepository.sumWeight(courseId);
+@@ -56,6 +64,13 @@
+                 .map(item -> toResult(item, weightSum))
+                 .toList();
+         return new MilestoneListResult(weightSum, weightSum == 100, items);
++    }
++
++    /** 仅开放课程中有效、已选课学生可读，写入仍使用原教师规则。 */
++    private boolean isEnrolledStudent(Course course) {
++        CurrentIdentity identity = identityGateway.currentIdentity();
++        return course.getCourseStatus() == Course.OPEN && identity.roles().contains(Student.LOGIN_ROLE)
++                && studentRepository.findActiveInCourse(identity.userId(), course.getId()).isPresent();
+     }
+ 
+     /**
+--- a/backend/src/main/java/cn/edu/xmu/projectmgt/service/ddd/application/teachingclass/DddTeachingClassService.java
++++ b/backend/src/main/java/cn/edu/xmu/projectmgt/service/ddd/application/teachingclass/DddTeachingClassService.java
+@@ -157,7 +157,8 @@
+         CurrentTeacherResult teacher = currentTeacherProvider.currentTeacher();
+         List<TeachingClass> classes = teachingClassRepository.findByCourseId(courseId);
+         boolean teachesClass = teachesCourse(courseId, teacher);
+-        if (!isLeader(course, teacher) && !teachesClass) {
++        if (!isLeader(course, teacher) && !teachesClass
++                && !courseAuthorization.canView() && !courseAuthorization.canManageTeam()) {
+             throw new ForbiddenException("只有本课程的教学组长和任课教师可以查看教学班。");
+         }
+         return classes.stream().map(this::toResult).toList();
+--- a/backend/src/main/java/cn/edu/xmu/projectmgt/service/ddd/domain/repository/StudentRosterRepository.java
++++ b/backend/src/main/java/cn/edu/xmu/projectmgt/service/ddd/domain/repository/StudentRosterRepository.java
+@@ -26,6 +26,9 @@
+      * 按统一身份用户编号查询学生。
+      */
+     Optional<Student> findByUserId(String userId);
++
++    /** 查询有效且已选修指定课程的统一身份学生。 */
++    Optional<Student> findActiveInCourse(String userId, Long courseId);
+ 
+     /**
+      * 查询学生在指定课程中的教学班编号。
+--- a/backend/src/main/java/cn/edu/xmu/projectmgt/service/structured/auth/StructuredLoginService.java
++++ b/backend/src/main/java/cn/edu/xmu/projectmgt/service/structured/auth/StructuredLoginService.java
+@@ -16,7 +16,6 @@
+ import cn.edu.xmu.projectmgt.service.port.error.NotFoundException;
+ import cn.edu.xmu.projectmgt.service.port.error.UnauthorizedException;
+ import lombok.RequiredArgsConstructor;
+-import lombok.extern.slf4j.Slf4j;
+ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+ import org.springframework.stereotype.Service;
+ import org.springframework.transaction.annotation.Transactional;
+@@ -35,7 +34,6 @@
+         havingValue = "structured",
+         matchIfMissing = true
+ )
+-@Slf4j
+ public class StructuredLoginService implements LoginUseCase {
+ 
+     private static final String SYSTEM_ID = "course-project-management";
+@@ -55,7 +53,6 @@
+         } else {
+             result = loginTeacher(command);
+         }
+-        log.debug("login: result = {}",result);
+         return result;
+     }
+ 
+--- a/backend/src/test/java/cn/edu/xmu/projectmgt/infrastructure/http/ExternalRestClientFactoryTest.java
++++ b/backend/src/test/java/cn/edu/xmu/projectmgt/infrastructure/http/ExternalRestClientFactoryTest.java
+@@ -80,7 +80,7 @@
+         server.setExecutor(Executors.newSingleThreadExecutor());
+         server.start();
+ 
+-        Logger logger = (Logger) LoggerFactory.getLogger(ExternalHttpLoggingInterceptor.class);
++        Logger logger = (Logger) LoggerFactory.getLogger(cn.edu.xmu.projectmgt.infrastructure.logging.LayerLoggingAspect.class);
+         ListAppender<ILoggingEvent> appender = new ListAppender<>();
+         appender.start();
+         logger.addAppender(appender);
+@@ -95,7 +95,8 @@
+             );
+ 
+             client.post()
+-                    .uri("/probe")
++                    .uri("/probe?token=secret-query")
++                    .header("Authorization", "Bearer private-jwt")
+                     .body("password=secret")
+                     .retrieve()
+                     .toBodilessEntity();
+@@ -108,6 +109,8 @@
+             assertTrue(messages.contains("status=204"));
+             assertTrue(messages.contains("elapsed="));
+             assertFalse(messages.contains("password=secret"));
++            assertFalse(messages.contains("secret-query"));
++            assertFalse(messages.contains("private-jwt"));
+         } finally {
+             logger.detachAppender(appender);
+             server.stop(0);
+--- /dev/null
++++ b/backend/src/test/java/cn/edu/xmu/projectmgt/r1/R34DddDeploymentTermTest.java
+@@ -0,0 +1,58 @@
++package cn.edu.xmu.projectmgt.r1;
++
++import cn.edu.xmu.projectmgt.infrastructure.persistence.entity.TermEntity;
++import cn.edu.xmu.projectmgt.infrastructure.persistence.repository.TermJpaRepository;
++import cn.edu.xmu.projectmgt.service.port.term.TermUseCase;
++import java.time.LocalDate;
++import org.junit.jupiter.api.DisplayName;
++import org.junit.jupiter.api.Test;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.context.SpringBootTest;
++import org.springframework.test.context.ActiveProfiles;
++import org.springframework.mock.web.MockHttpServletRequest;
++import org.springframework.web.context.request.RequestContextHolder;
++import org.springframework.web.context.request.ServletRequestAttributes;
++import cn.edu.xmu.projectmgt.shared.TestUnifiedIdentityClient;
++import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
++import static org.junit.jupiter.api.Assertions.assertTrue;
++
++/** R34分别提交后再切换学期，避免单一测试事务掩盖唯一索引更新顺序。 */
++@ActiveProfiles("test")
++@SpringBootTest(properties = "app.backend-strategy=ddd")
++class R34DddDeploymentTermTest {
++    @Autowired
++    private TermJpaRepository terms;
++    @Autowired
++    private TermUseCase service;
++
++    /** R34旧当前学期与目标均已提交时，切换必须先释放唯一标记。 */
++    @Test
++    @DisplayName("R34 DDD独立事务切换已存在当前学期")
++    void replacesCommittedCurrentTerm() {
++        MockHttpServletRequest request = new MockHttpServletRequest();
++        request.addHeader("Authorization", TestUnifiedIdentityClient.DEFAULT_TOKEN);
++        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
++        TermEntity first = newTerm("R34-old", true);
++        TermEntity second = newTerm("R34-new", false);
++        terms.saveAndFlush(first);
++        terms.saveAndFlush(second);
++        try {
++            assertDoesNotThrow(() -> service.replaceCurrentTerm(second.getId()));
++            assertTrue(terms.findById(second.getId()).orElseThrow().getCurrent());
++        } finally {
++            terms.deleteById(second.getId());
++            terms.deleteById(first.getId());
++            RequestContextHolder.resetRequestAttributes();
++        }
++    }
++
++    /** 创建仅供隔离测试库使用的学期。 */
++    private TermEntity newTerm(String name, boolean current) {
++        TermEntity term = new TermEntity();
++        term.setName(name);
++        term.setStartDate(LocalDate.of(2028, 2, 1));
++        term.setEndDate(LocalDate.of(2028, 7, 1));
++        term.setCurrent(current);
++        return term;
++    }
++}
+--- a/backend/src/test/java/cn/edu/xmu/projectmgt/r3/R3ClassContractSupport.java
++++ b/backend/src/test/java/cn/edu/xmu/projectmgt/r3/R3ClassContractSupport.java
+@@ -284,10 +284,16 @@
+         teacherJpaRepository.save(teacher("sso-t1001", "T1001", "李建国"));
+         teachingClassJpaRepository.save(teachingClass(course.getId(), 1, "软工 2203 班"));
+ 
+-        mockMvc.perform(get(CLASS_LIST_URL, course.getId()))
++        mockMvc.perform(get(CLASS_LIST_URL, course.getId())
++                        .header(HttpHeaders.AUTHORIZATION, TestUnifiedIdentityClient.NO_PERMISSION_TOKEN))
+                 .andExpect(status().isForbidden())
+                 .andExpect(jsonPath("$.code").value("FORBIDDEN"))
+                 .andExpect(jsonPath("$.message").value("只有本课程的教学组长和任课教师可以查看教学班。"));
++
++        // 同一业务对象在真实全局CV权限下可见，不能将测试默认全权限身份当成普通教师。
++        mockMvc.perform(get(CLASS_LIST_URL, course.getId())
++                        .header(HttpHeaders.AUTHORIZATION, TestUnifiedIdentityClient.DEFAULT_TOKEN))
++                .andExpect(status().isOk());
+     }
+ 
+     /**

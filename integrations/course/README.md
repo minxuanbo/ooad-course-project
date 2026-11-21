@@ -1,5 +1,7 @@
 # 老师课程工程的本地接入
 
+R34新增[双DDD部署说明](../../deploy/README.md)，固定新来源990cea2并使用[部署补丁](course-deployment-fixes.patch)；下文19fbd1a与三个structured文件为原本地联调来源和复现记录，原副本仍保留。服务器版使用独立Waitress/MySQL接入服务，原local_identity_gateway.py继续只供本机联调，不直接套用为服务器方案。
+
 老师原目录和提交`19fbd1a`保留不动。RBAC核心只提供通用应用授权，课程角色与权限配置保存在[catalog.json](catalog.json)，不在RBAC生产代码维护teacher/student或课程路由常量。
 
 ## 必要副本补丁

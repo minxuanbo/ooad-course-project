@@ -9,7 +9,11 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest(
     classes = RuntimeConfiguration.class,
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = "spring.config.name=application-core-runtime-test")
+    properties = {
+      "spring.config.name=application-core-runtime-test",
+      "management.endpoints.web.exposure.include=health,prometheus",
+      "management.prometheus.metrics.export.enabled=true"
+    })
 @ActiveProfiles("core-http-test")
 @Import(R07AuthenticationContractSupport.Fixtures.class)
 class R07AuthenticationContractTest extends R07AuthenticationContractSupport {}

@@ -9,7 +9,7 @@
 | [文档导航](docs/README.md)、[需求](docs/requirements.md)                | 项目范围、业务规则与设计入口        |
 | [领域模型](docs/domain-model.md)、[数据库](docs/database-design.md)     | 核心对象、不变量、Chen ER及12张表   |
 | [后端设计](docs/backend-design.md)、[前端设计](docs/frontend-design.md) | structured/DDD总体方案及完整Vue交互 |
-| [API](api/README.md)、[API映射](docs/api-map.md)                        | 29项操作、OpenAPI及页面对应关系     |
+| [API](api/README.md)、[API映射](docs/api-map.md)                        | 37项操作（29管理+8身份）、OpenAPI及页面对应关系     |
 | [初始化](docs/initialization.md)、[本地复现](docs/reproduction.md)      | 全新库、来源、五角色、运行与核对    |
 | [测试验收](docs/testing-acceptance.md)、[历史](docs/history/README.md)  | 验证方案、版本结果与限制            |
 | [历史阶段计划](docs/history/planning/development-plan-through-r32.md)、[协作](CONTRIBUTING.md)           | 实施阶段与分支约定                  |
@@ -34,4 +34,4 @@
 
 前端在frontend执行npm ci、npm run dev，默认5173代理/api至8081；npm test及npm run build用于测试和构建。完整步骤见[本地复现](docs/reproduction.md)。原型可直接打开prototype/index.html。
 
-三份原Excel保留原件，首次111组织来源合并为110部门，10000员工加独立admin共10001账号；不复用旧ID、哈希、状态或授权。口令由配置提供，不提交Git。当前仅提供全新库SQL，服务器部署待新方案确定后处理，旧容器配置不作为现行发布入口。
+三份原Excel保留原件，首次111组织来源合并为110部门，10000员工加独立admin共10001账号；不复用旧ID、哈希、状态或授权。口令由配置提供，不提交Git。当前仅提供全新库SQL。[双DDD部署材料](deploy/README.md)已按老师说明适配两个前端、两个单副本DDD后端及独立接入服务；C公开80/8088，云端发布尚未执行，详见[本轮证据](docs/history/verification/ddd-deployment-adaptation.md)。

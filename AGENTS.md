@@ -1,5 +1,7 @@
 # RBAC项目协作
 
+2026-11-22 R34：用户提供老师部署说明并要求两系统均使用DDD，完成部署前适配。七服务Swarm配置、Dockerfile/真实CloneFactory0.0.2、Secrets/离线首发工具及独立Waitress/MySQL业务审计已准备；仅C公开80/8088，后端各单副本、stop-first。老师来源990cea2独立副本保留原structured三补丁，并修复DDD学期标记释放、组长差集、学生里程碑、管理员教学班及安全日志；原目录不改。RBAC各213、课程副本499、双DDD HTTP133及内部运维/重启8项、Python38、六菜单Chrome日志对应及两前端构建通过，详见docs/history/verification/ddd-deployment-adaptation.md；云端旧服务清退、镜像发布/部署尚未执行，不以本地证据替代。详设外部文件/T14/T15边界保持。
+
 2026-11-22 R33当前规则：管理端与外部应用统一HS256身份JWT，JwtIdentityStore/JwtIdentityCodec替代原随机管理令牌；仍按aud隔离管理准入与各应用，不缓存权限，保留单会话即时撤销及重启失效。后端UML为16对类图、24对差异顺序图，37操作/两类离线入口逐项追溯；共同流程不得重复画。当前docs导航与验收已精简，旧阶段计划、设计说明、验收及重复图归history，历史数量按当时版本理解。规范仍用用户提供的20261117代码/UML skill，双轴审核；详设外部文件、老师原工程、服务器与T14/T15边界保持。以下R32/R31为阶段记录，不覆盖本条全JWT现行规则。
 
 2026-11-21 R32：按老师共享契约补齐统一身份鉴权8项，外部应用采用无角色权限快照的HS256 JWT，管理端原Bearer保留；新增部门/直属人员分页及operationId权限查询，两策略独立决策、即时撤权，统一身份审计2项依用户澄清不纳入。当前OpenAPI1.4.0为37操作、31路径、71 Schema、22错误、K17。各208项真实MySQL回归与独立JAR身份61次/课程43次HTTP通过，Python25项、RBAC前端27项及两Vue构建通过，浏览器范围见docs/history/verification/identity-eight-contract.md。用户明确授权本轮同步Apifox9042431并将有效分支合入main，覆盖旧“本轮不合main/不写Apifox”限制；不删除分支、不关闭T14/T15、不部署服务器，详设Word/PDF/PPT不改。

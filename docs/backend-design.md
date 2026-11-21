@@ -348,7 +348,7 @@ Java新增或修改类/接口/记录及关键方法写中文Javadoc；明确局�
 
 产品RbacApplication、离线ImportCommand和首次BootstrapAuthorizationCommand相互分离。显式rbac_core、ddl-auto=validate、sql.init.mode=never、旧初始化关闭；错库/测试profile组合失败关闭，不在启动时恢复旧表或重授角色。口令/数据库秘密通过环境或configtree提供。
 
-当前本地构建/测试/初始化命令见[后端说明](../backend/README.md)。用户明确部署先不处理，后续增加服务器再确定方案；原Dockerfile/Stack及容器测试脚本保留旧配置，未适配backend目录，不作为当前发布入口。本地MySQL/JAR结果不代表云部署成功。结构变更涉及数据备份与迁移，不能仅回滚镜像；两策略切换不创建第二套业务表。
+当前本地构建/测试/初始化命令见[后端说明](../backend/README.md)。R34按老师部署说明完成[双DDD适配](../deploy/README.md)：两个Nginx前端与两个单副本DDD后端均使用Swarm，RBAC内部8082提供Actuator健康与Prometheus，公网仅发布C节点80/8088；本机验证不代表云部署成功。独立课程接入服务负责实时身份转接、配置短码核查与独立业务审计，仍不进入RBAC领域/应用实现。结构变更需备份，不能仅回滚镜像；两策略切换不创建第二套业务表，进程内JWT会话索引在重启后失效。
 
 ## 17. 结构化与DDD UML
 

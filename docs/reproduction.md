@@ -141,3 +141,8 @@ java -jar backend/target/rbac0-0.1.0.jar
 目录文件缺失配置时不猜测operationId，相关查询返回404；重复或损坏配置会阻止启动。新库先用当前`integrations/course/catalog.json`完成显式首次接入，使课程管理员获得IDR/IDU目录权限，再运行真实Vue选人。统一身份审计2项不属于这8项，原独立本地审计支撑继续保存课程业务日志。
 
 本机R31已完成的两个验收库保留原初始化回执。R32只显式登记新增2项权限/2项API及管理员关联，不重新导入或覆盖原回执；此本地动作不是交付升级SQL。若在这两个旧验收库复跑`verify_course_initialization.py`，用`--initialization-catalog .local/identity-eight-20261121/course-catalog-before.json`核对原回执；全新库使用当前目录，不需要此参数。新增`scripts/verify_identity_contract.py --help`提供独立8项契约探针，成绩与限制见[R32记录](history/verification/identity-eight-contract.md)。
+
+
+## 双DDD服务器部署材料（R34）
+
+本地两策略复现仍按上文执行。2026-11-22新增[服务器准备、七服务Stack和首发步骤](../deploy/README.md)，两个后端均DDD，入口为C的80/8088；[验收记录](history/verification/ddd-deployment-adaptation.md)明确本机验证与云端发布的界限。服务器现有服务尚未清退或替换，不能把访问地址视为已经上线。详设Word/PDF/PPT及老师原目录保持原版。
