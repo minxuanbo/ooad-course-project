@@ -1,6 +1,6 @@
 # 组员本地复现与核对
 
-更新至2026-11-18：[PR #34](https://github.com/minxuanbo/ooad-course-project/pull/34)已合入main（e521f97），当前main包含structured/ddd双实现，文件树与验收提交83dbf17一致。组员统一从main获取并记录实际提交号；需要固定本轮验收版本时检出e521f97。只通过Git获取项目，不复制其他人的`.local`、数据库文件、node_modules、口令或预检CSV。
+当前基线导航（2026-11-20）：main为717345f，课程接入在codex/course-local-integration的614a0c4（草稿PR #38，尚未合入main）。课程场景请按本文末节及接入说明检出对应分支。以下万人库复现保留阶段5来源：[PR #34](https://github.com/minxuanbo/ooad-course-project/pull/34)已合入main（e521f97），当时main已包含structured/ddd双实现，该阶段文件树与验收提交83dbf17一致。组员统一从main获取并记录实际提交号；需要固定本轮验收版本时检出e521f97。只通过Git获取项目，不复制其他人的`.local`、数据库文件、node_modules、口令或预检CSV。
 
 ## 1. 获取正确版本及工具
 

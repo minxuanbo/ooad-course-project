@@ -1,6 +1,6 @@
 # 领域模型与业务规则
 
-版本1.2。本文表达RBAC统一业务概念及DDD领域边界。structured与DDD在同一工程内独立实现业务规则；装配、仓储及用例切片见[后端设计](backend-design.md)。领域仓储仅使用领域模型输入输出，不复用公共Command/Result。需求依据为[需求说明](requirements.md)，既有Chen ER见[数据库设计](database-design.md)。
+版本1.3（2026-11-20文档一致性修订）。本文表达RBAC统一业务概念及DDD领域边界。structured与DDD在同一工程内独立实现业务规则；装配、仓储及用例切片见[后端设计](backend-design.md)。领域仓储仅使用领域模型输入输出，不复用公共Command/Result。需求依据为[需求说明](requirements.md)，既有Chen ER见[数据库设计](database-design.md)。
 
 ## 1. 统一业务模型
 
@@ -10,9 +10,9 @@
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | 用户User                  | 单一内部身份、一个所属部门、零到多个角色；分配角色、停用、调动保持同一id。工号/手机号定位同一账号，不按姓名唯一定位。 |
 | 角色Role                  | 全局共享的权限集合；可改名/启停/整体替换权限，编码稳定。停用不删除关联，恢复后按当前资源状态重算。                    |
-| 权限Permission            | 同一系统的菜单或按钮；维护父级、类型、有效状态及显式API映射。父菜单负责展示，不隐含子权限。                           |
+| 权限Permission            | 同一系统的菜单、按钮或通用API权限；维护父级、类型、有效状态及显式API映射。父菜单负责展示，不隐含子权限。                           |
 | API资源ApiResource        | 单一系统的方法+路径模板，表达后端操作入口。多个权限可覆盖同一API，以有效链OR判定。                                    |
-| 应用系统ApplicationSystem | 权限与API的归属和有效性边界；当前管理目录为rbac，外系统目录不能进入当前维护。                                         |
+| 应用系统ApplicationSystem | 权限与API的归属和有效性边界；目录从数据库已登记应用及状态读取；默认初始化只登记rbac，课程等应用独立配置。                                         |
 | 部门Department            | 总公司/分公司/部门/项目的层级节点；定义人员归属与子树范围，不直接给人授予权限。                                       |
 
 系统管理员的人员保护例外及部门本级维护资格取决于有效基础级别5和可信根范围，操作仍须对应实际API权限；“完整维护者”另要求同一启用User覆盖全部K，是写后保底业务谓词。二者不单列实体或管理员字段，也不按角色名称判断。首次admin只是初始化来源；其他用户可通过合法授权取得相同资格，资格失效后按最新事实处理。单次操作不要求该操作者本人覆盖完整K，但相关写后必须至少保留一名完整维护者。
@@ -29,14 +29,14 @@
 
 | 类型              | 自身状态与行为                                                                                                   | 跨聚合所需事实                          |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| User              | 内部ID、工号/手机号、哈希、姓名、只读职位、部门ID、启用、完整roleIds；replaceRoles/disable/transfer              | 操作者/目标级别与范围、角色有效权限、K  |
-| Role              | code稳定、name、enabled、managementLevel、直接permissionIds；createEmpty/rename/changeEnabled/replacePermissions | 权限存在/启用/本系统、编码唯一、K       |
-| Permission        | systemId、parentId、type、enabled、直接apiIds；changeType/moveTo/changeEnabled/replaceApis                       | 同系统树无环、BUTTON无子、映射同系统、K |
-| ApiResource       | 系统、方法/模板只读、enabled；changeEnabled                                                                      | 系统状态和K                             |
+| User              | 内部ID、工号/手机号、哈希、姓名、只读职位、Department快照、启用、Set<Role>；replaceRoles/disable/transfer              | 操作者/目标级别与范围、角色有效权限、K  |
+| Role              | code稳定、name、enabled、managementLevel、Set<Permission>；custom/revise/replacePermissions | 权限存在/启用/已登记应用、编码唯一、K       |
+| Permission        | ApplicationSystem、parentId、type、enabled、Set<ApiResource>；revise/replaceApis                       | 同系统树无环、BUTTON无子、映射同系统、K |
+| ApiResource       | 系统、方法/模板只读、enabled；changeAvailability                                                                      | 系统状态和K                             |
 | Department        | 稳定code、parentId、type、name、deleted；child/rename/tombstone，变更前由OrganizationPolicy核验相关不变量       | 可信根与范围、同父名称、人员/下级存在性 |
-| ApplicationSystem | RBAC系统标识与启用事实，只读                                                                                     | 有效授权链同系统边界，不新增系统CRUD    |
+| ApplicationSystem | 已登记应用标识与启用事实，只读                                                                                     | 有效授权链同系统边界，不新增系统CRUD    |
 
-聚合以标识引用，不嵌入JPA对象图。关系集合返回只读副本，替换行为明确增删，不通过公开setter任意修改权限关系。来源导入通过受控reconstitute或factory建立完整快照，不调用运行时HTTP补造数据。User不会包含所有Role对象或全公司员工，Role不会持有所有用户；需要的关联事实批量取得。
+领域record保存只读领域快照：User含Department与Set<Role>，Role含Set<Permission>，Permission含ApplicationSystem与Set<ApiResource>，不嵌入JPA对象。关系集合返回只读副本，替换行为明确增删，不通过公开setter任意修改权限关系。来源导入通过受控reconstitute或factory建立完整快照，不调用运行时HTTP补造数据。User只包含自身已分配角色快照，不包含全公司员工；Role不持有所有用户。关联事实由仓储批量装配，跨对象不变量仍由策略和应用用例协调。
 
 领域状态/属性常量由对应对象以public static final声明：Role归口DEFAULT_LEVEL、PROJECT_MANAGER_LEVEL、DEPARTMENT_MANAGER_LEVEL、COMPANY_LEADER_LEVEL、ADMIN_LEVEL五基础级别，FIRST_MANAGER_LEVEL引用PROJECT_MANAGER_LEVEL；自定义角色的managementLevel为空。InitialAuthorizationPolicy引用Role的级别常量进行首次分类。Department归口四种类型，Permission归口MENU/BUTTON/API，ApplicationSystem归口RBAC系统编码。应用/领域不引用公共协议枚举作为自身状态，也不按角色名称猜级别；应用Mapper在领域取值与现有DepartmentType等协议值间显式转换。布尔启用状态保持其既有语义，不虚构额外生命周期。
 
@@ -58,9 +58,9 @@ DDD仓储位于service.ddd.domain.repository，Infrastructure实现适配与装�
 | ------------------ | ------------------------------------------------------------------------------------------------------- |
 | 账号               | 一个User及其口令/状态，工号和手机号两个入口共享，不按登录方式复制User                                   |
 | 可见部门           | 可信组织树中本人部门及其后代；响应中的根投影不改变实际归属                                              |
-| 有效Permission集合 | 启用用户经启用角色获得的启用权限，所属系统启用；当前正式角色候选限定RBAC，范围外关联按污染数据拒绝      |
+| 有效Permission集合 | 启用用户经启用角色获得的启用权限，所属系统启用；覆盖所有已登记应用；角色所含未登记应用即使停用也不允许通过过滤后授予      |
 | 有效API集合        | 上述权限显式映射的同系统启用API，以方法+服务端模板去重后OR判定                                          |
-| 可授予角色         | 启用角色满足固定授予级别上限，全部有效Permission ID为操作者本系统有效集合子集；目标人员另受严格级别保护 |
+| 可授予角色         | 启用角色满足固定授予级别上限，全部有效Permission ID为操作者全部已登记应用有效集合子集；目标人员另受严格级别保护 |
 | 完整维护者         | 启用、直属已核实共同根、有效基础级别5且一个人覆盖完整K的User，不由名称或初始来源推断                    |
 
 记D(u)为u部门的有效子树，P(u)为u在所有已登记启用应用、启用角色下的有效Permission ID集合（含无API映射菜单），A(u)为本RBAC同系统实际API集合。目标人员v的管理先具具体操作API，再检查department(v)∈D(u)。候选角色同时满足固定授予级别及P(r)⊆P(u)；不同登记应用的有效权限同样参与子集，不因只比较RBAC API而漏过。
@@ -77,7 +77,7 @@ DDD仓储位于service.ddd.domain.repository，Infrastructure实现适配与装�
 | DisableUser / TransferUser                             | 停用；改变departmentId并保持身份与角色     | 原/目标双范围，最新操作者资格及K                             |
 | CreateRole / UpdateRole                                | 创建空角色、改名、启停                     | 编码唯一、共同根、实际API、共享影响与K                       |
 | CreateDepartment / RenameDepartment / DeleteDepartment | 新增合法下级、仅改名、删除空节点并保留墓碑 | 父/目标范围、类型、重名、无人无下级、根保护及共同锁          |
-| ReplaceRolePermissions                                 | 独立替换完整RBAC permissionIds             | 本系统/启用/存在性、共同根、根锁与K；候选页不截断完整集合    |
+| ReplaceRolePermissions                                 | 独立替换完整已登记应用permissionIds             | 已登记应用/启用/存在性、共同根、根锁与K；候选页不截断完整集合    |
 | UpdatePermission / UpdateApi                           | 改允许字段或启停                           | 跨节点同系统、无环、按钮无子及K                              |
 | ReplacePermissionApis                                  | 替换明确apiIds集合                         | 同系统、可保留停用项，根锁与K                                |
 
@@ -99,7 +99,7 @@ DDD仓储位于service.ddd.domain.repository，Infrastructure实现适配与装�
 
 ## 8. 模型到设计的追溯
 
-R01—R06落在身份、组织及初始化来源；R07—R09落在登录和有效授权策略；R10—R12落在范围与User行为；R13—R15落在共享Role/Permission/API及跨聚合维护者不变量；R16/R20由日志与安全适配支撑。关系和字段见数据库文档，用例及事务装配见后端设计。
+R01—R06落在身份、组织及初始化来源；R07—R09落在登录和有效授权策略；R10—R12落在范围与User行为；R13—R15落在共享Role/Permission/API及跨聚合维护者不变量；R16/R20由日志与安全适配支撑；R29落在通用ApplicationIdentityUseCase及各策略独立投影，R30规定中文显示名与稳定编码分离。关系和字段见数据库文档，用例及事务装配见后端设计。
 
 授权事实按当前用户读取，人员页批量读取当页角色。域仓储和锁后回归证据见测试与验收说明。
 

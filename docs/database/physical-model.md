@@ -96,7 +96,7 @@ MySQL8.4、InnoDB、utf8mb4/utf8mb4_0900_bin。实体BIGINT主键自增，对外
 - `CONSTRAINT uk_api_system_method_path UNIQUE (system_id, http_method, path_template)`
 - `CONSTRAINT fk_api_system FOREIGN KEY (system_id) REFERENCES systems(id)`
 
-## 7. permissions：菜单/按钮权限
+## 7. permissions：菜单、按钮与API权限
 
 | 字段 | SQL类型 | 可空 | 含义/生成方式 |
 | --- | --- | --- | --- |

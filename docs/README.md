@@ -4,6 +4,8 @@
 
 阶段5双实现已随[PR #34](https://github.com/minxuanbo/ooad-course-project/pull/34)合入main（e521f97）。从[本地复现](reproduction.md)运行当前基线；阶段6的浏览器结果见[测试验收](testing-acceptance.md)及[两策略对照](history/verification/stage6-ddd.md)。
 
+2026-11-21当前状态：main为717345f，通用课程接入的源码基线为614a0c4（草稿PR #38尚未合并）。详设、现行文档与接口说明的核对范围及本轮静态检查见[设计一致性记录](history/verification/design-consistency-20261121.md)，不以文档修订重记历史运行成绩。
+
 | 文档                                                                                                             | 内容                                                                    |
 | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | [需求说明](requirements.md)、[来源](requirements/sources.md)                                                     | 范围、统一业务规则、原件及确认依据                                      |
@@ -13,7 +15,7 @@
 | [前端设计](frontend-design.md)                                                                                   | Vue页面、组件、权限能力、状态、交互与错误处理                           |
 | [API映射](api-map.md)、[业务契约](api-contract.md)、[OpenAPI](../api/openapi.yaml)                               | 页面/操作索引、Schema外语义及唯一字段规范                               |
 | [首次初始化](initialization.md)                                                                                  | 原件转换、五角色、来源、整批事务与重复执行保护                          |
-| [课程接入](course-integration.md)、[课程补丁](../integrations/course/README.md) | 老师现有身份协议、两个系统的本地配置、最小名单校验补丁及验证范围 |
+| [课程接入](course-integration.md)、[课程补丁](../integrations/course/README.md) | 老师现有身份协议、两个系统的本地配置、三项structured业务修复、独立身份/审计支撑及来源功能限制 |
 | [测试与验收](testing-acceptance.md)                                                                              | 需求矩阵、隔离、验证方案及实际结果引用                                  |
 | [本地复现](reproduction.md)、[后端运行](../backend/README.md)、[前端运行](../frontend/README.md)                 | 依赖、全新库初始化、命令与端口                                          |
 | [开发计划](development-plan.md)、[协作](../CONTRIBUTING.md)                                                      | 实施顺序和分支约定                                                      |

@@ -1,6 +1,6 @@
 {
   "status": "IMPLEMENTED",
-  "baseline": "519ddefb1c7e254538c4d408aacdd61db7fa71e2",
+  "baseline": "614a0c4a4cb82889eaad2bb2bde910edfce885c1",
   "entries": [
     {
       "id": "identity",
@@ -61,7 +61,8 @@
       "policy": "RoleAssignmentPolicy",
       "policyMethods": [
         "+ canManage(actor, global, target): boolean",
-        "+ canAssign(role, level, customPermitted, ids): boolean"
+        "+ canAssign(role, level, customPermitted, ids, systems): boolean",
+        "+ canRemove(role, level, customPermitted, ids, systems): boolean"
       ],
       "serviceMethods": [
         "+ replaceRoles(header, id, command): UserWithRolesResult",
@@ -384,12 +385,13 @@
     },
     {
       "id": "systems",
-      "title": "RBAC应用系统目录",
+      "title": "已登记应用目录",
       "service": "DddResourceService",
       "port": "ResourceUseCase",
       "repository": "ApplicationSystemRepository",
       "repoMethods": [
-        "+ findRbac(): Optional<ApplicationSystem>"
+        "+ findRbac(): Optional<ApplicationSystem>",
+        "+ catalog(): List<ApplicationSystem>"
       ],
       "model": "ApplicationSystem",
       "fields": [
@@ -428,7 +430,8 @@
       "policy": "AuthorizationPolicy",
       "policyMethods": [
         "+ routes(facts): Set<ApiResource.Route>",
-        "+ directPermissions(facts): Set<Permission>"
+        "+ directPermissions(facts): Set<Permission>",
+        "+ directPermissions(facts, systems): Set<Permission>"
       ],
       "serviceMethods": [
         "+ routes(userId): Set<Route>",
@@ -547,7 +550,12 @@
           [
             1,
             5,
-            "requireManage(actor, target)"
+            "operator = snapshot(actor)"
+          ],
+          [
+            1,
+            5,
+            "canManage(operator, target)"
           ],
           [
             1,
@@ -556,8 +564,13 @@
           ],
           [
             1,
-            2,
-            "allowedCount = count(allowed)"
+            1,
+            "canRemove(added, operator, ownIds)"
+          ],
+          [
+            1,
+            1,
+            "canRemove(removed, operator, ownIds)"
           ],
           [
             1,
@@ -579,12 +592,22 @@
           {
             "first": 5,
             "last": 5,
-            "text": "[existing不在wanted内]：逐项移除"
+            "text": "[added：还须enabled]"
           },
           {
             "first": 6,
             "last": 6,
-            "text": "[selected]：逐项授予"
+            "text": "[removed]"
+          },
+          {
+            "first": 7,
+            "last": 7,
+            "text": "[existing不在wanted内]"
+          },
+          {
+            "first": 8,
+            "last": 8,
+            "text": "[selected]"
           }
         ]
       },
@@ -623,7 +646,12 @@
           [
             1,
             4,
-            "canAssign(role, level, customPermitted, ids)"
+            "canAssign(added, level, custom, ids, systems)"
+          ],
+          [
+            1,
+            4,
+            "canRemove(removed, level, custom, ids, systems)"
           ],
           [
             1,
@@ -640,7 +668,12 @@
           {
             "first": 4,
             "last": 4,
-            "text": "[每个选中的角色]"
+            "text": "[新增项 selected − existing]"
+          },
+          {
+            "first": 5,
+            "last": 5,
+            "text": "[删除项 existing − selected]"
           }
         ]
       },
