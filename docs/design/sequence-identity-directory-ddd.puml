@@ -1,0 +1,30 @@
+@startuml
+!pragma layout smetana
+skinparam defaultFontName Microsoft YaHei
+skinparam defaultFontSize 16
+skinparam classAttributeFontSize 15
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam linetype polyline
+skinparam nodesep 65
+skinparam ranksep 55
+hide circle
+hide footbox
+autonumber
+participant "obj: 调用者" as obj
+participant "service: DddApplicationIdentityService" as S
+participant "organizations: OrganizationRepository" as R
+participant ": OrganizationPolicy" as P <<MetaClass>>
+activate obj
+obj -> S : departments(header, parentId, keyword, page, pageSize) 的差异片段
+activate S
+S -> R : organization = load()
+activate R
+deactivate R
+S -> P : visible = scope(organization, actor.department().id())
+activate P
+deactivate P
+deactivate S
+deactivate obj
+@enduml

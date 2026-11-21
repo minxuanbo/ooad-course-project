@@ -27,6 +27,9 @@ public class DddApplicationIdentityService implements ApplicationIdentityUseCase
   private final UserRepository users;
   private final ApplicationSystemRepository systems;
   private final RequestContext requests;
+  private final OrganizationRepository organizations;
+  private final IdentityDirectoryGateway directory;
+  private final ApiOperationCatalog operations;
 
   /** 外部应用的角色资格来自登记授权，与管理端准入分开。 */
   @Override
@@ -58,21 +61,114 @@ public class DddApplicationIdentityService implements ApplicationIdentityUseCase
   /** 查询身份前检查本应用实际映射，不把特定应用权限码写入领域。 */
   @Override
   public ApplicationUserResult user(String header, Long id) {
-    current(header);
-    String system = tokens.system(header);
-    AuthorizationFacts facts = facts(tokens.requireForSystem(header, system));
-    boolean allowed =
-        ApplicationAuthorizationPolicy.exported(facts, system).stream()
-            .flatMap(permission -> permission.apis().stream())
-            .anyMatch(
-                api -> api.route().equals(new ApiResource.Route("GET", "/auth/users/{userId}")));
-    requests.authorizationDecision(allowed);
-    if (!allowed) throw BusinessException.forbidden();
+    requireRoute(header, "/auth/users/{userId}");
+    if (id == null) throw new BusinessException(404, "IDENTITY_USER_NOT_FOUND", "统一身份用户不存在");
     User user =
         users
             .find(new User.Key(id))
-            .orElseThrow(() -> new BusinessException(404, "RESOURCE_NOT_FOUND", "用户不存在"));
+            .orElseThrow(() -> new BusinessException(404, "IDENTITY_USER_NOT_FOUND", "统一身份用户不存在"));
     return new ApplicationUserResult(user.id().toString(), user.username(), user.name());
+  }
+
+  /** 即使业务授权已撤回，仍允许销毁有效的本应用身份。 */
+  @Override
+  public void logout(String header) {
+    String system = tokens.system(header);
+    if (RbacCatalog.SYSTEM_CODE.equals(system)) throw BusinessException.unauthorized();
+    tokens.requireForSystem(header, system);
+    requests.application(system);
+    tokens.revoke(header);
+  }
+
+  /** 领域组织事实确定范围，复杂目录投影通过只读Gateway执行。 */
+  @Override
+  @Transactional(
+      readOnly = true,
+      isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
+  public ApplicationDirectoryPage<ApplicationDepartmentResult> departments(
+      String header, Long parentId, String keyword, int page, int pageSize) {
+    User actor = requireRoute(header, "/auth/departments");
+    OrganizationFacts organization = organizations.load();
+    Set<Long> visible =
+        com.municipal.rbaccore.service.ddd.domain.model.policy.OrganizationPolicy.scope(
+                organization, actor.department().id())
+            .departmentIds();
+    if (parentId != null) requireDepartment(actor, organization, parentId, visible);
+    return directory.departments(
+        actor.department().id(), parentId, visible, keyword, page, pageSize);
+  }
+
+  /** 用户目录只查目标部门直属人员，不把领域仓储改成外部协议返回类型。 */
+  @Override
+  @Transactional(
+      readOnly = true,
+      isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
+  public ApplicationDirectoryPage<ApplicationDepartmentUserResult> departmentUsers(
+      String header, Long departmentId, String keyword, int page, int pageSize) {
+    User actor = requireRoute(header, "/auth/departments/{departmentId}/users");
+    OrganizationFacts organization = organizations.load();
+    Set<Long> visible =
+        com.municipal.rbaccore.service.ddd.domain.model.policy.OrganizationPolicy.scope(
+                organization, actor.department().id())
+            .departmentIds();
+    requireDepartment(actor, organization, departmentId, visible);
+    return directory.users(departmentId, keyword, page, pageSize);
+  }
+
+  /** 操作元数据与领域授权事实分开，未知操作不可猜测放行。 */
+  @Override
+  public boolean apiAllowed(String header, String operationId) {
+    ApplicationIdentityResult identity = current(header);
+    ApiOperationCatalog.Operation operation =
+        operations
+            .find(identity.system(), operationId)
+            .orElseThrow(
+                () -> new BusinessException(404, "API_OPERATION_NOT_FOUND", "没有找到对应的API操作"));
+    boolean gated =
+        operation.requiresPermission()
+            && (operation.permissionRoles().isEmpty()
+                || identity.roles().stream().anyMatch(operation.permissionRoles()::contains));
+    return !gated
+        || hasRoute(
+            facts(tokens.requireForSystem(header, identity.system())),
+            identity.system(),
+            operation.method(),
+            operation.path());
+  }
+
+  /** 真实目录和用户读取进入统一鉴权日志，授权来自当前领域投影。 */
+  private User requireRoute(String header, String path) {
+    ApplicationIdentityResult identity = current(header);
+    AuthorizationFacts authorizationFacts =
+        facts(tokens.requireForSystem(header, identity.system()));
+    boolean allowed = hasRoute(authorizationFacts, identity.system(), "GET", path);
+    requests.authorizationDecision(allowed);
+    if (!allowed) throw BusinessException.forbidden();
+    return authorizationFacts.user();
+  }
+
+  /** 单应用的API路由只从完整有效权限导出，拒绝跨应用混用。 */
+  private boolean hasRoute(AuthorizationFacts facts, String system, String method, String path) {
+    return ApplicationAuthorizationPolicy.exported(facts, system).stream()
+        .flatMap(permission -> permission.apis().stream())
+        .anyMatch(api -> api.route().equals(new ApiResource.Route(method, path)));
+  }
+
+  /** 范围外目标不泄漏存在性，可信全局根可区分未知或删除部门。 */
+  private void requireDepartment(
+      User actor, OrganizationFacts organization, Long id, Set<Long> visible) {
+    if (!visible.contains(id)) {
+      if (!com.municipal.rbaccore.service.ddd.domain.model.policy.OrganizationPolicy.global(
+              organization, actor.department().id())
+          || directory.department(id).isPresent()) {
+        requests.authorizationDecision(false);
+        throw BusinessException.scopeDenied();
+      }
+      throw new BusinessException(404, "IDENTITY_DEPARTMENT_NOT_FOUND", "统一身份部门不存在");
+    }
+    if (directory.department(id).isEmpty()) {
+      throw new BusinessException(404, "IDENTITY_DEPARTMENT_NOT_FOUND", "统一身份部门不存在");
+    }
   }
 
   /** 角色编码按实际授予关系输出，不推断教师、学生或管理员身份。 */

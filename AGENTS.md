@@ -1,5 +1,7 @@
 # RBAC项目协作
 
+2026-11-21 R32：按老师共享契约补齐统一身份鉴权8项，外部应用采用无角色权限快照的HS256 JWT，管理端原Bearer保留；新增部门/直属人员分页及operationId权限查询，两策略独立决策、即时撤权，统一身份审计2项依用户澄清不纳入。当前OpenAPI1.4.0为37操作、31路径、71 Schema、22错误、K17。各208项真实MySQL回归与独立JAR身份61次/课程43次HTTP通过，Python25项、RBAC前端27项及两Vue构建通过，浏览器范围见docs/history/verification/identity-eight-contract.md。用户明确授权本轮同步Apifox9042431并将有效分支合入main，覆盖旧“本轮不合main/不写Apifox”限制；不删除分支、不关闭T14/T15、不部署服务器，详设Word/PDF/PPT不改。
+
 2026-11-21 R31实测：两套新本机万人库逐人核对191教师（190员工+admin）、9810学生、1名同账号课程管理员。真实CloneFactory0.0.2下两策略各195项回归，最终HTTP各43项；第一组正式Vue24项交互、RBAC前端27项、课程构建通过。Python含MySQL配置覆盖/失败停止修复共24项通过，生成53个非空重载及185组字段无遗漏，双轴修复复核0项。见docs/history/verification/course-initialization-r31.md；详设Word/PDF/PPT依用户最新要求不改，服务器部署搁置。
 
 2026-11-21新增R31：用户确认总公司本部（含本部职能部门/项目，排除分公司子树）领导和普通员工均为课程teacher，其余为student；启用、可信根直属、有效五级RBAC管理员兼course-admin且有课程教师绑定，同一账号管理两系统。规则由integrations/course显式初始化配置与独立脚本执行，不进入RBAC业务服务，不由身份开关自动执行。原32人夹具、原库及老师原目录保留；重复初始化不重置后续授权。部署仍等待老师说明。

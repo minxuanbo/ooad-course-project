@@ -1,6 +1,6 @@
 # API业务约束与接口阅读说明
 
-版本1.3。接口字段、方法、路径、必填、分页和响应模型的唯一机器规范为[api/openapi.yaml](../api/openapi.yaml)，[JSON](../api/openapi.json)由同一内容派生。29项RBAC操作及4项可选通用应用身份操作；默认首次授权仅RBAC，应用目录从数据库登记事实读取，原型演示系统不接入。本文解释Schema不能独立表达的授权、范围、原子性和交互语义；[页面对照](api-map.md)只作索引。
+版本1.4。接口字段、方法、路径、必填、分页和响应模型的唯一机器规范为[api/openapi.yaml](../api/openapi.yaml)，[JSON](../api/openapi.json)由同一内容派生。29项RBAC操作及8项可选通用应用身份操作；默认首次授权仅RBAC，应用目录从数据库登记事实读取，原型演示系统不接入。本文解释Schema不能独立表达的授权、范围、原子性和交互语义；[页面对照](api-map.md)只作索引。
 
 阶段4同步授予级别、人员目标保护、部门增删改名、范围总览及只读职位/角色摘要。GET /me增加最新实际routes、managementLevel、globalScope和departmentName，前端按路由能力与范围显示入口，不额外查询日志来探测权限。
 
@@ -76,6 +76,7 @@ account/password是一个入口，工号或手机号定位唯一用户，共用�
 | 403 PERMISSION_DENIED | 缺当前方法/模板的实际API权，不靠角色名称判断 |
 | 403 MANAGEMENT_SCOPE_DENIED | 部门/根/系统范围、人员自身保护或可授予子集不满足 |
 | 404 RESOURCE_NOT_FOUND | 已获可见范围中的直接目标不存在；非根未知/越界人员统一403 |
+| 404 IDENTITY_USER_NOT_FOUND / IDENTITY_DEPARTMENT_NOT_FOUND / API_OPERATION_NOT_FOUND | 外部身份用户、可见部门或当前应用操作不存在 |
 | 409 DATA_CONFLICT / LAST_ADMIN_REQUIRED | 唯一性/并发冲突或写后无完整维护者，全回滚 |
 | 500 INTERNAL_ERROR | 安全内部错误，带requestId，不泄露SQL/栈/请求体/秘密 |
 
@@ -97,7 +98,7 @@ GET /api/overview在同一快照聚合范围人数、启停人数、有效组织
 
 ## 通用应用身份协议（R29）
 
-四项可选端点为POST /auth/login、GET /auth/me、GET /auth/permissions/{permission}及GET /auth/users/{userId}。以APP_IDENTITY_ENABLED开启，成功响应不包装data，错误保持稳定code/message/requestId。账号本地工号/手机号规则沿用，systems只接收一个已登记外部应用；RBAC管理端仍使用原入口及准入。system响应字段为服务端受众，应用停用、账号停用或授权撤回均在下一请求生效。
+八项可选端点为POST /auth/login、POST /auth/logout、GET /auth/me、GET /auth/permissions/{permission}、GET /auth/departments、GET /auth/departments/{departmentId}/users、GET /auth/api-permissions/{operationId}及GET /auth/users/{userId}。以APP_IDENTITY_ENABLED开启，成功响应不包装data，错误保持稳定code/message/requestId。账号本地工号/手机号规则沿用，systems只接收一个已登记外部应用；RBAC管理端仍使用原入口及准入。system响应字段为服务端受众，应用停用、账号停用或授权撤回均在下一请求生效。
 
 角色全局共享，可包含不同应用的权限。系统目录从数据库登记事实读取，包含停用项供管理员维护；不维护应用代码白名单。API类型权限须非空映射且所有路由同系统启用才导出短码；菜单、按钮可以不映射API，独立控制展示和登录资格。不同应用同名短码分别计算，不混用受众；RBAC完整维护者K仍只覆盖原17项管理路由。
 
@@ -110,4 +111,7 @@ GET /users/{id}/roles增加lockedRoleIds，表示当前不可删除的已授项�
 
 通用/auth/me还返回permissionApis，即每个有效权限当前实际映射的方法/模板事实。RBAC不内置接入系统的预期路由；本地课程适配器依据catalog.json核实老师同一粗粒度短码的全部必要路由，缺少一条即保守关闭整个短码，菜单检查也采用相同投影。这样删除多路由权限的部分映射不能借另一条映射继续调用已撤路由，映射变更仍即时生效。
 
-通用身份查人是实际受控操作，其API映射判定由用例登记到请求上下文，再由统一过滤器记录一次AUTHORIZATION事件；通过门禁后的目标404仍是鉴权允许，HTTP状态独立记录。普通/auth/me和/permissions元数据查询不冒充课程业务执行或把allowed=false的数据值写为查询HTTP被拒。查人路径ID沿正安全整数上限。
+通用身份查人是实际受控操作，其API映射判定由用例登记到请求上下文，再由统一过滤器记录一次AUTHORIZATION事件；通过门禁后的目标404仍是鉴权允许，HTTP状态独立记录。普通/auth/me和/permissions元数据查询不冒充课程业务执行或把allowed=false的数据值写为查询HTTP被拒。查人路径使用字符串标识；本RBAC签发正安全整数字符串，超界数字400，其他不存在字符串在鉴权后返回404 IDENTITY_USER_NOT_FOUND。
+
+
+R32外部身份使用HS256 JWT，只有sub、aud、iss、iat、exp、jti，权限仍逐请求重算。退出204只撤当前外部令牌，撤权后也允许本人退出；管理端退出协议保持原有200。目录接口使用page从1开始/pageSize默认20最大100，各自需实际API映射且按人员部门子树限制，用户目录只查直属人员五字段。operationId通过IDENTITY_OPERATIONS_FILE显式配置，同应用内匹配；全局门禁不代替课程对象权限。详细设计见[完整身份契约](design/identity-eight-contract.md)。统一身份审计另2项不属于这8项，不加入RBAC业务接口。

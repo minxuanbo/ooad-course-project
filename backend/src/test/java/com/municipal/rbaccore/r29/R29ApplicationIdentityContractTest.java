@@ -29,6 +29,7 @@ import org.springframework.test.context.ActiveProfiles;
     properties = {
       "spring.config.name=application-core-resource-test",
       "app.identity.enabled=true",
+      "app.identity.operations-file=classpath:identity-test-operations.json",
       "app.identity.allowed-origins=http://127.0.0.1:5174"
     })
 @ActiveProfiles("core-resource-test")
@@ -54,6 +55,10 @@ class R29ApplicationIdentityContractTest {
   private static final String TARGET_ROLES = "/api/users/3/roles";
   private static final String IDENTITY_API_STATE = "/api/api-resources/105";
   private static final String PASSWORD = "r29-fixture-password";
+  private static final String APP_LOGOUT = "/auth/logout";
+  private static final String DIRECTORY = "/auth/departments";
+  private static final String DEPARTMENT_USERS = "/auth/departments/1/users";
+  private static final String API_AUTHORITY = "/auth/api-permissions/createTerm";
   @Autowired
   TestRestTemplate http;
   @Autowired
@@ -497,7 +502,215 @@ class R29ApplicationIdentityContractTest {
     request(ME, HttpMethod.GET, token, null, 403);
   }
 
-  /** 从老师既有登录协议取得不透明课程令牌。 */
+  /** R32外部令牌必须是带受众的JWT，不携带授权快照。 */
+  @Test
+  @DisplayName("R32 外部登录签发JWT身份字段且不携带角色权限")
+  void R32_JwtMatchesTeacherContract() throws Exception {
+    String[] pieces = courseLogin().split("\\.");
+    assertEquals(3, pieces.length, "外部身份必须返回三段JWT");
+    com.fasterxml.jackson.databind.ObjectMapper mapper =
+        new com.fasterxml.jackson.databind.ObjectMapper();
+    JsonNode payload = mapper.readTree(java.util.Base64.getUrlDecoder().decode(pieces[1]));
+    JsonNode header = mapper.readTree(java.util.Base64.getUrlDecoder().decode(pieces[0]));
+    assertEquals("HS256", header.path("alg").asText());
+    assertEquals("2", payload.path("sub").asText());
+    JsonNode audience = payload.path("aud");
+    assertEquals(
+        "course-project-management",
+        audience.isArray() ? audience.get(0).asText() : audience.asText());
+    if (audience.isArray()) assertEquals(1, audience.size());
+    assertFalse(payload.path("iss").asText().isBlank());
+    assertFalse(payload.path("jti").asText().isBlank());
+    assertEquals(43200, payload.path("exp").asLong() - payload.path("iat").asLong());
+    assertFalse(payload.has("roles"));
+    assertFalse(payload.has("permissions"));
+    assertFalse(payload.has("identity"));
+  }
+
+  /** 退出只撤销当前外部身份，不能拿管理端令牌冒充课程身份。 */
+  @Test
+  @DisplayName("R32 外部退出返回204且原令牌立即失效，其他会话仍有效")
+  void R32_LogoutIsAudienceScoped() {
+    String first = courseLogin();
+    String second = courseLogin();
+    request(APP_LOGOUT, HttpMethod.POST, null, null, 401);
+    String management = adminLogin();
+    request(APP_LOGOUT, HttpMethod.POST, management, null, 401);
+    request(RBAC_ME, HttpMethod.GET, management, null, 200);
+    request(APP_LOGOUT, HttpMethod.POST, first, null, 204);
+    request(ME, HttpMethod.GET, first, null, 401);
+    request(ME, HttpMethod.GET, second, null, 200);
+  }
+
+  /** 即使授权已撤回，也允许本人销毁尚有效的外部访问令牌。 */
+  @Test
+  @DisplayName("R32 撤权后仍可退出，不会重新授予应用资格")
+  void R32_LogoutAfterRevocation() {
+    String token = courseLogin();
+    jdbc.update("DELETE FROM user_roles WHERE user_id=2");
+    request(ME, HttpMethod.GET, token, null, 403);
+    request(APP_LOGOUT, HttpMethod.POST, token, null, 204);
+    request(ME, HttpMethod.GET, token, null, 401);
+  }
+
+  /** 部门列表只逐层返回，分页从1开始，墓碑与外部父引用不泄漏。 */
+  @Test
+  @DisplayName("R32 外部部门逐层分页、编码搜索、hasChildren及范围根")
+  void R32_DepartmentDirectoryIsLayeredAndScoped() {
+    R32_PrepareDirectory();
+    String token = courseLogin();
+    JsonNode roots = request(DIRECTORY, HttpMethod.GET, token, null, 200);
+    assertEquals(1, roots.path("page").asInt());
+    assertEquals(20, roots.path("pageSize").asInt());
+    assertEquals(1, roots.path("total").asInt());
+    assertEquals(1, roots.path("items").get(0).path("id").asInt());
+    assertTrue(roots.path("items").get(0).path("hasChildren").asBoolean());
+    JsonNode children =
+        request(DIRECTORY + "?parentId=1&pageSize=1", HttpMethod.GET, token, null, 200);
+    assertEquals(2, children.path("total").asInt());
+    assertEquals(1, children.path("items").size());
+    JsonNode filtered =
+        request(DIRECTORY + "?parentId=1&keyword=r32-b", HttpMethod.GET, token, null, 200);
+    assertEquals(3, filtered.path("items").get(0).path("id").asInt());
+    jdbc.update("UPDATE users SET department_id=2 WHERE id=2");
+    JsonNode local = request(DIRECTORY, HttpMethod.GET, token, null, 200).path("items").get(0);
+    assertEquals(2, local.path("id").asInt());
+    assertTrue(local.path("parentId").isNull());
+    request(DIRECTORY + "?parentId=1", HttpMethod.GET, token, null, 403);
+    assertEquals(
+        1,
+        jdbc.queryForObject(
+            "SELECT count(*) FROM authorization_logs WHERE request_path=? AND"
+                + " event_type='AUTHORIZATION' AND http_status=403 AND allowed=0",
+            Integer.class,
+            DIRECTORY));
+    request(DIRECTORY + "?page=0", HttpMethod.GET, token, null, 400);
+    request(DIRECTORY + "?pageSize=101", HttpMethod.GET, token, null, 400);
+    assertEquals(
+        0,
+        request(DIRECTORY + "?page=2147483647&pageSize=100", HttpMethod.GET, token, null, 200)
+            .path("items")
+            .size());
+  }
+
+  /** 部门用户查询不递归、不返回联系方式，越界与失权均拒绝。 */
+  @Test
+  @DisplayName("R32 部门用户精确直属分页、最小字段、缺失部门及即时撤权")
+  void R32_DepartmentUsersAreMinimalAndPermissionControlled() {
+    R32_PrepareDirectory();
+    String token = courseLogin();
+    JsonNode result = request(DEPARTMENT_USERS + "?pageSize=2", HttpMethod.GET, token, null, 200);
+    assertEquals(3, result.path("total").asInt());
+    assertEquals(2, result.path("items").size());
+    JsonNode user = result.path("items").get(0);
+    assertEquals(5, user.size());
+    assertEquals("r29-admin", user.path("no").asText());
+    assertFalse(user.has("phone"));
+    assertEquals(
+        1,
+        request(DEPARTMENT_USERS + "?keyword=r29-employee", HttpMethod.GET, token, null, 200)
+            .path("total")
+            .asInt());
+    request("/auth/departments/999999/users", HttpMethod.GET, token, null, 404);
+    jdbc.update("UPDATE api_resources SET enabled=0 WHERE id=111");
+    request(DEPARTMENT_USERS, HttpMethod.GET, token, null, 403);
+    jdbc.update("UPDATE api_resources SET enabled=1 WHERE id=111");
+    jdbc.update("UPDATE users SET department_id=2 WHERE id=2");
+    request(DEPARTMENT_USERS, HttpMethod.GET, token, null, 403);
+  }
+
+  /** 全局API判定按配置路由读取当前映射，不把对象权限合并进统一身份。 */
+  @Test
+  @DisplayName("R32 operationId按应用解析，API停用与映射撤回立即影响allowed")
+  void R32_ApiAuthorityUsesCurrentMapping() {
+    String token = courseLogin();
+    JsonNode result = request(API_AUTHORITY, HttpMethod.GET, token, null, 200);
+    assertEquals("createTerm", result.path("operationId").asText());
+    assertTrue(result.path("allowed").asBoolean());
+    assertEquals(2, result.size());
+    jdbc.update("UPDATE api_resources SET enabled=0 WHERE id=100");
+    assertFalse(
+        request(API_AUTHORITY, HttpMethod.GET, token, null, 200).path("allowed").asBoolean());
+    jdbc.update("UPDATE api_resources SET enabled=1 WHERE id=100");
+    jdbc.update("DELETE FROM permission_apis WHERE api_id=100");
+    assertFalse(
+        request(API_AUTHORITY, HttpMethod.GET, token, null, 200).path("allowed").asBoolean());
+    assertEquals(
+        "API_OPERATION_NOT_FOUND",
+        request("/auth/api-permissions/missingOperation", HttpMethod.GET, token, null, 404)
+            .path("code")
+            .asText());
+    assertTrue(
+        request("/auth/api-permissions/objectOperation", HttpMethod.GET, token, null, 200)
+            .path("allowed")
+            .asBoolean());
+  }
+
+  /** 身份字符串格式合法但本系统没有对应对象时按协议返回不存在。 */
+  @Test
+  @DisplayName("R32 字符串用户标识不存在时返回协议404而非内部解析异常")
+  void R32_UnknownStringIdentityReturnsContractError() {
+    String token = courseLogin();
+    assertEquals(
+        "IDENTITY_USER_NOT_FOUND",
+        request("/auth/users/sso-missing", HttpMethod.GET, token, null, 404).path("code").asText());
+    request(MISSING_USER_LOOKUP, HttpMethod.GET, token, null, 404);
+  }
+
+  /** 伪造JWT任何一个字节都不能作为已签发的有效身份使用。 */
+  @Test
+  @DisplayName("R32 JWT签名篡改、伪造受众与无签名令牌均拒绝")
+  void R32_TamperedJwtIsRejected() {
+    String token = courseLogin();
+    String[] parts = token.split("\\.");
+    assertEquals(3, parts.length);
+    request(ME, HttpMethod.GET, parts[0] + "." + parts[1] + ".invalid", null, 401);
+    request(ME, HttpMethod.GET, "eyJhbGciOiJub25lIn0.eyJzdWIiOiIyIn0.", null, 401);
+    request(ME, HttpMethod.GET, "not-issued", null, 401);
+  }
+
+  /** 混合入口的全局门禁按配置角色适用，对象关系由课程服务继续判定。 */
+  @Test
+  @DisplayName("R32 混合对象入口的条件全局门禁取配置角色且实时读取")
+  void R32_MixedOperationKeepsObjectBoundary() {
+    String token = courseLogin();
+    String path = "/auth/api-permissions/mixedOperation";
+    assertTrue(request(path, HttpMethod.GET, token, null, 200).path("allowed").asBoolean());
+    jdbc.update("UPDATE api_resources SET enabled=0 WHERE id=104");
+    assertFalse(request(path, HttpMethod.GET, token, null, 200).path("allowed").asBoolean());
+    jdbc.update("UPDATE roles SET code='object-actor' WHERE id=2");
+    assertTrue(request(path, HttpMethod.GET, token, null, 200).path("allowed").asBoolean());
+  }
+
+  /** 独立准备目录授权及不同部门人员，不改变旧R29用例夹具。 */
+  private void R32_PrepareDirectory() {
+    jdbc.update(
+        "INSERT INTO departments(id,code,name,parent_id,type)"
+            + " VALUES(2,'r32-a','本部部门',1,'DEPARTMENT'),(3,'r32-b','分公司',1,'COMPANY'),(4,'r32-project','部门项目',2,'PROJECT')");
+    jdbc.update(
+        "INSERT INTO departments(id,code,name,parent_id,type,deleted)"
+            + " VALUES(5,'r32-deleted','墓碑部门',1,'DEPARTMENT',1)");
+    for (int id = 110; id <= 111; id++) {
+      jdbc.update(
+          "INSERT INTO permissions(id,system_id,code,name,type,enabled) VALUES(?,2,?,?,'API',1)",
+          id,
+          "DIR" + id,
+          "目录查询" + id);
+      jdbc.update(
+          "INSERT INTO api_resources(id,system_id,http_method,path_template,enabled)"
+              + " VALUES(?,2,'GET',?,1)",
+          id,
+          id == 110 ? DIRECTORY : "/auth/departments/{departmentId}/users");
+      jdbc.update("INSERT INTO permission_apis VALUES(?,?)", id, id);
+      jdbc.update("INSERT INTO role_permissions VALUES(1,?),(2,?)", id, id);
+    }
+    jdbc.update(
+        "INSERT INTO users(id,username,password_hash,name,department_id,enabled)"
+            + " VALUES(4,'r32-child',?,'子部门员工',2,1)",
+        passwords.encode(PASSWORD));
+  }
+
+  /** 从老师既有登录协议取得课程应用受众JWT。 */
   private String courseLogin() {
     return request(
             LOGIN,

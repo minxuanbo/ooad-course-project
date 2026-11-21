@@ -139,6 +139,18 @@
         "GET",
         "/auth/users/{userId}"
       ]
+    ],
+    "IDR": [
+      [
+        "GET",
+        "/auth/departments"
+      ]
+    ],
+    "IDU": [
+      [
+        "GET",
+        "/auth/departments/{departmentId}/users"
+      ]
     ]
   },
   "names": {
@@ -174,6 +186,8 @@
     "TEE": "编辑教师资料接口",
     "TED": "删除教师接口",
     "AV": "查看课程日志接口",
-    "UL": "查询用户身份接口"
+    "UL": "查询用户身份接口",
+    "IDR": "查询统一身份部门接口",
+    "IDU": "查询统一身份部门人员接口"
   }
 }

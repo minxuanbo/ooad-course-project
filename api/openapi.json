@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "市政公司统一权限管理系统 API",
-    "version": "1.3.0",
-    "description": "structured/ddd共享契约：29项RBAC管理操作及4项可选通用应用身份操作。应用目录来自登记数据及状态，APP_IDENTITY_ENABLED默认false。角色可包含多个应用的权限，Permission—API映射必须同系统。接入应用的业务接口由其自身实现；K仍为17项RBAC路由。"
+    "version": "1.4.0",
+    "description": "structured/ddd共享契约：29项RBAC管理操作及8项可选通用应用身份鉴权操作。应用目录来自登记数据及状态，APP_IDENTITY_ENABLED默认false。外部应用使用无角色权限快照的JWT，管理端保留独立Bearer。角色可包含多个应用的权限，Permission—API映射必须同系统。接入应用的业务接口由其自身实现；统一身份审计2项不在本契约，K仍为17项RBAC路由。"
   },
   "servers": [
     {
@@ -31,8 +31,8 @@
       "name": "鉴权日志"
     },
     {
-      "name": "应用身份",
-      "description": "通用应用身份兼容接口，不包含接入系统业务逻辑。"
+      "name": "统一身份鉴权",
+      "description": "通用应用的完整八项身份鉴权协议，不含外部业务审计。"
     }
   ],
   "security": [
@@ -2429,10 +2429,10 @@
       "post": {
         "operationId": "applicationIdentityLogin",
         "tags": [
-          "应用身份"
+          "统一身份鉴权"
         ],
-        "summary": "课程既有身份协议登录",
-        "description": "仅接收单个已登记外部应用，账号启用且至少有该应用有效授权时签发受众隔离令牌。RBAC管理端沿原登录入口及准入规则。",
+        "summary": "外部应用身份登录",
+        "description": "按单个数据库已登记且启用的外部应用签发JWT。sub为用户身份，aud为应用受众；JWT不包含角色或权限。管理端沿用/api/auth/login，不由本入口放宽管理准入。",
         "x-maintenance-member": false,
         "x-management-scope": "application-identity",
         "responses": {
@@ -2447,7 +2447,7 @@
             }
           },
           "400": {
-            "description": "输入不合法",
+            "description": "参数格式或取值不合法",
             "content": {
               "application/json": {
                 "schema": {
@@ -2457,7 +2457,7 @@
             }
           },
           "401": {
-            "description": "身份、账号状态或令牌受众不正确",
+            "description": "账号、口令或账号状态不正确",
             "content": {
               "application/json": {
                 "schema": {
@@ -2467,7 +2467,7 @@
             }
           },
           "403": {
-            "description": "缺少课程教师准入或UL",
+            "description": "当前应用准入、API授权或部门范围不足",
             "content": {
               "application/json": {
                 "schema": {
@@ -2477,7 +2477,7 @@
             }
           },
           "404": {
-            "description": "功能未启用或目标用户不存在",
+            "description": "端点未启用或目标身份、部门、API操作不存在",
             "content": {
               "application/json": {
                 "schema": {
@@ -2514,9 +2514,9 @@
       "get": {
         "operationId": "applicationIdentityMe",
         "tags": [
-          "应用身份"
+          "统一身份鉴权"
         ],
-        "summary": "课程当前实时身份权限",
+        "summary": "当前应用实时身份与权限",
         "description": "按令牌受众实时返回角色编码、权限编码和system；角色须启用且贡献本应用有效权限。无API映射权限直接导出，有映射短码须全部同系统且启用。",
         "x-maintenance-member": false,
         "x-management-scope": "application-identity",
@@ -2532,7 +2532,7 @@
             }
           },
           "400": {
-            "description": "输入不合法",
+            "description": "参数格式或取值不合法",
             "content": {
               "application/json": {
                 "schema": {
@@ -2542,7 +2542,7 @@
             }
           },
           "401": {
-            "description": "身份、账号状态或令牌受众不正确",
+            "description": "未提供有效的当前应用JWT，或令牌已过期、已撤销",
             "content": {
               "application/json": {
                 "schema": {
@@ -2552,7 +2552,7 @@
             }
           },
           "403": {
-            "description": "缺少课程教师准入或UL",
+            "description": "当前应用准入、API授权或部门范围不足",
             "content": {
               "application/json": {
                 "schema": {
@@ -2562,7 +2562,7 @@
             }
           },
           "404": {
-            "description": "功能未启用或目标用户不存在",
+            "description": "端点未启用或目标身份、部门、API操作不存在",
             "content": {
               "application/json": {
                 "schema": {
@@ -2581,16 +2581,21 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "applicationJwt": []
+          }
+        ]
       }
     },
     "/auth/permissions/{permission}": {
       "get": {
         "operationId": "applicationIdentityPermission",
         "tags": [
-          "应用身份"
+          "统一身份鉴权"
         ],
-        "summary": "课程菜单按钮短码检查",
+        "summary": "应用权限短码检查",
         "description": "检查当前应用实时有效权限，不补父菜单、不按角色名称或职位推断。",
         "x-maintenance-member": false,
         "x-management-scope": "application-identity",
@@ -2606,7 +2611,7 @@
             }
           },
           "400": {
-            "description": "输入不合法",
+            "description": "参数格式或取值不合法",
             "content": {
               "application/json": {
                 "schema": {
@@ -2616,7 +2621,7 @@
             }
           },
           "401": {
-            "description": "身份、账号状态或令牌受众不正确",
+            "description": "未提供有效的当前应用JWT，或令牌已过期、已撤销",
             "content": {
               "application/json": {
                 "schema": {
@@ -2626,7 +2631,7 @@
             }
           },
           "403": {
-            "description": "缺少课程教师准入或UL",
+            "description": "当前应用准入、API授权或部门范围不足",
             "content": {
               "application/json": {
                 "schema": {
@@ -2636,7 +2641,7 @@
             }
           },
           "404": {
-            "description": "功能未启用或目标用户不存在",
+            "description": "端点未启用或目标身份、部门、API操作不存在",
             "content": {
               "application/json": {
                 "schema": {
@@ -2666,6 +2671,11 @@
               "maxLength": 191
             }
           }
+        ],
+        "security": [
+          {
+            "applicationJwt": []
+          }
         ]
       }
     },
@@ -2673,9 +2683,9 @@
       "get": {
         "operationId": "applicationIdentityUser",
         "tags": [
-          "应用身份"
+          "统一身份鉴权"
         ],
-        "summary": "课程教师维护所需员工身份",
+        "summary": "查询统一身份用户",
         "description": "先验证当前应用身份及GET /auth/users/{userId}对应的有效API映射，再返回最小用户信息。",
         "x-maintenance-member": false,
         "x-management-scope": "application-identity",
@@ -2691,7 +2701,7 @@
             }
           },
           "400": {
-            "description": "输入不合法",
+            "description": "参数格式或取值不合法",
             "content": {
               "application/json": {
                 "schema": {
@@ -2701,7 +2711,7 @@
             }
           },
           "401": {
-            "description": "身份、账号状态或令牌受众不正确",
+            "description": "未提供有效的当前应用JWT，或令牌已过期、已撤销",
             "content": {
               "application/json": {
                 "schema": {
@@ -2711,7 +2721,7 @@
             }
           },
           "403": {
-            "description": "缺少课程教师准入或UL",
+            "description": "当前应用准入、API授权或部门范围不足",
             "content": {
               "application/json": {
                 "schema": {
@@ -2721,7 +2731,7 @@
             }
           },
           "404": {
-            "description": "功能未启用或目标用户不存在",
+            "description": "端点未启用或目标身份、部门、API操作不存在",
             "content": {
               "application/json": {
                 "schema": {
@@ -2747,13 +2757,339 @@
             "in": "path",
             "required": true,
             "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "description": "统一身份用户标识；本RBAC签发正安全整数的字符串，其他不存在身份返回404。"
+          }
+        ],
+        "security": [
+          {
+            "applicationJwt": []
+          }
+        ]
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "统一身份鉴权"
+        ],
+        "security": [
+          {
+            "applicationJwt": []
+          }
+        ],
+        "operationId": "logoutApplication",
+        "summary": "退出当前外部应用",
+        "description": "使当前外部应用JWT立即失效；不撤销其他令牌。即使业务授权已撤回仍可退出，管理端受众不能使用此入口。",
+        "responses": {
+          "204": {
+            "description": "当前访问令牌已撤销"
+          },
+          "401": {
+            "description": "未提供有效的当前应用JWT，或令牌已过期、已撤销",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/departments": {
+      "get": {
+        "tags": [
+          "统一身份鉴权"
+        ],
+        "security": [
+          {
+            "applicationJwt": []
+          }
+        ],
+        "operationId": "listApplicationDepartments",
+        "summary": "逐层查询统一身份部门",
+        "description": "需要本应用对此API的有效映射授权；范围为当前人员部门及其下级。不传parentId返回范围根，传入时只返回直接子部门，keyword按名称或编码模糊查询。墓碑不返回。",
+        "parameters": [
+          {
+            "name": "parentId",
+            "in": "query",
+            "schema": {
               "type": "integer",
-              "format": "int64",
               "minimum": 1,
               "maximum": 9007199254740991
             }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "查询结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDepartmentPageVO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数格式或取值不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未提供有效的当前应用JWT，或令牌已过期、已撤销",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "当前应用准入、API授权或部门范围不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "端点未启用或目标身份、部门、API操作不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/departments/{departmentId}/users": {
+      "get": {
+        "tags": [
+          "统一身份鉴权"
+        ],
+        "security": [
+          {
+            "applicationJwt": []
+          }
+        ],
+        "operationId": "listApplicationDepartmentUsers",
+        "summary": "查询统一身份部门直属用户",
+        "description": "需要本应用对此API的有效映射及组织范围授权。只查询指定部门直属人员，keyword按工号或姓名匹配，不返回电话或角色。",
+        "parameters": [
+          {
+            "name": "departmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationDepartmentUserPageVO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数格式或取值不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未提供有效的当前应用JWT，或令牌已过期、已撤销",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "当前应用准入、API授权或部门范围不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "端点未启用或目标身份、部门、API操作不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/api-permissions/{operationId}": {
+      "get": {
+        "tags": [
+          "统一身份鉴权"
+        ],
+        "security": [
+          {
+            "applicationJwt": []
+          }
+        ],
+        "operationId": "checkApplicationApiAuthority",
+        "summary": "查询当前用户的全局API门禁",
+        "description": "operationId按当前应用的显式接入元数据定位；有全局权限要求时核当前有效API映射。显式声明仅对象授权的操作返回全局门禁允许，业务系统仍需校验课程、班级、小组或本人关系。未知操作404 API_OPERATION_NOT_FOUND；allowed=false仍返回200，不代表执行过业务API。",
+        "parameters": [
+          {
+            "name": "operationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9_.-]+$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationApiAuthorityVO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "参数格式或取值不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "未提供有效的当前应用JWT，或令牌已过期、已撤销",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "当前应用准入、API授权或部门范围不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "端点未启用或目标身份、部门、API操作不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
       }
     }
   },
@@ -2763,6 +3099,12 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "opaque"
+      },
+      "applicationJwt": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "外部应用身份JWT；仅含sub、aud、iss、iat、exp、jti，不包含角色或权限。支持当前会话即时撤销，运行期权限逐请求读取。"
       }
     },
     "parameters": {
@@ -3977,7 +4319,10 @@
               "DATA_CONFLICT",
               "LAST_ADMIN_REQUIRED",
               "INTERNAL_ERROR",
-              "APPLICATION_ACCESS_DENIED"
+              "APPLICATION_ACCESS_DENIED",
+              "IDENTITY_USER_NOT_FOUND",
+              "IDENTITY_DEPARTMENT_NOT_FOUND",
+              "API_OPERATION_NOT_FOUND"
             ]
           },
           "message": {
@@ -4863,7 +5208,8 @@
         "properties": {
           "accessToken": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "description": "标准HS256 JWT，仅含身份与单应用受众，不含角色或权限。"
           },
           "tokenType": {
             "type": "string",
@@ -4974,6 +5320,141 @@
           "no",
           "name"
         ]
+      },
+      "ApplicationDepartmentVO": {
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "hasChildren"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "parentId": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "hasChildren": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApplicationDepartmentUserVO": {
+        "type": "object",
+        "required": [
+          "userId",
+          "no",
+          "name",
+          "departmentId",
+          "departmentName"
+        ],
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "no": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "departmentId": {
+            "type": "integer"
+          },
+          "departmentName": {
+            "type": "string"
+          }
+        }
+      },
+      "ApplicationApiAuthorityVO": {
+        "type": "object",
+        "required": [
+          "operationId",
+          "allowed"
+        ],
+        "properties": {
+          "operationId": {
+            "type": "string"
+          },
+          "allowed": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ApplicationDepartmentPageVO": {
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApplicationDepartmentVO"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      },
+      "ApplicationDepartmentUserPageVO": {
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApplicationDepartmentUserVO"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
       }
     }
   }

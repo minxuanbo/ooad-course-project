@@ -1,6 +1,6 @@
 # 页面与API对照
 
-> 接口字段与响应的唯一机器规范为[OpenAPI](../api/openapi.yaml)，JSON为同源派生；[业务约束](api-contract.md)解释鉴权、范围与原子性。此表索引29项RBAC管理操作；下文补充4项课程兼容身份操作。
+> 接口字段与响应的唯一机器规范为[OpenAPI](../api/openapi.yaml)，JSON为同源派生；[业务约束](api-contract.md)解释鉴权、范围与原子性。此表索引29项RBAC管理操作；下文补充8项完整通用身份操作。
 
 | 页面/操作组 | 操作 | 用途 | 请求模型 | 成功data |
 | --- | --- | --- | --- | --- |
@@ -44,5 +44,9 @@
 | 每次Bearer请求 | `GET /auth/me` | ApplicationIdentityVO |
 | 菜单/按钮检查 | `GET /auth/permissions/{permission}` | ApplicationPermissionVO |
 | 添加教师时身份查询 | `GET /auth/users/{userId}` | ApplicationUserVO |
+| 退出外部身份 | `POST /auth/logout` | 204无body |
+| 逐层身份部门 | `GET /auth/departments` | ApplicationDepartmentPageVO |
+| 部门直属身份用户 | `GET /auth/departments/{departmentId}/users` | ApplicationDepartmentUserPageVO |
+| 全局API门禁查询 | `GET /auth/api-permissions/{operationId}` | ApplicationApiAuthorityVO |
 
-四项仅显式启用时提供，不属于管理API或K；其业务处理器仍在老师工程。
+八项仅显式启用时提供，由RBAC两策略实现，不属于管理API或K；课程业务处理器仍在老师工程。

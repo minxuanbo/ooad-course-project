@@ -1,5 +1,7 @@
 # RBAC双实现交付计划
 
+2026-11-21更新：PR #38/#39/#40已按用户授权合入main，覆盖通用课程接入、设计一致性、R31本部教师/其余学生与同账号管理员配置及CloneFactory0.0.2。R32补齐老师8项统一身份鉴权、JWT、目录与operationId查询，证据见[本轮验证](history/verification/identity-eight-contract.md)。用户已授权本轮有效分支验证/审核后合入main及同步Apifox；T14/T15仍保留小组评审关口，不自动关闭。详设不改，服务器部署仍等待老师说明。
+
 更新至2026-11-19：阶段5已完成并经用户批准，[PR #34](https://github.com/minxuanbo/ooad-course-project/pull/34)于2026-11-17合入main（e521f97）。合并文件树与验收提交83dbf17一致，包含设计提交519ddef及独立DDD实现。本轮structured UI补充复验及三处前端修复已完成，用户已批准通过[PR #36](https://github.com/minxuanbo/ooad-course-project/pull/36)交付。
 
 本计划依据用户最新确认，目标是先完成本RBAC的structured/ddd两套代码及共用前端。课程系统指老师Gitee上的course-project-mgt。2026-11-19用户明确启动本地接入，在codex/course-local-integration分支对接其真实操作，不自行重写课程业务。
@@ -28,7 +30,7 @@ T13及阶段4的历史证据保留在[历史索引](history/README.md)。阶段6
 ## 3. 剩余工作
 
 1. 阶段6复验结果按[两策略对照记录](history/verification/stage6-ddd.md)供小组审核。
-2. 课程系统本地接入已由用户授权启动，T14（#15）确认场景/身份/契约，T15（#16）验证真实授撤权及两系统隔离，见[接入记录](course-integration.md)。票据保留小组评审关口；服务器部署仍等待新增服务器方案。
+2. 课程本地接入及R31/R32验证已完成，T14（#15）场景/身份/契约与T15（#16）真实授撤权及两系统隔离证据见[接入记录](course-integration.md)与各轮验收。票据仍open，保留小组评审关口；服务器部署等待老师说明。
 
 ## 4. 文档维护方式
 

@@ -117,7 +117,7 @@ def teaching_scenario(verification, tokens, accounts, path):
 def run(args):
     """核全量分配并验证真实登录、受众隔离、即时撤权和幂等不重授。"""
     configuration = json.loads((ROOT / 'integrations/course/initialization.json').read_text(encoding='utf-8'))
-    catalog = json.loads((ROOT / 'integrations/course/catalog.json').read_text(encoding='utf-8'))
+    catalog = json.loads(args.initialization_catalog.read_text(encoding='utf-8'))
     rbac = Mysql(args.mysql, args.client, 'rbac_core')
     course = Mysql(args.mysql, args.client, 'course_project')
     snapshot = read_snapshot(rbac)
@@ -185,6 +185,8 @@ def main():
         parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--rbac', default='http://127.0.0.1:8081')
     parser.add_argument('--course', default='http://127.0.0.1:8080')
+    parser.add_argument('--initialization-catalog', type=Path,
+                        default=ROOT / 'integrations/course/catalog.json')
     args = parser.parse_args()
     if any(urlparse(value).hostname not in {'127.0.0.1', 'localhost'} for value in (args.rbac, args.course)):
         raise ValueError('LOCAL_HTTP_REQUIRED')
