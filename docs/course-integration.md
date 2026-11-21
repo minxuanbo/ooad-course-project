@@ -6,7 +6,7 @@
 
 RBAC负责User—Role—Permission—ApiResource及Application目录。角色全局共享，可以组合多个应用权限；每项Permission与其ApiResource映射必须同系统。Application从数据库登记数据读取，不维护`rbac/course`代码白名单。原型的18个演示系统仍不自动导入。
 
-教师、学生与课程管理员均为角色配置。配置`teacher`、`student`供老师原协议识别；另建`course-admin`组合管理菜单、按钮和后台权限，同时授teacher资格。LOGIN是本地课程目录中的资格权限配置，不是RBAC内置的教师/学生标记。RBAC只返回当前有效角色编码与权限，不识别课程对象。万人首次授权仍只配置本RBAC自身，课程角色须另行明确授予，不能给全体员工自动加教师身份。
+教师、学生与课程管理员均为角色配置。配置`teacher`、`student`供老师原协议识别；另建`course-admin`组合管理菜单、按钮和后台权限，同时授teacher资格。LOGIN是本地课程目录中的资格权限配置，不是RBAC内置的教师/学生标记。RBAC只返回当前有效角色编码与权限，不识别课程对象。万人首次授权仍只配置本RBAC自身，课程角色通过独立步骤明确授予；2026-11-21的本部教师、分公司学生与同一管理员规则见第8节，不给全体员工统一加教师。
 
 RBAC管理端仍要求本系统实际管理API，普通员工即使有课程角色也不能登录管理端。课程沿老师`POST /login`：先确认其本地Teacher/Student，再校验外部身份、角色及user_id绑定。课程、选课、教学班、组长、提交、评分等业务和对象权限均由老师工程维护，不增加RBAC的Student/Teacher实体、岗位猜权、课程准入策略或课程业务API。
 
@@ -39,7 +39,7 @@ Permission.type为MENU/BUTTON/API。菜单、按钮可无API独立控制展示�
 
 ## 5. 场景与账号
 
-全部为隔离库虚构资料，不是万人真实员工库。账号口令从本地私有配置或环境传入，不在文档保存。
+本节为2026-11-20以前的32人历史回归夹具，不是R31万人首次接入的身份分配结果。原夹具保留以便复现既有授撤权和拒绝场景。账号口令从本地私有配置或环境传入，不在文档保存。
 
 | 账号 | 用途 |
 | --- | --- |
@@ -56,7 +56,7 @@ Permission.type为MENU/BUTTON/API。菜单、按钮可无API独立控制展示�
 ## 6. 复现与验证
 
 1. 准备独立MySQL实例及空rbac_core/course_project，记录端口；原有库全部保留。RBAC执行当前两份首次SQL；课程按原Flyway建表。只对空库生成并导入`scripts/course_integration_fixture.py --output-dir .local/your-run/fixtures`的两份SQL，先通过UI_FIXTURE_PASSWORD提供虚构口令。
-2. 老师工程从原提交复制到忽略目录，按[integrations/course](../integrations/course/README.md)应用必要修复补丁，保留原目录。Java21、Boot4.1.2、Lombok1.18.48、CloneFactory0.0.2沿老师pom；真实CloneFactory来源为老师spring-fundamentals提交`38fd81730e7294bb3a1ef708faa78996b3c7fa80`，不伪装版本。RBAC继续用自身固定版本。
+2. 老师工程从原提交复制到忽略目录，按[integrations/course](../integrations/course/README.md)应用必要修复补丁，保留原目录。Java21、Boot4.1.2、Lombok1.18.48、CloneFactory0.0.2沿老师pom；历史课程构建使用真实38fd817源码。2026-11-21本RBAC依用户提供源码更新为真实40583ff提交的0.0.2，构建指引见[依赖安装](../deploy/README.md#本机依赖安装)，不是改名旧jar；不因此替换已验课程副本。
 3. RBAC设置数据库凭据、APP_BACKEND_STRATEGY=structured或ddd、APP_IDENTITY_ENABLED=true、IDENTITY_ALLOWED_ORIGINS=http://127.0.0.1:5174，启动8081。不要并行用两策略修改同一测试库。
 4. 启动本地支撑：`python integrations/course/local_identity_gateway.py --database .local/your-run/audit.sqlite3 --port 8085 --origin http://127.0.0.1:5174 --mysql-config <本地只读客户端配置绝对路径>`。客户端配置指向课程实例，数据库名称仍为course_project，文件不入Git。
 5. 课程设置APP_BACKEND_STRATEGY=structured、DB_HOST/PORT/NAME/USER/PASSWORD及IDENTITY_BASE_URL=http://127.0.0.1:8085；原JAR8080，Flyway启用、ddl-auto=validate。老师DDD另有当前学期切换冲突，本轮不将其全部功能宣称通过；RBAC两种策略分别联调老师structured。
@@ -79,3 +79,23 @@ T14为Issue #15：真实场景、身份、原型/API契约；T15为Issue #16：�
 通用/auth/me还返回permissionApis，即每个有效权限当前实际映射的方法/模板事实。RBAC不内置接入系统的预期路由；本地课程适配器依据catalog.json核实老师同一粗粒度短码的全部必要路由，缺少一条即保守关闭整个短码，菜单检查也采用相同投影。这样删除多路由权限的部分映射不能借另一条映射继续调用已撤路由，映射变更仍即时生效。
 
 虚构口试里程碑显式设置预约次数上限100，便于重复联调和人工体验；这只是课程已有配置，不修改老师默认值或业务规则。重复探针保留取消/已完成预约历史，不用清库恢复次数。
+
+## 8. 本部教师与分公司学生首次接入（R31）
+
+依据用户2026-11-21转达的老师要求及范围确认，总公司本部包括本部职能部门和项目，排除分公司及其下属。本部领导、普通员工均为teacher；分公司领导和员工均为student。当前启用、可信根直属、有效基础级别5的RBAC管理员兼course-admin；独立admin有teacher及course-admin两角色，用同一账号管理两系统。
+
+显式配置在[integrations/course/initialization.json](../integrations/course/initialization.json)，目录与路由仍在catalog.json；执行入口为[scripts/initialize_course_integration.py](../scripts/initialize_course_integration.py)。它读取已完成RBAC导入的来源和组织事实，交叉核员工原“分公司”列与父链，识别本部而不按岗位猜测。Teacher/Student只写入课程数据库，RBAC仅写通用Application、Role、Permission、ApiResource和关联数据。RBAC固定管理员角色获得课程完整权限子集，以便后续合法授撤课程角色；其他基础角色级别与原RBAC权限保持。
+
+在新本地实例完成RBAC资料导入、五角色授权，以及老师原Flyway建表后，先执行只读预览。客户端ini必须显式指向loopback及端口，密码只存忽略目录；报告必须为.local下的新文件。
+
+```powershell
+python scripts/initialize_course_integration.py --mysql <mysql.exe绝对路径> --rbac-client <RBAC客户端ini> --course-client <课程客户端ini> --report .local/your-run/course-preview.json
+# 核对人数与范围后，在同一组明确的新库执行。
+python scripts/initialize_course_integration.py --mysql <mysql.exe绝对路径> --rbac-client <RBAC客户端ini> --course-client <课程客户端ini> --apply --report .local/your-run/course-applied.json
+```
+
+默认不写库。实际执行先在课程库事务建立唯一user_id绑定，匹配的既有绑定只保留，身份冲突或已删除教师拒绝覆盖；成功后在RBAC根行锁内一次发布目录、角色、权限、全部人员角色和完成回执。两系统分别提交，不宣称分布式原子事务：若课程提交后RBAC失败，尚无应用角色授权，中断后可重跑，匹配的课程绑定不重复插入。
+
+回执使用通用bootstrap_receipts表的独立seed_key，不新增业务表或老师Flyway迁移。匹配回执重复执行直接跳过，不恢复被手动撤回的角色和权限；原件来源、账号全集或初始化配置变化会拒绝自动覆盖。此入口不是已有课程库升级或动态组织调动同步，后续身份修改仍由管理端明确授撤，并维护课程本地业务身份。
+
+R31详细职责及维护窗口约束见[初始化设计](design/course-initialization-r31.md)，真实人数、两策略HTTP与界面结果见[独立验证记录](history/verification/course-initialization-r31.md)；不能把历史32人夹具成绩当作新规则通过。服务与数据库仍仅本地运行，服务器方案待老师部署说明。

@@ -2,6 +2,8 @@
 
 Java21、Spring Boot3.5.6、Spring Data JPA、MySQL8.4及老师真实CloneFactory。同一工程内提供structured和DDD两套业务实现，分别通过事务脚本和领域仓储编排。完整[后端设计](../docs/backend-design.md)说明共享API、用例、基础设施边界及代码与测试归类。
 
+CloneFactory当前固定0.0.2，源码提交40583ff94764d2e758bcb13be17f5c05ea4d6352；按[本机依赖安装](../deploy/README.md#本机依赖安装)构建老师真实源码，依赖及处理器版本由同一个Maven属性维护。
+
 组员从[完整本地复现](../docs/reproduction.md)开始，记录实际检出分支及提交。共享/结构化边界见[DDD隔离说明](../docs/backend-design.md#4-双实现选择方式)。
 
 ## 1. 目录与构建
@@ -78,3 +80,5 @@ HTTP默认8081，前端代理/api不变。后端29项管理操作与4项可选�
 ## 5. 可选通用应用身份服务
 
 `APP_IDENTITY_ENABLED`默认false；显式开启后提供4项老师已有身份协议，资源目录来自所有已登记应用；teacher/student/课程管理员由配置角色表达，API类型要求非空有效映射。课程业务仍只在老师工程。配置、独立空库夹具及双系统验证脚本见[课程接入](../docs/course-integration.md)，不得向真实员工库导入虚构验收SQL。
+
+R31需在原万人导入、五角色授权后，使用独立`scripts/initialize_course_integration.py`预览及apply，为本部员工授teacher、其余授student、合格管理员兼course-admin，并建立课程本地绑定。此工具不进入后端业务装配，不由身份开关自动执行；课程角色与RBAC管理准入仍独立。

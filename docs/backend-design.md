@@ -309,14 +309,14 @@ DDD设计确认后，先建立架构与互斥装配测试，再按认证/查询�
 | 同一可信根锁与本地事务                     | 保证锁后重验、单人完整K及所有相关写失败回滚        |
 | 领域仓储与复杂查询Gateway分开              | 不向领域泄漏Command/Result/JPA或技术游标           |
 | 本地账号、工号/手机号同身份                | 保留本RBAC认证，技术端口可复用，业务准入各自判断   |
-| 可变映射用真实CloneFactory，不可变显式构造 | 防止final/record出现空映射或绕过领域不变量         |
+| 可变映射用真实CloneFactory，不可变显式构造 | 保留明确领域构造与不变量；0.0.2的构造器能力不改变本项目约定 |
 | 顺序图仅含差异                             | 共同门禁、锁、K与提交由正文约定，不绘制重复执行链  |
 
 上述为本项目设计取舍；后续业务范围变化须同步需求、设计、API及验证，不以参考项目课程业务代替本系统规则。
 
 ## 14. CloneFactory对象拷贝方案
 
-采用老师spring-fundamentals的真实CloneFactory，版本0.0.1-SNAPSHOT并锁定源码提交237f49c52bdc72da30383571bb2f985ac54a514a。可复现安装唯一维护在[部署说明](../deploy/README.md#本机依赖安装)，不以ObjectMapper/BeanUtils替代。
+采用老师spring-fundamentals的真实CloneFactory，2026-11-21升级为0.0.2并锁定用户提供源码的提交40583ff94764d2e758bcb13be17f5c05ea4d6352；普通依赖和编译期处理器共用pom中的clonefactory.version属性。可复现安装唯一维护在[部署说明](../deploy/README.md#本机依赖安装)，不以ObjectMapper/BeanUtils替代，也不把旧构件换版本号冒充新源码。
 
 DTO→Command、Result→VO、同名同类型toResult优先CloneFactory.copy；PATCH共同非空字段优先copyNotNull。当前Entity→Result由Entity端@CopyTo声明，使纯用例模型不反向依赖持久化类型；角色和API状态PATCH用Entity端@CopyNotNullFrom。派生字段、多来源、集合元素变化、时间类型转换及id/系统归属/授权等受保护字段必须排除并显式处理。
 
@@ -324,7 +324,7 @@ DTO→Command、Result→VO、同名同类型toResult优先CloneFactory.copy；P
 
 ### 14.1 领域及不可变对象映射
 
-映射分三段：HTTP DTO→公共Command、公共Result→VO沿现有真实CloneFactory；Entity↔可变领域对象的共同字段可用真实复制后执行受控reconstitute/factory及关系映射；不可变领域对象、record、final属性必须逐字段显式构造，不能用copy调用冒充已复制。应用Query→领域Criteria、DomainPage→应用PageResult、领域ID/枚举/关系集合转换显式处理。人员查询时 DddScope 校验所选部门，再由 OrganizationPolicy 在可见组织事实内计算子树。应用层显式构造 SearchCriteria.Users，携带领域 Scope、搜索条件、状态及分页。空的部门筛选沿操作者完整范围；未知/越界仍沿现有404/403语义。不可为了映射方便开放权限关系或稳定编码setter。
+映射分三段：HTTP DTO→公共Command、公共Result→VO沿现有真实CloneFactory；Entity↔可变领域对象的共同字段可用真实复制后执行受控reconstitute/factory及关系映射。0.0.2真实处理器已支持record及final目标通过构造器返回新对象；本项目仍按既定领域规范对不可变领域对象、record、final属性逐字段显式构造，不能忽略copy返回值或绕过领域不变量。应用Query→领域Criteria、DomainPage→应用PageResult、领域ID/枚举/关系集合转换显式处理。人员查询时 DddScope 校验所选部门，再由 OrganizationPolicy 在可见组织事实内计算子树。应用层显式构造 SearchCriteria.Users，携带领域 Scope、搜索条件、状态及分页。空的部门筛选沿操作者完整范围；未知/越界仍沿现有404/403语义。不可为了映射方便开放权限关系或稳定编码setter。
 
 JpaDomainMapper 显式构造领域记录；DddResults 等装配公开字段，关系和派生值逐项设置。改注解后clean检查真实CloneFactory.java，测试必须断言工号、姓名、部门、职位、级别及授权ID往返，不只断言对象非null。新版Java注解独立换行适用于后续新增/修改源码及测试；映射测试覆盖现有结构化链与DDD链。
 
@@ -591,3 +591,5 @@ Java新增或修改类/接口/记录及关键方法写中文Javadoc；明确局�
 权限展示名称采用完整中文（如“查看总览”“分配人员角色”“查询鉴权日志”），稳定编码仍保留供关联、排错和接口使用，不按中文名称鉴权。两套首次授权与本地夹具读取同一RBAC中文目录；课程显示名称也来自独立接入配置，不在Vue按英文编码硬翻译。
 
 通用/auth/me还返回permissionApis，即每个有效权限当前实际映射的方法/模板事实。RBAC不内置接入系统的预期路由；本地课程适配器依据catalog.json核实老师同一粗粒度短码的全部必要路由，缺少一条即保守关闭整个短码，菜单检查也采用相同投影。这样删除多路由权限的部分映射不能借另一条映射继续调用已撤路由，映射变更仍即时生效。
+
+R31课程首次身份分配由独立配置和`scripts/initialize_course_integration.py`执行：本部领导及普通员工为teacher，分公司子树为student；合格RBAC管理员同一账号兼course-admin。它在完成原RBAC导入/五角色授权及老师Flyway后单独预览、执行，课程本地身份先提交，RBAC通用目录/角色/权限/人员关联和独立完成回执后在根锁事务中发布；不声称两系统分布式原子提交。没有把Teacher/Student或分配策略添加到structured/DDD业务包，当前包图、核心类图与运行时授权差异仍适用。重复接入不重置运行期授权，具体见[课程接入第8节](course-integration.md#8-本部教师与分公司学生首次接入r31)。

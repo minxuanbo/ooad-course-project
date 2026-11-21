@@ -29,3 +29,9 @@ mvn -f backend/pom.xml -DskipTests clean package
 读取外部审计要求AV全局授权；不向普通教师开放全部业务日志。写日志的主体与服务端时间不可由请求伪造，requestId同应用幂等，不同内容重放拒绝。老师Spring客户端的chunked JSON请求与浏览器普通请求均支持。老师对象ID到课程/班级的只读投影留在此联调工具中，不进入RBAC应用或领域层。
 
 老师将同一短码用于多个路由。RBAC只提供通用permissionApis事实，本工具依据catalog.json核对全部必要路由，缺失任一条即关闭整个短码；不把课程路由常量重新塞回RBAC。
+
+## R31首次身份初始化
+
+[initialization.json](initialization.json)与[scripts/initialize_course_integration.py](../../scripts/initialize_course_integration.py)落实2026-11-21新规则：总公司本部领导及普通员工为teacher，分公司及其下属为student；启用根直属有效五级RBAC管理员同时获course-admin和课程教师绑定。先完成原RBAC万人导入、五角色初始化及老师Flyway，再显式预览和apply，命令及两系统中断恢复边界见[课程接入第8节](../../docs/course-integration.md#8-本部教师与分公司学生首次接入r31)。
+
+默认产品启动和身份开关不执行这次初始化；RBAC业务服务不引用课程类型。32人虚构夹具仅保留作历史回归，不在原夹具或原库上覆盖新规则。客户端凭据、员工明细、生成数据和本地报告继续只放.local。

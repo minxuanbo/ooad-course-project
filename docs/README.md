@@ -23,6 +23,8 @@
 
 ## 维护约定
 
+新增R31本部教师、分公司学生和同一管理员的独立首次接入，以及真实CloneFactory0.0.2更新，见[初始化设计](design/course-initialization-r31.md)和[独立验证记录](history/verification/course-initialization-r31.md)。本轮万人环境与此前32人夹具分别保留。
+
 requirements回答做什么；domain-model定义行为和不变量；数据库文档定义存储；前后端文档定义怎么做。OpenAPI YAML唯一维护字段，JSON同源导出，api-contract解释Schema外规则，api-map仅作索引。图件与源数据归design，第17章直接展示。
 
 structured和DDD共用正式HTTP契约及Vue，通过环境变量选择后端策略。实际执行版本、结果与限制见测试与验收说明。业务范围变化同步受影响文档、接口及测试；原Excel和用户未跟踪的本地概要设计文档不清理。

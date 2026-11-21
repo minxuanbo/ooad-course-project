@@ -2,6 +2,8 @@
 
 正式包图、类图与差异顺序图统一编排在[后端设计第17章](../backend-design.md#17-结构化与ddd-uml)，不另设设计稿或审核图集。结构化图和DDD图均描述当前实现。
 
+独立课程初始化的范围、配置、双库提交与幂等边界见[课程首次身份接入设计（R31）](course-initialization-r31.md)。它不改变现有Java类和HTTP接口。
+
 ## 编辑、生成和检查
 
 设计数据源为[ddd-diagrams.json](ddd-diagrams.json)，唯一生成脚本为[scripts/build-ddd-design.mjs](../../scripts/build-ddd-design.mjs)，复用[scripts/uml-svg.mjs](../../scripts/uml-svg.mjs)。它们只生成文档，不进入后端或正式前端依赖。使用Node和sharp；可用UML_SHARP_MODULE指向仓库外已安装sharp，或使用含sharp的工具运行时。不要将sharp加到生产frontend/package.json。
