@@ -54,4 +54,6 @@ HTTP覆盖同一admin双系统登录、本部领导与普通员工教师、分�
 
 双轴初审：需求0项；规范发现1项MySQL默认配置可能覆盖本机目标/继承force。已以真实客户端复现RED，修复为指定defaults-file、no-login-paths、显式loopback/端口/TCP及skip-force。真实GREEN确认配置覆盖不能改变目标，SQL失败后后续语句不执行；新增2项测试先RED后GREEN，最终24项通过，两组最终http-final.json各43项通过。日志为mysql-options-red.log、mysql-options-real-red/green.log。详设Word/PDF及提交包依用户最新要求不更新。
 
+e2e4b8b后两轴独立复核：Standards硬规范0项、判断性问题0项，Spec0项。249个受影响Markdown本地文件目标存在；课程副本对固定原始快照仍仅上述3个Java文件有差异。桌面体验说明只在本地保存，不进入Git；包含两系统入口、代表账号和临时口令。
+
 首次接入在开放业务前维护窗口串行执行，课程及RBAC分别提交，不是分布式事务；运行期调动、后续管理员变更不自动重推课程身份。旧32人夹具不是升级目标。老师5项Controller缺失、个人制批改、学生建组归属和DDD当前学期等限制继续见[课程接入第7节](../../course-integration.md#7-老师项目的实际限制)。本轮没有扩写这些业务，也未测得吞吐量或服务器部署结论。
