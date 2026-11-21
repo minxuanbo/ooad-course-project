@@ -1,0 +1,7 @@
+{
+  "operations": [
+    {"system":"course-project-management","operationId":"createTerm","method":"POST","path":"/terms","requiresPermission":true},
+    {"system":"course-project-management","operationId":"objectOperation","method":"GET","path":"/me/courses","requiresPermission":false},
+    {"system":"course-project-management","operationId":"mixedOperation","method":"PUT","path":"/current-term","requiresPermission":true,"permissionRoles":["r29-course"]}
+  ]
+}

@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 public class BearerIdentityStore implements IdentityTokenStore {
   public static final long EXPIRES_IN = Duration.ofHours(12).toSeconds();
   private final Clock clock;
+  private final ApplicationJwtCodec jwt;
   private final SecureRandom random = new SecureRandom();
   private final Map<String, Entry> identities = new ConcurrentHashMap<>();
 
@@ -29,18 +30,32 @@ public class BearerIdentityStore implements IdentityTokenStore {
 
   /** 只有账号、口令、状态及管理准入全部通过后才能调用。 */
   public String issue(Long userId) {
-    return issueForSystem(userId, RbacCatalog.SYSTEM_CODE);
+    return issueToken(userId, RbacCatalog.SYSTEM_CODE, false);
   }
 
   /** 相同随机令牌机制按应用区分受众，权限仍只在请求时计算。 */
   @Override
   public String issueForSystem(Long userId, String system) {
+    return issueToken(userId, system, true);
+  }
+
+  /** 管理端保留随机Bearer，外部应用签发JWT，两者共用可撤销的身份索引。 */
+  private String issueToken(Long userId, String system, boolean external) {
     Instant now = clock.instant();
     identities.entrySet().removeIf(entry -> !entry.getValue().expiresAt().isAfter(now));
     byte[] bytes = new byte[32];
     random.nextBytes(bytes);
-    String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-    identities.put(token, new Entry(userId, now.plusSeconds(EXPIRES_IN), system));
+    Instant expiresAt = now.plusSeconds(EXPIRES_IN);
+    String token =
+        external
+            ? jwt.encode(
+                userId,
+                system,
+                now,
+                expiresAt,
+                Base64.getUrlEncoder().withoutPadding().encodeToString(bytes))
+            : Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    identities.put(token, new Entry(userId, expiresAt, system, external));
     return token;
   }
 
@@ -74,6 +89,7 @@ public class BearerIdentityStore implements IdentityTokenStore {
       identities.remove(token);
       throw BusinessException.unauthorized();
     }
+    if (entry.external()) jwt.verify(token, entry.userId(), entry.system());
     return entry;
   }
 
@@ -85,5 +101,5 @@ public class BearerIdentityStore implements IdentityTokenStore {
   }
 
   /** 身份索引仅为运行支撑，不进入核心ER或数据库。 */
-  private record Entry(Long userId, Instant expiresAt, String system) {}
+  private record Entry(Long userId, Instant expiresAt, String system, boolean external) {}
 }

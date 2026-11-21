@@ -15,4 +15,18 @@ public interface ApplicationIdentityUseCase {
 
   /** 具有本应用身份查询API权限者才能查询最小身份信息。 */
   ApplicationUserResult user(String header, Long id);
+
+  /** 销毁当前外部应用令牌，不依赖剩余业务授权且不撤销其他会话。 */
+  void logout(String header);
+
+  /** 按当前组织范围逐层读取目录，外部协议页号从1开始。 */
+  ApplicationDirectoryPage<ApplicationDepartmentResult> departments(
+      String header, Long parentId, String keyword, int page, int pageSize);
+
+  /** 只读取目标部门直属人员，鉴权、范围及最小字段均由服务端确定。 */
+  ApplicationDirectoryPage<ApplicationDepartmentUserResult> departmentUsers(
+      String header, Long departmentId, String keyword, int page, int pageSize);
+
+  /** operationId按应用接入元数据定位，返回实时全局API门禁结论。 */
+  boolean apiAllowed(String header, String operationId);
 }

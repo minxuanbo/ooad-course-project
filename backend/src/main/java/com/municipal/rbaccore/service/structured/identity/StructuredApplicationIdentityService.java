@@ -30,6 +30,10 @@ public class StructuredApplicationIdentityService implements ApplicationIdentity
   private final ApplicationSystemJpaRepository systems;
   private final UserJpaRepository users;
   private final RequestContext requests;
+  private final IdentityDirectoryGateway directory;
+  private final ApiOperationCatalog operations;
+  private final com.municipal.rbaccore.service.structured.security.StructuredDepartmentScopeService
+      scope;
 
   /** 凭据正确、应用启用且已有有效授权时签发独立受众令牌。 */
   @Override
@@ -61,23 +65,101 @@ public class StructuredApplicationIdentityService implements ApplicationIdentity
   /** 身份最小查询由本应用的实际API映射控制，不内置任何业务权限短码。 */
   @Override
   public ApplicationUserResult user(String header, Long id) {
-    current(header);
-    Long actor = tokens.requireForSystem(header, tokens.system(header));
-    boolean allowed =
-        permissions.directPermissions(actor, Set.of(tokens.system(header))).stream()
-            .filter(this::exportable)
-            .flatMap(permission -> permission.getApis().stream())
-            .anyMatch(
-                api ->
-                    "GET".equals(api.getHttpMethod())
-                        && "/auth/users/{userId}".equals(api.getPathTemplate()));
-    requests.authorizationDecision(allowed);
-    if (!allowed) throw BusinessException.forbidden();
+    requireRoute(header, "/auth/users/{userId}");
+    if (id == null) throw new BusinessException(404, "IDENTITY_USER_NOT_FOUND", "统一身份用户不存在");
     UserEntity user =
         users
             .findById(id)
-            .orElseThrow(() -> new BusinessException(404, "RESOURCE_NOT_FOUND", "用户不存在"));
+            .orElseThrow(() -> new BusinessException(404, "IDENTITY_USER_NOT_FOUND", "统一身份用户不存在"));
     return new ApplicationUserResult(user.getId().toString(), user.getUsername(), user.getName());
+  }
+
+  /** 撤销当前外部身份不要求仍有业务授权，不会销毁另一个应用的会话。 */
+  @Override
+  public void logout(String header) {
+    String system = tokens.system(header);
+    if (RbacCatalog.SYSTEM_CODE.equals(system)) throw BusinessException.unauthorized();
+    tokens.requireForSystem(header, system);
+    requests.application(system);
+    tokens.revoke(header);
+  }
+
+  /** 组织目录的计数和列表在同一快照下，仅按一层父级及关键词查询。 */
+  @Override
+  @Transactional(
+      readOnly = true,
+      isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
+  public ApplicationDirectoryPage<ApplicationDepartmentResult> departments(
+      String header, Long parentId, String keyword, int page, int pageSize) {
+    CurrentIdentity actor = requireRoute(header, "/auth/departments");
+    Set<Long> visible = Set.copyOf(scope.allowedIds(actor));
+    if (parentId != null) requireDepartment(actor, parentId, visible);
+    return directory.departments(actor.departmentId(), parentId, visible, keyword, page, pageSize);
+  }
+
+  /** 部门用户不展开下级，目标范围与查询API授权分别校验。 */
+  @Override
+  @Transactional(
+      readOnly = true,
+      isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
+  public ApplicationDirectoryPage<ApplicationDepartmentUserResult> departmentUsers(
+      String header, Long departmentId, String keyword, int page, int pageSize) {
+    CurrentIdentity actor = requireRoute(header, "/auth/departments/{departmentId}/users");
+    requireDepartment(actor, departmentId, Set.copyOf(scope.allowedIds(actor)));
+    return directory.users(departmentId, keyword, page, pageSize);
+  }
+
+  /** 读取操作元数据后用当前直接映射判断，全局放行不代替课程对象级授权。 */
+  @Override
+  public boolean apiAllowed(String header, String operationId) {
+    ApplicationIdentityResult identity = current(header);
+    ApiOperationCatalog.Operation operation =
+        operations
+            .find(identity.system(), operationId)
+            .orElseThrow(
+                () -> new BusinessException(404, "API_OPERATION_NOT_FOUND", "没有找到对应的API操作"));
+    boolean gated =
+        operation.requiresPermission()
+            && (operation.permissionRoles().isEmpty()
+                || identity.roles().stream().anyMatch(operation.permissionRoles()::contains));
+    return !gated
+        || hasRoute(
+            tokens.requireForSystem(header, identity.system()),
+            identity.system(),
+            operation.method(),
+            operation.path());
+  }
+
+  /** 实际目录或查人操作必须有本应用API映射，最终判定统一进入鉴权日志。 */
+  private CurrentIdentity requireRoute(String header, String path) {
+    ApplicationIdentityResult identity = current(header);
+    CurrentIdentity actor = authentication.requireForSystem(header, identity.system());
+    boolean allowed = hasRoute(actor.id(), identity.system(), "GET", path);
+    requests.authorizationDecision(allowed);
+    if (!allowed) throw BusinessException.forbidden();
+    return actor;
+  }
+
+  /** API必须来自同应用、启用且完整有效的直接权限映射。 */
+  private boolean hasRoute(Long actor, String system, String method, String path) {
+    return permissions.directPermissions(actor, Set.of(system)).stream()
+        .filter(this::exportable)
+        .flatMap(permission -> permission.getApis().stream())
+        .anyMatch(api -> method.equals(api.getHttpMethod()) && path.equals(api.getPathTemplate()));
+  }
+
+  /** 局部账号不能探测范围外目标是否存在，共同根才能区分未知部门。 */
+  private void requireDepartment(CurrentIdentity actor, Long id, Set<Long> visible) {
+    if (!visible.contains(id)) {
+      if (!scope.isGlobal(actor) || directory.department(id).isPresent()) {
+        requests.authorizationDecision(false);
+        throw BusinessException.scopeDenied();
+      }
+      throw new BusinessException(404, "IDENTITY_DEPARTMENT_NOT_FOUND", "统一身份部门不存在");
+    }
+    if (directory.department(id).isEmpty()) {
+      throw new BusinessException(404, "IDENTITY_DEPARTMENT_NOT_FOUND", "统一身份部门不存在");
+    }
   }
 
   /** 只有贡献当前应用有效直接权限的启用角色才导出其配置编码。 */

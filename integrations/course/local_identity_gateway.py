@@ -89,7 +89,8 @@ def exchange(base, path, method='GET', token=None, body=None):
                       data=json.dumps(body).encode('utf-8') if body is not None else None)
     try:
         with urlopen(request, timeout=10) as response:
-            return response.status, json.loads(response.read())
+            raw = response.read()
+            return response.status, json.loads(raw) if raw else None
     except HTTPError as error:
         raw = error.read()
         return error.code, json.loads(raw) if raw else {'code': 'UPSTREAM_REJECTED'}
@@ -167,7 +168,7 @@ def serve(options):
 
         def respond(self, status, body):
             """来源只允许显式配置项，不发送任意跨域凭证。"""
-            raw = json.dumps(body, ensure_ascii=False).encode('utf-8')
+            raw = b'' if status == 204 else json.dumps(body, ensure_ascii=False).encode('utf-8')
             self.send_response(status)
             origin = self.headers.get('Origin')
             if origin in options.origins:
@@ -203,7 +204,9 @@ def serve(options):
                     if self.command == 'POST' and path == '/auth/login':
                         if not isinstance(body, dict) or body.get('systems') != [options.system]:
                             return self.respond(403, {'code': 'APPLICATION_ACCESS_DENIED'})
-                    elif not (self.command == 'GET' and (path == '/auth/me' or re.fullmatch(r'/auth/(permissions/[^/]+|users/\d+)', path))):
+                    elif not ((self.command == 'POST' and path == '/auth/logout')
+                              or (self.command == 'GET' and (path in ('/auth/me', '/auth/departments')
+                                  or re.fullmatch(r'/auth/(permissions/[^/]+|api-permissions/[A-Za-z0-9_.-]+|users/[^/]+|departments/\d+/users)', path)))):
                         return self.respond(404, {'code': 'ENDPOINT_NOT_FOUND'})
                     if self.command == 'GET':
                         status, identity = exchange(options.rbac, '/auth/me', token=token)

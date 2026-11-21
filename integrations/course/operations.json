@@ -1,0 +1,553 @@
+{
+  "operations": [
+    {
+      "system": "course-project-management",
+      "operationId": "addStudent",
+      "method": "POST",
+      "path": "/classes/{classId}/students",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "bookOralSlot",
+      "method": "POST",
+      "path": "/oral-slots/{slotId}/bookings",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "cancelBooking",
+      "method": "DELETE",
+      "path": "/bookings/{bookingId}",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "cancelGroupJoinRequest",
+      "method": "DELETE",
+      "path": "/join-requests/{requestId}",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "clearCurrentTerm",
+      "method": "DELETE",
+      "path": "/current-term",
+      "requiresPermission": true
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "copyCourse",
+      "method": "POST",
+      "path": "/courses/copy",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "courseLogin",
+      "method": "POST",
+      "path": "/login",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "createClasses",
+      "method": "POST",
+      "path": "/courses/{courseId}/classes",
+      "requiresPermission": true,
+      "permissionRoles": [
+        "course-admin"
+      ]
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "createCourse",
+      "method": "POST",
+      "path": "/terms/{termId}/courses",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "createGroupAsStudent",
+      "method": "POST",
+      "path": "/courses/{courseId}/groups",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "createGroupAsTeacher",
+      "method": "POST",
+      "path": "/classes/{classId}/groups",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "createGroupJoinRequest",
+      "method": "POST",
+      "path": "/groups/{groupId}/join-requests",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "createGroupOralRecord",
+      "method": "POST",
+      "path": "/milestones/{milestoneId}/groups/{groupId}/oral-records",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "createMilestone",
+      "method": "POST",
+      "path": "/courses/{courseId}/milestones",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "createOralSlot",
+      "method": "POST",
+      "path": "/classes/{classId}/milestones/{milestoneId}/oral-slots",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "createTeacher",
+      "method": "POST",
+      "path": "/teachers",
+      "requiresPermission": true
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "createTerm",
+      "method": "POST",
+      "path": "/terms",
+      "requiresPermission": true
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "decideGroupJoinRequest",
+      "method": "PATCH",
+      "path": "/join-requests/{requestId}",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "deleteClass",
+      "method": "DELETE",
+      "path": "/classes/{classId}",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "deleteClassGroupRule",
+      "method": "DELETE",
+      "path": "/classes/{classId}/group-rule",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "deleteCourse",
+      "method": "DELETE",
+      "path": "/courses/{courseId}",
+      "requiresPermission": true,
+      "permissionRoles": [
+        "course-admin"
+      ]
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "deleteMilestone",
+      "method": "DELETE",
+      "path": "/milestones/{milestoneId}",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "deleteOralSlot",
+      "method": "DELETE",
+      "path": "/oral-slots/{slotId}",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "deleteTeacher",
+      "method": "DELETE",
+      "path": "/teachers/{teacherId}",
+      "requiresPermission": true
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "deleteTerm",
+      "method": "DELETE",
+      "path": "/terms/{termId}",
+      "requiresPermission": true
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "dissolveGroup",
+      "method": "DELETE",
+      "path": "/groups/{groupId}",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "downloadFile",
+      "method": "GET",
+      "path": "/files/{fileId}",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "exportClassGrades",
+      "method": "POST",
+      "path": "/classes/{classId}/grades/export",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "getClassGrades",
+      "method": "GET",
+      "path": "/classes/{classId}/grades",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "getClassGroupRule",
+      "method": "GET",
+      "path": "/classes/{classId}/group-rule",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "getCourse",
+      "method": "GET",
+      "path": "/courses/{courseId}",
+      "requiresPermission": true,
+      "permissionRoles": [
+        "course-admin"
+      ]
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "getCourseGroupRule",
+      "method": "GET",
+      "path": "/courses/{courseId}/group-rule",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "getCurrentUser",
+      "method": "GET",
+      "path": "/me",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "getGroupSubmission",
+      "method": "GET",
+      "path": "/groups/{groupId}/milestones/{milestoneId}/submission",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "getMyGrades",
+      "method": "GET",
+      "path": "/me/courses/{courseId}/grades",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "getMyMilestoneSubmission",
+      "method": "GET",
+      "path": "/me/courses/{courseId}/milestones/{milestoneId}/submission",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "getSubmissionById",
+      "method": "GET",
+      "path": "/submissions/{submissionId}",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "importRoster",
+      "method": "POST",
+      "path": "/classes/{classId}/roster/import",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "leaveGroup",
+      "method": "POST",
+      "path": "/groups/{groupId}/leave",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "listAdminCourses",
+      "method": "GET",
+      "path": "/admin/courses",
+      "requiresPermission": true
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "listAuditLogs",
+      "method": "GET",
+      "path": "/audit-logs",
+      "requiresPermission": true,
+      "permissionRoles": [
+        "course-admin"
+      ]
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "listClassGroups",
+      "method": "GET",
+      "path": "/classes/{classId}/groups",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "listClassStudents",
+      "method": "GET",
+      "path": "/classes/{classId}/students",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "listClasses",
+      "method": "GET",
+      "path": "/courses/{courseId}/classes",
+      "requiresPermission": true,
+      "permissionRoles": [
+        "course-admin"
+      ]
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "listCourseGroups",
+      "method": "GET",
+      "path": "/courses/{courseId}/groups",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "listGroupJoinRequests",
+      "method": "GET",
+      "path": "/groups/{groupId}/join-requests",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "listMilestones",
+      "method": "GET",
+      "path": "/courses/{courseId}/milestones",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "listOralSlots",
+      "method": "GET",
+      "path": "/classes/{classId}/milestones/{milestoneId}/oral-slots",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "listOralStatus",
+      "method": "GET",
+      "path": "/classes/{classId}/milestones/{milestoneId}/oral-status",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "listStudentCourses",
+      "method": "GET",
+      "path": "/me/courses",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "listSubmissions",
+      "method": "GET",
+      "path": "/classes/{classId}/milestones/{milestoneId}/submissions",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "listTeacherCourses",
+      "method": "GET",
+      "path": "/teacher/courses",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "listTeachers",
+      "method": "GET",
+      "path": "/teachers",
+      "requiresPermission": true
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "listTerms",
+      "method": "GET",
+      "path": "/terms",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "removeGroupMemberAsLeader",
+      "method": "DELETE",
+      "path": "/groups/{groupId}/members/{studentId}",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "removeStudent",
+      "method": "DELETE",
+      "path": "/classes/{classId}/students/{studentId}",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "replaceCurrentTerm",
+      "method": "PUT",
+      "path": "/current-term",
+      "requiresPermission": true
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "reviewCourse",
+      "method": "POST",
+      "path": "/courses/{courseId}/review",
+      "requiresPermission": true
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "reviewSubmission",
+      "method": "POST",
+      "path": "/submissions/{submissionId}/review",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "searchStudentCandidates",
+      "method": "GET",
+      "path": "/classes/{classId}/student-candidates",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "setClassGroupRule",
+      "method": "POST",
+      "path": "/classes/{classId}/group-rule",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "setClassTeachers",
+      "method": "PUT",
+      "path": "/classes/{classId}/teachers",
+      "requiresPermission": true,
+      "permissionRoles": [
+        "course-admin"
+      ]
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "setCourseLeaders",
+      "method": "PUT",
+      "path": "/courses/{courseId}/leaders",
+      "requiresPermission": true,
+      "permissionRoles": [
+        "course-admin"
+      ]
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "submitCourseReview",
+      "method": "POST",
+      "path": "/courses/{courseId}/submit-review",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "submitMaterials",
+      "method": "POST",
+      "path": "/groups/{groupId}/milestones/{milestoneId}/submissions",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "submitMyMaterials",
+      "method": "POST",
+      "path": "/me/courses/{courseId}/milestones/{milestoneId}/submissions",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "transferGroupLeader",
+      "method": "PUT",
+      "path": "/groups/{groupId}/leader",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "updateClass",
+      "method": "PATCH",
+      "path": "/classes/{classId}",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "updateCourse",
+      "method": "PATCH",
+      "path": "/courses/{courseId}",
+      "requiresPermission": true,
+      "permissionRoles": [
+        "course-admin"
+      ]
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "updateCourseGroupRule",
+      "method": "PATCH",
+      "path": "/courses/{courseId}/group-rule",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "updateGroup",
+      "method": "PATCH",
+      "path": "/groups/{groupId}",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "updateMilestone",
+      "method": "PATCH",
+      "path": "/milestones/{milestoneId}",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "updateOralRecord",
+      "method": "PATCH",
+      "path": "/oral-records/{oralRecordId}",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "updateTeacher",
+      "method": "PATCH",
+      "path": "/teachers/{teacherId}",
+      "requiresPermission": true
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "updateTerm",
+      "method": "PATCH",
+      "path": "/terms/{termId}",
+      "requiresPermission": true
+    }
+  ]
+}
