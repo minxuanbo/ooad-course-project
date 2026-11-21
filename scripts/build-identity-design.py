@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""从已核对的身份用例生成PlantUML源及同源SVG/PNG，只绘制两策略差异。"""
+"""从已核对的身份用例生成两套类图；差异顺序图统一由主注册表生成。"""
 import argparse
 from pathlib import Path
 import subprocess
@@ -86,36 +86,6 @@ S .down.> P
     return text + '@enduml\n'
 
 
-def directory_sequence(ddd):
-    """共同认证、JWT、HTTP与目录SQL不画，只保留组织范围实现差异。"""
-    service = 'DddApplicationIdentityService' if ddd else 'StructuredApplicationIdentityService'
-    text = HEADER + 'hide footbox\nautonumber\nparticipant "obj: 调用者" as obj\n'
-    text += 'participant "service: ' + service + '" as S\n'
-    if ddd:
-        text += '''participant "organizations: OrganizationRepository" as R
-participant ": OrganizationPolicy" as P <<MetaClass>>
-activate obj
-obj -> S : departments(header, parentId, keyword, page, pageSize) 的差异片段
-activate S
-S -> R : organization = load()
-activate R
-deactivate R
-S -> P : visible = scope(organization, actor.department().id())
-activate P
-deactivate P
-'''
-    else:
-        text += '''participant "scope: StructuredDepartmentScopeService" as R
-activate obj
-obj -> S : departments(header, parentId, keyword, page, pageSize) 的差异片段
-activate S
-S -> R : visible = allowedIds(actor)
-activate R
-deactivate R
-'''
-    return text + 'deactivate S\ndeactivate obj\n@enduml\n'
-
-
 def main():
     """工具路径由调用者显式提供，不把绘图运行时加入产品依赖。"""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -125,8 +95,6 @@ def main():
     diagrams = {
         'class-ddd-application-identity': class_diagram(True),
         'class-structured-application-identity': class_diagram(False),
-        'sequence-identity-directory-ddd': directory_sequence(True),
-        'sequence-identity-directory-structured': directory_sequence(False),
     }
     for name, content in diagrams.items():
         path = OUTPUT / (name + '.puml')
@@ -134,7 +102,7 @@ def main():
         for kind in ['-tsvg', '-tpng']:
             subprocess.run([args.java, '-jar', str(args.plantuml.resolve()), '-charset', 'UTF-8', kind,
                             str(path)], check=True, capture_output=True)
-    print('4组身份类图/差异顺序图及同源SVG/PNG已生成；需打开PNG视觉复核。')
+    print('2组身份类图及同源SVG/PNG已生成；需打开PNG视觉复核。')
 
 
 if __name__ == '__main__':

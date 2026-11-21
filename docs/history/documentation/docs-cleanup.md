@@ -20,9 +20,9 @@
 | [ ] | [api-contract.md](../../api-contract.md)，重写 | 仅保留Schema外业务约束：授权OR、子集、范围、K、锁、幂等退出、日志快照 |
 | [ ] | [api-map.md](../../api-map.md)、[api/README.md](../../../api/README.md)，修改 | 页面/操作索引与规范主从关系，不维护第二份字段定义 |
 | [ ] | [initialization.md](../../initialization.md)，新增 | 新项目来源映射、111→110、根11、五角色人数、整批事务与重复不重置 |
-| [ ] | [deploy/README.md](../../../deploy/README.md)、[现场JaCoCo](../../../deploy/现场运行JaCoCo.md)，修改 | 固定CloneFactory本机安装、唯一初始化命令、历史发布清理与云环境未验证边界 |
+| [ ] | [deploy/README.md](../../../deploy/README.md)、[现场JaCoCo](https://github.com/minxuanbo/ooad-course-project/blob/34f3cecc0c3364e2a1e64bde406284e46c8cc5bd/deploy/%E7%8E%B0%E5%9C%BA%E8%BF%90%E8%A1%8CJaCoCo.md)，修改 | 固定CloneFactory本机安装、唯一初始化命令、历史发布清理与云环境未验证边界 |
 | [ ] | [testing-acceptance.md](../../testing-acceptance.md)，修改 | 需求矩阵、当前/后续验证，T13为历史基线；不复用旧结果声称本分支运行过 |
-| [ ] | [development-plan.md](../../development-plan.md)，新增 | 六阶段顺序，当前只阶段1，课程系统及T14/T15等老师要求 |
+| [ ] | [development-plan.md](../planning/development-plan-through-r32.md)，新增 | 六阶段顺序，当前只阶段1，课程系统及T14/T15等老师要求 |
 | [ ] | [README](../../../README.md)、[docs导航](../../README.md)、[AGENTS](../../../AGENTS.md)、[CONTRIBUTING](../../../CONTRIBUTING.md)，修改 | 当前入口、协作/分支/审核边界，删除旧“T13后停止”现行指令 |
 | [ ] | [阶段1原型目录](https://github.com/minxuanbo/ooad-course-project/tree/d1438d7ff1a42f87aa4bbd097fbab0db15747960/prototype)，新增/迁移 | 阶段1原四组参考原型搬顶层；当时HTML仅改说明/链接。阶段3现已由[唯一原型](../../../prototype/index.html)替换，旧内容从Git追溯 |
 | [ ] | [history/README](../README.md)及5份归档 | 保留追溯证据、头注只读历史，原链接固定到基线，不作为现行规范 |

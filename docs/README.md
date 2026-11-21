@@ -1,30 +1,16 @@
 # 项目文档
 
-按老师项目的需求、领域、数据库、后端、API职责组织；增加本RBAC所需的前端、初始化及本地复现说明。structured和DDD统一编排在相同正式文档中，不分别维护审核稿。参考项目为课程管理系统，本项目所有模型与命名均采用RBAC业务。
+这里仅维护当前规范；阶段过程、旧设计与验收原始结论集中在[history](history/README.md)。参考老师课程项目的文档分工，所有模型与实现均以本RBAC源码为准。
 
-阶段5双实现已随[PR #34](https://github.com/minxuanbo/ooad-course-project/pull/34)合入main（e521f97）。从[本地复现](reproduction.md)运行当前基线；阶段6的浏览器结果见[测试验收](testing-acceptance.md)及[两策略对照](history/verification/stage6-ddd.md)。
+| 阅读目的 | 当前入口 |
+| --- | --- |
+| 业务范围与确认依据 | [需求](requirements.md)、[来源](requirements/sources.md) |
+| 领域对象与存储 | [领域模型](domain-model.md)、[数据库设计](database-design.md)、[物理字典](database/physical-model.md) |
+| 两套后端怎么实现 | [后端设计](backend-design.md)，第17章统一展示两套类图、差异顺序图及完整覆盖矩阵 |
+| 页面和HTTP契约 | [前端设计](frontend-design.md)、[页面接口对照](api-map.md)、[业务契约](api-contract.md)、[OpenAPI](../api/openapi.yaml) |
+| 首次初始化与课程接入 | [初始化](initialization.md)、[课程本地接入](course-integration.md) |
+| 运行及验收 | [本地复现](reproduction.md)、[测试与验收](testing-acceptance.md) |
 
-2026-11-21：课程接入、设计一致性与R31首次身份分支已按用户授权由PR #38/#39/#40合入main。R32完整8项身份鉴权及JWT见[设计](design/identity-eight-contract.md)与[本轮验证](history/verification/identity-eight-contract.md)，正式契约为37操作、31路径、71 Schema；历史记录保留当时版本。
+当前37项接口共用structured/DDD两策略和同一Vue；管理端与外部应用统一使用JWT，受众和管理准入保持隔离。历史测试成绩不视为当前修改后的通过证据，最新执行范围见测试与验收。
 
-| 文档                                                                                                             | 内容                                                                    |
-| ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| [需求说明](requirements.md)、[来源](requirements/sources.md)                                                     | 范围、统一业务规则、原件及确认依据                                      |
-| [领域模型](domain-model.md)                                                                                      | 六核心对象、聚合、值、策略、生命周期与不变量                            |
-| [数据库设计](database-design.md)、[物理模型](database/physical-model.md)、[Chen源码](database/chen-er-source.md) | 概念联系、12表字典、约束及两策略共用存储                                |
-| [后端设计](backend-design.md)                                                                                    | 总体结构、包、共享契约、structured/DDD职责、仓储、事务、映射、测试与UML |
-| [前端设计](frontend-design.md)                                                                                   | Vue页面、组件、权限能力、状态、交互与错误处理                           |
-| [API映射](api-map.md)、[业务契约](api-contract.md)、[OpenAPI](../api/openapi.yaml)                               | 页面/操作索引、Schema外语义及唯一字段规范                               |
-| [首次初始化](initialization.md)                                                                                  | 原件转换、五角色、来源、整批事务与重复执行保护                          |
-| [课程接入](course-integration.md)、[课程补丁](../integrations/course/README.md) | 老师现有身份协议、两个系统的本地配置、三项structured业务修复、独立身份/审计支撑及来源功能限制 |
-| [测试与验收](testing-acceptance.md)                                                                              | 需求矩阵、隔离、验证方案及实际结果引用                                  |
-| [本地复现](reproduction.md)、[后端运行](../backend/README.md)、[前端运行](../frontend/README.md)                 | 依赖、全新库初始化、命令与端口                                          |
-| [开发计划](development-plan.md)、[协作](../CONTRIBUTING.md)                                                      | 实施顺序和分支约定                                                      |
-| [历史索引](history/README.md)                                                                                    | 原型决策、阶段检查与验证记录，不作为另一套当前设计                      |
-
-## 维护约定
-
-新增R31本部教师、分公司学生和同一管理员的独立首次接入，以及真实CloneFactory0.0.2更新，见[初始化设计](design/course-initialization-r31.md)和[独立验证记录](history/verification/course-initialization-r31.md)。本轮万人环境与此前32人夹具分别保留。
-
-requirements回答做什么；domain-model定义行为和不变量；数据库文档定义存储；前后端文档定义怎么做。OpenAPI YAML唯一维护字段，JSON同源导出，api-contract解释Schema外规则，api-map仅作索引。图件与源数据归design，第17章直接展示。
-
-structured和DDD共用正式HTTP契约及Vue，通过环境变量选择后端策略。实际执行版本、结果与限制见测试与验收说明。业务范围变化同步受影响文档、接口及测试；原Excel和用户未跟踪的本地概要设计文档不清理。
+字段以OpenAPI YAML为唯一规范，JSON同源派生；api-contract解释Schema之外的业务语义。图件和生成数据集中在design，说明见[图件入口](design/README.md)；不单独维护另一套DDD或structured设计稿。服务器部署等待老师说明，详设Word/PDF/PPT依用户要求保持原版。

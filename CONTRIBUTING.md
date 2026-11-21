@@ -4,9 +4,11 @@
 
 ## 1. 当前工作边界
 
+R33当前改动由用户要求统一全部JWT、补齐双策略类图/差异覆盖并整理docs。当前规范从docs/README进入，旧计划与设计/验收快照归history；不再把历史阶段状态当当前待办。37项HTTP与两类离线入口由UML注册表追溯，更新图须生成并目检。Apifox继续同步本项目9042431，核实后清理旧空目录；历史证据与用户资料保留。
+
 2026-11-21更新：用户明确授权将有效分支改动合入main；PR #38（课程通用接入）、#39（设计一致性）、#40（R31首次身份接入与CloneFactory0.0.2）已经合入。本轮R32完整8项身份协议按相同验证/双轴审核流程交付并合入main，记录见[本轮验收](docs/history/verification/identity-eight-contract.md)。用户同时明确要求同步Apifox项目9042431，必须导入后回读核对。此次授权不包含删除分支、关闭T14/T15或服务器部署，详设外部文件保持原版。
 
-截至2026-11-18，文档PR #29、结构化整理PR #30、原型PR #31、阶段4正式前后端PR #32及同步PR #1均已合入。阶段5独立DDD实现经双轴审核、修复、CloneFactory专项核对及两策略隔离回归后，已获用户批准随[PR #34](https://github.com/minxuanbo/ooad-course-project/pull/34)合入main（e521f97）。组员按[复现指南](docs/reproduction.md)从main检出并记录提交号；阶段6剩余UI复验、课程接入和部署边界见[开发计划](docs/development-plan.md)。
+截至2026-11-18，文档PR #29、结构化整理PR #30、原型PR #31、阶段4正式前后端PR #32及同步PR #1均已合入。阶段5独立DDD实现经双轴审核、修复、CloneFactory专项核对及两策略隔离回归后，已获用户批准随[PR #34](https://github.com/minxuanbo/ooad-course-project/pull/34)合入main（e521f97）。组员按[复现指南](docs/reproduction.md)从main检出并记录提交号；阶段6剩余UI复验、课程接入和部署边界见[开发计划](docs/history/planning/development-plan-through-r32.md)。
 
 ## 2. 分支与工作树
 

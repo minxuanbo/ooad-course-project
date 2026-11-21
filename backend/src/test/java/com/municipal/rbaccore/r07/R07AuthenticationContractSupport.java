@@ -810,8 +810,7 @@ abstract class R07AuthenticationContractSupport {
     ExecutorService workers = Executors.newFixedThreadPool(2);
     try {
       Future<?> delayed =
-          workers.submit(
-              () -> auditWriter.record(snapshotEvent(username, "r16-delayed-commit")));
+          workers.submit(() -> auditWriter.record(snapshotEvent(username, "r16-delayed-commit")));
       assertTrue(Fixtures.AUDIT_GATE.stored.await(5, TimeUnit.SECONDS));
       CountDownLatch secondStarted = new CountDownLatch(1);
       Future<?> following =
@@ -955,8 +954,7 @@ abstract class R07AuthenticationContractSupport {
     assertEquals(stored.get("username"), identity.get("username").asText());
     assertEquals(stored.get("name"), identity.get("name").asText());
     assertEquals(
-        ((Number) stored.get("department_id")).longValue(),
-        identity.get("departmentId").asLong());
+        ((Number) stored.get("department_id")).longValue(), identity.get("departmentId").asLong());
     assertEquals(stored.get("department_name"), identity.get("departmentName").asText());
     assertEquals(
         jdbc.queryForObject("SELECT enabled FROM users WHERE username=?", Boolean.class, username)
@@ -998,6 +996,29 @@ abstract class R07AuthenticationContractSupport {
   /** 每次测试使用真实登录产生的身份，不传客户端userId。 */
   private String token(String account, String password) throws Exception {
     return "Bearer " + loginData(account, password).get("token").asText();
+  }
+
+  /** 真实管理登录返回JWT，并在同会话正常访问后立即执行退出撤销。 */
+  @Test
+  @DisplayName("R33真实管理HTTP使用身份JWT且退出即时失效")
+  void R33_ManagementHttpUsesJwt() throws Exception {
+    JsonNode login = loginData("admin", ADMIN_PASSWORD);
+    String raw = login.get("token").asText();
+    String[] parts = raw.split("\\.");
+    assertEquals(3, parts.length, "管理HTTP必须返回标准JWT");
+    JsonNode claims = json.readTree(Base64.getUrlDecoder().decode(parts[1]));
+    assertEquals(Long.toString(id("admin")), claims.get("sub").asText());
+    assertEquals(
+        "rbac",
+        claims.get("aud").isArray()
+            ? claims.get("aud").get(0).asText()
+            : claims.get("aud").asText());
+    assertFalse(claims.has("roles"));
+    assertFalse(claims.has("permissions"));
+    String header = "Bearer " + raw;
+    assertEquals(200, request("GET", ME, header, null).getStatusCode().value());
+    assertEquals(200, request("POST", LOGOUT, header, null).getStatusCode().value());
+    assertEquals(401, request("GET", ME, header, null).getStatusCode().value());
   }
 
   /** 固定requestId下必须恰好一条最小记录。 */

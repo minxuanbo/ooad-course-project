@@ -1,21 +1,22 @@
-# RBAC设计图资源
+# 当前实现图资源
 
-正式包图、类图与差异顺序图统一编排在[后端设计第17章](../backend-design.md#17-结构化与ddd-uml)，不另设设计稿或审核图集。结构化图和DDD图均描述当前实现。
+所有当前图统一展示在[后端设计第17章](../backend-design.md#17-结构化与ddd-uml)：包图2组、两套类图16对、差异顺序图24对，共82组同源SVG/PNG。37项HTTP操作和2类离线入口的对应关系见该章17.4及[覆盖数据](ddd-diagrams.json)。
 
-独立课程初始化的范围、配置、双库提交与幂等边界见[课程首次身份接入设计（R31）](course-initialization-r31.md)。它不改变现有Java类和HTTP接口。
-
-## 编辑、生成和检查
-
-基础DDD图数据源为[ddd-diagrams.json](ddd-diagrams.json)，由[scripts/build-ddd-design.mjs](../../scripts/build-ddd-design.mjs)复用[scripts/uml-svg.mjs](../../scripts/uml-svg.mjs)生成。R32身份的4组类图/差异顺序图由[scripts/build-identity-design.py](../../scripts/build-identity-design.py)生成PlantUML源及同源SVG/PNG。它们只生成文档，不进入后端或正式前端依赖。基础图使用Node和sharp，可用UML_SHARP_MODULE指向仓库外已安装sharp；身份图使用Python、Java及PlantUML，工具路径由参数提供。不要将绘图依赖加到生产frontend/package.json。
+| 来源/脚本 | 生成范围 |
+| --- | --- |
+| [ddd-diagrams.json](ddd-diagrams.json)、[build-ddd-design.mjs](../../scripts/build-ddd-design.mjs) | 两套包图、15张DDD模块类图、48张差异顺序图 |
+| [build-structured-design.mjs](../../scripts/build-structured-design.mjs) | 从实际Java字段和方法生成对应15张structured模块类图 |
+| [build-identity-design.py](../../scripts/build-identity-design.py) | 完整通用身份模块的两张类图，同时交PlantUML源 |
+| [uml-svg.mjs](../../scripts/uml-svg.mjs) | 共用SVG图元、文字宽度、类框/连线几何检查及PNG渲染 |
 
 ```powershell
+# 使用Node、sharp；若工具运行时未自动定位sharp，显式设UML_SHARP_MODULE。
 node scripts/build-ddd-design.mjs
-# 仅需要重新核对现有结构化身份类图时：
-node scripts/build-current-uml.mjs
-# R32身份图；替换为本机工具绝对路径：
+node scripts/build-structured-design.mjs
+# Java/PlantUML路径由本机工具配置提供，不加入生产依赖：
 python scripts/build-identity-design.py --java <java.exe绝对路径> --plantuml <plantuml.jar绝对路径>
 ```
 
-旧脚本现只生成current-auth-class，不再产生完整身份顺序图。生成脚本校验两套源码的类与方法锚点、框无重叠/边不穿第三方框、共同步骤禁入、调用与执行条顶边、循环接收执行条完整性和文字宽度；生成清单见[ddd-generated-manifest.json](ddd-generated-manifest.json)。自动检查不等于视觉或业务语义通过，交付前必须实际打开PNG，历史设计记录见[设计阶段证据](../history/verification/ddd-design.md)。
+生成器检查实际类型、字段和接收方法、类框重叠、连线穿框、共同流程禁入、两套消息是否只有改名、执行条与循环边界。清单见[主清单](ddd-generated-manifest.json)和[structured清单](structured-generated-manifest.json)。生成后仍须打开PNG视觉核对，自动通过不等于布局或语义已验证。
 
-完整统一身份的八项接口、JWT和技术读模型见[R32设计](identity-eight-contract.md)。第18章类图随新增方法与依赖同步；共同JWT/HTTP流程不重复绘制顺序图。
+共同JWT/HTTP/日志/锁和提交不绘制两份顺序图；相同分页或集合读取模式在覆盖矩阵明确复用。旧局部身份类图、单侧应用投影/异常和重复目录图移入[历史图件](../history/design-assets/through-r32/)，退出当前设计。历史R31/R32说明在history/design-decisions保留，只作为来源追溯。

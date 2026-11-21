@@ -1,6 +1,8 @@
 # structured UI复验（2026-11-19）
 
-本文各项成绩保留其记录日期与源码基线。后续两策略阶段6结果见[阶段6复验](history/verification/stage6-ddd.md)，通用课程接入的614a0c4版本证据见[本轮记录](history/verification/course-integration-generic.md)。2026-11-20文档核对未重新执行这些运行回归。
+> 历史快照：保留R32及以前的规则和证据；当前设计从[文档入口](../../README.md)阅读。
+
+本文各项成绩保留其记录日期与源码基线。后续两策略阶段6结果见[阶段6复验](stage6-ddd.md)，通用课程接入的614a0c4版本证据见[本轮记录](course-integration-generic.md)。2026-11-20文档核对未重新执行这些运行回归。
 
 本轮完成用户指定的structured模式UI复验与修复。起点为main `9c95e7a`，修复位于`codex/structured-ui-acceptance`；交付前合入远端main `4744f5f`，在合并提交`00186e5`上重新验证。用户于2026-11-19明确批准[PR #36](https://github.com/minxuanbo/ooad-course-project/pull/36)合入main。阶段6的ddd同项复验仍未执行，不将共用前端结果视为ddd业务链通过。
 
@@ -47,7 +49,7 @@ Windows、Node 24.11.0、Playwright 1.58.2/Chromium、JDK 21.0.10、MySQL 8.4.13
 
 ## 3. 复现
 
-使用独立MySQL实例中的全新`rbac_core`库，按[后端说明](../backend/README.md)配置连接及启动。脚本只生成INSERT事务，不清库或覆盖记录，固定主键冲突拒绝重复导入。完整场景会停用`ui-user-05`，重跑整套应准备全新实例。不得应用到真实业务库。
+使用独立MySQL实例中的全新`rbac_core`库，按[后端说明](../../../backend/README.md)配置连接及启动。脚本只生成INSERT事务，不清库或覆盖记录，固定主键冲突拒绝重复导入。完整场景会停用`ui-user-05`，重跑整套应准备全新实例。不得应用到真实业务库。
 
 仓库根目录执行（Python 3.12及`bcrypt`包）：
 
@@ -75,4 +77,4 @@ npm test
 npm run build
 ```
 
-未设置`UI_ACCEPTANCE=1`时用例跳过，不能视为通过。[测试代码](../frontend/e2e/structured.spec.mjs)不保存storageState、令牌或网络trace；结果与截图在`.local/ui-browser-results`。断言与视口配置参考[Playwright断言](https://playwright.dev/docs/test-assertions)和[视口配置](https://playwright.dev/docs/emulation)。
+未设置`UI_ACCEPTANCE=1`时用例跳过，不能视为通过。[测试代码](../../../frontend/e2e/structured.spec.mjs)不保存storageState、令牌或网络trace；结果与截图在`.local/ui-browser-results`。断言与视口配置参考[Playwright断言](https://playwright.dev/docs/test-assertions)和[视口配置](https://playwright.dev/docs/emulation)。

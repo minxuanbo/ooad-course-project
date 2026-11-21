@@ -12,7 +12,7 @@
 | [API](api/README.md)、[API映射](docs/api-map.md)                        | 29项操作、OpenAPI及页面对应关系     |
 | [初始化](docs/initialization.md)、[本地复现](docs/reproduction.md)      | 全新库、来源、五角色、运行与核对    |
 | [测试验收](docs/testing-acceptance.md)、[历史](docs/history/README.md)  | 验证方案、版本结果与限制            |
-| [开发计划](docs/development-plan.md)、[协作](CONTRIBUTING.md)           | 实施阶段与分支约定                  |
+| [历史阶段计划](docs/history/planning/development-plan-through-r32.md)、[协作](CONTRIBUTING.md)           | 实施阶段与分支约定                  |
 
 文档按老师[course-project-mgt](https://gitee.com/mingqcn/course-project-mgt)的职责组织，业务来源为老师说明、原Excel及确认需求，全部内容和命名使用本RBAC模型。两套实现放在同一后端工程，共享API、Vue与数据库；structured和DDD设计统一见后端文档，第17章展示包图、类图及仅差异顺序图。
 

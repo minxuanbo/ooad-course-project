@@ -1,6 +1,6 @@
 # 课程系统本地联调
 
-本轮使用老师`course-project-mgt`提交`19fbd1a`的生产前后端，RBAC基线为main `717345f`，在`codex/course-local-integration`分支调整通用应用能力。老师原目录保留不动。接口和实际测试证据分别见[OpenAPI](../api/openapi.yaml)与[本轮验证](history/verification/course-integration-generic.md)；此前教师最小试验记录仅为历史，不代表本轮全部功能通过。
+当前为37项API及全JWT的本地双系统接入；运行副本源自老师`course-project-mgt`提交`19fbd1a`，仅保留3个已记录structured生产补丁。老师原目录后来独立更新，保持不动，不自动覆盖运行副本。机器契约见[OpenAPI](../api/openapi.yaml)，当前安全/实现见[后端设计](backend-design.md#18-通用应用身份与课程本地接入)，各轮执行成绩见[验收入口](testing-acceptance.md)。
 
 ## 1. 系统职责
 
@@ -108,12 +108,12 @@ python scripts/initialize_course_integration.py --mysql <mysql.exe绝对路径> 
 
 回执使用通用bootstrap_receipts表的独立seed_key，不新增业务表或老师Flyway迁移。匹配回执重复执行直接跳过，不恢复被手动撤回的角色和权限；原件来源、账号全集或初始化配置变化会拒绝自动覆盖。此入口不是已有课程库升级或动态组织调动同步，后续身份修改仍由管理端明确授撤，并维护课程本地业务身份。
 
-R31详细职责及维护窗口约束见[初始化设计](design/course-initialization-r31.md)，真实人数、两策略HTTP与界面结果见[独立验证记录](history/verification/course-initialization-r31.md)；不能把历史32人夹具成绩当作新规则通过。服务与数据库仍仅本地运行，服务器方案待老师部署说明。
+R31原始职责及维护窗口约束见[历史初始化设计](history/design-decisions/course-initialization-r31.md)，真实人数、两策略HTTP与界面结果见[独立验证记录](history/verification/course-initialization-r31.md)；不能把历史32人夹具成绩当作新规则通过。服务与数据库仍仅本地运行，服务器方案待老师部署说明。
 
 
 ## 9. 完整八项鉴权接入（R32）
 
-老师共享文档“统一身份鉴权”8项均由RBAC两策略实现；另分组“统一身份审计”2项按用户确认排除，现有独立支撑仅保留本地依赖。JWT、目录范围、操作元数据设计见[完整身份契约](design/identity-eight-contract.md)。操作配置在[operations.json](../integrations/course/operations.json)，同时登记老师接口operationId及本RBAC身份操作的兼容标识，不按应用代码白名单决定准入。未配文件时已知操作也会404，不能漏配。
+老师共享文档“统一身份鉴权”8项均由RBAC两策略实现；另分组“统一身份审计”2项按用户确认排除，现有独立支撑仅保留本地依赖。JWT、目录范围、操作元数据设计见[完整身份契约](backend-design.md#18-通用应用身份与课程本地接入)。操作配置在[operations.json](../integrations/course/operations.json)，同时登记老师接口operationId及本RBAC身份操作的兼容标识，不按应用代码白名单决定准入。未配文件时已知操作也会404，不能漏配。
 
 ```powershell
 $env:APP_IDENTITY_ENABLED='true'
@@ -125,3 +125,7 @@ $env:IDENTITY_ALLOWED_ORIGINS='http://127.0.0.1:5174,http://localhost:5174'
 可通过IDENTITY_JWT_SECRET提供至少256位Base64秘密；未配置时使用本进程随机秘密，无固定默认值。当前会话索引仍为进程内存，重启需重新登录。两个目录权限IDR/IDU通过catalog.json显式登记，只初授课程管理员及有效RBAC管理员角色。已有R31库保留原完成回执和当时目录，不用新目录强行重跑覆盖；历史回执重放验收可通过verify_course_initialization.py的--initialization-catalog显式指定当时快照。新库按最新目录首次执行。操作文件是接入元数据，不增加RBAC业务表或升级SQL。
 
 本轮原库、万人账号、教师/学生绑定及已有课程保持；新增两项目录登记属于本机明确的接入配置。实测记录见[八项契约验证](history/verification/identity-eight-contract.md)。
+
+## 10. R33管理端与外部应用全JWT
+
+两类登录现在共用JwtIdentityStore/JwtIdentityCodec及HS256签名验证；管理受众rbac，课程受众仍是登记应用编码。管理token与外部accessToken字段及原角色/对象权限不变，权限不进入JWT。两组本机后端切换后旧会话均需重新登录；当前JAR及原始验证报告位于忽略目录.local/jwt-design-20261121，课程、网关及3351/3352数据保留。完整差异图统一在后端设计第17章，旧R31/R32说明按历史版本归档。

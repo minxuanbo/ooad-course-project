@@ -17,7 +17,7 @@ python -c "import json,pathlib,yaml; p=pathlib.Path('api'); d=yaml.safe_load((p/
 
 导出后核对YAML/JSON语义相等、37项操作、17项K、所有引用可解析，使用OpenAPI3.1校验器检查。类型/长度静态约束不能替代跨字段、归一化、状态、数据库、授权或范围验证。
 
-Apifox同步须用户明确确认目标项目和覆盖范围，不能沿用老师项目ID或凭据。2026-11-21用户已授权同步本项目9042431，1.4.0的完整8项身份及37操作回读核对见[R32验证](../docs/history/verification/identity-eight-contract.md)。
+Apifox同步须用户明确确认目标项目和覆盖范围，不能沿用老师项目ID或凭据。用户已授权同步本项目9042431；当前1.5.0将管理端与外部应用全部统一为JWT，37操作、31路径、71模型不变，实际回读证据见[R33验证](../docs/history/verification/jwt-design-cleanup.md)。R32的1.4.0成绩保留为历史。
 
 阶段4新增部门目录/增删改名及范围总览5操作，扩展身份实际路由、角色级别、人员职位/角色摘要和部门人数。默认首次授权仅RBAC，维护目录按已登记应用读取；原型18业务系统不进入首次授权。写入Apifox依当次明确授权执行。
 

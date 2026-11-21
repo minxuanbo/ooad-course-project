@@ -1,5 +1,7 @@
 # 课程首次身份接入设计（R31）
 
+> 历史快照：保留R32及以前的规则和证据；当前设计从[文档入口](../../README.md)阅读。
+
 本设计实现用户2026-11-21转达并确认的首次分配规则。RBAC默认万人初始化继续只登记自身；课程接入由独立配置和脚本显式执行。它不是HTTP接口、数据库升级脚本，也不在登录或启动时运行。
 
 ## 1. 范围与身份
@@ -14,10 +16,10 @@
 
 ## 2. 配置与职责
 
-- [initialization.json](../../integrations/course/initialization.json)：本部来源键、应用名称、三个角色编码、登录权限、菜单编码、独立seedKey。
-- [catalog.json](../../integrations/course/catalog.json)：老师现有权限短码、中文名及必要路由。
-- [initialize_course_integration.py](../../scripts/initialize_course_integration.py)：来源核对、只读预览、首次写入、回执检查。
-- [verify_course_initialization.py](../../scripts/verify_course_initialization.py)：独立本地环境的全量关联核对和真实HTTP联调；有演示业务写入，不指向已有业务环境。
+- [initialization.json](../../../integrations/course/initialization.json)：本部来源键、应用名称、三个角色编码、登录权限、菜单编码、独立seedKey。
+- [catalog.json](../../../integrations/course/catalog.json)：老师现有权限短码、中文名及必要路由。
+- [initialize_course_integration.py](../../../scripts/initialize_course_integration.py)：来源核对、只读预览、首次写入、回执检查。
+- [verify_course_initialization.py](../../../scripts/verify_course_initialization.py)：独立本地环境的全量关联核对和真实HTTP联调；有演示业务写入，不指向已有业务环境。
 
 Teacher/Student及其user_id绑定只存在于课程库。RBAC仍仅持有通用应用、角色、权限、API及关联。三个课程角色management_level为空，不提升人员管理级别。teacher/student授LOGIN；course-admin授课程维护权限；有效五级管理员角色同时取得完整课程权限，以满足后续授撤角色时的完整权限子集条件。
 
@@ -41,6 +43,6 @@ MySQL只加载指定defaults-file，禁用login-path，并在命令参数中固�
 
 ## 5. 双策略与图件影响
 
-structured和DDD继续独立实现RBAC用例，共用相同数据库事实。此次只新增应用外部的初始化入口，没有修改Java应用服务、领域仓储或Controller，不增加HTTP操作，R31交付时OpenAPI为33项；当前R32扩充为37项，见[完整身份设计](identity-eight-contract.md)。现有Java包图、类图和差异顺序图的类、方法锚点不变；本设计补充初始化流程，不把Python脚本伪装成Java UML类。
+structured和DDD继续独立实现RBAC用例，共用相同数据库事实。此次只新增应用外部的初始化入口，没有修改Java应用服务、领域仓储或Controller，不增加HTTP操作，R31交付时OpenAPI为33项；当前R32扩充为37项，见[完整身份设计](identity-eight-contract-r32.md)。现有Java包图、类图和差异顺序图的类、方法锚点不变；本设计补充初始化流程，不把Python脚本伪装成Java UML类。
 
-实际人数、依赖来源、回归与界面证据见[本轮验证记录](../history/verification/course-initialization-r31.md)。
+实际人数、依赖来源、回归与界面证据见[本轮验证记录](../verification/course-initialization-r31.md)。

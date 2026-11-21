@@ -16,14 +16,14 @@ import org.springframework.stereotype.Component;
 
 /** 标准JWT编解码只承担身份完整性，不将角色或权限装入令牌。 */
 @Component
-public class ApplicationJwtCodec {
+public class JwtIdentityCodec {
   private final JwtEncoder encoder;
   private final JwtDecoder decoder;
   private final String issuer;
   private final Clock clock;
 
   /** 显式秘密须至少256位；未提供时生成本进程随机秘密，重启后旧会话失效。 */
-  public ApplicationJwtCodec(
+  public JwtIdentityCodec(
       Clock clock,
       @Value("${app.identity.jwt-secret:}")
       String encodedSecret,
@@ -39,7 +39,7 @@ public class ApplicationJwtCodec {
       }
       if (secret.length < 32 || issuer.isBlank()) throw new IllegalArgumentException();
     } catch (IllegalArgumentException exception) {
-      throw new IllegalStateException("统一身份JWT配置无效，秘密须为至少256位的Base64值");
+      throw new IllegalStateException("JWT身份配置无效，秘密须为至少256位的Base64值");
     }
     this.issuer = issuer;
     this.clock = clock;

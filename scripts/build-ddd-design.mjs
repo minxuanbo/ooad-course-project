@@ -17,6 +17,24 @@ function requireJava(type) {
   return readFileSync(resolve(javaRoot, file), 'utf8')
 }
 const generated = []
+// 全部HTTP用例的覆盖说明和图片使用同一注册表，防止删接口后留下虚假覆盖。
+const contract=JSON.parse(readFileSync(resolve(root,'api/openapi.json'),'utf8'))
+const actualOperations=Object.entries(contract.paths).flatMap(([path,item])=>
+  Object.entries(item).filter(([,op])=>op.operationId).map(([method,op])=>({path,method:method.toUpperCase(),operationId:op.operationId})))
+if(design.coverage.http.length!==actualOperations.length)throw Error('HTTP覆盖数量与OpenAPI不一致')
+for(const actual of actualOperations) {
+  const row=design.coverage.http.find(x=>x.operationId===actual.operationId)
+  if(!row||row.path!==actual.path||row.method!==actual.method)throw Error('HTTP覆盖遗漏：'+actual.operationId)
+  const [port,method]=row.useCase.split('.')
+  if(!requireJava(port).includes(method+'('))throw Error('覆盖表用例方法不存在：'+row.useCase)
+}
+const backendPath=resolve(root,'docs/backend-design.md')
+const backend=readFileSync(backendPath,'utf8')
+const start='<!-- GENERATED: backend-coverage -->',end='<!-- END: backend-coverage -->'
+if(!backend.includes(start)||!backend.includes(end))throw Error('缺少覆盖表生成边界')
+const rows=['| HTTP操作 | 用例方法 | 差异图或省略理由 | 核对结论 |','| --- | --- | --- | --- |',
+  ...design.coverage.http.map(x=>`| \`${x.method} ${x.path}\` | \`${x.useCase}\` | ${x.fragments} | ${x.reason} |`)]
+writeFileSync(backendPath,backend.slice(0,backend.indexOf(start))+start+'\n'+rows.join('\n')+'\n'+backend.slice(backend.indexOf(end)))
 async function emit(name, document) {
   await output(directory, name, document)
   generated.push(name)
@@ -34,7 +52,7 @@ async function packageDiagram(ddd) {
           w: 440,
           h: 170,
           title: '«package» api',
-          fields: ['auth/user/role/resource', 'department/audit/shared'],
+          fields: ['auth/identity/user/role/resource', 'department/audit/shared'],
           methods: [],
         },
         {
@@ -64,7 +82,7 @@ async function packageDiagram(ddd) {
           w: 600,
           h: 230,
           title: '«package» ddd.application',
-          fields: ['auth/user/role/resource/department', 'audit/importing/bootstrap/security'],
+          fields: ['auth/identity/user/role/resource', 'department/audit/importing/bootstrap/security'],
           methods: ['同层support：结果装配/错误翻译'],
           center: true,
         },
@@ -523,10 +541,27 @@ for (const scenario of design.scenarios) {
     const names = ['obj: 调用者', ...data.lifelines]
     if (names.some((value) => design.sharedSequenceExcluded.some((word) => value.includes(word))))
       throw Error(`差异图含共同技术参与者：${scenario.id}`)
-    const centers = names.map((_, i) => 110 + i * 380)
-    const width = centers.at(-1) + 210
+    for(const [,receiver,label] of data.calls.slice(1)) {
+      const type=names[receiver].split(':').at(-1).trim()
+      const java=requireJava(type)
+      const method=label.match(/(?:^|=\s*)(?:new )?([A-Za-z_]\w*)\(/)?.[1]
+      if(!method)throw Error('消息缺少真实方法：'+scenario.id+'/'+label)
+      const inherited=/extends\s+(?:JpaRepository|JpaSpecificationExecutor)/.test(java)&&
+        ['findById','findAll','findAllById','save','saveAndFlush','count'].includes(method)
+      const lombokSetter=method.startsWith('set')&&/@(?:lombok\.)?Setter\b/.test(java)&&
+        new RegExp('\\b'+method[3].toLowerCase()+method.slice(4)+'\\s*[;=]').test(java)
+      if(!java.includes(method+'(')&&!inherited&&!lombokSetter)
+        throw Error('消息方法不属于接收对象：'+type+'/'+method)
+    }
+    const other=scenario[variant==='ddd'?'structured':'ddd']
+    const messages=data.calls.slice(1).map(c=>c[2].replace(/^.*?=\s*/,''))
+    const otherMessages=new Set(other.calls.slice(1).map(c=>c[2].replace(/^.*?=\s*/,'')))
+    if(messages.length&&messages.every(x=>otherMessages.has(x)))
+      throw Error('两套图只有改名而无实际调用差异：'+scenario.id)
+    const centers = names.map((_, i) => 110 + i * 480)
+    const width = Math.max(centers.at(-1) + 210, data.notes?.length ? centers[1] + 760 : 0)
     const y = (i) => 245 + i * 170
-    const end = y(data.calls.length - 1) + 105
+    const end = y(data.calls.length - 1) + (data.notes?.length ? 230 : 155)
     const bars = [
       { who: 0, x: centers[0], top: 210, bottom: end },
       { who: 1, x: centers[1], top: y(0), bottom: end - 25 },
@@ -544,7 +579,7 @@ for (const scenario of design.scenarios) {
     let body = ''
     for (const loop of data.loops || []) {
       const top = y(loop.first) - 65,
-        bottom = y(loop.last) + 82
+        bottom = y(loop.last) + 105
       for (const b of bars.filter(
         (b) =>
           b.who !== 0 &&
@@ -555,6 +590,17 @@ for (const scenario of design.scenarios) {
         if (b.top <= top || b.bottom >= bottom) throw Error('loop未完整包含接收执行条')
       }
       body += `<rect x="25" y="${top}" width="${width - 50}" height="${bottom - top}" fill="#f8fafc" stroke="#91a2b7"/><path d="M25,${top + 30}h70v-30" fill="none" stroke="#91a2b7"/>${text(35, top + 22, 'loop', 16)}${text(centers[1] + 26, top + 22, loop.text, 16)}`
+    }
+    for (const opt of data.opts || []) {
+      const top=y(opt.first)-70,bottom=y(opt.last)+80
+      if(opt.first<1||opt.last>=data.calls.length)throw Error('opt索引失效：'+scenario.id)
+      body += `<rect x="45" y="${top}" width="${width-90}" height="${bottom-top}" fill="none" stroke="#91a2b7"/><path d="M45,${top+28}h60v-28" fill="none" stroke="#91a2b7"/>${text(55,top+20,'opt',15)}${text(centers[1]+26,top+20,opt.text,16)}`
+    }
+    for(const alt of data.alts || []) {
+      const top=y(alt.first)-65,divider=y(alt.elseFirst)-75,bottom=y(alt.elseLast)+100
+      if(alt.first<1||alt.last>=alt.elseFirst||alt.elseLast>=data.calls.length)throw Error('alt索引失效：'+scenario.id)
+      if(y(alt.last)+60>=divider)throw Error('alt分界切入接收执行条：'+scenario.id)
+      body += `<rect x="25" y="${top}" width="${width-50}" height="${bottom-top}" fill="none" stroke="#91a2b7"/><path d="M25,${top+30}h65v-30 M25,${divider}H${width-25}" fill="none" stroke="#91a2b7"/>${text(35,top+22,'alt',16)}${text(centers[1]+26,top+22,alt.text,16)}${text(centers[1]+26,divider+22,alt.elseText,16)}`
     }
     body += centers
       .map((x, i) => {
@@ -568,6 +614,12 @@ for (const scenario of design.scenarios) {
           `<rect x="${b.x - 7}" y="${b.top}" width="14" height="${b.bottom - b.top}" fill="white" stroke="#223046"/>`,
       )
       .join('')
+    for(const note of data.notes || []) {
+      const left=centers[note.who]+30, top=y(data.calls.length-1)+90
+      const height=30+note.lines.length*25
+      if(top+height>=end-25)throw Error('说明压到执行条结尾：'+scenario.id)
+      body += `<rect x="${left}" y="${top}" width="660" height="${height}" fill="#fffbea" stroke="#b6a56d"/>${note.lines.map((line,i)=>text(left+12,top+25+i*25,line,16,'start',636)).join('')}`
+    }
     for (let i = 0; i < data.calls.length; i++) {
       const [from, to, label] = data.calls[i]
       if (design.sharedSequenceExcluded.some((word) => label.includes(word)))

@@ -23,4 +23,4 @@ api.js统一管理Bearer、信封、401及身份变更。GET /me提供最新实�
 
 Modal负责原生dialog焦点约束；Pagination负责数据库分页；CollectionEditor独立保存完整已选集合与当前候选页。初读失败禁保存，完整重试不丢已选，候选失败可重试；删除和停用使用页面内确认。日志页筛选与每批条数绑定同一查询快照，在途改条件后不能续旧游标。
 
-自动检查包括响应信封、入口能力、初读失败、重试、关闭晚响应、部门树搜索及日志竞态；测试中的离线原型用例仅证明原型行为。2026-11-19的structured独立库浏览器13项、前端26项及构建通过，覆盖窄屏、键盘、写入组合及授权变化，见[复验与运行步骤](../docs/structured-ui-acceptance.md)。`npm run test:e2e`需显式启用和专用虚构夹具；不会自动启动后端或重置数据库。ddd同项复验仍待执行，历史证据保留在[阶段4验收](../docs/history/verification/stage4-vue.md)。
+自动检查包括响应信封、入口能力、初读失败、重试、关闭晚响应、部门树搜索及日志竞态；测试中的离线原型用例仅证明原型行为。2026-11-19的structured独立库浏览器13项、前端26项及构建通过，覆盖窄屏、键盘、写入组合及授权变化，见[复验与运行步骤](../docs/history/verification/structured-ui-acceptance.md)。`npm run test:e2e`需显式启用和专用虚构夹具；不会自动启动后端或重置数据库。ddd同项复验仍待执行，历史证据保留在[阶段4验收](../docs/history/verification/stage4-vue.md)。
