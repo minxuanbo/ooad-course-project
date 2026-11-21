@@ -145,6 +145,26 @@ class CourseInitializationTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'LOCAL_DATABASE_REQUIRED'):
                 Mysql(Path('mysql'), configuration, 'rbac_core')
 
+    def test_R31_mysql_options_cannot_override_validated_connection_or_continue_errors(self):
+        """客户端其他组和登录文件不得改变已验证地址或启用错误后继续提交。"""
+        with tempfile.TemporaryDirectory() as temporary:
+            configuration = Path(temporary) / 'client.ini'
+            configuration.write_text('[client]\nhost=127.0.0.1\nport=3351\n'
+                                     '[mysql]\nhost=remote.example\nport=3306\nforce=1\n', encoding='utf-8')
+            database = Mysql(Path('mysql'), configuration, 'rbac_core')
+            self.assertEqual('--defaults-file=' + str(configuration.resolve()), database.command[1])
+            for required in ['--no-login-paths', '--host=127.0.0.1', '--port=3351',
+                             '--protocol=TCP', '--skip-force']:
+                self.assertIn(required, database.command)
+
+    def test_R31_invalid_ini_does_not_expose_configuration_contents(self):
+        """配置解析错误只返回稳定错误码，不回显可能含口令的原始行。"""
+        with tempfile.TemporaryDirectory() as temporary:
+            configuration = Path(temporary) / 'client.ini'
+            configuration.write_text('sensitive-invalid-line\n', encoding='utf-8')
+            with self.assertRaisesRegex(ValueError, '^LOCAL_CLIENT_CONFIGURATION_INVALID$'):
+                Mysql(Path('mysql'), configuration, 'rbac_core')
+
 
 if __name__ == '__main__':
     unittest.main()

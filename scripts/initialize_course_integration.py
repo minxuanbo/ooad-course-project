@@ -106,12 +106,18 @@ class Mysql:
         """数据源固定为当前工程的明确数据库，不接受额外SQL参数。"""
         if schema not in {'rbac_core', 'course_project'}:
             raise ValueError('DATABASE_NAME_INVALID')
-        settings = configparser.ConfigParser(interpolation=None)
-        settings.read(configuration, encoding='utf-8-sig')
+        settings = configparser.ConfigParser(interpolation=None, allow_no_value=True)
+        try:
+            settings.read(configuration, encoding='utf-8-sig')
+        except configparser.Error:
+            raise ValueError('LOCAL_CLIENT_CONFIGURATION_INVALID') from None
+        port = settings.get('client', 'port', fallback='') or ''
         if (settings.get('client', 'host', fallback='') not in {'127.0.0.1', 'localhost'}
-                or not settings.get('client', 'port', fallback='').isdigit()):
+                or not port.isdigit() or not 1 <= int(port) <= 65535):
             raise ValueError('LOCAL_DATABASE_REQUIRED')
-        self.command = [str(executable), '--defaults-extra-file=' + str(configuration.resolve()),
+        self.command = [str(executable), '--defaults-file=' + str(configuration.resolve()),
+                        '--no-login-paths', '--host=127.0.0.1', '--port=' + port,
+                        '--protocol=TCP', '--skip-force',
                         '--default-character-set=utf8mb4', '--batch', '--raw', '--skip-column-names', schema]
 
     def execute(self, statement):

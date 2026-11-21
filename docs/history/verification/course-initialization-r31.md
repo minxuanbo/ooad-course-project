@@ -26,10 +26,11 @@
 | 检查 | 实际结果 |
 | --- | --- |
 | 新初始化TDD | policy-red.log及safety-red.log保存行为RED，随后新增14项GREEN |
-| Python课程辅助测试 | 新14项加原8项，共22项通过 |
+| Python课程辅助测试 | 初始新14项加原8项为22项；审核补2项安全回归，最终24项通过 |
 | structured真实MySQL完整回归 | clean package，195项，失败/错误/跳过均0 |
 | DDD真实MySQL完整回归 | clean package，195项，失败/错误/跳过均0 |
 | 新0.0.2独立JAR HTTP | structured43次、DDD51次，全部符合预期；含预期401/403/404 |
+| 客户端安全修复后最终HTTP | structured43次、DDD43次，分别复验全量绑定、教学场景、撤权及重复初始化 |
 | Chrome真实生产Vue | 第一组24项检查通过，18张页面截图；第二组由真实HTTP覆盖，未宣称双组浏览器复验 |
 | RBAC前端 | 27项测试及生产构建通过 |
 | 老师Vue | vue-tsc及生产构建通过 |
@@ -50,5 +51,7 @@ HTTP覆盖同一admin双系统登录、本部领导与普通员工教师、分�
 ## 4. 证据与限制
 
 原始日志、报告、JAR、截图与秘密均在忽略目录`.local/course-initialization-20261121`。主要文件：python-tests.log、clonefactory-build.log、mapping-scan.log、browser/result.json，以及各策略的clonefactory-002-full.log、course-preview/applied/repeated.json、http-clonefactory-002.json、repeat-002-ImportCommand.log和repeat-002-BootstrapAuthorizationCommand.log。含凭据的配置不提交或在聊天输出。
+
+双轴初审：需求0项；规范发现1项MySQL默认配置可能覆盖本机目标/继承force。已以真实客户端复现RED，修复为指定defaults-file、no-login-paths、显式loopback/端口/TCP及skip-force。真实GREEN确认配置覆盖不能改变目标，SQL失败后后续语句不执行；新增2项测试先RED后GREEN，最终24项通过，两组最终http-final.json各43项通过。日志为mysql-options-red.log、mysql-options-real-red/green.log。详设Word/PDF及提交包依用户最新要求不更新。
 
 首次接入在开放业务前维护窗口串行执行，课程及RBAC分别提交，不是分布式事务；运行期调动、后续管理员变更不自动重推课程身份。旧32人夹具不是升级目标。老师5项Controller缺失、个人制批改、学生建组归属和DDD当前学期等限制继续见[课程接入第7节](../../course-integration.md#7-老师项目的实际限制)。本轮没有扩写这些业务，也未测得吞吐量或服务器部署结论。
