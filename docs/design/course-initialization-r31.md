@@ -41,6 +41,6 @@ MySQL只加载指定defaults-file，禁用login-path，并在命令参数中固�
 
 ## 5. 双策略与图件影响
 
-structured和DDD继续独立实现RBAC用例，共用相同数据库事实。此次只新增应用外部的初始化入口，没有修改Java应用服务、领域仓储或Controller，不增加HTTP操作，OpenAPI仍为33项。现有Java包图、类图和差异顺序图的类、方法锚点不变；本设计补充初始化流程，不把Python脚本伪装成Java UML类。
+structured和DDD继续独立实现RBAC用例，共用相同数据库事实。此次只新增应用外部的初始化入口，没有修改Java应用服务、领域仓储或Controller，不增加HTTP操作，R31交付时OpenAPI为33项；当前R32扩充为37项，见[完整身份设计](identity-eight-contract.md)。现有Java包图、类图和差异顺序图的类、方法锚点不变；本设计补充初始化流程，不把Python脚本伪装成Java UML类。
 
 实际人数、依赖来源、回归与界面证据见[本轮验证记录](../history/verification/course-initialization-r31.md)。

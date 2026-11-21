@@ -9,6 +9,34 @@
     },
     {
       "system": "course-project-management",
+      "operationId": "applicationIdentityLogin",
+      "method": "POST",
+      "path": "/auth/login",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "applicationIdentityMe",
+      "method": "GET",
+      "path": "/auth/me",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "applicationIdentityPermission",
+      "method": "GET",
+      "path": "/auth/permissions/{permission}",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "applicationIdentityUser",
+      "method": "GET",
+      "path": "/auth/users/{userId}",
+      "requiresPermission": true
+    },
+    {
+      "system": "course-project-management",
       "operationId": "bookOralSlot",
       "method": "POST",
       "path": "/oral-slots/{slotId}/bookings",
@@ -26,6 +54,20 @@
       "operationId": "cancelGroupJoinRequest",
       "method": "DELETE",
       "path": "/join-requests/{requestId}",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "checkApplicationApiAuthority",
+      "method": "GET",
+      "path": "/auth/api-permissions/{operationId}",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "checkIdentityPermission",
+      "method": "GET",
+      "path": "/auth/permissions/{permission}",
       "requiresPermission": false
     },
     {
@@ -204,6 +246,13 @@
     },
     {
       "system": "course-project-management",
+      "operationId": "getApiAuthority",
+      "method": "GET",
+      "path": "/auth/api-permissions/{operationId}",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
       "operationId": "getClassGrades",
       "method": "GET",
       "path": "/classes/{classId}/grades",
@@ -249,6 +298,13 @@
     },
     {
       "system": "course-project-management",
+      "operationId": "getIdentityCurrentUser",
+      "method": "GET",
+      "path": "/auth/me",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
       "operationId": "getMyGrades",
       "method": "GET",
       "path": "/me/courses/{courseId}/grades",
@@ -287,6 +343,20 @@
       "operationId": "listAdminCourses",
       "method": "GET",
       "path": "/admin/courses",
+      "requiresPermission": true
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "listApplicationDepartmentUsers",
+      "method": "GET",
+      "path": "/auth/departments/{departmentId}/users",
+      "requiresPermission": true
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "listApplicationDepartments",
+      "method": "GET",
+      "path": "/auth/departments",
       "requiresPermission": true
     },
     {
@@ -336,6 +406,20 @@
       "method": "GET",
       "path": "/groups/{groupId}/join-requests",
       "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "listIdentityDepartmentUsers",
+      "method": "GET",
+      "path": "/auth/departments/{departmentId}/users",
+      "requiresPermission": true
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "listIdentityDepartments",
+      "method": "GET",
+      "path": "/auth/departments",
+      "requiresPermission": true
     },
     {
       "system": "course-project-management",
@@ -392,6 +476,34 @@
       "method": "GET",
       "path": "/terms",
       "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "login",
+      "method": "POST",
+      "path": "/auth/login",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "logout",
+      "method": "POST",
+      "path": "/auth/logout",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "logoutApplication",
+      "method": "POST",
+      "path": "/auth/logout",
+      "requiresPermission": false
+    },
+    {
+      "system": "course-project-management",
+      "operationId": "lookupIdentityUser",
+      "method": "GET",
+      "path": "/auth/users/{userId}",
+      "requiresPermission": true
     },
     {
       "system": "course-project-management",

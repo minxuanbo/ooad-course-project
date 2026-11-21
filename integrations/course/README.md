@@ -35,3 +35,7 @@ mvn -f backend/pom.xml -DskipTests clean package
 [initialization.json](initialization.json)与[scripts/initialize_course_integration.py](../../scripts/initialize_course_integration.py)落实2026-11-21新规则：总公司本部领导及普通员工为teacher，分公司及其下属为student；启用根直属有效五级RBAC管理员同时获course-admin和课程教师绑定。先完成原RBAC万人导入、五角色初始化及老师Flyway，再显式预览和apply，命令及两系统中断恢复边界见[课程接入第8节](../../docs/course-integration.md#8-本部教师与分公司学生首次接入r31)。
 
 默认产品启动和身份开关不执行这次初始化；RBAC业务服务不引用课程类型。32人虚构夹具仅保留作历史回归，不在原夹具或原库上覆盖新规则。客户端凭据、员工明细、生成数据和本地报告继续只放.local。
+
+## R32完整身份契约
+
+RBAC提供8项身份鉴权及JWT，另2项统一身份审计不纳入本轮。将IDENTITY_OPERATIONS_FILE设为[operations.json](operations.json)的file:///绝对URI；[catalog.json](catalog.json)登记IDR/IDU目录API权限。JWT、操作名、目录范围及旧回执边界见[完整设计](../../docs/design/identity-eight-contract.md)及[接入第9节](../../docs/course-integration.md#9-完整八项鉴权接入r32)。支撑转接保持上游原始状态和204空响应，不缓存或伪造身份授权。

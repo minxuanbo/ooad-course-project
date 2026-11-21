@@ -1,6 +1,6 @@
 # 市政公司统一权限管理系统 · 后端设计方案
 
-版本1.3。业务依据为[需求说明](requirements.md)，领域语义见[领域模型](domain-model.md)，存储见[数据库设计](database-design.md)，HTTP契约见[OpenAPI](../api/openapi.yaml)。文档按老师[后端设计](https://gitee.com/mingqcn/course-project-mgt/blob/ca90f1cb7faa7d73b71b93a125460513f46b730e/docs/backend-design.md)的章节职责组织，全部设计对象均为本RBAC项目。
+版本1.4。业务依据为[需求说明](requirements.md)，领域语义见[领域模型](domain-model.md)，存储见[数据库设计](database-design.md)，HTTP契约见[OpenAPI](../api/openapi.yaml)。文档按老师[后端设计](https://gitee.com/mingqcn/course-project-mgt/blob/ca90f1cb7faa7d73b71b93a125460513f46b730e/docs/backend-design.md)的章节职责组织，全部设计对象均为本RBAC项目。
 
 同一后端工程提供 structured 和 DDD 两套实现，共用 HTTP 契约、Vue 和 MySQL。实际验证范围见[测试与验收](testing-acceptance.md)。
 
@@ -10,7 +10,7 @@
 
 本RBAC自己保存口令并认证，不照搬课程项目的外部统一身份。课程身份适配按R29显式接入；Redis、语音、存储和其他示例集成不纳入本轮。
 
-默认首次授权管理RBAC自身权限，通用应用目录按登记事实读取，课程按R29接入，共用Vue、29项管理HTTP操作与4项可选通用应用身份操作、19项HTTP错误、12表首次SQL、固定五级角色及17项完整维护能力集合K。18个外系统仅保留离线原型演示，不进入正式目录、授权或初始化。课程身份适配职责见[课程接入](course-integration.md)，两策略各自计算权限，不将业务实现放入共享port。
+默认首次授权管理RBAC自身权限，通用应用目录按登记事实读取，课程按R29接入，共用Vue、29项管理HTTP操作与8项可选通用应用身份操作、22项HTTP错误、12表首次SQL、固定五级角色及17项完整维护能力集合K。18个外系统仅保留离线原型演示，不进入正式目录、授权或初始化。课程身份适配职责见[课程接入](course-integration.md)，两策略各自计算权限，不将业务实现放入共享port。
 
 参考老师项目的共享用例、领域仓储、互斥装配与按模块绘图方式；本项目保留本地账号认证，不移植课程业务、外部统一身份、Boot4或Redis。
 
@@ -72,7 +72,7 @@ application→domain.model/domain.repository/service.port；domain仅依赖领�
 
 | 区域                                | 当前内容                                                                     | DDD边界                                                                                                                                   |
 | ----------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| api、frontend、OpenAPI              | HTTP DTO/VO、校验、错误/信封、Vue和33操作契约（29管理、4通用身份）                                | 复用同一接口/页面，Controller只调service.port，不写实现分支                                                                                   |
+| api、frontend、OpenAPI              | HTTP DTO/VO、校验、错误/信封、Vue和37操作契约（29管理、8通用身份）                                | 复用同一接口/页面，Controller只调service.port，不写实现分支                                                                                   |
 | service.port                        | 用例/支撑接口、Command/Query/Result、协议枚举、错误码、固定角色/方法路径目录 | 不导入Entity、Spring、Servlet、结构化或DDD类型；目录是协议/首次数据元信息，不执行动态权限、范围或组织层级策略                                 |
 | infrastructure.security/web/logging | BCrypt/Bearer、请求/游标/技术日志、MVC预检及门禁                             | 通过AuthenticationUseCase、ManagementAuthorization、ManagementAccessUseCase等端口调用当次装配实现，不能直接调用StructuredService或DDD应用服务 |
 | infrastructure.excel                | Excel解析、原件/源字段校验、LoginIdentifiers离线标识碰撞检查                 | 复用来源读取端口与技术预检；不依赖结构化服务，DDD业务仍独立保证身份不变量                                                                     |
@@ -247,7 +247,7 @@ K校验必须看见本事务的待提交变更。适配器保存时同步完整�
 
 ## 10. API、安全与错误
 
-OpenAPI定义33个操作（29项管理操作，含部门及总览5项扩展；另有4项可选通用应用身份操作）；[业务约束](api-contract.md)解释实际API OR、同系统、范围、可授予子集和17项K。API门禁按服务端方法/模板，不依据固定权限code、角色名或客户端admin标识。本人查询与退出沿独立兼容契约。
+OpenAPI定义37个操作（29项管理操作，含部门及总览5项扩展；另有8项可选通用应用身份操作）；[业务约束](api-contract.md)解释实际API OR、同系统、范围、可授予子集和17项K。API门禁按服务端方法/模板，不依据固定权限code、角色名或客户端admin标识。本人查询与退出沿独立兼容契约。
 
 账号唯一性和口令校验后还需管理端准入。Bearer索引保留在进程内，重启失效；每次管理请求重读最新状态/授权/部门，不把token内旧权限当真。用户停用后已有身份不能管理。统一{code,message,data,requestId}，401/403/404/409各按规范，500不泄露栈、SQL或输入。
 
@@ -563,7 +563,7 @@ Java新增或修改类/接口/记录及关键方法写中文Javadoc；明确局�
 | 日志1操作              | audit                           | 共同准入不画，复杂技术查询经Gateway；游标快照协议保持                                    |
 | 两类离线命令与横切支撑 | importing/bootstrap/maintenance | 来源、原子发布、映射和K职责明确；不把共用Excel/密码/锁/日志技术流程重复画入顺序图        |
 
-管理HTTP共29操作，另有4项通用应用身份操作，合计33操作、27路径、66 Schema；初始化为离线命令，不混入HTTP计数。第17章图件共29组（包2、类15、差异顺序12），每组同源SVG/PNG；另保留现有结构化类图1组。第18章补充通用应用身份的3组图源。没有全套公共登录/HTTP/技术日志顺序图。
+管理HTTP共29操作，另有8项通用应用身份操作，合计37操作、31路径、71 Schema；初始化为离线命令，不混入HTTP计数。第17章图件共29组（包2、类15、差异顺序12），每组同源SVG/PNG；另保留现有结构化类图1组。第18章补充通用应用身份的3组图源。没有全套公共登录/HTTP/技术日志顺序图。
 
 ## 18. 通用应用身份与课程本地接入（R29）
 
@@ -593,3 +593,20 @@ Java新增或修改类/接口/记录及关键方法写中文Javadoc；明确局�
 通用/auth/me还返回permissionApis，即每个有效权限当前实际映射的方法/模板事实。RBAC不内置接入系统的预期路由；本地课程适配器依据catalog.json核实老师同一粗粒度短码的全部必要路由，缺少一条即保守关闭整个短码，菜单检查也采用相同投影。这样删除多路由权限的部分映射不能借另一条映射继续调用已撤路由，映射变更仍即时生效。
 
 R31课程首次身份分配由独立配置和`scripts/initialize_course_integration.py`执行：本部领导及普通员工为teacher，分公司子树为student；合格RBAC管理员同一账号兼course-admin。它在完成原RBAC导入/五角色授权及老师Flyway后单独预览、执行，课程本地身份先提交，RBAC通用目录/角色/权限/人员关联和独立完成回执后在根锁事务中发布；不声称两系统分布式原子提交。没有把Teacher/Student或分配策略添加到structured/DDD业务包，当前包图、核心类图与运行时授权差异仍适用。重复接入不重置运行期授权，具体见[课程接入第8节](course-integration.md#8-本部教师与分公司学生首次接入r31)。
+
+
+### 18.1 R32完整统一身份协议
+
+![DDD完整身份类图](design/class-ddd-application-identity.png)
+
+![structured完整身份类图](design/class-structured-application-identity.png)
+
+![DDD身份目录差异](design/sequence-identity-directory-ddd.png)
+
+![structured身份目录差异](design/sequence-identity-directory-structured.png)
+
+上述图件的同名.puml及.svg位于docs/design，由`scripts/build-identity-design.py --plantuml <plantuml.jar> --java <java>`同源生成。共同认证、JWT和目录SQL不重复放入差异顺序图；既有正常投影/空授权异常图仍描述相同真实方法。
+
+八项协议、JWT和目录/操作查询的职责见[完整身份设计](design/identity-eight-contract.md)。ApplicationIdentityUseCase新增logout、departments、departmentUsers和apiAllowed；两策略各自决定有效API及组织范围。DDD使用OrganizationRepository和OrganizationPolicy，structured使用StructuredDepartmentScopeService。共享IdentityDirectoryGateway仅执行数据库过滤、计数和最小字段投影，不依赖任一应用实现；ConfiguredApiOperationCatalog以(system,operationId)定位显式元数据，不充当应用白名单。
+
+ApplicationJwtCodec使用Spring Security OAuth2 JOSE及Nimbus固定HS256，外部JWT不含权限；BearerIdentityStore同时保留当前会话撤销索引，管理端随机Bearer不变。目录分页为老师page从1开始/pageSize约定；内部管理端page/size不变。新增协议不扩大17项K，不新增表或课程实体。统一身份审计2项不纳入本轮。

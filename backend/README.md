@@ -71,7 +71,7 @@ java '-Dloader.main=com.municipal.rbaccore.bootstrap.BootstrapAuthorizationComma
 java -jar backend/target/rbac0-0.1.0.jar
 ```
 
-HTTP默认8081，前端代理/api不变。后端29项管理操作与4项可选通用应用身份操作的机器契约见[OpenAPI](../api/openapi.yaml)。需要新空库端到端复现时，使用[accept-runtime.py](scripts/accept-runtime.py)并按[验收说明](../docs/testing-acceptance.md)提供实际私有datadir、MySQL客户端及JDK21。每次为所选 `APP_BACKEND_STRATEGY` 提供独立空库，报告会记录策略。探针拒绝非空库和额外Spring/JVM覆盖，不提供清库开关。若 Windows 上 JDK 报本机套接字 `Invalid argument: connect`，可在当前终端将 `TEMP` 和 `TMP` 指向实际存在、可写的短路径目录，再启动验收。
+HTTP默认8081，前端代理/api不变。后端29项管理操作与8项可选通用应用身份操作的机器契约见[OpenAPI](../api/openapi.yaml)。需要新空库端到端复现时，使用[accept-runtime.py](scripts/accept-runtime.py)并按[验收说明](../docs/testing-acceptance.md)提供实际私有datadir、MySQL客户端及JDK21。每次为所选 `APP_BACKEND_STRATEGY` 提供独立空库，报告会记录策略。探针拒绝非空库和额外Spring/JVM覆盖，不提供清库开关。若 Windows 上 JDK 报本机套接字 `Invalid argument: connect`，可在当前终端将 `TEMP` 和 `TMP` 指向实际存在、可写的短路径目录，再启动验收。
 
 ## 4. 当前部署边界
 
@@ -79,6 +79,8 @@ HTTP默认8081，前端代理/api不变。后端29项管理操作与4项可选�
 
 ## 5. 可选通用应用身份服务
 
-`APP_IDENTITY_ENABLED`默认false；显式开启后提供4项老师已有身份协议，资源目录来自所有已登记应用；teacher/student/课程管理员由配置角色表达，API类型要求非空有效映射。课程业务仍只在老师工程。配置、独立空库夹具及双系统验证脚本见[课程接入](../docs/course-integration.md)，不得向真实员工库导入虚构验收SQL。
+`APP_IDENTITY_ENABLED`默认false；显式开启后提供8项老师要求的完整身份协议，资源目录来自所有已登记应用；teacher/student/课程管理员由配置角色表达，API类型要求非空有效映射。课程业务仍只在老师工程。配置、独立空库夹具及双系统验证脚本见[课程接入](../docs/course-integration.md)，不得向真实员工库导入虚构验收SQL。
 
 R31需在原万人导入、五角色授权后，使用独立`scripts/initialize_course_integration.py`预览及apply，为本部员工授teacher、其余授student、合格管理员兼course-admin，并建立课程本地绑定。此工具不进入后端业务装配，不由身份开关自动执行；课程角色与RBAC管理准入仍独立。
+
+R32操作查询须配置IDENTITY_OPERATIONS_FILE=file:///绝对路径/integrations/course/operations.json；JWT秘密/签发者、两种本机Origin及分页差异见[完整身份设计](../docs/design/identity-eight-contract.md)。身份协议由RBAC实现，课程业务仍在老师工程。

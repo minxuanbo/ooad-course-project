@@ -18,14 +18,18 @@ RBAC管理端仍要求本系统实际管理API，普通员工即使有课程角�
 
 ## 3. 通用身份协议
 
-设置`APP_IDENTITY_ENABLED=true`开放四项通用协议。成功响应保持老师既有原始JSON，错误沿RBAC稳定code/message/requestId。`IDENTITY_ALLOWED_ORIGINS`只配置实际前端来源。
+设置`APP_IDENTITY_ENABLED=true`开放八项通用协议。成功响应保持老师既有原始JSON，错误沿RBAC稳定code/message/requestId。`IDENTITY_ALLOWED_ORIGINS`只配置实际前端来源。
 
 | 端点 | 行为 |
 | --- | --- |
-| POST /auth/login | username/password/systems；systems为单个登记外部应用；当前有效授权非空才签发独立受众随机Bearer |
+| POST /auth/login | username/password/systems；systems为单个登记外部应用；当前有效授权非空才签发独立受众JWT |
 | GET /auth/me | subject、实际roles、当前permissions、服务端system；每次查最新账号/角色/权限/系统状态 |
 | GET /auth/permissions/{permission} | 仅检查当前受众的有效权限；未知或撤回返回allowed=false |
 | GET /auth/users/{userId} | 先检查本应用对此真实API的有效映射，再返回userId/no/name最小投影，不写死UL或TEC |
+| POST /auth/logout | 204，立即撤当前外部JWT，不影响其他会话；业务撤权后仍可退出 |
+| GET /auth/departments | 实际API映射及组织范围门禁；逐层展开、关键词、page/pageSize和hasChildren |
+| GET /auth/departments/{departmentId}/users | 实际API映射及组织范围门禁；只查直属人员，不返联系方式 |
+| GET /auth/api-permissions/{operationId} | 按当前应用元数据定位方法/模板；只返回operationId和allowed，未知操作404 |
 
 Permission.type为MENU/BUTTON/API。菜单、按钮可无API独立控制展示或资格；API权限必须具有非空映射且全部映射同系统启用，否则不导出短码。这避免清空映射后仍凭短码放行。老师粗粒度短码覆盖多路由时全部一并登记；API映射、角色授撤权及启停提交后，旧令牌下一请求重算。系统受众隔离不依赖前端隐藏菜单，K保持原17项RBAC维护路由。
 
@@ -57,7 +61,7 @@ Permission.type为MENU/BUTTON/API。菜单、按钮可无API独立控制展示�
 
 1. 准备独立MySQL实例及空rbac_core/course_project，记录端口；原有库全部保留。RBAC执行当前两份首次SQL；课程按原Flyway建表。只对空库生成并导入`scripts/course_integration_fixture.py --output-dir .local/your-run/fixtures`的两份SQL，先通过UI_FIXTURE_PASSWORD提供虚构口令。
 2. 老师工程从原提交复制到忽略目录，按[integrations/course](../integrations/course/README.md)应用必要修复补丁，保留原目录。Java21、Boot4.1.2、Lombok1.18.48、CloneFactory0.0.2沿老师pom；历史课程构建使用真实38fd817源码。2026-11-21本RBAC依用户提供源码更新为真实40583ff提交的0.0.2，构建指引见[依赖安装](../deploy/README.md#本机依赖安装)，不是改名旧jar；不因此替换已验课程副本。
-3. RBAC设置数据库凭据、APP_BACKEND_STRATEGY=structured或ddd、APP_IDENTITY_ENABLED=true、IDENTITY_ALLOWED_ORIGINS=http://127.0.0.1:5174，启动8081。不要并行用两策略修改同一测试库。
+3. RBAC设置数据库凭据、APP_BACKEND_STRATEGY=structured或ddd、APP_IDENTITY_ENABLED=true、IDENTITY_ALLOWED_ORIGINS=http://127.0.0.1:5174,http://localhost:5174，并将IDENTITY_OPERATIONS_FILE设为仓库operations.json的file:///绝对URI，启动8081。不要并行用两策略修改同一测试库。
 4. 启动本地支撑：`python integrations/course/local_identity_gateway.py --database .local/your-run/audit.sqlite3 --port 8085 --origin http://127.0.0.1:5174 --origin http://localhost:5174 --mysql-config <本地只读客户端配置绝对路径>`。客户端配置指向课程实例，数据库名称仍为course_project，文件不入Git。
 5. 课程设置APP_BACKEND_STRATEGY=structured、DB_HOST/PORT/NAME/USER/PASSWORD及IDENTITY_BASE_URL=http://127.0.0.1:8085；原JAR8080，Flyway启用、ddl-auto=validate。老师DDD另有当前学期切换冲突，本轮不将其全部功能宣称通过；RBAC两种策略分别联调老师structured。
 6. RBAC Vue5173沿原代理8081；老师Vue5174设置VITE_API_BASE_URL=http://127.0.0.1:8080、VITE_IDENTITY_BASE_URL=http://127.0.0.1:8085、VITE_MOCK_ENABLED=false。使用两个正式前端，不使用离线原型或mock替代真实RBAC。
@@ -105,3 +109,19 @@ python scripts/initialize_course_integration.py --mysql <mysql.exe绝对路径> 
 回执使用通用bootstrap_receipts表的独立seed_key，不新增业务表或老师Flyway迁移。匹配回执重复执行直接跳过，不恢复被手动撤回的角色和权限；原件来源、账号全集或初始化配置变化会拒绝自动覆盖。此入口不是已有课程库升级或动态组织调动同步，后续身份修改仍由管理端明确授撤，并维护课程本地业务身份。
 
 R31详细职责及维护窗口约束见[初始化设计](design/course-initialization-r31.md)，真实人数、两策略HTTP与界面结果见[独立验证记录](history/verification/course-initialization-r31.md)；不能把历史32人夹具成绩当作新规则通过。服务与数据库仍仅本地运行，服务器方案待老师部署说明。
+
+
+## 9. 完整八项鉴权接入（R32）
+
+老师共享文档“统一身份鉴权”8项均由RBAC两策略实现；另分组“统一身份审计”2项按用户确认排除，现有独立支撑仅保留本地依赖。JWT、目录范围、操作元数据设计见[完整身份契约](design/identity-eight-contract.md)。操作配置在[operations.json](../integrations/course/operations.json)，同时登记老师接口operationId及本RBAC身份操作的兼容标识，不按应用代码白名单决定准入。未配文件时已知操作也会404，不能漏配。
+
+```powershell
+$env:APP_IDENTITY_ENABLED='true'
+$env:IDENTITY_OPERATIONS_FILE=([System.Uri](Join-Path (Get-Location) 'integrations/course/operations.json')).AbsoluteUri
+$env:IDENTITY_JWT_ISSUER='http://127.0.0.1:8081'
+$env:IDENTITY_ALLOWED_ORIGINS='http://127.0.0.1:5174,http://localhost:5174'
+```
+
+可通过IDENTITY_JWT_SECRET提供至少256位Base64秘密；未配置时使用本进程随机秘密，无固定默认值。当前会话索引仍为进程内存，重启需重新登录。两个目录权限IDR/IDU通过catalog.json显式登记，只初授课程管理员及有效RBAC管理员角色。已有R31库保留原完成回执和当时目录，不用新目录强行重跑覆盖；历史回执重放验收可通过verify_course_initialization.py的--initialization-catalog显式指定当时快照。新库按最新目录首次执行。操作文件是接入元数据，不增加RBAC业务表或升级SQL。
+
+本轮原库、万人账号、教师/学生绑定及已有课程保持；新增两项目录登记属于本机明确的接入配置。实测记录见[八项契约验证](history/verification/identity-eight-contract.md)。

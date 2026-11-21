@@ -4,6 +4,8 @@
 
 ## 1. 当前工作边界
 
+2026-11-21更新：用户明确授权将有效分支改动合入main；PR #38（课程通用接入）、#39（设计一致性）、#40（R31首次身份接入与CloneFactory0.0.2）已经合入。本轮R32完整8项身份协议按相同验证/双轴审核流程交付并合入main，记录见[本轮验收](docs/history/verification/identity-eight-contract.md)。用户同时明确要求同步Apifox项目9042431，必须导入后回读核对。此次授权不包含删除分支、关闭T14/T15或服务器部署，详设外部文件保持原版。
+
 截至2026-11-18，文档PR #29、结构化整理PR #30、原型PR #31、阶段4正式前后端PR #32及同步PR #1均已合入。阶段5独立DDD实现经双轴审核、修复、CloneFactory专项核对及两策略隔离回归后，已获用户批准随[PR #34](https://github.com/minxuanbo/ooad-course-project/pull/34)合入main（e521f97）。组员按[复现指南](docs/reproduction.md)从main检出并记录提交号；阶段6剩余UI复验、课程接入和部署边界见[开发计划](docs/development-plan.md)。
 
 ## 2. 分支与工作树
@@ -30,4 +32,4 @@ git worktree add -b codex/your-task ../ooad-your-task origin/main
 
 核对git diff和验证结果，按文件明确暂存。提交并推送任务分支，创建base为main的草稿PR；任务另行明确其他目标时再按其约定，不沿用旧修复分支示例。关联实际Issue时用Refs，不用无关的自动关票语句。正文写问题、最终变更、证据、限制与待审核事项。
 
-用户要求先审时，不自行合并、删除在审分支或关闭Issue。项目文档以[正式导航](docs/README.md)为入口；用户批准后才进行后续动作。变更批准范围时同步计划与受影响Issue，不新建重复任务。本轮不向Apifox推送。
+用户要求先审时，不自行合并、删除在审分支或关闭Issue。项目文档以[正式导航](docs/README.md)为入口；用户批准后才进行后续动作。变更批准范围时同步计划与受影响Issue，不新建重复任务。Apifox写入按当次明确授权执行；2026-11-21用户已要求本轮同步，目标与回读要求见第1节。

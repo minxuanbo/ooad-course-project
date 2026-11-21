@@ -31,3 +31,4 @@
 
 - [通用应用边界及课程完整本地联调](verification/course-integration-generic.md)
 - [R31万人课程首次接入及CloneFactory0.0.2验证](verification/course-initialization-r31.md)
+- [R32完整8项身份协议、JWT及本地双系统验证](verification/identity-eight-contract.md)

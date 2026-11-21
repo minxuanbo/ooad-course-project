@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: 市政公司统一权限管理系统 API
-  version: 1.3.0
-  description: structured/ddd共享契约：29项RBAC管理操作及4项可选通用应用身份操作。应用目录来自登记数据及状态，APP_IDENTITY_ENABLED默认false。角色可包含多个应用的权限，Permission—API映射必须同系统。接入应用的业务接口由其自身实现；K仍为17项RBAC路由。
+  version: 1.4.0
+  description: structured/ddd共享契约：29项RBAC管理操作及8项可选通用应用身份鉴权操作。应用目录来自登记数据及状态，APP_IDENTITY_ENABLED默认false。外部应用使用无角色权限快照的JWT，管理端保留独立Bearer。角色可包含多个应用的权限，Permission—API映射必须同系统。接入应用的业务接口由其自身实现；统一身份审计2项不在本契约，K仍为17项RBAC路由。
 servers:
 - url: /
   description: 同源部署；路径已包含/api，避免重复拼接
@@ -13,8 +13,8 @@ tags:
 - name: 角色与权限
 - name: 资源与映射
 - name: 鉴权日志
-- name: 应用身份
-  description: 通用应用身份兼容接口，不包含接入系统业务逻辑。
+- name: 统一身份鉴权
+  description: 通用应用的完整八项身份鉴权协议，不含外部业务审计。
 security:
 - BearerAuth: []
 paths:
@@ -1475,8 +1475,8 @@ paths:
     post:
       operationId: applicationIdentityLogin
       tags:
-      - 应用身份
-      summary: 课程既有身份协议登录
+      - 统一身份鉴权
+      summary: 外部应用身份登录
       description: 按单个数据库已登记且启用的外部应用签发JWT。sub为用户身份，aud为应用受众；JWT不包含角色或权限。管理端沿用/api/auth/login，不由本入口放宽管理准入。
       x-maintenance-member: false
       x-management-scope: application-identity
@@ -1488,25 +1488,25 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApplicationLoginVO'
         '400':
-          description: 输入不合法
+          description: 参数格式或取值不合法
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '401':
-          description: 身份、账号状态或令牌受众不正确
+          description: 账号、口令或账号状态不正确
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '403':
-          description: 缺少课程教师准入或UL
+          description: 当前应用准入、API授权或部门范围不足
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '404':
-          description: 功能未启用或目标用户不存在
+          description: 端点未启用或目标身份、部门、API操作不存在
           content:
             application/json:
               schema:
@@ -1527,9 +1527,9 @@ paths:
   /auth/me:
     get:
       operationId: applicationIdentityMe
-      tags: &id001
-      - 应用身份
-      summary: 课程当前实时身份权限
+      tags:
+      - 统一身份鉴权
+      summary: 当前应用实时身份与权限
       description: 按令牌受众实时返回角色编码、权限编码和system；角色须启用且贡献本应用有效权限。无API映射权限直接导出，有映射短码须全部同系统且启用。
       x-maintenance-member: false
       x-management-scope: application-identity
@@ -1541,25 +1541,25 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApplicationIdentityVO'
         '400':
-          description: 输入不合法
+          description: 参数格式或取值不合法
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '401':
-          description: 身份、账号状态或令牌受众不正确
+          description: 未提供有效的当前应用JWT，或令牌已过期、已撤销
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '403':
-          description: 缺少课程教师准入或UL
+          description: 当前应用准入、API授权或部门范围不足
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '404':
-          description: 功能未启用或目标用户不存在
+          description: 端点未启用或目标身份、部门、API操作不存在
           content:
             application/json:
               schema:
@@ -1576,8 +1576,8 @@ paths:
     get:
       operationId: applicationIdentityPermission
       tags:
-      - 应用身份
-      summary: 课程菜单按钮短码检查
+      - 统一身份鉴权
+      summary: 应用权限短码检查
       description: 检查当前应用实时有效权限，不补父菜单、不按角色名称或职位推断。
       x-maintenance-member: false
       x-management-scope: application-identity
@@ -1589,25 +1589,25 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApplicationPermissionVO'
         '400':
-          description: 输入不合法
+          description: 参数格式或取值不合法
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '401':
-          description: 身份、账号状态或令牌受众不正确
+          description: 未提供有效的当前应用JWT，或令牌已过期、已撤销
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '403':
-          description: 缺少课程教师准入或UL
+          description: 当前应用准入、API授权或部门范围不足
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '404':
-          description: 功能未启用或目标用户不存在
+          description: 端点未启用或目标身份、部门、API操作不存在
           content:
             application/json:
               schema:
@@ -1631,8 +1631,8 @@ paths:
     get:
       operationId: applicationIdentityUser
       tags:
-      - 应用身份
-      summary: 课程教师维护所需员工身份
+      - 统一身份鉴权
+      summary: 查询统一身份用户
       description: 先验证当前应用身份及GET /auth/users/{userId}对应的有效API映射，再返回最小用户信息。
       x-maintenance-member: false
       x-management-scope: application-identity
@@ -1644,25 +1644,25 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApplicationUserVO'
         '400':
-          description: 输入不合法
+          description: 参数格式或取值不合法
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '401':
-          description: 身份、账号状态或令牌受众不正确
+          description: 未提供有效的当前应用JWT，或令牌已过期、已撤销
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '403':
-          description: 缺少课程教师准入或UL
+          description: 当前应用准入、API授权或部门范围不足
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '404':
-          description: 功能未启用或目标用户不存在
+          description: 端点未启用或目标身份、部门、API操作不存在
           content:
             application/json:
               schema:
@@ -1686,8 +1686,9 @@ paths:
       - applicationJwt: []
   /auth/logout:
     post:
-      tags: *id001
-      security: &id002
+      tags:
+      - 统一身份鉴权
+      security: &id001
       - applicationJwt: []
       operationId: logoutApplication
       summary: 退出当前外部应用
@@ -1695,16 +1696,17 @@ paths:
       responses:
         '204':
           description: 当前访问令牌已撤销
-        '401': &id003
-          description: 请求失败
+        '401':
+          description: 未提供有效的当前应用JWT，或令牌已过期、已撤销
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
   /auth/departments:
     get:
-      tags: *id001
-      security: *id002
+      tags:
+      - 统一身份鉴权
+      security: *id001
       operationId: listApplicationDepartments
       summary: 逐层查询统一身份部门
       description: 需要本应用对此API的有效映射授权；范围为当前人员部门及其下级。不传parentId返回范围根，传入时只返回直接子部门，keyword按名称或编码模糊查询。墓碑不返回。
@@ -1715,14 +1717,14 @@ paths:
           type: integer
           minimum: 1
           maximum: 9007199254740991
-      - &id004
+      - &id002
         name: page
         in: query
         schema:
           type: integer
           minimum: 1
           default: 1
-      - &id005
+      - &id003
         name: pageSize
         in: query
         schema:
@@ -1730,7 +1732,7 @@ paths:
           minimum: 1
           maximum: 100
           default: 20
-      - &id006
+      - &id004
         name: keyword
         in: query
         schema:
@@ -1743,14 +1745,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApplicationDepartmentPageVO'
-        '400': *id003
-        '401': *id003
-        '403': *id003
-        '404': *id003
+        '400':
+          description: 参数格式或取值不合法
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 未提供有效的当前应用JWT，或令牌已过期、已撤销
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 当前应用准入、API授权或部门范围不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 端点未启用或目标身份、部门、API操作不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /auth/departments/{departmentId}/users:
     get:
-      tags: *id001
-      security: *id002
+      tags:
+      - 统一身份鉴权
+      security: *id001
       operationId: listApplicationDepartmentUsers
       summary: 查询统一身份部门直属用户
       description: 需要本应用对此API的有效映射及组织范围授权。只查询指定部门直属人员，keyword按工号或姓名匹配，不返回电话或角色。
@@ -1762,9 +1785,9 @@ paths:
           type: integer
           minimum: 1
           maximum: 9007199254740991
+      - *id002
+      - *id003
       - *id004
-      - *id005
-      - *id006
       responses:
         '200':
           description: 查询结果
@@ -1772,14 +1795,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApplicationDepartmentUserPageVO'
-        '400': *id003
-        '401': *id003
-        '403': *id003
-        '404': *id003
+        '400':
+          description: 参数格式或取值不合法
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 未提供有效的当前应用JWT，或令牌已过期、已撤销
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 当前应用准入、API授权或部门范围不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 端点未启用或目标身份、部门、API操作不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /auth/api-permissions/{operationId}:
     get:
-      tags: *id001
-      security: *id002
+      tags:
+      - 统一身份鉴权
+      security: *id001
       operationId: checkApplicationApiAuthority
       summary: 查询当前用户的全局API门禁
       description: operationId按当前应用的显式接入元数据定位；有全局权限要求时核当前有效API映射。显式声明仅对象授权的操作返回全局门禁允许，业务系统仍需校验课程、班级、小组或本人关系。未知操作404 API_OPERATION_NOT_FOUND；allowed=false仍返回200，不代表执行过业务API。
@@ -1799,10 +1843,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApplicationApiAuthorityVO'
-        '400': *id003
-        '401': *id003
-        '403': *id003
-        '404': *id003
+        '400':
+          description: 参数格式或取值不合法
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 未提供有效的当前应用JWT，或令牌已过期、已撤销
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 当前应用准入、API授权或部门范围不足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 端点未启用或目标身份、部门、API操作不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   securitySchemes:
     BearerAuth:
@@ -2733,6 +2797,9 @@ components:
           - LAST_ADMIN_REQUIRED
           - INTERNAL_ERROR
           - APPLICATION_ACCESS_DENIED
+          - IDENTITY_USER_NOT_FOUND
+          - IDENTITY_DEPARTMENT_NOT_FOUND
+          - API_OPERATION_NOT_FOUND
         message:
           type: string
           description: 安全的中文业务提示，不回显内部异常或秘密
@@ -3264,7 +3331,7 @@ components:
       type: object
       additionalProperties: false
       properties:
-        parentId: &id007
+        parentId: &id005
           type: integer
           minimum: 1
           maximum: 9007199254740991
@@ -3300,15 +3367,15 @@ components:
       type: object
       additionalProperties: false
       properties:
-        departmentId: *id007
+        departmentId: *id005
         departmentName:
           type: string
-        totalUsers: &id008
+        totalUsers: &id006
           type: integer
           minimum: 0
-        enabledUsers: *id008
-        disabledUsers: *id008
-        totalDepartments: *id008
+        enabledUsers: *id006
+        disabledUsers: *id006
+        totalDepartments: *id006
         distribution:
           type: array
           items:
@@ -3375,6 +3442,7 @@ components:
         accessToken:
           type: string
           minLength: 1
+          description: 标准HS256 JWT，仅含身份与单应用受众，不含角色或权限。
         tokenType:
           type: string
           const: Bearer

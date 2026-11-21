@@ -4,7 +4,7 @@
 
 阶段5双实现已随[PR #34](https://github.com/minxuanbo/ooad-course-project/pull/34)合入main（e521f97）。从[本地复现](reproduction.md)运行当前基线；阶段6的浏览器结果见[测试验收](testing-acceptance.md)及[两策略对照](history/verification/stage6-ddd.md)。
 
-2026-11-21当前状态：main为717345f，通用课程接入的源码基线为614a0c4（草稿PR #38尚未合并）。详设、现行文档与接口说明的核对范围及本轮静态检查见[设计一致性记录](history/verification/design-consistency-20261121.md)，不以文档修订重记历史运行成绩。
+2026-11-21：课程接入、设计一致性与R31首次身份分支已按用户授权由PR #38/#39/#40合入main。R32完整8项身份鉴权及JWT见[设计](design/identity-eight-contract.md)与[本轮验证](history/verification/identity-eight-contract.md)，正式契约为37操作、31路径、71 Schema；历史记录保留当时版本。
 
 | 文档                                                                                                             | 内容                                                                    |
 | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
