@@ -31,7 +31,7 @@ Windows、JDK21.0.13、Maven3.8.5、MySQL8.4.8、真实CloneFactory0.0.2。沿�
 
 ## 3. 契约、图件与归档核对
 
-当前OpenAPI1.5.0仍为37操作、31路径、71模型、22错误、K17。管理BearerAuth和applicationJwt均标JWT，两个登录字段均有JWT三段格式约束；Bearer仍是携带方式，受众相互隔离。本轮OpenAPI3.1校验、YAML=JSON、两策略28个真实响应Schema均通过；CloneFactory两策略生成摘要相同，53个非空重载、185组可变同名同类型字段无遗漏，Java注解独行检查0项。449个变更Markdown本地目标/锚点无缺失；早已删除的旧JaCoCo指南改指经Git核实存在的固定历史版本，而非本轮删除原资料。
+当前OpenAPI1.5.0仍为37操作、31路径、71模型、22错误、K17。管理BearerAuth和applicationJwt均标JWT，两个登录字段均有JWT三段格式约束；Bearer仍是携带方式，受众相互隔离。本轮OpenAPI3.1校验、YAML=JSON、两策略28个真实响应Schema均通过；CloneFactory两策略生成摘要相同，53个非空重载、185组可变同名同类型字段无遗漏，Java注解独行检查0项。449个变更Markdown本地目标/锚点无缺失。旧JaCoCo指南在提交核对中已从起点main精确恢复并核对内容相同，最终不删除该原文件；历史快照中的对应引用固定到当时Git版本。
 
 当前图源：`docs/design/ddd-diagrams.json`、`scripts/build-ddd-design.mjs`、`scripts/build-structured-design.mjs`、`scripts/build-identity-design.py`。当前82组包括包2、类32、差异顺序48；接收方法、共同流程禁入、几何及循环/条件边界由生成器核对，视觉检查页在本轮`visual-review/manifest.json`。旧图保存在`docs/history/design-assets/through-r32`，不参与当前生成。
 
