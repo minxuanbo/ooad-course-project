@@ -1,5 +1,7 @@
 # RBAC项目协作
 
+2026-11-22 R37：用户明确授权GitHub合入main并清理不必要分支，覆盖此前PR43保持草稿/不合main限制。PR43已以merge方式合入44a898cbb519cd9403db6589ebde91a9077e0790，合并文件树与已审核798d679一致；核对祖先关系后以提交租约及原子推送删除8个GitHub已合入codex分支，另以branch -d清理6个未被工作树占用的本地已合入分支，两边仅保留main。原提交、私有资料及detached历史工作树保留，gitee远端不动。本次只做Git/协作记录维护，不重新部署或重启服务器；R36北京时间修正仍待用户集中反馈后统一发布，T14/T15不关闭，详设及老师原目录不改。
+
 2026-11-22 R36：用户要求集中反馈后再重新部署，最新限制覆盖R35即时发布授权；仅授权8项终态临时服务清理，归档Spec/任务/日志到C及本机并核验SHA后已删除，正式7服务前后列表不变、均1/1，数据卷/Secrets保留。源码网页列表/详情/总览统一Asia/Shanghai，筛选按北京时间显式转UTC；两个Java服务Stack设日志日期格式Asia/Shanghai/+08:00，Docker可选--timestamps采集前缀仍UTC。前端31测试/构建、三浏览器时区12项本地夹具展示、两JAR真实Boot日志8项探针通过；详见docs/history/verification/beijing-time-and-service-cleanup.md。没有新镜像/线上Stack更新/应用重启，时间修正仍待统一发布；API/数据库/Instant/JWT/两策略业务不改，不新增Apifox写入，原老师目录/详设/T14/T15保持。
 
 2026-11-22 R35：用户明确授权正式部署两DDD及清退旧服务，并要求易输入初始口令。旧MySQL/Mongo/服务Spec/历史日志与A压测结果先备份核验，原卷、Excel和A原data保留；新七服务已发布C的80（课程）/8088（RBAC），各单副本stop-first。应用源码496ed3e，实际摘要见docs/history/verification/ddd-production-deployment.md；首次导入因VIP长空闲连接失败且整批0残留，改Java离线任务tasks.mysql直连后五阶段均退出0，另960秒对照证实VIP失败/直连成功。逐人核对10001角色及绑定、独立BCrypt10盐、191教师/9810学生/1管理员；原演示对象保留。容器补Fontconfig/中英文字体修复Excel500，JAR摘要不变；Linux校验去CR、curl下载修正。最终公网HTTP62、入口8、三服务重启10通过，Chrome六菜单逐项对应DDD日志、普通Chrome同admin双系统登录通过；课程三角色Playwright受本机代理拦截不计通过。三库新备份异机SHA/gzip通过，不宣称整机重启/故障切换/压测或恢复演练。口令仅Secrets及私有交付，不提交；37API未变、不新增Apifox写入，PR43保持草稿，不合main/不关T14/T15/不改详设或老师原目录。

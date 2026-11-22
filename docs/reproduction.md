@@ -1,5 +1,7 @@
 # 组员本地复现与核对
 
+2026-11-22更新：PR #43已按用户授权合入main（合并提交44a898c），包含双DDD部署适配、R35云端交付及R36北京时间源码修正；8个GitHub和6个本地已合入开发分支已清理，从main获取即可。源码进入main不代表重新部署：R36仍待用户集中反馈后统一发布，当前云端版本与实际成绩分别见[R35](history/verification/ddd-production-deployment.md)及[R36](history/verification/beijing-time-and-service-cleanup.md)。
+
 当前基线导航（2026-11-21）：PR #38/#39/#40已按用户授权合入main，包含通用课程接入、设计一致性和R31万人首次身份配置。R32完整8项身份协议及JWT亦按用户授权交付main，以实际检出的提交号和[本轮验收](history/verification/identity-eight-contract.md)核对。以下万人库复现保留阶段5来源：[PR #34](https://github.com/minxuanbo/ooad-course-project/pull/34)已合入main（e521f97），该阶段文件树与验收提交83dbf17一致。只通过Git获取项目，不复制其他人的`.local`、数据库文件、node_modules、口令或预检CSV。
 
 ## 1. 获取正确版本及工具
