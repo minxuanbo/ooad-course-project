@@ -22,12 +22,14 @@ Stack增加内网global node-exporter，拟采集B/C/D/E，A不在Swarm。只读
 
 ## 3. 实际验证
 
-- 固定老师镜像中的promtool3.7.3：配置校验通过，13条规则校验通过。
+- 固定老师镜像中的promtool3.7.3：最终配置校验通过，11条规则校验通过。
 - promtool合成序列5组、6次结果断言通过：双核/双实例隔离，空闲/全忙，计数器重置，漏采后暂缺及恢复，新实例单样本暂缺。
 - Docker CLI27.5.1在断网、只读、无Docker socket的临时容器内执行`docker stack config`，8项服务定义解析通过。A原Docker20不含该子命令，未尝试用部署代替校验。
-- Promtool在断网只读临时容器执行，测试临时TSDB使用/tmp内存文件系统；没有启动正式Prometheus或exporter。原始日志留在`.local/production-20261122/monitoring-promtool-offline-20261122e.log`。
+- Promtool在断网只读临时容器执行，测试临时TSDB使用/tmp内存文件系统；没有启动正式Prometheus或exporter。原始日志留在`.local/production-20261122/monitoring-promtool-offline-20261122f.log`。
 
-全部41份剩余Markdown的465处本地链接/锚点校验无错误；非秘密配置校验输出8项服务定义。13条规则表达式与用户指定老师文件逐项一致，仅显式组间隔改为2秒。R01—R33全部保留；OpenAPI YAML/JSON一致且仍37操作、31路径、71模型。git diff确认业务Java、Vue、SQL和OpenAPI未改变，未重跑全部MySQL及浏览器，也不把此前213项等成绩算作此次通过。规范/需求双轴审核另记录最终结论。
+全部41份剩余Markdown的465处本地链接/锚点校验无错误；非秘密配置校验输出8项服务定义。保留的11条规则表达式与用户指定老师文件逐项一致，显式组间隔改为2秒。R01—R33全部保留；OpenAPI YAML/JSON一致且仍37操作、31路径、71模型。git diff确认业务Java、Vue、SQL和OpenAPI未改变，未重跑全部MySQL及浏览器，也不把此前213项等成绩算作此次通过。
+
+双轴初审规范0项；需求轴发现overlay容器netdev不代表宿主网络的口径问题，已撤去该采集器及两条网络规则，明确本次不采宿主机网络，不引入host网络或公网端口。CPU、内存、文件系统、磁盘的宿主路径及Java指标保留；最终11条规则和Stack已重跑以上检查，最终审核待复核。
 
 ## 4. 尚未验证与发布边界
 

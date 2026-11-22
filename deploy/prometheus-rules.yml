@@ -40,14 +40,6 @@ groups:
       - record: node:filesystem_usage_percent
         expr: (1 - (node_filesystem_avail_bytes{mountpoint!="/boot"} / node_filesystem_size_bytes{mountpoint!="/boot"})) * 100
 
-      # 网络接收速率
-      - record: node:network_receive_bytes:rate5m
-        expr: rate(node_network_receive_bytes_total[5m])
-
-      # 网络发送速率
-      - record: node:network_transmit_bytes:rate5m
-        expr: rate(node_network_transmit_bytes_total[5m])
-
       # 磁盘 I/O 读取速率
       - record: node:disk_read_bytes:rate5m
         expr: rate(node_disk_read_bytes_total[5m])

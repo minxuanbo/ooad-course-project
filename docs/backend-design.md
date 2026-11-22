@@ -255,15 +255,15 @@ OpenAPI定义37个操作（29项管理操作，含部门及总览5项扩展；�
 
 ### 10.1 认证与错误翻译
 
-认证技术共用IdentityTokenStore、PasswordHashing、RequestContext，业务链独立：UserRepository按同一输入精确匹配工号/手机号→AuthenticationPolicy要求唯一、启用、口令符合→AuthorizationPolicy要求本RBAC登记管理API→发令牌。未知/歧义/停用/错口令仍401 LOGIN_FAILED，正确口令但无管理准入仍403；不新增会话实体或外部统一身份。
+认证技术共用IdentityTokenStore、PasswordHashing、RequestContext，业务链独立：UserRepository按同一输入精确匹配工号/手机号→AuthenticationPolicy要求唯一、启用、口令符合→AuthorizationPolicy要求本RBAC登记管理API→发令牌。未知/歧义/停用/错口令仍401 LOGIN_FAILED，正确口令但无管理准入仍403；不新增会话实体，也不依赖另一个统一身份提供方。
 
-领域异常DomainViolation只包含领域原因和可公开提示，不携HTTP、SQL或JPA对象；application.support的DddFailureTranslator翻译为既有BusinessException及现行HTTP错误；R29的课程准入错误为APPLICATION_ACCESS_DENIED，API Advice保持共用。基础设施在保存发生处把数据库冲突翻译为既有错误，不在全局Advice按表名判断。框架路由404/405仍沿共用Advice；离线初始化错误保持既有CLI语义。
+领域异常DomainViolation只包含领域原因和可公开提示，不携HTTP、SQL或JPA对象；application.support的DddFailureTranslator翻译为既有BusinessException及现行HTTP错误；通用应用准入错误为APPLICATION_ACCESS_DENIED，API Advice保持共用。基础设施在保存发生处把数据库冲突翻译为既有错误，不在全局Advice按表名判断。框架路由404/405仍沿共用Advice；离线初始化错误保持既有CLI语义。
 
 ## 11. 测试方案
 
 遵循行为RED→最小实现→回归；两策略共用用例/HTTP契约，分别真实MySQL验证状态、范围、事务回滚、根锁并发与数据库约束。领域单元测试覆盖自身规则，不能用mock数据库代替集成证据。
 
-重点覆盖双入口/歧义、无管理准入、权限OR、外系统、子集陷阱、树循环、候选跨页、撤权/停用即时生效、共同根、K不能拼人及交叉写入口并发。DTO类型/未知字段/缺失id及每个稳定业务错误均需契约测试。当前T13仅为历史结构化基线，本次文档验证与未来双实现验收见[测试说明](testing-acceptance.md)。
+重点覆盖双入口/歧义、无管理准入、权限OR、外系统、子集陷阱、树循环、候选跨页、撤权/停用即时生效、共同根、K不能拼人及交叉写入口并发。DTO类型/未知字段/缺失id及每个稳定业务错误均需契约测试。各策略实际执行版本及覆盖范围见[测试与验收](testing-acceptance.md)。
 
 ### 11.1 测试命名与目录
 

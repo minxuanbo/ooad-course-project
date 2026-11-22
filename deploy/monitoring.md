@@ -27,7 +27,7 @@
 
 结果`node:cpu_usage_percent{instance=...}`表示每个采集实例所有CPU核合计的非空闲时间比例，单位百分比；不是Java进程CPU，也不是把多个服务器平均到一起。rate按计数器增量计算并处理重置；2秒窗口是计算回看范围，1秒是取样频率，2秒规则interval是生成记录值的频率，三个值必须分别配置。
 
-节点job每1秒采集；两规则组显式interval改为2秒，避免老师样例30秒组覆盖。两个Java job按样例独立覆盖为2秒采集，提供HTTP/JVM/GC/线程等指标。非CPU的QPS、延迟、GC、网络和磁盘速率保留样例5分钟窗口及相应rate5m名称，不能把“CPU改2秒”理解为所有5m指标都改为2秒。
+节点job每1秒采集；两规则组显式interval改为2秒，避免老师样例30秒组覆盖。两个Java job按样例独立覆盖为2秒采集，提供HTTP/JVM/GC/线程等指标。非CPU的QPS、延迟、GC和磁盘速率保留样例5分钟窗口及相应rate5m名称，不能把“CPU改2秒”理解为所有5m指标都改为2秒。
 
 2秒窗口在1秒采集下通常仅有两个有效样本，漏采或初次启动可能暂无CPU结果；不把缺样本填成0%。离线测试覆盖负载、双核/双实例隔离、计数重置、漏采及恢复。线上延迟、DNS发现、实际CPU和存储占用仍需发布后验证，不能用合成样本替代。
 
@@ -35,7 +35,9 @@
 
 宿主机公式依赖node_cpu_seconds_total，Java Actuator本身只暴露process_cpu_usage、system_cpu_usage等不同口径；不能替换指标名后宣称同一公式。待发布Stack增加`ooad_node-exporter`，global模式在Swarm的B/C/D/E各运行一个任务；A是独立构建机，不在此自动采集范围。
 
-node-exporter只读挂载宿主机/proc、/sys及根目录，显式配置host路径，仅启用CPU、内存、文件系统、网络、磁盘及主机信息采集器。文件系统排除Docker虚拟挂载，96MiB上限/24MiB预留。Prometheus通过overlay DNS `tasks.node-exporter:9100`逐任务发现，不能用单个VIP随机采到不同节点后合并成一条计数器；instance为任务IP:9100，可通过node_uname_info关联主机名，任务重建后形成新时序。
+node-exporter只读挂载宿主机/proc、/sys及根目录，显式配置host路径，仅启用CPU、内存、文件系统、磁盘及主机信息采集器。文件系统排除Docker虚拟挂载，96MiB上限/24MiB预留。Prometheus通过overlay DNS `tasks.node-exporter:9100`逐任务发现，不能用单个VIP随机采到不同节点后合并成一条计数器；instance为任务IP:9100，可通过node_uname_info关联主机名，任务重建后形成新时序。
+
+overlay容器的/proc/net/dev仍受网络命名空间限制，只读挂载宿主/proc不等于获得宿主网络统计。因此不启用netdev，也不复制老师两条node_network速率规则，避免把exporter容器流量冒充节点流量。当前保留老师13条中的11条原表达式；宿主网络监控需另行设计采集通道，本次不使用host网络或增加公网端口。
 
 9100和9090均不发布公网端口，不需额外开放华为云安全组。正式应用仍单副本stop-first；监控调整后为8项服务定义（含1个global服务），不是把应用扩成多副本。
 

@@ -88,11 +88,11 @@ account/password是一个入口，工号或手机号定位唯一用户，共用�
 
 ## 5. 评审及变更
 
-本次从既有契约整理成OpenAPI和业务说明，保持已确认语义，不运行Apifox同步。后续新原型审核时，接口如需变更，先确认需求/Schema/范围/错误，再同步用例与测试，不先写新页面假设后端存在未评审接口。
+契约变更先确认需求、Schema、范围与错误语义，再同步用例、实现和测试；前端只依赖已评审接口。OpenAPI字段与业务说明分别维护职责，Apifox只在明确授权的范围同步并回读核对。
 
 OpenAPI不能单独证明事务、范围、K、脱敏或并发成立；验证方法见[测试说明](testing-acceptance.md)。各记录只证明对应版本及执行范围，不跨版本或策略继承成绩。
 
-## 6. 部门与总览增量契约
+## 6. 部门与总览规则
 
 GET /api/departments为完整范围导航，返回type、directUsers、totalUsers及canCreate/canEdit/canDelete；沿父节点和子树连续排列。GET /api/departments/tree保留人员筛选入口，复用同一范围/人数口径。POST /api/departments仅接parentId/name/type；PATCH /api/departments/{id}仅接name；DELETE只处理空且非根节点，没有层级调整、恢复或级联删除接口。名称先trim再验证1—100字符，同父重名409；所有写与人员调动共用根锁，锁后重验。
 

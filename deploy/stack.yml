@@ -237,7 +237,6 @@ services:
       - --collector.cpu
       - --collector.meminfo
       - --collector.filesystem
-      - --collector.netdev
       - --collector.diskstats
       - --collector.uname
       - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+)($$|/)
