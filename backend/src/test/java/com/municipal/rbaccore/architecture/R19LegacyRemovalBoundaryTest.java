@@ -115,7 +115,7 @@ class R19LegacyRemovalBoundaryTest {
     assertFalse(stack.contains("RBAC_INITIALIZE"));
     assertTrue(stack.contains("RBAC_CORE_DB_URL"));
     assertTrue(stack.contains("rbac_core"));
-    assertTrue(stack.contains("/api/me"));
+    assertTrue(stack.contains("/actuator/health"));
 
     String script =
         Files.readString(ROOT.resolve("deploy/test-backend.sh"), StandardCharsets.UTF_8);

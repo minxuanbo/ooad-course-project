@@ -9,8 +9,8 @@ import org.springframework.http.server.*;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
-/** 沿用统一JSON响应外形，供旧入口与整改HTTP上下文复用。 */
-@RestControllerAdvice
+/** 仅业务Controller统一JSON包装；内部Actuator保留原始运维协议。 */
+@RestControllerAdvice(basePackages = "com.municipal.rbaccore.api")
 @RequiredArgsConstructor
 public class ApiResponseAdvice implements ResponseBodyAdvice<Object> {
   private final RequestContext requests;

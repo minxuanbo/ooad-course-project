@@ -75,7 +75,7 @@ HTTP默认8081，前端代理/api不变。后端29项管理操作与8项可选�
 
 ## 4. 当前部署边界
 
-用户确认后续会增加服务器，云拓扑/镜像/Stack发布留待新方案。现有根Dockerfile、.dockerignore及deploy中旧容器脚本未适配本轮backend目录，不能据此宣称当前镜像或线上可用。本阶段只验证本地构建、私有MySQL和默认JAR，不操作服务器。
+R34按老师说明完成[双DDD部署适配](../deploy/README.md)：根Dockerfile、.dockerignore和容器测试脚本使用backend目录、真实CloneFactory0.0.2；Stack包含两个前端、两个DDD后端及独立接入/审计。RBAC通过部署环境在内部8082提供Actuator健康与Prometheus，公网只发布两个Nginx入口80/8088。此次仅本机验证及发布材料，未清退旧服务、未推送镜像或上线；证据见[记录](../docs/history/verification/ddd-deployment-adaptation.md)。
 
 ## 5. 可选通用应用身份服务
 

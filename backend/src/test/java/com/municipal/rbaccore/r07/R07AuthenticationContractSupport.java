@@ -68,6 +68,8 @@ abstract class R07AuthenticationContractSupport {
   private static final String PERMISSIONS = "/api/me/permissions";
   private static final String UNREGISTERED = "/api/t05-unregistered";
   private static final String UNKNOWN_ENDPOINT = "/api/r18-unknown-endpoint";
+  private static final String ACTUATOR_HEALTH = "/actuator/health";
+  private static final String ACTUATOR_METRICS = "/actuator/prometheus";
   private static final String PASSWORD = "t05-employee-password";
   private static final String ADMIN_PASSWORD = "t05-admin-password";
   @Autowired
@@ -101,6 +103,21 @@ abstract class R07AuthenticationContractSupport {
   private long rootId;
   private long departmentManagerId;
   private String departmentManager;
+
+  /** R34内部运维协议保持原始JSON和Prometheus文本，不能套用业务响应包装。 */
+  @Test
+  @DisplayName("R34内部健康与Prometheus保留标准响应协议")
+  void R34_InternalOperationsKeepNativeResponse() throws Exception {
+    ResponseEntity<String> health = http.getForEntity(ACTUATOR_HEALTH, String.class);
+    assertEquals(200, health.getStatusCode().value());
+    JsonNode status = json.readTree(health.getBody());
+    assertEquals("UP", status.path("status").asText());
+    assertFalse(status.has("data"));
+    ResponseEntity<String> metrics = http.getForEntity(ACTUATOR_METRICS, String.class);
+    assertEquals(200, metrics.getStatusCode().value());
+    assertTrue(metrics.getBody().contains("# HELP"));
+    assertFalse(metrics.getBody().stripLeading().startsWith("{"));
+  }
 
   /** 测试辅助入口只在本测试上下文注册，不进入产品目录。 */
   @TestConfiguration(proxyBeanMethods = false)

@@ -348,7 +348,7 @@ Java新增或修改类/接口/记录及关键方法写中文Javadoc；明确局�
 
 产品RbacApplication、离线ImportCommand和首次BootstrapAuthorizationCommand相互分离。显式rbac_core、ddl-auto=validate、sql.init.mode=never、旧初始化关闭；错库/测试profile组合失败关闭，不在启动时恢复旧表或重授角色。口令/数据库秘密通过环境或configtree提供。
 
-当前本地构建/测试/初始化命令见[后端说明](../backend/README.md)。用户明确部署先不处理，后续增加服务器再确定方案；原Dockerfile/Stack及容器测试脚本保留旧配置，未适配backend目录，不作为当前发布入口。本地MySQL/JAR结果不代表云部署成功。结构变更涉及数据备份与迁移，不能仅回滚镜像；两策略切换不创建第二套业务表。
+当前本地构建/测试/初始化命令见[后端说明](../backend/README.md)。R34按老师部署说明完成[双DDD适配](../deploy/README.md)：两个Nginx前端与两个单副本DDD后端均使用Swarm，RBAC内部8082提供Actuator健康与Prometheus，公网仅发布C节点80/8088；本机验证不代表云部署成功。独立课程接入服务负责实时身份转接、配置短码核查与独立业务审计，仍不进入RBAC领域/应用实现。结构变更需备份，不能仅回滚镜像；两策略切换不创建第二套业务表，进程内JWT会话索引在重启后失效。
 
 ## 17. 结构化与DDD UML
 
@@ -1002,4 +1002,4 @@ JWT签名、issuer、严格到期和主体/单受众由标准JOSE/Nimbus校验�
 
 课程teacher/student/course-admin及路由保存在integrations/course配置中。R31首次接入按总公司本部范围分配teacher、其余student，合格根直属五级RBAC管理员同账号兼course-admin，并建立老师课程本地绑定；由独立初始化脚本显式执行，不加入RBAC领域。课程先提交绑定、RBAC后在根锁事务发布通用授权和回执，不宣称分布式原子事务；重复回执不重置后续授权。
 
-老师原目录保持独立；本地副本只保留3个structured生产补丁。统一身份审计另2项不在RBAC8项契约中，原独立本地支撑持久保存课程业务日志；老师缺少的Controller等来源限制继续保留。配置、端口及已知缺口以[课程接入](course-integration.md)为准。服务器部署仍搁置，详设外部文件不改。
+老师原目录保持独立；原本机联调副本保留3个structured生产补丁，固定990cea2的部署副本另有DDD对等修复、当前学期标记释放及安全日志补丁。统一身份审计另2项不在RBAC8项契约中；本机支撑继续保留，服务器采用独立Waitress/MySQL持久保存课程业务审计，老师缺少的Controller等来源限制继续保留。配置、端口及已知缺口以[课程接入](course-integration.md)为准；两个后端均DDD的正式运行边界见[部署说明](../deploy/README.md)，实际云端结果见[R35记录](history/verification/ddd-production-deployment.md)。详设外部文件不改。

@@ -42,3 +42,6 @@
 - [R32身份协议设计来源](design-decisions/identity-eight-contract-r32.md)
 - [退出当前图集的R32及以前图件](design-assets/through-r32/)
 - [R33全JWT与文档/UML整理验证](verification/jwt-design-cleanup.md)
+- [R34双DDD部署前适配与本机验证](verification/ddd-deployment-adaptation.md)
+- [R35双DDD服务器正式部署与公网验证](verification/ddd-production-deployment.md)
+- [R36北京时间本机修正与临时服务清理](verification/beijing-time-and-service-cleanup.md)
