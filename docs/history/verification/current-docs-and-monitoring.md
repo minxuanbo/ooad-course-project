@@ -32,18 +32,20 @@ Stack增加内网global node-exporter，拟采集B/C/D/E，A不在Swarm。只读
 双轴初审规范0项；需求轴发现overlay容器netdev不代表宿主网络的口径问题，已撤去该采集器及两条网络规则，明确本次不采宿主机网络，不引入host网络或公网端口。CPU、内存、文件系统、磁盘的宿主路径及Java指标保留；最终11条规则和Stack已重跑以上检查。独立新上下文双轴复核`7fed862...ec00f426`：Standards硬违反/需报告smell均0，Spec缺失/越界/实现错误最终均0；初审1项已修复。复核属于代理技术审核，不冒称老师或真人验收。
 
 ## 4. 鉴权体验与Apifox
-+
-+线上只读聚合核查时已存在33条course-project-management的LOGIN_SUCCESS及24条目录/查人AUTHORIZATION允许记录，不能把首页未显示理解为没有记录。此处LOGIN_SUCCESS证明RBAC凭据/应用准入成功，不证明课程教师/学生绑定或后续业务已经成功；老师后端主要通过/auth/me取权限后自行执行对象规则，RBAC没有收到每个功能的执行结果。
-+
-+日志响应新增systems（id/code/name/enabled），由已授权日志Gateway提供，含停用应用，不随日志筛选缩小，不要求GET /api/systems资源目录权限。Vue改为名称/编码下拉、提交appCode，并说明快照刷新和业务结果边界。密码框补“请输入密码”，保留掩码及显示/隐藏。
-+
-+两种身份用例分别在实际短码及operationId查询完成后登记PERMISSION_CHECK。过滤器每次查询记录一条真假结果；无权限仍HTTP200，reason=PERMISSION_NOT_GRANTED，不当成课程业务403或已执行结果。实际受控目录/查人继续用AUTHORIZATION。未扩写老师业务或混合两套审计。
-+
-+新增两项真实MySQL/HTTP契约先RED（缺少目录及查询事件的断言失败），再实现；最初数据库未启动、沙箱Java附加停滞不算RED。最终structured与DDD各215项，失败/错误/跳过均0，原始日志为.local/pr44-feedback-20261122/rbac-structured-green.log及rbac-ddd-redgreen.log。前端32项及构建通过，Chrome9项显示检查通过（独立HTTP显示夹具，非服务器端到端）；截图与报告保存在同目录。真实CloneFactory53个生成重载非空，新增systems的集合元素类型转换显式映射。
-+
-+OpenAPI1.5.1仍37操作、31路径、71模型、K17；YAML/JSON一致并通过OpenAPI3.1校验。Apifox9042431按本次授权同步两项Schema及版本，导出回读的操作/模型/鉴权/元信息语义差异0，失败计数0。环境50398304已改名“服务器验收（真实RBAC）”，默认及模块8887289 Base URL均http://114.116.254.25:8088，保留原参数，不新增重复环境；原11环境ID集合相同。经回读地址发起/api/me及/auth/me匿名请求均得到真实后端401、AUTHENTICATION_REQUIRED及请求号。个人客户端仍需选择该环境，旧Mock仅供显式示例，不写共享口令或JWT。
-+
-+## 5. 尚未验证与发布边界
+
+线上只读聚合核查时已存在33条course-project-management的LOGIN_SUCCESS及24条目录/查人AUTHORIZATION允许记录，不能把首页未显示理解为没有记录。此处LOGIN_SUCCESS证明RBAC凭据/应用准入成功，不证明课程教师/学生绑定或后续业务已经成功；老师后端主要通过/auth/me取权限后自行执行对象规则，RBAC没有收到每个功能的执行结果。
+
+日志响应新增systems（id/code/name/enabled），由已授权日志Gateway提供，含停用应用，不随日志筛选缩小，不要求GET /api/systems资源目录权限。Vue改为名称/编码下拉、提交appCode，并说明快照刷新和业务结果边界。密码框补“请输入密码”，保留掩码及显示/隐藏。
+
+两种身份用例分别在实际短码及operationId查询完成后登记PERMISSION_CHECK。过滤器每次查询记录一条真假结果；无权限仍HTTP200，reason=PERMISSION_NOT_GRANTED，不当成课程业务403或已执行结果。实际受控目录/查人继续用AUTHORIZATION。未扩写老师业务或混合两套审计。
+
+新增两项真实MySQL/HTTP契约先RED（缺少目录及查询事件的断言失败），再实现；最初数据库未启动、沙箱Java附加停滞不算RED。最终structured与DDD各215项，失败/错误/跳过均0，原始日志为.local/pr44-feedback-20261122/rbac-structured-green.log及rbac-ddd-redgreen.log。前端32项及构建通过，Chrome9项显示检查通过（独立HTTP显示夹具，非服务器端到端）；截图与报告保存在同目录。真实CloneFactory53个生成重载非空，新增systems的集合元素类型转换显式映射。
+
+OpenAPI1.5.1仍37操作、31路径、71模型、K17；YAML/JSON一致并通过OpenAPI3.1校验。Apifox9042431按本次授权同步两项Schema及版本，导出回读的操作/模型/鉴权/元信息语义差异0，失败计数0。环境50398304已改名“服务器验收（真实RBAC）”，默认及模块8887289 Base URL均http://114.116.254.25:8088，保留原参数，不新增重复环境；原11环境ID集合相同。经回读地址发起/api/me及/auth/me匿名请求均得到真实后端401、AUTHENTICATION_REQUIRED及请求号。个人客户端仍需选择该环境，旧Mock仅供显式示例，不写共享口令或JWT。
+
+反馈修改e524ab2经独立新上下文双轴审核：Standards硬违反/需报告smell均0，Spec缺失/越界/实现错误均0。验证记录的Markdown标题排版已修正，引用检查仍为41份/465处零错误。审核属于代理技术复核，不冒称老师或真人验收。
+
+## 5. 尚未验证与发布边界
 
 新增exporter的真实节点采集、overlay DNS发现、1秒采集的时序抖动与资源/存储占用须获统一发布授权后实测，离线合成序列不替代线上验收。2秒窗口只有少量样本，漏采可能短时无值，不能填成0%。应用仍单副本、单manager和进程内会话索引，不宣称高可用。
 
