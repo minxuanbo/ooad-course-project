@@ -12,10 +12,10 @@ CloneFactory当前固定0.0.2，源码提交40583ff94764d2e758bcb13be17f5c05ea4d
 backend/
 ├── pom.xml
 ├── src/main/java/com/municipal/rbaccore/
-│   ├── api/{auth,user,department,role,resource,audit,course,shared}
-│   ├── service/port/{auth,user,department,role,resource,audit,course,security,importing,bootstrap,error}
-│   ├── service/structured/{auth,user,department,role,resource,audit,course,security,importing,bootstrap}
-│   ├── service/ddd/application/{auth,user,department,role,resource,audit,course,security,importing,bootstrap,support}
+│   ├── api/{auth,user,department,role,resource,audit,identity,shared}
+│   ├── service/port/{auth,user,department,role,resource,audit,identity,security,importing,bootstrap,error}
+│   ├── service/structured/{auth,user,department,role,resource,audit,identity,security,importing,bootstrap}
+│   ├── service/ddd/application/{auth,user,department,role,resource,audit,identity,security,importing,bootstrap,support}
 │   ├── service/ddd/domain/{model,model/policy,repository}
 │   ├── infrastructure/{persistence,security,web,logging,excel}
 │   ├── config
@@ -75,16 +75,16 @@ HTTP默认8081，前端代理/api不变。后端29项管理操作与8项可选�
 
 ## 4. 当前部署边界
 
-R34按老师说明完成[双DDD部署适配](../deploy/README.md)：根Dockerfile、.dockerignore和容器测试脚本使用backend目录、真实CloneFactory0.0.2；Stack包含两个前端、两个DDD后端及独立接入/审计。RBAC通过部署环境在内部8082提供Actuator健康与Prometheus，公网只发布两个Nginx入口80/8088。此次仅本机验证及发布材料，未清退旧服务、未推送镜像或上线；证据见[记录](../docs/history/verification/ddd-deployment-adaptation.md)。
+两个后端在服务器均采用DDD，两个Nginx公开80/8088；Java、MySQL与监控仅内网。RBAC管理端口8082提供Actuator健康与Prometheus。根Dockerfile及构建脚本使用backend目录、固定真实CloneFactory0.0.2。配置与执行见[部署指南](../deploy/README.md)，实际发布和待发布项见[验收](../docs/testing-acceptance.md)，不从源码推断线上状态。
 
 ## 5. 可选通用应用身份服务
 
 `APP_IDENTITY_ENABLED`默认false；显式开启后提供8项老师要求的完整身份协议，资源目录来自所有已登记应用；teacher/student/课程管理员由配置角色表达，API类型要求非空有效映射。课程业务仍只在老师工程。配置、独立空库夹具及双系统验证脚本见[课程接入](../docs/course-integration.md)，不得向真实员工库导入虚构验收SQL。
 
-R31需在原万人导入、五角色授权后，使用独立`scripts/initialize_course_integration.py`预览及apply，为本部员工授teacher、其余授student、合格管理员兼course-admin，并建立课程本地绑定。此工具不进入后端业务装配，不由身份开关自动执行；课程角色与RBAC管理准入仍独立。
+课程接入需在原万人导入、五角色授权后，使用独立`scripts/initialize_course_integration.py`预览及apply，为本部员工授teacher、其余授student、合格管理员兼course-admin，并建立课程本地绑定。此工具不进入后端业务装配，不由身份开关自动执行；课程角色与RBAC管理准入仍独立。
 
-R32操作查询须配置IDENTITY_OPERATIONS_FILE=file:///绝对路径/integrations/course/operations.json；JWT秘密/签发者、两种本机Origin及分页差异见[完整身份设计](../docs/backend-design.md#18-通用应用身份与课程本地接入)。身份协议由RBAC实现，课程业务仍在老师工程。
+操作查询须配置IDENTITY_OPERATIONS_FILE=file:///绝对路径/integrations/course/operations.json；JWT秘密/签发者、两种本机Origin及分页差异见[完整身份设计](../docs/backend-design.md#18-通用应用身份与课程本地接入)。身份协议由RBAC实现，课程业务仍在老师工程。
 
-## 管理与外部应用统一JWT（R33）
+## 6. 管理与外部应用统一JWT
 
 两类登录通过JwtIdentityStore/JwtIdentityCodec统一签发及校验HS256 JWT；管理aud为rbac，外部aud为单一登记应用，使用Bearer请求头，继续实时读取权限。IDENTITY_JWT_SECRET/IDENTITY_JWT_ISSUER同时用于两类JWT，APP_IDENTITY_ENABLED仅控制外部8项端点。未配秘密时每进程随机；无论密钥是否固定，当前进程内会话索引在重启后丢失，须重新登录。当前测试与证据从[验收入口](../docs/testing-acceptance.md)阅读。

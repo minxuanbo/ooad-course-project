@@ -1,8 +1,6 @@
-# 组员本地复现与核对
+# 本地复现与核对
 
-2026-11-22更新：PR #43已按用户授权合入main（合并提交44a898c），包含双DDD部署适配、R35云端交付及R36北京时间源码修正；8个GitHub和6个本地已合入开发分支已清理，从main获取即可。源码进入main不代表重新部署：R36仍待用户集中反馈后统一发布，当前云端版本与实际成绩分别见[R35](history/verification/ddd-production-deployment.md)及[R36](history/verification/beijing-time-and-service-cleanup.md)。
-
-当前基线导航（2026-11-21）：PR #38/#39/#40已按用户授权合入main，包含通用课程接入、设计一致性和R31万人首次身份配置。R32完整8项身份协议及JWT亦按用户授权交付main，以实际检出的提交号和[本轮验收](history/verification/identity-eight-contract.md)核对。以下万人库复现保留阶段5来源：[PR #34](https://github.com/minxuanbo/ooad-course-project/pull/34)已合入main（e521f97），该阶段文件树与验收提交83dbf17一致。只通过Git获取项目，不复制其他人的`.local`、数据库文件、node_modules、口令或预检CSV。
+从main获取项目并记录实际提交，只复制源码，不复制他人的.local、数据库、node_modules、口令或预检CSV。当前发布范围与待发布项见[测试与验收](testing-acceptance.md)，线上状态不能从源码提交推断。
 
 ## 1. 获取正确版本及工具
 
@@ -109,42 +107,42 @@ npm run dev
 6. 日志改变筛选/批量需重新查询，同一游标快照total不变；日志查询本身的新记录可能被下一次新查询看到，不代表同快照自动增加。
 7. 按[DDD隔离边界](backend-design.md#4-双实现选择方式)检查公共端口、技术适配器、结构化、DDD服务和互斥装配的区别；不要新增DDD占位类或用结构化服务套壳。
 
-反馈请附Git提交号、操作角色/部门、操作步骤、预期/实际、HTTP状态/业务code和requestId；不附口令、Bearer、万人CSV或完整隐私数据。[阶段5交接复核](history/verification/testing-acceptance-through-r32.md#阶段5-交接复核2026-11-17)已记录两策略桌面浏览器及关键操作结果；阶段6约定的窄屏、键盘及写入组合已按两策略复验并合入PR #37（717345f）。本轮课程联调另见[接入复现](course-integration.md)，使用独立空库和虚构夹具，不替换本页万人初始化。
+反馈请附实际提交、操作角色/部门、步骤、预期/实际、HTTP状态、业务code和requestId；不附口令、JWT或完整隐私数据。窄屏、键盘及写入组合也须按所改版本实测，历史通过不替代新验证。
 
 ## 6. 课程系统本地联调
 
-最初R29/R30从main 717345f检出课程接入分支，32人夹具的覆盖与限制保留在[当时证据](history/verification/course-integration-generic.md)。现从main获取，按[课程接入说明](course-integration.md)配置两个数据库、两后端及两前端，老师原目录不动。新环境选择32人夹具或下述R31万人首次接入，不能在已有库混用二者。
+完整边界见[课程接入](course-integration.md)。先安装Python辅助依赖、两项目前端依赖和固定CloneFactory0.0.2；使用独立新实例完成本文万人导入/授权及课程建表，再预览并显式执行课程首次身份脚本。服务必须串行初始化后开放，不向现有32人夹具追加万人身份。
 
-课程联调PR #38已经合入main。先完成两项目npm ci，并安装Chrome与Python依赖`python -m pip install -r scripts/requirements-course-integration.txt`；初始化和端口按课程接入说明，不向真实员工库导入虚构夹具。
+建议隔离端口如下，启动前核对占用并自行配置；这不是现有进程仍在运行的声明：
 
-### 2026-11-21新增的R31万人接入
+| 组件 | 本机示例 | 关键配置 |
+| --- | --- | --- |
+| RBAC | 8081 | APP_BACKEND_STRATEGY=ddd或structured；APP_IDENTITY_ENABLED=true |
+| 课程 | 8080 | APP_BACKEND_STRATEGY=ddd或structured；使用固定来源补丁副本 |
+| 本机支撑 | 8085 | local_identity_gateway.py，SQLite及只读MySQL凭据放.local |
+| RBAC Vue | 5173 | API_TARGET=http://127.0.0.1:8081 |
+| 课程 Vue | 5174 | VITE_API_BASE_URL=http://127.0.0.1:8080；VITE_IDENTITY_BASE_URL=http://127.0.0.1:8085；VITE_MOCK_ENABLED=false |
 
-R31已由PR #40合入main，不要向32人夹具直接追加万人身份。先按[依赖安装](../deploy/README.md#本机依赖安装)安装老师干净提交40583ff的真实CloneFactory0.0.2；普通依赖和注解处理器版本均由backend/pom.xml的clonefactory.version管理。
-
-在独立全新实例执行本文第2—3节的万人导入和五角色授权、老师课程原Flyway，再按[课程接入第8节](course-integration.md#8-本部教师与分公司学生首次接入r31)预览并显式apply。维护窗口中串行执行，完成后开放服务。当前原件的首次核对值为191教师（190员工及admin）、9810学生、1名兼任管理员；运行期不强行恢复这些人数。
-
-本机本轮structured/RBAC8081、课程8080、支撑8085共用新实例3351；DDD/RBAC8083、第二课程8084、第二支撑8086共用新实例3352。前端5173/5174当前展示第一组。原3349/3350实例和历史日志保留。两策略用独立库，不同时写同一库；两组课程后端均为老师structured。
-
-独立admin在10000名员工之后创建，初始ID为10001；人员列表按ID升序、每页20条时，它在第501页，搜索`admin`即可定位，不因其排列位置改变权限。课程端使用教师登录入口。课程页面的localhost/127.0.0.1是不同Origin，须按[本机跨域配置](course-integration.md#本机浏览器入口与跨域配置)同时显式允许；当前第一组已配置并实测两个入口登录均成功。
-
-验证脚本`scripts/verify_course_initialization.py`会经生产HTTP创建演示学期、课程、教学班及里程碑，并临时撤回后恢复学生资格；只能指向明确的本地验收环境。参数见`--help`。本轮成绩及限制见[独立验证记录](history/verification/course-initialization-r31.md)。口令仅由本地私有说明和环境提供，不存在正式默认口令。
-
-### R32完整8项身份协议与JWT
-
-管理端`/api/*`与外部应用`/auth/*`统一使用HS256身份JWT，通过Bearer携带；管理aud=rbac，外部aud为单个登记应用，不能混用。JWT不保存角色权限，授权实时读库；当前会话索引保留在进程内，RBAC重启后须重新登录。可通过`IDENTITY_JWT_SECRET`配置至少256位的Base64密钥，未配置时每进程随机生成；不要在命令行、日志或Git中写真实密钥。`IDENTITY_JWT_ISSUER`及该密钥同时用于两类JWT，外部身份开关关闭时管理端仍使用JWT。
-
-课程接入启动RBAC前还须配置显式操作目录，文件路径使用绝对file URI：
+RBAC启动前设置操作目录（缺失时operationId查询404，损坏/重复配置阻止启动）：
 
 ```powershell
+$env:APP_IDENTITY_ENABLED='true'
 $env:IDENTITY_OPERATIONS_FILE=([System.Uri]::new((Resolve-Path integrations/course/operations.json).Path)).AbsoluteUri
-java -jar backend/target/rbac0-0.1.0.jar
+$env:IDENTITY_ALLOWED_ORIGINS='http://127.0.0.1:5174,http://localhost:5174'
 ```
 
-目录文件缺失配置时不猜测operationId，相关查询返回404；重复或损坏配置会阻止启动。新库先用当前`integrations/course/catalog.json`完成显式首次接入，使课程管理员获得IDR/IDU目录权限，再运行真实Vue选人。统一身份审计2项不属于这8项，原独立本地审计支撑继续保存课程业务日志。
+课程后端按老师配置设置IDENTITY_BASE_URL指向8085；本机支撑命令示例：
 
-本机R31已完成的两个验收库保留原初始化回执。R32只显式登记新增2项权限/2项API及管理员关联，不重新导入或覆盖原回执；此本地动作不是交付升级SQL。若在这两个旧验收库复跑`verify_course_initialization.py`，用`--initialization-catalog .local/identity-eight-20261121/course-catalog-before.json`核对原回执；全新库使用当前目录，不需要此参数。新增`scripts/verify_identity_contract.py --help`提供独立8项契约探针，成绩与限制见[R32记录](history/verification/identity-eight-contract.md)。
+```powershell
+python integrations/course/local_identity_gateway.py --database .local/your-run/audit.sqlite3 --port 8085 --origin http://127.0.0.1:5174 --origin http://localhost:5174 --mysql-config <课程只读客户端配置绝对路径>
+```
 
+两个本机Origin还须在课程CORS_ALLOWED_ORIGINS显式允许，详见[跨域配置](course-integration.md#本机浏览器入口与跨域配置)。管理员用课程教师入口登录；初始admin在员工后创建，通常ID10001，人员按ID升序时搜索admin即可，不因排列位置改变权限。
 
-## 双DDD服务器部署（R34/R35）
+两种登录都采用HS256身份JWT，管理aud=rbac、外部aud为登记应用，权限逐请求读取。IDENTITY_JWT_SECRET为至少256位Base64秘密，未配置则本进程随机；IDENTITY_JWT_ISSUER同时用于两类JWT，会话索引在内存，重启重新登录。勿把秘密写入参数、日志或Git。
 
-本地两策略复现仍按上文执行。[七服务Stack和首发步骤](../deploy/README.md)已在2026-11-22按用户授权执行，两个后端均DDD，课程入口http://114.116.254.25/，RBAC入口http://114.116.254.25:8088/。原服务先备份再清退，原库/卷/Excel/历史日志保留；万人数据及课程身份已逐人核对。云端实际结果见[R35记录](history/verification/ddd-production-deployment.md)，R34本机成绩不代替云端。初始化口令仅从私有交付说明或部署Secrets获取，不存在公开默认密码。详设Word/PDF/PPT及老师原目录保持原版。
+`scripts/verify_course_initialization.py`及`verify_identity_contract.py`的参数见--help；前者会创建演示业务并临时授撤角色，只能运行于明确的本地验收库。新库按当前catalog初始化；旧回执重放需使用当时目录快照，不强行覆盖旧回执。原3349—3352验收库和日志保留，其版本证据见[验收](testing-acceptance.md)。
+
+## 7. 服务器运行
+
+两系统DDD的服务器部署按[部署指南](../deploy/README.md)执行，本页端口不套用于容器内网。线上入口为[课程](http://114.116.254.25/)及[RBAC](http://114.116.254.25:8088/)；口令由私有交付或Secrets获取，没有公开默认口令。时间修正与监控调整仍待统一发布，不在文档整理时重新部署。

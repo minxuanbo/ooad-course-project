@@ -53,7 +53,8 @@ def main():
         if not target.is_relative_to(root / '.local') or target.exists():
             raise ValueError('NEW_PRIVATE_OUTPUT_REQUIRED')
         target.write_text(rendered, encoding='utf-8')
-    print('Configuration valid: seven Swarm services, two DDD backends, public TCP 80/8088. No deployment performed.')
+    print(f"Configuration valid: {len(stack['services'])} Swarm service definitions, two DDD backends, "
+          "public TCP 80/8088. No deployment performed.")
 
 
 if __name__ == '__main__':

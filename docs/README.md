@@ -1,16 +1,16 @@
 # 项目文档
 
-这里仅维护当前规范；阶段过程、旧设计与验收原始结论集中在[history](history/README.md)。参考老师课程项目的文档分工，所有模型与实现均以本RBAC源码为准。
+正文按现行规则和设计职责组织。需求解释“系统应做什么”，设计解释“如何实现”，运行文档给出执行方法；实测版本、结果和限制集中在验收证据中。
 
-| 阅读目的 | 当前入口 |
+| 阅读目的 | 入口 |
 | --- | --- |
-| 业务范围与确认依据 | [需求](requirements.md)、[来源](requirements/sources.md) |
-| 领域对象与存储 | [领域模型](domain-model.md)、[数据库设计](database-design.md)、[物理字典](database/physical-model.md) |
-| 两套后端怎么实现 | [后端设计](backend-design.md)，第17章统一展示两套类图、差异顺序图及完整覆盖矩阵 |
-| 页面和HTTP契约 | [前端设计](frontend-design.md)、[页面接口对照](api-map.md)、[业务契约](api-contract.md)、[OpenAPI](../api/openapi.yaml) |
-| 首次初始化与课程接入 | [初始化](initialization.md)、[课程本地接入](course-integration.md) |
-| 运行及验收 | [本地复现](reproduction.md)、[测试与验收](testing-acceptance.md)、[双DDD部署](../deploy/README.md) |
+| 业务范围与依据 | [需求](requirements.md)、[来源](requirements/sources.md) |
+| 对象与存储 | [领域模型](domain-model.md)、[数据库设计](database-design.md)、[物理字典](database/physical-model.md) |
+| 两套后端 | [后端设计](backend-design.md)，第17章包含并列类图、差异顺序图与操作追溯 |
+| 页面与 HTTP | [前端设计](frontend-design.md)、[页面接口对照](api-map.md)、[业务契约](api-contract.md)、[OpenAPI](../api/openapi.yaml) |
+| 数据与外部应用 | [初始化](initialization.md)、[课程接入](course-integration.md) |
+| 执行与验证 | [本地复现](reproduction.md)、[服务器部署](../deploy/README.md)、[监控设计](../deploy/monitoring.md)、[测试与验收](testing-acceptance.md) |
 
-当前37项接口共用structured/DDD两策略和同一Vue；管理端与外部应用统一使用JWT，受众和管理准入保持隔离。历史测试成绩不视为当前修改后的通过证据，最新执行范围见测试与验收。
+当前契约共37项操作（29管理、8身份），structured 与 DDD 共用一套前端和数据库。OpenAPI YAML 是 HTTP 字段主规范，JSON 同源派生；业务契约补充范围、事务与错误语义。[图件入口](design/README.md)说明有效图集及生成方式。
 
-字段以OpenAPI YAML为唯一规范，JSON同源派生；api-contract解释Schema之外的业务语义。图件和生成数据集中在design，说明见[图件入口](design/README.md)；不单独维护另一套DDD或structured设计稿。双DDD已按老师说明及用户授权正式发布，配置从部署入口阅读，云端实测及保留限制见[R35记录](history/verification/ddd-production-deployment.md)；详设Word/PDF/PPT依用户要求保持原版。
+有追溯价值的来源、原型确认和实测证据保留在[证据索引](history/README.md)；过期计划、重复说明及被现行图集替代的旧图已清理，原版本仍可从 Git 历史恢复。原 Excel、用户外部文件、旧库及原始日志不属于清理范围。

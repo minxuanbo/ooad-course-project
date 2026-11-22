@@ -1,0 +1,87 @@
+# 由promtool执行合成时间序列；不连接线上Prometheus。
+rule_files:
+  - prometheus-rules.yml
+evaluation_interval: 2s
+tests:
+  - name: two-hosts-and-two-cores
+    interval: 1s
+    input_series:
+      - series: 'node_cpu_seconds_total{instance="node-a:9100",cpu="0",mode="idle"}'
+        values: '0+0.25x6'
+      - series: 'node_cpu_seconds_total{instance="node-a:9100",cpu="0",mode="user"}'
+        values: '0+0.75x6'
+      - series: 'node_cpu_seconds_total{instance="node-a:9100",cpu="1",mode="idle"}'
+        values: '0+0.75x6'
+      - series: 'node_cpu_seconds_total{instance="node-a:9100",cpu="1",mode="user"}'
+        values: '0+0.25x6'
+      - series: 'node_cpu_seconds_total{instance="node-b:9100",cpu="0",mode="idle"}'
+        values: '0+0.75x6'
+      - series: 'node_cpu_seconds_total{instance="node-b:9100",cpu="0",mode="user"}'
+        values: '0+0.25x6'
+    promql_expr_test:
+      - expr: node:cpu_usage_percent
+        eval_time: 2s
+        exp_samples:
+          - labels: 'node:cpu_usage_percent{instance="node-a:9100"}'
+            value: 50
+          - labels: 'node:cpu_usage_percent{instance="node-b:9100"}'
+            value: 25
+  - name: idle-and-busy-hosts
+    interval: 1s
+    input_series:
+      - series: 'node_cpu_seconds_total{instance="idle:9100",cpu="0",mode="idle"}'
+        values: '0+1x6'
+      - series: 'node_cpu_seconds_total{instance="idle:9100",cpu="0",mode="user"}'
+        values: '0+0x6'
+      - series: 'node_cpu_seconds_total{instance="busy:9100",cpu="0",mode="idle"}'
+        values: '0+0x6'
+      - series: 'node_cpu_seconds_total{instance="busy:9100",cpu="0",mode="user"}'
+        values: '0+1x6'
+    promql_expr_test:
+      - expr: node:cpu_usage_percent
+        eval_time: 2s
+        exp_samples:
+          - labels: 'node:cpu_usage_percent{instance="idle:9100"}'
+            value: 0
+          - labels: 'node:cpu_usage_percent{instance="busy:9100"}'
+            value: 100
+  - name: counter-reset
+    interval: 1s
+    input_series:
+      - series: 'node_cpu_seconds_total{instance="reset:9100",cpu="0",mode="idle"}'
+        values: '100 100.75 101.5 102.25 0.75 1.5 2.25'
+      - series: 'node_cpu_seconds_total{instance="reset:9100",cpu="0",mode="user"}'
+        values: '100 100.25 100.5 100.75 0.25 0.5 0.75'
+    promql_expr_test:
+      - expr: node:cpu_usage_percent
+        eval_time: 4s
+        exp_samples:
+          - labels: 'node:cpu_usage_percent{instance="reset:9100"}'
+            value: 25
+  - name: missed-scrape-and-recovery
+    interval: 1s
+    input_series:
+      - series: 'node_cpu_seconds_total{instance="gap:9100",cpu="0",mode="idle"}'
+        values: '0 0.75 _ 2.25 3 3.75 4.5'
+      - series: 'node_cpu_seconds_total{instance="gap:9100",cpu="0",mode="user"}'
+        values: '0 0.25 _ 0.75 1 1.25 1.5'
+    promql_expr_test:
+      - expr: node:cpu_usage_percent
+        eval_time: 2s
+        exp_samples: []
+      - expr: node:cpu_usage_percent
+        eval_time: 4s
+        exp_samples:
+          - labels: 'node:cpu_usage_percent{instance="gap:9100"}'
+            value: 25
+  - name: fresh-single-sample-is-insufficient
+    interval: 1s
+    input_series:
+      - series: 'node_cpu_seconds_total{instance="new:9100",cpu="0",mode="idle"}'
+        values: '_ _ 0'
+      - series: 'node_cpu_seconds_total{instance="new:9100",cpu="0",mode="user"}'
+        values: '_ _ 0'
+    promql_expr_test:
+      - expr: node:cpu_usage_percent
+        eval_time: 2s
+        exp_samples: []

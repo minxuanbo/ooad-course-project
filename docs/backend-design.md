@@ -1,6 +1,6 @@
 # 市政公司统一权限管理系统 · 后端设计方案
 
-版本1.5。业务依据为[需求说明](requirements.md)，领域语义见[领域模型](domain-model.md)，存储见[数据库设计](database-design.md)，HTTP契约见[OpenAPI](../api/openapi.yaml)。文档按老师[后端设计](https://gitee.com/mingqcn/course-project-mgt/blob/ca90f1cb7faa7d73b71b93a125460513f46b730e/docs/backend-design.md)的章节职责组织，全部设计对象均为本RBAC项目。
+业务依据为[需求说明](requirements.md)，领域语义见[领域模型](domain-model.md)，存储见[数据库设计](database-design.md)，HTTP契约见[OpenAPI](../api/openapi.yaml)。文档按老师[后端设计](https://gitee.com/mingqcn/course-project-mgt/blob/ca90f1cb7faa7d73b71b93a125460513f46b730e/docs/backend-design.md)的章节职责组织，全部设计对象均为本RBAC项目。
 
 同一后端工程提供 structured 和 DDD 两套实现，共用 HTTP 契约、Vue 和 MySQL。实际验证范围见[测试与验收](testing-acceptance.md)。
 
@@ -8,9 +8,9 @@
 
 单仓库、单后端应用，提供structured/ddd两种业务实现，共用HTTP/数据库契约、前端与初始化来源。两种实现应在身份、授权、范围、错误、持久化状态、回滚和并发下保持一致。Java21、Boot3.5.6、JPA、MySQL8.4、AOP及老师真实CloneFactory沿当前技术基线，不因参考老师新版本而升级框架。
 
-本RBAC自己保存口令并认证，不照搬课程项目的外部统一身份。课程身份适配按R29显式接入；Redis、语音、存储和其他示例集成不纳入本轮。
+本RBAC自己保存口令并认证，不照搬课程项目的外部统一身份。课程按通用身份协议显式接入；Redis、语音、存储和其他示例集成不纳入RBAC范围。
 
-默认首次授权管理RBAC自身权限，通用应用目录按登记事实读取，课程按R29接入，共用Vue、29项管理HTTP操作与8项可选通用应用身份操作、22项HTTP错误、12表首次SQL、固定五级角色及17项完整维护能力集合K。18个外系统仅保留离线原型演示，不进入正式目录、授权或初始化。课程身份适配职责见[课程接入](course-integration.md)，两策略各自计算权限，不将业务实现放入共享port。
+默认首次授权管理RBAC自身权限，通用应用目录按登记事实读取，课程独立配置接入，共用Vue、29项管理HTTP操作与8项可选通用应用身份操作、22项HTTP错误、12表首次SQL、固定五级角色及17项完整维护能力集合K。18个外系统仅保留离线原型演示，不进入正式目录、授权或初始化。课程身份适配职责见[课程接入](course-integration.md)，两策略各自计算权限，不将业务实现放入共享port。
 
 参考老师项目的共享用例、领域仓储、互斥装配与按模块绘图方式；本项目保留本地账号认证，不移植课程业务、外部统一身份、Boot4或Redis。
 
@@ -74,7 +74,7 @@ application→domain.model/domain.repository/service.port；domain仅依赖领�
 | ----------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | api、frontend、OpenAPI              | HTTP DTO/VO、校验、错误/信封、Vue和37操作契约（29管理、8通用身份）                                | 复用同一接口/页面，Controller只调service.port，不写实现分支                                                                                   |
 | service.port                        | 用例/支撑接口、Command/Query/Result、协议枚举、错误码、固定角色/方法路径目录 | 不导入Entity、Spring、Servlet、结构化或DDD类型；目录是协议/首次数据元信息，不执行动态权限、范围或组织层级策略                                 |
-| infrastructure.security/web/logging | BCrypt/Bearer、请求/游标/技术日志、MVC预检及门禁                             | 通过AuthenticationUseCase、ManagementAuthorization、ManagementAccessUseCase等端口调用当次装配实现，不能直接调用StructuredService或DDD应用服务 |
+| infrastructure.security/web/logging | BCrypt、Bearer承载的JWT、请求/游标/技术日志、MVC预检及门禁                             | 通过AuthenticationUseCase、ManagementAuthorization、ManagementAccessUseCase等端口调用当次装配实现，不能直接调用StructuredService或DDD应用服务 |
 | infrastructure.excel                | Excel解析、原件/源字段校验、LoginIdentifiers离线标识碰撞检查                 | 复用来源读取端口与技术预检；不依赖结构化服务，DDD业务仍独立保证身份不变量                                                                     |
 | infrastructure.persistence          | JPA Entity/Repository及技术查询                                              | 结构化服务可直接使用；DDD需独立适配器实现领域仓储，映射领域模型，不让DDD应用直接使用JPA实体/仓储                                              |
 | service.structured                  | 有效授权、人员范围/级别、部门类型规则、根锁/K、事务脚本和当前初始化编排      | 当前全部为结构化代码；DDD领域策略/行为独立实现同一规则，不继承/转调这些服务或把其搬入common                                                   |
@@ -134,7 +134,7 @@ StructuredPersonnelAuthority集中角色级别与目标保护；StructuredDepart
 
 | 现有公共契约                                                            | 实现类                                                          | 领域/支撑及主要职责                                                                                   | 类图模块                                        |
 | ----------------------------------------------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| AuthenticationUseCase                                                   | DddAuthenticationService                                          | User、AuthenticationPolicy、授权事实；双入口唯一定位、口令/状态、准入、身份装配；Bearer仍用技术端口   | identity                                        |
+| AuthenticationUseCase                                                   | DddAuthenticationService                                          | User、AuthenticationPolicy、授权事实；双入口唯一定位、口令/状态、准入、身份装配；JWT签发与校验使用技术端口   | identity                                        |
 | UserManagementUseCase                                                   | DddUserManagementService                                          | User、RoleAssignmentPolicy；选权候选/保存、严格目标保护、停用和调动                                   | personnel                                       |
 | UserQueryUseCase                                                        | DddUserQueryService                                               | UserCriteria、DomainPage<User>、OrganizationFacts；先范围/过滤/计数再分页，当前页批量角色摘要         | query                                           |
 | RoleUseCase                                                             | DddRoleService                                                    | Role、PermissionSelectionPolicy；新建空角色、改名启停、直接权限整体替换                               | role                                            |
@@ -286,19 +286,19 @@ OpenAPI定义37个操作（29项管理操作，含部门及总览5项扩展；�
 
 R19R21StructuredBoundaryTest使用仅测试依赖ArchUnit1.4.1导入生产字节码，检查API、公共端口、基础设施及结构化层依赖；Controller还检查真实非静态字段必须为service.port下用例接口，注释中的UseCase不参与判定。R18ErrorSchemaTest归r18，路由404/405的真实HTTP断言归共享r07契约；前端增量归tests/r17-navigation.test.mjs及r17-workspaces.test.mjs，共享客户端夹具归tests/helpers/api-client.mjs，不放入生产源码或复制另一套页面。
 
-本地运行验收及5项运行器单测位于backend/scripts，覆盖环境隔离和策略传递；测试辅助代码不混入生产src/main。SQL位于deploy；阶段4已直接更新首次结构以加入角色级别、组织类型和墓碑，未搬迁旧数据库。实际结果见[测试说明](testing-acceptance.md)及[阶段2历史验收](history/verification/structured-organization.md)。
+本地运行验收及5项运行器单测位于backend/scripts，覆盖环境隔离和策略传递；测试辅助代码不混入生产src/main。SQL位于deploy，首次结构包含角色级别、组织类型和墓碑，不承担旧数据库升级。实际验证入口见[测试与验收](testing-acceptance.md)。
 
 ### 11.2 DDD架构及双实现验证
 
 领域仅依赖JDK与自身模型，领域仓储签名仅模型及JDK容器；应用不依赖JPA/结构化/HTTP。R19BackendStrategyTest检查同一配置入口的互斥装配和未知值，同时保留公共端口和基础设施的单向依赖检查。基础设施依赖DDD领域模型/仓储是合法适配，不得调用DDD应用服务。
 
-R03、R07、R11、R13、R14、R23 等共享契约在两个策略实例分别运行。生成的 CloneFactory 和显式领域映射使用字段断言验证。[阶段5交接复核](history/verification/testing-acceptance-through-r32.md#阶段5-交接复核2026-11-17)已记录两策略的真实数据库、默认JAR及桌面浏览器结果；窄屏、完整键盘交互和其他写入组合仍待复验。
+R03、R07、R11、R13、R14、R23 等共享契约在两个策略实例分别运行。生成的 CloneFactory 和显式领域映射使用字段断言验证。后端契约、独立JAR、浏览器与部署分别验证，不以共用前端或历史成绩代替另一策略的业务通过。当前执行入口与证据见[测试与验收](testing-acceptance.md)。
 
-## 12. 实施顺序
+## 12. 设计变更与验证原则
 
-DDD设计确认后，先建立架构与互斥装配测试，再按认证/查询→人员写→角色资源/部门→日志/初始化切片实施。每个切片先取得真实业务行为RED，再完成领域和适配实现，随后执行共享契约及完整回归。
+业务规则在两套实现分别落实；共享契约测试验证相同输入、授权、错误和持久化结果，架构测试验证依赖方向。变更先取得真实行为RED，再完成最小实现并执行受影响回归。初始化、事务及锁须使用真实MySQL；映射验证生成源码及字段往返，浏览器验证真实HTTP与可操作状态。
 
-结构化基线在新增DDD时持续回归；前端保持一套，通过相同HTTP契约检查兼容。各阶段实际结果进入历史验证记录。整体进度见[开发计划](history/planning/development-plan-through-r32.md)。
+新增用例需同步需求、OpenAPI、端口、两套业务实现和操作追溯矩阵。只改文档或部署配置时执行对应链接、配置及工具检查，不把打包或静态审核记为业务回归通过。
 
 ## 13. 关键设计决策
 
@@ -316,7 +316,7 @@ DDD设计确认后，先建立架构与互斥装配测试，再按认证/查询�
 
 ## 14. CloneFactory对象拷贝方案
 
-采用老师spring-fundamentals的真实CloneFactory，2026-11-21升级为0.0.2并锁定用户提供源码的提交40583ff94764d2e758bcb13be17f5c05ea4d6352；普通依赖和编译期处理器共用pom中的clonefactory.version属性。可复现安装唯一维护在[部署说明](../deploy/README.md#本机依赖安装)，不以ObjectMapper/BeanUtils替代，也不把旧构件换版本号冒充新源码。
+采用老师spring-fundamentals的真实CloneFactory0.0.2，固定用户提供源码提交40583ff94764d2e758bcb13be17f5c05ea4d6352；普通依赖和编译期处理器共用pom中的clonefactory.version属性。可复现安装唯一维护在[部署说明](../deploy/README.md#本机依赖安装)，不以ObjectMapper/BeanUtils替代，也不把旧构件换版本号冒充新源码。
 
 DTO→Command、Result→VO、同名同类型toResult优先CloneFactory.copy；PATCH共同非空字段优先copyNotNull。当前Entity→Result由Entity端@CopyTo声明，使纯用例模型不反向依赖持久化类型；角色和API状态PATCH用Entity端@CopyNotNullFrom。派生字段、多来源、集合元素变化、时间类型转换及id/系统归属/授权等受保护字段必须排除并显式处理。
 
@@ -348,7 +348,9 @@ Java新增或修改类/接口/记录及关键方法写中文Javadoc；明确局�
 
 产品RbacApplication、离线ImportCommand和首次BootstrapAuthorizationCommand相互分离。显式rbac_core、ddl-auto=validate、sql.init.mode=never、旧初始化关闭；错库/测试profile组合失败关闭，不在启动时恢复旧表或重授角色。口令/数据库秘密通过环境或configtree提供。
 
-当前本地构建/测试/初始化命令见[后端说明](../backend/README.md)。R34按老师部署说明完成[双DDD适配](../deploy/README.md)：两个Nginx前端与两个单副本DDD后端均使用Swarm，RBAC内部8082提供Actuator健康与Prometheus，公网仅发布C节点80/8088；本机验证不代表云部署成功。独立课程接入服务负责实时身份转接、配置短码核查与独立业务审计，仍不进入RBAC领域/应用实现。结构变更需备份，不能仅回滚镜像；两策略切换不创建第二套业务表，进程内JWT会话索引在重启后失效。
+本地构建、测试及初始化见[后端说明](../backend/README.md)，服务器执行见[部署指南](../deploy/README.md)。Swarm按节点职责运行两个Nginx、两个单副本DDD后端、MySQL、课程接入支撑及Prometheus；待统一发布的监控配置增加全局node-exporter，采集节点CPU等宿主机指标，见[监控设计](../deploy/monitoring.md)。公网仅C的80/8088，业务、Actuator、数据库及监控均留内网。
+
+独立课程接入支撑负责实时身份转接、配置短码核查和独立业务审计，不进入RBAC领域/应用。两个Java服务的层日志使用北京时间，存储/接口Instant及JWT继续UTC。会话索引在进程内，后端单副本、stop-first，重启须重新登录；两策略不创建第二套业务表。数据变更不能仅靠回滚镜像恢复。当前线上版本与待发布修改见[验收入口](testing-acceptance.md)。
 
 ## 17. 结构化与DDD UML
 
@@ -986,7 +988,7 @@ structured的Service执行exportable筛选并投影角色/短码；DDD由Applica
 | MaintenanceProtection | maintenance（资格算法） | 根锁、锁后重鉴权、最终保护的顺序 |
 | JWT、AuditQueryGateway、IdentityDirectoryGateway、ApiOperationCatalog | 共用技术实现，不画双份 | 签名、单会话撤销、快照、目录SQL与操作配置 |
 
-当前图集82组：包图2、类图32、差异顺序图48。生成数据、源码锚点及运行命令见[图件说明](design/README.md)。旧片段类图、单侧投影/异常图与重复目录范围图归档到history/design-assets/through-r32，退出当前图集，原证据未删除。
+当前图集82组：包图2、类图32、差异顺序图48。生成数据、源码锚点及运行命令见[图件说明](design/README.md)。被现行图集替代的旧片段及重复图已清理，原版本可从Git历史恢复。
 
 ## 18. 通用应用身份与课程本地接入
 
@@ -1000,6 +1002,6 @@ JWT签名、issuer、严格到期和主体/单受众由标准JOSE/Nimbus校验�
 
 外部目录采用page从1、pageSize默认20最多100，按人员子树逐层展开直接子部门，直属人员只返回5个最小字段。IdentityDirectoryGateway在同一数据库快照先筛选、计数、分页。operationId只由IDENTITY_OPERATIONS_FILE显式配置定位，未知操作404、损坏/重复配置启动失败；permissionRoles只决定全局门禁适用角色，课程对象权限仍由课程Service判断。
 
-课程teacher/student/course-admin及路由保存在integrations/course配置中。R31首次接入按总公司本部范围分配teacher、其余student，合格根直属五级RBAC管理员同账号兼course-admin，并建立老师课程本地绑定；由独立初始化脚本显式执行，不加入RBAC领域。课程先提交绑定、RBAC后在根锁事务发布通用授权和回执，不宣称分布式原子事务；重复回执不重置后续授权。
+课程teacher/student/course-admin及路由保存在integrations/course配置中。课程首次接入按总公司本部范围分配teacher、其余student，合格根直属五级RBAC管理员同账号兼course-admin，并建立老师课程本地绑定；由独立初始化脚本显式执行，不加入RBAC领域。课程先提交绑定、RBAC后在根锁事务发布通用授权和回执，不宣称分布式原子事务；重复回执不重置后续授权。
 
-老师原目录保持独立；原本机联调副本保留3个structured生产补丁，固定990cea2的部署副本另有DDD对等修复、当前学期标记释放及安全日志补丁。统一身份审计另2项不在RBAC8项契约中；本机支撑继续保留，服务器采用独立Waitress/MySQL持久保存课程业务审计，老师缺少的Controller等来源限制继续保留。配置、端口及已知缺口以[课程接入](course-integration.md)为准；两个后端均DDD的正式运行边界见[部署说明](../deploy/README.md)，实际云端结果见[R35记录](history/verification/ddd-production-deployment.md)。详设外部文件不改。
+老师原目录保持独立；原本机联调副本保留3个structured生产补丁，固定990cea2的部署副本另有DDD对等修复、当前学期标记释放及安全日志补丁。统一身份审计另2项不在RBAC8项契约中；本机支撑继续保留，服务器采用独立Waitress/MySQL持久保存课程业务审计，老师缺少的Controller等来源限制继续保留。配置、端口及已知缺口以[课程接入](course-integration.md)为准；两个后端均DDD的正式运行边界见[部署说明](../deploy/README.md)，实际云端结果见[发布记录](history/verification/ddd-production-deployment.md)。详设外部文件不改。

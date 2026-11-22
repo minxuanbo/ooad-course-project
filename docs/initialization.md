@@ -54,16 +54,17 @@ users.id只负责新库关联；username来自“用户名”即工号，phone�
 
 导入失败的整批事务可核对后重试；数据库结构冲突须备份并明确迁移，CREATE TABLE IF NOT EXISTS不代表升级能力。旧业务库、历史日志及原Excel保留，不复用旧user_id，也不要求把旧日志整迁新库。验收回放使用私有本机实例，生产部署使用显式已备份目标，二者不混用。
 
-## 可选课程本地联调
+## 6. 显式课程首次接入
 
-默认万人导入/首次授权仍只有RBAC自身，不能因设置课程开关就自动批量建立教师或授课程权。R29采用独立空库、显式课程目录及虚构Teacher绑定，见[课程接入](course-integration.md)。RBAC首次结构SQL包含API权限类型，老师Flyway保持原样，不生成升级SQL；夹具、持久审计和凭据只写.local。课程角色teacher/student/course-admin由显式配置授予，不随系统开关自动建立或批量授给员工。
+默认万人导入及五角色首次授权只登记RBAC。课程由独立catalog/initialization配置及脚本接入，产品启动或身份开关不自动批量授予教师、学生或管理员角色。
 
-2026-11-21新增R31显式课程首次接入步骤：完成上述RBAC万人导入和五角色授权后，运行`scripts/initialize_course_integration.py`预览并按`--apply`执行。本部职能部门/项目及领导、普通员工均为teacher，分公司及下属为student；符合现行管理员资格的根直属五级人员兼course-admin，独立admin也建立同一user_id的课程教师绑定。该步骤单独配置，不改变RBAC通用模型与默认启动行为。使用[课程首次接入说明](course-integration.md#8-本部教师与分公司学生首次接入r31)，不能向已有32人验收夹具强行追加新规则。
+完成本章步骤后，总公司本部领导、职能部门/项目员工首次为teacher，分公司及下属为student；合格根直属有效五级管理员兼course-admin并建立课程教师绑定。当前原件核对191教师、9810学生及1名兼任管理员；不按首次人数恢复运行期授权。
 
+本机使用initialize_course_integration.py，新服务器首发使用initialize_deployment.py；两库提交顺序、预览、回执及中断恢复统一见[课程首次接入](course-integration.md#4-首次身份分配与恢复)。旧32人夹具仅用于隔离回归，不覆盖原库；老师Flyway原样使用，不交付升级SQL。
 
-## 权限中文展示名称（R30）
+## 7. 权限中文展示名称
 
-name用于人员操作时理解权限，code仍为稳定标识；不按中文名称鉴权。两套首次授权共用RbacCatalog.displayNames，不在前端建立翻译白名单。
+name用于人员理解，code保持稳定，不能按中文名称鉴权。两套首次授权共用RbacCatalog.displayNames；课程名称来自独立接入目录，不在Vue建立翻译白名单。
 
 | 稳定编码 | 中文名称 |
 | --- | --- |

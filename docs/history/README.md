@@ -1,47 +1,20 @@
-# 只读历史追溯
+# 来源与验证证据
 
-现行需求和设计从[正式导航](../README.md)阅读。本目录历史资料仅用于复核来源、曾经的依赖、评审与验收时间线，不参与当前规则或新代码生成；旧“当前/待实现”按原记录时间理解。
+此目录保留有独立追溯价值的材料，均只对应各自日期、提交和环境。现行规则从[文档导航](../README.md)进入，当前执行及发布状态从[验收](../testing-acceptance.md)进入。
 
-早期整改资料保留下列来源、任务与验收证据，原相对引用指向固定T13基线。现行需求、ER与设计均在正式文档中维护；本目录不另立当前规范。
-
-| 历史资料 | 用途 |
+| 材料 | 保留用途 |
 | --- | --- |
-| [原整改入口](rbac-rectification/README.md) | 当时的任务导航及开工说明 |
-| [检查记录复核](rbac-rectification/RBAC检查记录复核说明.md) | 老师纪要/数据核对与用户确认过程 |
-| [原型与契约评审](rbac-rectification/RBAC原型与API契约.md) | 四组契约的历史评审与补充确认 |
-| [执行计划与原ER源码](rbac-rectification/RBAC整改计划与Chen-ER图.md) | T01—T13实施/修复证据；现行ER另在database |
-| [原任务清单](rbac-rectification/RBAC整改任务清单.md) | 历史15票依赖；当前范围见development-plan |
+| [老师纪要复核](rbac-rectification/RBAC检查记录复核说明.md) | 保留原始技术摘录、来源事实及早期确认语境 |
+| [原型确认](design-decisions/prototype.md) | 保留多轮用户选择及原表矩阵的转换解释，不作为当前待办 |
+| [T13](verification/T13.md) | 固定早期基线的真实数据库、初始化与运行器安全复现证据 |
+| [structured UI](verification/structured-ui-acceptance.md)、[DDD UI](verification/stage6-ddd.md) | 两策略独立界面验收与可复现夹具方法 |
+| [通用课程接入](verification/course-integration-generic.md) | 真实双系统授撤权、多路由映射及来源缺口证据 |
+| [万人课程身份](verification/course-initialization-r31.md) | 本部/分公司规则、绑定及回执验证 |
+| [八项身份](verification/identity-eight-contract.md) | 扩展协议、目录/operationId及Apifox回读证据 |
+| [JWT与图件](verification/jwt-design-cleanup.md) | 管理/外部全JWT与双策略图件覆盖检查 |
+| [部署适配](verification/ddd-deployment-adaptation.md) | 固定老师来源副本、补丁及部署前完整回归 |
+| [云端发布](verification/ddd-production-deployment.md) | 实际首发版本、镜像与云端验收边界 |
+| [北京时间与服务清理](verification/beijing-time-and-service-cleanup.md) | 时间修正本机证据及终态任务归档清理结果 |
+| [文档与监控](verification/current-docs-and-monitoring.md) | 当前文档归并、删除依据及离线监控验证 |
 
-原始版本也可由[固定基线Git历史](https://github.com/minxuanbo/ooad-course-project/tree/ffc7ceb783dd71b069a41664b11c994b31da2371/docs)追溯。必要现行事实提取至requirements/sources及正式设计；阶段结果按原版本归入verification，不作为第二份当前设计。
-
-## 文档与验证记录
-
-[文档整理记录](documentation/docs-cleanup.md)保留早期设计清理过程。以下为固定阶段证据，不用于覆盖正式设计。DDD已随PR #34合入main，当前双策略实现结果见[阶段5验收](verification/testing-acceptance-through-r32.md#阶段5-交接复核2026-11-17)。
-
-- [DDD设计交付与核对记录](verification/ddd-design.md)
-- [阶段4最终文档与结构化边界核对](verification/final-alignment.md)
-- [PR #32组员审核后修复](verification/peer-followup.md)
-- [阶段4映射核对记录](verification/stage4-mapping-audit.md)
-- [阶段4正式Vue与结构化后端验收](verification/stage4-vue.md)
-- [结构化代码归类验收记录](verification/structured-organization.md)
-- [T13 当前RBAC后端集成验收](verification/T13.md)
-- [课程本地联调及双轴审查记录](verification/course-integration-local.md)
-
-[离线原型决策](design-decisions/prototype.md)保存此前讨论与获批口径；现行页面交互以frontend-design、正式API和需求为准。
-
-- [通用应用边界及课程完整本地联调](verification/course-integration-generic.md)
-- [R31万人课程首次接入及CloneFactory0.0.2验证](verification/course-initialization-r31.md)
-- [R32完整8项身份协议、JWT及本地双系统验证](verification/identity-eight-contract.md)
-
-## 归档入口补充（R33整理）
-
-- [截至R32阶段计划](planning/development-plan-through-r32.md)
-- [截至R32测试验收快照](verification/testing-acceptance-through-r32.md)
-- [structured UI原始验收](verification/structured-ui-acceptance.md)
-- [R31首次身份设计来源](design-decisions/course-initialization-r31.md)
-- [R32身份协议设计来源](design-decisions/identity-eight-contract-r32.md)
-- [退出当前图集的R32及以前图件](design-assets/through-r32/)
-- [R33全JWT与文档/UML整理验证](verification/jwt-design-cleanup.md)
-- [R34双DDD部署前适配与本机验证](verification/ddd-deployment-adaptation.md)
-- [R35双DDD服务器正式部署与公网验证](verification/ddd-production-deployment.md)
-- [R36北京时间本机修正与临时服务清理](verification/beijing-time-and-service-cleanup.md)
+过期开发计划、重复文档整理说明、被当前模型/验收覆盖的早期实施报告、重复设计决策和旧图已清理，未再转存另一层历史目录。需要原版本时从清理前提交`7fed862dca56844e02b8793d44527b9538e48dee`或Git历史读取。原Excel、用户外部设计文件、旧库/卷和原始运行日志均保留。
