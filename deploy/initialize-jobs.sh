@@ -30,9 +30,10 @@ else
   elif test "$phase" = base-preview; then
     args+=("--rbac.core.preview-file=/app/.local/base-role-preview-$RELEASE_ID.csv")
   fi
+  # 万人BCrypt计算会让事务连接长时间空闲；直连唯一MySQL任务，避开Swarm VIP空闲超时。
   docker service create "${common[@]}" \
     --env APP_BACKEND_STRATEGY=ddd \
-    --env 'RBAC_CORE_DB_URL=jdbc:mysql://mysql:3306/rbac_core?connectionTimeZone=UTC&allowPublicKeyRetrieval=true&useSSL=false' \
+    --env 'RBAC_CORE_DB_URL=jdbc:mysql://tasks.mysql:3306/rbac_core?connectionTimeZone=UTC&allowPublicKeyRetrieval=true&useSSL=false' \
     --env RBAC_CORE_DB_USER=rbac --env RBAC_CORE_SOURCE_DIR=/sources \
     --env SPRING_CONFIG_IMPORT=configtree:/run/secrets/ \
     --env 'JAVA_TOOL_OPTIONS=-Xms64m -Xmx384m -XX:MaxMetaspaceSize=160m -XX:ReservedCodeCacheSize=48m -XX:MaxDirectMemorySize=32m -Xss512k -XX:+ExitOnOutOfMemoryError' \

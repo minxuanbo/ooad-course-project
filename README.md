@@ -34,4 +34,4 @@
 
 前端在frontend执行npm ci、npm run dev，默认5173代理/api至8081；npm test及npm run build用于测试和构建。完整步骤见[本地复现](docs/reproduction.md)。原型可直接打开prototype/index.html。
 
-三份原Excel保留原件，首次111组织来源合并为110部门，10000员工加独立admin共10001账号；不复用旧ID、哈希、状态或授权。口令由配置提供，不提交Git。当前仅提供全新库SQL。[双DDD部署材料](deploy/README.md)已按老师说明适配两个前端、两个单副本DDD后端及独立接入服务；C公开80/8088，云端发布尚未执行，详见[本轮证据](docs/history/verification/ddd-deployment-adaptation.md)。
+三份原Excel保留原件，首次111组织来源合并为110部门，10000员工加独立admin共10001账号；不复用旧ID、哈希、状态或授权。口令由配置提供，不提交Git。当前仅提供全新库SQL。[双DDD部署](deploy/README.md)已在2026-11-22按用户授权正式发布：课程入口http://114.116.254.25/，RBAC入口http://114.116.254.25:8088/。旧数据备份保留、全量身份核对及实际云端验收见[R35证据](docs/history/verification/ddd-production-deployment.md)。

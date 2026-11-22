@@ -143,6 +143,6 @@ java -jar backend/target/rbac0-0.1.0.jar
 本机R31已完成的两个验收库保留原初始化回执。R32只显式登记新增2项权限/2项API及管理员关联，不重新导入或覆盖原回执；此本地动作不是交付升级SQL。若在这两个旧验收库复跑`verify_course_initialization.py`，用`--initialization-catalog .local/identity-eight-20261121/course-catalog-before.json`核对原回执；全新库使用当前目录，不需要此参数。新增`scripts/verify_identity_contract.py --help`提供独立8项契约探针，成绩与限制见[R32记录](history/verification/identity-eight-contract.md)。
 
 
-## 双DDD服务器部署材料（R34）
+## 双DDD服务器部署（R34/R35）
 
-本地两策略复现仍按上文执行。2026-11-22新增[服务器准备、七服务Stack和首发步骤](../deploy/README.md)，两个后端均DDD，入口为C的80/8088；[验收记录](history/verification/ddd-deployment-adaptation.md)明确本机验证与云端发布的界限。服务器现有服务尚未清退或替换，不能把访问地址视为已经上线。详设Word/PDF/PPT及老师原目录保持原版。
+本地两策略复现仍按上文执行。[七服务Stack和首发步骤](../deploy/README.md)已在2026-11-22按用户授权执行，两个后端均DDD，课程入口http://114.116.254.25/，RBAC入口http://114.116.254.25:8088/。原服务先备份再清退，原库/卷/Excel/历史日志保留；万人数据及课程身份已逐人核对。云端实际结果见[R35记录](history/verification/ddd-production-deployment.md)，R34本机成绩不代替云端。初始化口令仅从私有交付说明或部署Secrets获取，不存在公开默认密码。详设Word/PDF/PPT及老师原目录保持原版。

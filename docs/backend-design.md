@@ -1002,4 +1002,4 @@ JWT签名、issuer、严格到期和主体/单受众由标准JOSE/Nimbus校验�
 
 课程teacher/student/course-admin及路由保存在integrations/course配置中。R31首次接入按总公司本部范围分配teacher、其余student，合格根直属五级RBAC管理员同账号兼course-admin，并建立老师课程本地绑定；由独立初始化脚本显式执行，不加入RBAC领域。课程先提交绑定、RBAC后在根锁事务发布通用授权和回执，不宣称分布式原子事务；重复回执不重置后续授权。
 
-老师原目录保持独立；本地副本只保留3个structured生产补丁。统一身份审计另2项不在RBAC8项契约中，原独立本地支撑持久保存课程业务日志；老师缺少的Controller等来源限制继续保留。配置、端口及已知缺口以[课程接入](course-integration.md)为准。服务器部署仍搁置，详设外部文件不改。
+老师原目录保持独立；原本机联调副本保留3个structured生产补丁，固定990cea2的部署副本另有DDD对等修复、当前学期标记释放及安全日志补丁。统一身份审计另2项不在RBAC8项契约中；本机支撑继续保留，服务器采用独立Waitress/MySQL持久保存课程业务审计，老师缺少的Controller等来源限制继续保留。配置、端口及已知缺口以[课程接入](course-integration.md)为准；两个后端均DDD的正式运行边界见[部署说明](../deploy/README.md)，实际云端结果见[R35记录](history/verification/ddd-production-deployment.md)。详设外部文件不改。

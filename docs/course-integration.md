@@ -108,7 +108,7 @@ python scripts/initialize_course_integration.py --mysql <mysql.exe绝对路径> 
 
 回执使用通用bootstrap_receipts表的独立seed_key，不新增业务表或老师Flyway迁移。匹配回执重复执行直接跳过，不恢复被手动撤回的角色和权限；原件来源、账号全集或初始化配置变化会拒绝自动覆盖。此入口不是已有课程库升级或动态组织调动同步，后续身份修改仍由管理端明确授撤，并维护课程本地业务身份。
 
-R31原始职责及维护窗口约束见[历史初始化设计](history/design-decisions/course-initialization-r31.md)，真实人数、两策略HTTP与界面结果见[独立验证记录](history/verification/course-initialization-r31.md)；不能把历史32人夹具成绩当作新规则通过。服务与数据库仍仅本地运行，当前服务器适配见第11节，云端发布尚未执行。
+R31原始职责及维护窗口约束见[历史初始化设计](history/design-decisions/course-initialization-r31.md)，当时真实人数、两策略HTTP与界面结果见[独立验证记录](history/verification/course-initialization-r31.md)；不能把历史32人夹具成绩当作新规则通过。当前双DDD服务器配置见第11节，R35正式发布及逐人核对另见[云端记录](history/verification/ddd-production-deployment.md)，原本机环境保留。
 
 
 ## 9. 完整八项鉴权接入（R32）
@@ -139,4 +139,4 @@ $env:IDENTITY_ALLOWED_ORIGINS='http://127.0.0.1:5174,http://localhost:5174'
 
 老师dump中的工号user_id须在新部署库首次校正为数字subject，保留业务ID。独立initialize_deployment.py默认预览，显式离线首发apply才执行；有效191教师/9810学生/1同账号管理员，另两条演示对象保留无自动授权，物理表192/9811。重复回执不恢复后来撤回的角色；不是升级旧库的脚本。
 
-两个前端及后端均在Swarm配置中，C公开80（课程）和8088（RBAC），后端内部DNS与浏览器公网身份地址分开配置。公开/auth保持RBAC通用八项协议；课程浏览器使用8088/course-identity挂载独立接入层，以免课程单应用投影限制其他登记应用。挂载是Nginx部署路径，不新增RBAC业务Controller。真实Chrome已验证六个RBAC菜单均有对应HTTP和DDD Logback日志，未改前端源码；现场以浏览器配合docker service logs展示，无需前端增加日志页。当前完整结果及未上线边界见[本轮验收](history/verification/ddd-deployment-adaptation.md)。
+两个前端及后端均在Swarm配置中，C公开80（课程）和8088（RBAC），后端内部DNS与浏览器公网身份地址分开配置。公开/auth保持RBAC通用八项协议；课程浏览器使用8088/course-identity挂载独立接入层，以免课程单应用投影限制其他登记应用。挂载是Nginx部署路径，不新增RBAC业务Controller。真实Chrome已验证六个RBAC菜单均有对应HTTP和DDD Logback日志，未改前端源码；现场以浏览器配合docker service logs展示，无需前端增加日志页。R34本机结果见[部署前验收](history/verification/ddd-deployment-adaptation.md)，R35已按授权正式发布，两系统入口、实际公网/运行证据及限制见[云端验收](history/verification/ddd-production-deployment.md)。

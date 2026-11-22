@@ -6,7 +6,8 @@
 
 | 范围 | 证据 |
 | --- | --- |
-| R34双DDD部署前适配 | [本轮记录](history/verification/ddd-deployment-adaptation.md)，云端发布与验收尚未执行 |
+| R35双DDD正式部署 | [本轮记录](history/verification/ddd-production-deployment.md)，实际首发、身份核对、公网与运行结果 |
+| R34双DDD部署前适配 | [当时记录](history/verification/ddd-deployment-adaptation.md)，仅为部署前本机证据 |
 | R33全JWT、双策略图件及文档整理 | [本轮记录](history/verification/jwt-design-cleanup.md)，只记录实际完成的检查 |
 | R32八项身份协议、目录及operationId | [独立记录](history/verification/identity-eight-contract.md) |
 | R31万人首次课程身份 | [独立记录](history/verification/course-initialization-r31.md) |

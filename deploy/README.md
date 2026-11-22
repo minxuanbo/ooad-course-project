@@ -1,12 +1,12 @@
 # 双系统DDD部署与首次初始化
 
-2026-11-22按用户要求完成部署前适配：RBAC和课程后端均为DDD、各单副本，两个正式Vue前端由Swarm内Nginx提供。配置入口为[stack.yml](stack.yml)，不沿用旧版两服务Stack。实际验证及未执行范围见[本轮记录](../docs/history/verification/ddd-deployment-adaptation.md)。服务器现有服务没有停止、删除或替换；镜像构建、推送和公网部署尚未执行，不能将本地成绩视为云端验收。
+2026-11-22已按用户授权完成双DDD正式发布：RBAC和课程后端均为DDD、各单副本，两个正式Vue前端由Swarm内Nginx提供。配置入口为[stack.yml](stack.yml)。旧服务在备份核验后清退，原库/卷/资料保留；五个应用镜像已构建推送并按摘要部署。云端实际结果与限制见[R35记录](../docs/history/verification/ddd-production-deployment.md)，部署前本机证据另见[R34记录](../docs/history/verification/ddd-deployment-adaptation.md)。
 
 ## 1. 五节点及访问入口
 
 | 节点 | 当前硬件 | 本轮部署职责 |
 | --- | --- | --- |
-| A course-build | 2核、约1.8GiB可见内存、40GB | 串行构建与JMeter；先将剩余空间从约1.9GB释放至12～15GiB |
+| A course-build | 2核、约1.8GiB可见内存、40GB | 串行构建与JMeter；首发已将原结果异机归档并释放空间，原data保留 |
 | B course-worker-mysql | 同上 | MySQL8.4，rbac_core/course_project/course_audit三库、独立应用账号；限1GiB |
 | C course-manager | 同上 | Swarm manager、两个64MiB Nginx、320MiB Prometheus |
 | D course-worker-app | 同上 | 课程DDD后端，限896MiB |
@@ -39,7 +39,7 @@ python deploy/check-config.py --env .local/swarm.env
 
 编辑.local/swarm.env中的SWR命名空间、固定镜像标签及RELEASE_ID，不能保留CHANGE_ME。没有提供或假定老师SWR仓库的写权限。生成的8项秘密分别为MySQL root、四个业务/只读账号、Base64 JWT密钥、员工初始密码、管理员初始密码；可先通过RBAC_CORE_EMPLOYEE_PASSWORD、RBAC_CORE_ADMIN_PASSWORD指定后两项。无写死默认密码，不打印值。文件留在忽略目录，安全传输后在C以Docker Secrets导入；不得放入VITE变量、镜像层、Git或普通env文件。
 
-A先归档旧实验数据和压测结果，再清理已核对的旧镜像缓存和轮转日志；不使用volume prune，不把/opt/javaee-exp4/data当缓存。原数据库、历史日志保留。拷贝源码发布材料及已生成的课程副本到A，不携带凭据。导入所需三份原Excel另外只读放到E的/opt/ooad/sources；/opt/ooad/private-preview由UID10001可写，权限750，预检CSV不得提交。
+A先归档旧实验数据和压测结果，再清理已核对的旧镜像缓存和轮转日志；不使用volume prune，不把/opt/javaee-exp4/data当缓存。原数据库、历史日志保留。拷贝源码发布材料及已生成的课程副本到A，不携带凭据。导入所需三份原Excel另外只读放到E的/opt/ooad/sources；两目录归UID/GID10001、权限700，原Excel文件600。/opt/ooad/private-preview由UID10001写入，预检CSV不得提交。
 
 ## 4. 构建及发布前检查（A）
 
@@ -57,7 +57,7 @@ bash deploy/build-images.sh
 
 ## 5. 离线首次安装与身份绑定
 
-以下是后续上线步骤，本轮未执行。旧服务备份核对后才清退，不覆盖原有exp4数据卷。Stack统一命名ooad，新MySQL卷ooad_mysql_v1与旧卷分离，固定B节点。首次导入期间五个产品服务副本均保持0。
+以下为全新环境首发步骤，R35已实际执行；不要对已运行的正式库重复建库/导入。旧服务备份核对后才清退，不覆盖原有exp4数据卷。Stack统一命名ooad，新MySQL卷ooad_mysql_v1与旧卷分离，固定B节点。首次导入期间五个产品服务副本均保持0。
 
 在C同样登录具有镜像读取权限的SWR，再加载非秘密env、安全导入秘密文件并启动数据库阶段。Stack和新建初始化任务均传递registry auth；不能假定A的登录凭据自动出现在C：
 
@@ -73,6 +73,8 @@ export APP_REPLICAS=0
 docker stack deploy --with-registry-auth -c deploy/stack.yml ooad
 ```
 
+当前服务器Docker20的stack deploy不支持--detach选项，以上命令默认异步返回；不得把命令返回当作全部服务已健康。课程Java运行镜像另含Fontconfig、DejaVu及文泉驿中文字体，供POI计算Excel列宽；非root运行也需要这些依赖。
+
 MySQL新卷首启通过mysql-init.sh建立三库及账号、RBAC两份首次SQL与独立审计首次SQL。产品不自动导入万人或重授角色。MySQL健康后，在B把老师原始dump安全放到新输入目录，核对摘要，执行COURSE_DUMP=/绝对路径/原始dump.sql bash deploy/load-course-dump.sh；脚本拒绝非空course_project库，保留原SQL不改写。dump已含Flyway历史，课程随后正常validate/migrate；不伪造baseline或关闭校验。
 
 在C逐项运行，每项必须等任务Complete、核对退出码0和保留日志后再执行下一项：
@@ -86,6 +88,8 @@ bash deploy/initialize-jobs.sh course-apply
 ```
 
 import建立10000员工+独立admin，各账号独立BCrypt盐；base-preview只读生成私有CSV，base-apply执行五角色首次授权。course-preview按真实来源核对工号、所属范围、当前绑定和账号状态；course-apply才在新部署库将旧工号user_id改成RBAC数字subject，保留老师teacher/student主键与业务关联，补建admin教师绑定后发布配置角色。任一冲突失败停止，不猜测合并人员，不重置运行期授权。
+
+Java离线任务使用tasks.mysql直达唯一MySQL任务，避免万人BCrypt计算期间超过Swarm VIP的空闲连接时限；不能通过降低BCrypt强度或放弃整批事务来加快首次导入。任务失败先核对日志、退出码和数据库事务结果，保留原任务；确需重试同一阶段时，可仅对该次命令指定新名称，例如`RELEASE_ID="${RELEASE_ID}-import2" bash deploy/initialize-jobs.sh import`。后续阶段仍使用原发布配置，不重新建库或删除失败记录。
 
 有效身份应为190名本部员工+admin共191名教师、9810名学生、同一admin兼1名课程管理员。老师dump另有1教师和1学生演示记录，保留但不自动授RBAC角色；因此物理表行为192教师、9811学生，不能用物理人数冒充有效授权人数。相同回执重跑保留后续维护；课程绑定先成功但RBAC提交中断时可安全重试，两个数据库不伪装成分布式原子事务。
 
@@ -111,7 +115,7 @@ MySQL三库统一进行受控逻辑备份（包含file_object文件内容及cour
 
 ## 本机依赖安装
 
-使用JDK21、Maven及Git。2026-11-21按用户提供的老师本地spring-fundamentals核对并升级为真实`cn.edu.xmu:clonefactory:0.0.2`；源码固定提交`40583ff94764d2e758bcb13be17f5c05ea4d6352`，不是将旧构件改名。来源为[老师spring-fundamentals](https://gitee.com/mingqcn/spring-fundamentals/tree/40583ff94764d2e758bcb13be17f5c05ea4d6352/clonefactory)，源码工作树已核对干净，CopyProcessor.java的SHA-256为`161253932c623301e3f90726548e8821c87d9928ee518a47ee7b6f51ec6e3fd8`。来源仓库许可为Apache-2.0，源码与jar只放忽略目录及本机Maven仓库。
+使用JDK21、Maven及Git。2026-11-21按用户提供的老师本地spring-fundamentals核对并升级为真实`cn.edu.xmu:clonefactory:0.0.2`；源码固定提交`40583ff94764d2e758bcb13be17f5c05ea4d6352`，不是将旧构件改名。来源为[老师spring-fundamentals](https://gitee.com/mingqcn/spring-fundamentals/tree/40583ff94764d2e758bcb13be17f5c05ea4d6352/clonefactory)，源码工作树已核对干净。CopyProcessor.java在原Windows CRLF检出下的SHA-256为`161253932c623301e3f90726548e8821c87d9928ee518a47ee7b6f51ec6e3fd8`，Linux LF及去CR后的统一摘要为`60ee8327a248a96e1a9541cba4b9005f7f411d03c4f6f3af370c7df44285e831`；容器按后者校验，不改写源码。来源仓库许可为Apache-2.0，源码与jar只放忽略目录及本机Maven仓库。
 
 以下PowerShell命令在仓库根执行，使用新的本地忽略目录；目录已存在时先核对所属及提交，不覆盖。编译器proc=full使老师处理器源码可在Java21正确编译，不改老师源码，也不连带升级本项目Boot、JDK或Lombok。镜像构建使用java-build.Dockerfile安装同一固定版本；原老师目录不修改。
 

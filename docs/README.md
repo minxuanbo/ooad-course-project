@@ -13,4 +13,4 @@
 
 当前37项接口共用structured/DDD两策略和同一Vue；管理端与外部应用统一使用JWT，受众和管理准入保持隔离。历史测试成绩不视为当前修改后的通过证据，最新执行范围见测试与验收。
 
-字段以OpenAPI YAML为唯一规范，JSON同源派生；api-contract解释Schema之外的业务语义。图件和生成数据集中在design，说明见[图件入口](design/README.md)；不单独维护另一套DDD或structured设计稿。老师部署说明已核对，双DDD部署材料及本机验证见部署入口，服务器尚未发布；详设Word/PDF/PPT依用户要求保持原版。
+字段以OpenAPI YAML为唯一规范，JSON同源派生；api-contract解释Schema之外的业务语义。图件和生成数据集中在design，说明见[图件入口](design/README.md)；不单独维护另一套DDD或structured设计稿。双DDD已按老师说明及用户授权正式发布，配置从部署入口阅读，云端实测及保留限制见[R35记录](history/verification/ddd-production-deployment.md)；详设Word/PDF/PPT依用户要求保持原版。
