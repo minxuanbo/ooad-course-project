@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { api } from '../api.js'
 import Modal from '../components/Modal.vue'
+import { formatBeijingTime, beijingInputToUtc } from '../lib/presentation.js'
 const filters = ref({
   userId: '',
   username: '',
@@ -29,12 +30,12 @@ const eventLabels = {
   AUTHORIZATION: '鉴权判定',
   REQUEST_DENIED: '请求拒绝',
 }
-/** 查询指纹包含每批条数，日期统一转换UTC提交。 */
+/** 查询指纹包含每批条数，输入按北京时间解释后转换UTC提交。 */
 function query() {
   const params = new URLSearchParams({ limit: String(limit.value) })
   for (const [key, value] of Object.entries(filters.value))
     if (value !== '')
-      params.set(key, key === 'from' || key === 'to' ? new Date(value).toISOString() : value)
+      params.set(key, key === 'from' || key === 'to' ? beijingInputToUtc(value) : value)
   return params.toString()
 }
 function dirty() {
@@ -54,7 +55,7 @@ async function load(append = false) {
     if (
       filters.value.from &&
       filters.value.to &&
-      new Date(filters.value.from) >= new Date(filters.value.to)
+      new Date(beijingInputToUtc(filters.value.from)) >= new Date(beijingInputToUtc(filters.value.to))
     )
       throw Error('开始时间必须早于结束时间。')
     if (!append) {
@@ -141,11 +142,11 @@ onUnmounted(() => {
         </select>
       </label>
       <label>
-        开始（含）
+        开始（北京时间，含）
         <input v-model="filters.from" type="datetime-local" />
       </label>
       <label>
-        结束（不含）
+        结束（北京时间，不含）
         <input v-model="filters.to" type="datetime-local" />
       </label>
       <label>
@@ -171,7 +172,7 @@ onUnmounted(() => {
     <table>
       <thead>
         <tr>
-          <th>UTC 时间</th>
+          <th>北京时间</th>
           <th>账号 / 用户 ID</th>
           <th>事件 / 系统</th>
           <th>请求</th>
@@ -181,7 +182,11 @@ onUnmounted(() => {
       </thead>
       <tbody>
         <tr v-for="row in rows" :key="row.id">
-          <td>{{ row.occurredAt }}</td>
+          <td>
+            <time :datetime="row.occurredAt" :title="row.occurredAt">
+              {{ formatBeijingTime(row.occurredAt) }}
+            </time>
+          </td>
           <td>
             {{ row.username || '未识别身份' }}
             <small>{{ row.userId || '无已识别用户' }}</small>
@@ -222,8 +227,10 @@ onUnmounted(() => {
   <Modal v-if="detail" title="日志详情" @close="detail = null">
     <dl class="log-detail">
       <template v-for="(value, key) in detail" :key="key">
-        <dt>{{ key }}</dt>
-        <dd>{{ value ?? '—' }}</dd>
+        <dt>{{ key === 'occurredAt' ? '时间（北京时间）' : key }}</dt>
+        <dd :title="key === 'occurredAt' ? value : undefined">
+          {{ key === 'occurredAt' ? formatBeijingTime(value) : value ?? '—' }}
+        </dd>
       </template>
     </dl>
     <button class="secondary" @click="detail = null">关闭</button>

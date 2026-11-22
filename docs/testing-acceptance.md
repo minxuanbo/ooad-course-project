@@ -6,6 +6,7 @@
 
 | 范围 | 证据 |
 | --- | --- |
+| R36北京时间与临时服务清理 | [本轮记录](history/verification/beijing-time-and-service-cleanup.md)，清理已执行；时间修正仅本机验证，待用户统一发布 |
 | R35双DDD正式部署 | [本轮记录](history/verification/ddd-production-deployment.md)，实际首发、身份核对、公网与运行结果 |
 | R34双DDD部署前适配 | [当时记录](history/verification/ddd-deployment-adaptation.md)，仅为部署前本机证据 |
 | R33全JWT、双策略图件及文档整理 | [本轮记录](history/verification/jwt-design-cleanup.md)，只记录实际完成的检查 |

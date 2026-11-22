@@ -1,5 +1,7 @@
 # RBAC项目协作
 
+2026-11-22 R36：用户要求集中反馈后再重新部署，最新限制覆盖R35即时发布授权；仅授权8项终态临时服务清理，归档Spec/任务/日志到C及本机并核验SHA后已删除，正式7服务前后列表不变、均1/1，数据卷/Secrets保留。源码网页列表/详情/总览统一Asia/Shanghai，筛选按北京时间显式转UTC；两个Java服务Stack设日志日期格式Asia/Shanghai/+08:00，Docker可选--timestamps采集前缀仍UTC。前端31测试/构建、三浏览器时区12项本地夹具展示、两JAR真实Boot日志8项探针通过；详见docs/history/verification/beijing-time-and-service-cleanup.md。没有新镜像/线上Stack更新/应用重启，时间修正仍待统一发布；API/数据库/Instant/JWT/两策略业务不改，不新增Apifox写入，原老师目录/详设/T14/T15保持。
+
 2026-11-22 R35：用户明确授权正式部署两DDD及清退旧服务，并要求易输入初始口令。旧MySQL/Mongo/服务Spec/历史日志与A压测结果先备份核验，原卷、Excel和A原data保留；新七服务已发布C的80（课程）/8088（RBAC），各单副本stop-first。应用源码496ed3e，实际摘要见docs/history/verification/ddd-production-deployment.md；首次导入因VIP长空闲连接失败且整批0残留，改Java离线任务tasks.mysql直连后五阶段均退出0，另960秒对照证实VIP失败/直连成功。逐人核对10001角色及绑定、独立BCrypt10盐、191教师/9810学生/1管理员；原演示对象保留。容器补Fontconfig/中英文字体修复Excel500，JAR摘要不变；Linux校验去CR、curl下载修正。最终公网HTTP62、入口8、三服务重启10通过，Chrome六菜单逐项对应DDD日志、普通Chrome同admin双系统登录通过；课程三角色Playwright受本机代理拦截不计通过。三库新备份异机SHA/gzip通过，不宣称整机重启/故障切换/压测或恢复演练。口令仅Secrets及私有交付，不提交；37API未变、不新增Apifox写入，PR43保持草稿，不合main/不关T14/T15/不改详设或老师原目录。
 
 2026-11-22 R34：用户提供老师部署说明并要求两系统均使用DDD，完成部署前适配。七服务Swarm配置、Dockerfile/真实CloneFactory0.0.2、Secrets/离线首发工具及独立Waitress/MySQL业务审计已准备；仅C公开80/8088，后端各单副本、stop-first。老师来源990cea2独立副本保留原structured三补丁，并修复DDD学期标记释放、组长差集、学生里程碑、管理员教学班及安全日志；原目录不改。RBAC各213、课程副本499、双DDD HTTP133及内部运维/重启8项、Python38、六菜单Chrome日志对应及两前端构建通过，详见docs/history/verification/ddd-deployment-adaptation.md；云端旧服务清退、镜像发布/部署尚未执行，不以本地证据替代。详设外部文件/T14/T15边界保持。

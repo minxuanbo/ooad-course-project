@@ -7,6 +7,42 @@ export function errorText(error) {
   )
 }
 
+const beijingFormatter = new Intl.DateTimeFormat('zh-CN', {
+  timeZone: 'Asia/Shanghai',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  fractionalSecondDigits: 3,
+  hourCycle: 'h23',
+})
+
+/** 将接口时间转换为北京时间，保留毫秒且不受浏览器所在时区影响。 */
+export function formatBeijingTime(value) {
+  if (value === null || value === undefined || value === '') return '—'
+  const instant = new Date(value)
+  if (!Number.isFinite(instant.getTime())) return '—'
+  const parts = Object.fromEntries(
+    beijingFormatter.formatToParts(instant).map((part) => [part.type, part.value]),
+  )
+  return `${parts.year.padStart(4, '0')}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}.${parts.fractionalSecond}`
+}
+
+/** 将北京时间输入转换为接口UTC边界，拒绝非法日期和无声滚动到其他日期。 */
+export function beijingInputToUtc(value) {
+  const parts =
+    typeof value === 'string' &&
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/.exec(value)
+  if (!parts) throw Error('请输入有效的北京时间。')
+  const instant = new Date(`${value}+08:00`)
+  const expected = `${parts[1]}-${parts[2]}-${parts[3]} ${parts[4]}:${parts[5]}:${parts[6] || '00'}.${(parts[7] || '').padEnd(3, '0')}`
+  if (!Number.isFinite(instant.getTime()) || formatBeijingTime(instant) !== expected)
+    throw Error('请输入有效的北京时间。')
+  return instant.toISOString()
+}
+
 /** 保留匹配节点的范围内祖先，深度优先输出连续子树。 */
 export function organizationRows(
   nodes,

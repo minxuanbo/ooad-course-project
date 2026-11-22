@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { api, canRoute } from '../api.js'
-import { errorText, RequestGeneration } from '../lib/presentation.js'
+import { errorText, RequestGeneration, formatBeijingTime } from '../lib/presentation.js'
 const result = ref(null),
   error = ref(''),
   busy = ref(false),
@@ -120,6 +120,7 @@ onUnmounted(() => {
     </div>
     <section v-if="canRoute('GET', '/authorization-logs', true)" class="card panel">
       <h2>最近鉴权与认证活动</h2>
+      <p class="muted">时间以北京时间显示。</p>
       <p v-if="activityError" class="error" role="alert">
         {{ activityError }}
         <button class="secondary" :disabled="activityBusy" @click="loadActivity">重试活动</button>
@@ -132,7 +133,9 @@ onUnmounted(() => {
           {{ row.username || '未识别身份' }}
           <small>{{ row.requestId }}</small>
         </span>
-        <time>{{ row.occurredAt }}</time>
+        <time :datetime="row.occurredAt" :title="row.occurredAt">
+          {{ formatBeijingTime(row.occurredAt) }}
+        </time>
       </div>
     </section>
   </template>

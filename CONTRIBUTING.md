@@ -4,6 +4,8 @@
 
 ## 1. 当前工作边界
 
+R36用户要求继续集中反馈，暂缓再次部署。仅授权清理8项已结束的初始化/排障服务，已在完整归档并核验后执行，7项正式服务不变；北京时间网页/Java日志修正完成本机验证，等待用户明确统一发布。不以先前R35部署授权自动更新线上Stack或重启应用。结果见[R36记录](docs/history/verification/beijing-time-and-service-cleanup.md)。
+
 R35用户已明确授权两系统正式部署及旧服务清退，覆盖此前搁置服务器的阶段限制。当前在codex/ddd-swarm-adaptation交付，草稿PR #43面向main；不据部署授权自动合并或关闭T14/T15。原库/卷/Excel/历史日志及老师原目录保留，实际云端结果见[部署记录](docs/history/verification/ddd-production-deployment.md)。密码仅放Secrets与私有交付说明，不提交；详设外部文件保持原版。本轮37项业务API未改变，不产生新的Apifox写入。
 
 R33阶段由用户要求统一全部JWT、补齐双策略类图/差异覆盖并整理docs。当前规范从docs/README进入，旧计划与设计/验收快照归history；不再把历史阶段状态当当前待办。37项HTTP与两类离线入口由UML注册表追溯，更新图须生成并目检。Apifox项目仍为9042431，变更契约时依明确授权同步；历史证据与用户资料保留。

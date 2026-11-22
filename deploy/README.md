@@ -2,6 +2,8 @@
 
 2026-11-22已按用户授权完成双DDD正式发布：RBAC和课程后端均为DDD、各单副本，两个正式Vue前端由Swarm内Nginx提供。配置入口为[stack.yml](stack.yml)。旧服务在备份核验后清退，原库/卷/资料保留；五个应用镜像已构建推送并按摘要部署。云端实际结果与限制见[R35记录](../docs/history/verification/ddd-production-deployment.md)，部署前本机证据另见[R34记录](../docs/history/verification/ddd-deployment-adaptation.md)。
 
+R36用户要求集中反馈后再发布：8项已结束的初始化/排障服务已归档清理，7项正式服务不变；北京时间网页与Java日志修正只完成源码和本机验证，尚未构建发布新镜像、更新线上Stack或重启应用，不能将当前源码配置当作线上已生效。见[R36记录](../docs/history/verification/beijing-time-and-service-cleanup.md)。
+
 ## 1. 五节点及访问入口
 
 | 节点 | 当前硬件 | 本轮部署职责 |
@@ -95,13 +97,17 @@ Java离线任务使用tasks.mysql直达唯一MySQL任务，避免万人BCrypt计
 
 确认预览和apply结果后，在C设置APP_REPLICAS=1重新stack deploy。数据库首次脚本只对全新卷执行，不把此流程作为旧库升级工具。
 
+Docker20以restart-condition=none的普通Swarm服务承载一次性任务，完成后仍显示0/1；须查看任务Complete/Failed与退出码区分结果。验收后先归档服务Spec、任务详情、日志并核验，再按明确名称删除这些终态临时服务，正式七服务保留。R36清理了6项初始化任务（含失败首试及成功重试）和2项空闲探针，归档位于/opt/ooad/backups/r35-496ed3e-20261122/temporary-services-20261122T044112Z.tar.gz，另有本机私有副本；不删除数据库卷、秘密或初始化结果。
+
 ## 6. 老师验收与日志
 
 ```bash
 python deploy/verify-deployment.py
 # C：另开一个终端，显示实际Java Logback日志。
-docker service logs --follow --since 2m --timestamps ooad_rbac-backend
+docker service logs --follow --since 2m ooad_rbac-backend
 ```
+
+待统一发布的Stack为两个Java服务显式设置LOGGING_PATTERN_DATEFORMAT，时间格式包含Asia/Shanghai及+08:00，例如2026-11-22T12:37:29.205+08:00；不依赖JVM或容器默认时区，不改变数据库/JWT的UTC语义。docker service logs --timestamps额外添加的Docker原始采集时间戳仍为UTC，不能通过Logback修改；普通课堂查看使用以上不带--timestamps的命令，取证归档可继续保留UTC采集时间。当前线上尚未应用此配置。
 
 在RBAC浏览器依次切换工作总览、部门管理、人员管理、角色与权限、资源与API、鉴权日志。核对每次实际/api请求成功，以及对应Controller/Service的开始、完成、耗时日志；不能以Nginx访问日志或数据库鉴权日志代替。无需在前端新增“日志控制台”，页面正常加载及后端日志同步出现即可。Stack明确配置三层DEBUG、根INFO；日志不含密码、JWT、Authorization、完整参数或响应。Docker每容器10MB×5轮转，退出/更新前将验收时间段导出到受控归档目录。
 
