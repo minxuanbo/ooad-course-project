@@ -47,5 +47,3 @@ groups:
       # 磁盘 I/O 写入速率
       - record: node:disk_written_bytes:rate5m
         expr: rate(node_disk_written_bytes_total[5m])
-
-
