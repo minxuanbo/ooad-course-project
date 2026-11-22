@@ -4,6 +4,7 @@ import cn.edu.xmu.clonefactory.util.CloneFactory;
 import com.municipal.rbaccore.api.audit.dto.LogQueryDTO;
 import com.municipal.rbaccore.api.audit.vo.LogEntryVO;
 import com.municipal.rbaccore.api.audit.vo.LogPageVO;
+import com.municipal.rbaccore.api.resource.vo.SystemVO;
 import com.municipal.rbaccore.service.port.audit.AuditLogUseCase;
 import com.municipal.rbaccore.service.port.audit.LogPageResult;
 import com.municipal.rbaccore.service.port.audit.LogQuery;
@@ -42,6 +43,10 @@ public class AuditController {
                   entry.setOccurredAt(item.getOccurredAt().toString());
                   return entry;
                 })
+            .toList());
+    view.setSystems(
+        result.getSystems().stream()
+            .map(system -> CloneFactory.copy(new SystemVO(), system))
             .toList());
     return view;
   }

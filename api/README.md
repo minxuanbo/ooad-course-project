@@ -17,8 +17,14 @@ python -c "import json,pathlib,yaml; p=pathlib.Path('api'); d=yaml.safe_load((p/
 
 导出后核对YAML/JSON语义相等、37项操作、17项K、所有引用可解析，使用OpenAPI3.1校验器检查。类型/长度静态约束不能替代跨字段、归一化、状态、数据库、授权或范围验证。
 
-Apifox同步须用户明确确认目标项目和覆盖范围，不能沿用老师项目ID或凭据。用户已授权同步本项目9042431；当前1.5.0将管理端与外部应用全部统一为JWT，37操作、31路径、71模型不变，实际回读证据见[R33验证](../docs/history/verification/jwt-design-cleanup.md)。R32的1.4.0成绩保留为历史。
+Apifox目标为本项目9042431，写入必须在用户明确授权范围内，完成后回读。当前OpenAPI1.5.1新增日志响应systems目录及PERMISSION_CHECK语义，37操作/31路径/71模型/K17保持；代码字段待统一发布后生效，验证从[验收入口](../docs/testing-acceptance.md)查阅。
 
-阶段4新增部门目录/增删改名及范围总览5操作，扩展身份实际路由、角色级别、人员职位/角色摘要和部门人数。默认首次授权仅RBAC，维护目录按已登记应用读取；原型18业务系统不进入首次授权。写入Apifox依当次明确授权执行。
+## Apifox真实服务器调试
 
-公共Error.code当前22项，含R32新增的身份用户、部门及API操作不存在3个稳定404编码；状态与语义见[API约束](../docs/api-contract.md)。权限明细接口仍保留，正式导航只读取GET /me提供的实际路由与范围，不因减少重复请求删除公共API。
+选择“服务器验收（真实RBAC）”（环境ID50398304），Base URL为http://114.116.254.25:8088，默认服务及模块8887289均使用此地址。接口路径已包含/api或/auth，不再额外拼/api。环境原有参数保留，不保存共享明文密码、RBAC JWT或课程JWT；本地Mock/云端Mock仅用于显式示例，不能作为真实授权或数据库测试。
+
+管理操作先调用/api/auth/login取得data.token，身份八项先调用/auth/login取得accessToken；两类JWT通过Bearer携带但受众不同，按各自鉴权配置填写，不混用。课程业务API仍在老师项目，本项目环境指向RBAC，不能改成课程80端口。新增日志systems字段和权限查询事件在本次应用统一发布后验收，当前服务器仍为既有部署版。
+
+同步OpenAPI时只导入契约资源，环境通过environment命令单独维护，避免每次导入相对servers地址生成重复环境。保留现有Mock环境不代表默认使用Mock；客户端选择环境属于个人界面状态，执行前核对环境名称和最终请求URL。
+
+公共Error.code当前22项；状态与语义见[业务约束](../docs/api-contract.md)。实际导航只读取GET /me的当前路由与范围，权限明细接口仍保留。

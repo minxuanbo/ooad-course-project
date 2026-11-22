@@ -1,6 +1,6 @@
-# 现行文档整理与监控口径核对
+# 现行文档、监控与鉴权体验核对
 
-日期：2026-11-22；源码起点`7fed862dca56844e02b8793d44527b9538e48dee`，任务分支`codex/docs-monitoring-current`。用户要求按现行需求和设计整理文档、删除无用历史，并指定老师`spring-fundamentals/4. SpringAOP`为监控参考。此次没有部署、热加载或重启正式服务。
+日期：2026-11-22；源码起点`7fed862dca56844e02b8793d44527b9538e48dee`，任务分支`codex/docs-monitoring-current`。用户要求按现行需求和设计整理文档、删除无用历史，并指定老师`spring-fundamentals/4. SpringAOP`为监控参考。用户随后要求在同一PR44修正日志筛选、密码提示及Apifox真实测试环境，反馈起点为21b425b。此次没有部署、热加载或重启正式服务。
 
 ## 1. 文档调整
 
@@ -27,12 +27,24 @@ Stack增加内网global node-exporter，拟采集B/C/D/E，A不在Swarm。只读
 - Docker CLI27.5.1在断网、只读、无Docker socket的临时容器内执行`docker stack config`，8项服务定义解析通过。A原Docker20不含该子命令，未尝试用部署代替校验。
 - Promtool在断网只读临时容器执行，测试临时TSDB使用/tmp内存文件系统；没有启动正式Prometheus或exporter。原始日志留在`.local/production-20261122/monitoring-promtool-offline-20261122f.log`。
 
-全部41份剩余Markdown的465处本地链接/锚点校验无错误；非秘密配置校验输出8项服务定义。保留的11条规则表达式与用户指定老师文件逐项一致，显式组间隔改为2秒。R01—R33全部保留；OpenAPI YAML/JSON一致且仍37操作、31路径、71模型。git diff确认业务Java、Vue、SQL和OpenAPI未改变，未重跑全部MySQL及浏览器，也不把此前213项等成绩算作此次通过。
+全部41份剩余Markdown的465处本地链接/锚点校验无错误；非秘密配置校验输出8项服务定义。保留的11条规则表达式与用户指定老师文件逐项一致，显式组间隔改为2秒。R01—R33全部保留；OpenAPI YAML/JSON一致且仍37操作、31路径、71模型。上述为最初文档/监控提交的验证范围；随后鉴权体验修改的代码及新实测见第4节，不引用旧业务成绩代替本次通过。
 
 双轴初审规范0项；需求轴发现overlay容器netdev不代表宿主网络的口径问题，已撤去该采集器及两条网络规则，明确本次不采宿主机网络，不引入host网络或公网端口。CPU、内存、文件系统、磁盘的宿主路径及Java指标保留；最终11条规则和Stack已重跑以上检查。独立新上下文双轴复核`7fed862...ec00f426`：Standards硬违反/需报告smell均0，Spec缺失/越界/实现错误最终均0；初审1项已修复。复核属于代理技术审核，不冒称老师或真人验收。
 
-## 4. 尚未验证与发布边界
+## 4. 鉴权体验与Apifox
++
++线上只读聚合核查时已存在33条course-project-management的LOGIN_SUCCESS及24条目录/查人AUTHORIZATION允许记录，不能把首页未显示理解为没有记录。此处LOGIN_SUCCESS证明RBAC凭据/应用准入成功，不证明课程教师/学生绑定或后续业务已经成功；老师后端主要通过/auth/me取权限后自行执行对象规则，RBAC没有收到每个功能的执行结果。
++
++日志响应新增systems（id/code/name/enabled），由已授权日志Gateway提供，含停用应用，不随日志筛选缩小，不要求GET /api/systems资源目录权限。Vue改为名称/编码下拉、提交appCode，并说明快照刷新和业务结果边界。密码框补“请输入密码”，保留掩码及显示/隐藏。
++
++两种身份用例分别在实际短码及operationId查询完成后登记PERMISSION_CHECK。过滤器每次查询记录一条真假结果；无权限仍HTTP200，reason=PERMISSION_NOT_GRANTED，不当成课程业务403或已执行结果。实际受控目录/查人继续用AUTHORIZATION。未扩写老师业务或混合两套审计。
++
++新增两项真实MySQL/HTTP契约先RED（缺少目录及查询事件的断言失败），再实现；最初数据库未启动、沙箱Java附加停滞不算RED。最终structured与DDD各215项，失败/错误/跳过均0，原始日志为.local/pr44-feedback-20261122/rbac-structured-green.log及rbac-ddd-redgreen.log。前端32项及构建通过，Chrome9项显示检查通过（独立HTTP显示夹具，非服务器端到端）；截图与报告保存在同目录。真实CloneFactory53个生成重载非空，新增systems的集合元素类型转换显式映射。
++
++OpenAPI1.5.1仍37操作、31路径、71模型、K17；YAML/JSON一致并通过OpenAPI3.1校验。Apifox9042431按本次授权同步两项Schema及版本，导出回读的操作/模型/鉴权/元信息语义差异0，失败计数0。环境50398304已改名“服务器验收（真实RBAC）”，默认及模块8887289 Base URL均http://114.116.254.25:8088，保留原参数，不新增重复环境；原11环境ID集合相同。经回读地址发起/api/me及/auth/me匿名请求均得到真实后端401、AUTHENTICATION_REQUIRED及请求号。个人客户端仍需选择该环境，旧Mock仅供显式示例，不写共享口令或JWT。
++
++## 5. 尚未验证与发布边界
 
 新增exporter的真实节点采集、overlay DNS发现、1秒采集的时序抖动与资源/存储占用须获统一发布授权后实测，离线合成序列不替代线上验收。2秒窗口只有少量样本，漏采可能短时无值，不能填成0%。应用仍单副本、单manager和进程内会话索引，不宣称高可用。
 
-北京时间与监控配置均尚未发布；未推送新应用镜像、更新线上Stack、重启服务、写Apifox或改外部详设，不关闭T14/T15。
+北京时间、监控及鉴权体验代码均待统一发布；未推送新应用镜像、更新线上Stack、重启正式服务或改外部详设，不关闭T14/T15。Apifox环境/契约已按本次授权更新，新增日志字段与查询事件尚需应用统一发布后在服务器验收，不能把指向真实服务器的环境当成新代码已上线。

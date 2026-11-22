@@ -5,6 +5,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.municipal.rbaccore.infrastructure.persistence.entity.AuthorizationLogEntity;
 import com.municipal.rbaccore.infrastructure.persistence.repository.AuthorizationLogJpaRepository;
+import com.municipal.rbaccore.infrastructure.persistence.repository.ApplicationSystemJpaRepository;
+import com.municipal.rbaccore.service.port.resource.SystemResult;
 import com.municipal.rbaccore.service.port.audit.AuditQueryGateway;
 import com.municipal.rbaccore.service.port.audit.LogEntryResult;
 import com.municipal.rbaccore.service.port.audit.LogPageResult;
@@ -30,6 +32,7 @@ public class JpaAuditQueryGateway implements AuditQueryGateway {
   private final AuthorizationLogJpaRepository logs;
   private final AuditPageCursor cursors;
   private final ObjectMapper mapper;
+  private final ApplicationSystemJpaRepository systems;
 
   /** 同快照total不随翻页缩小，查询产生的新技术记录不进入旧快照。 */
   @Override
@@ -62,7 +65,16 @@ public class JpaAuditQueryGateway implements AuditQueryGateway {
             .toList();
     String next =
         more ? cursors.encode(position.snapshot(), selected.getLast().getId(), fingerprint) : null;
-    return new LogPageResult(items, next, more, position.snapshot(), total);
+    List<SystemResult> catalog =
+        systems.findAll(Sort.by("id")).stream()
+            .map(
+                system -> {
+                  SystemResult result = CloneFactory.copy(new SystemResult(), system);
+                  result.setEnabled(system.isEnabled());
+                  return result;
+                })
+            .toList();
+    return new LogPageResult(items, next, more, position.snapshot(), total, catalog);
   }
 
   /** 查询、快照总数与下一批均使用同一组筛选条件。 */

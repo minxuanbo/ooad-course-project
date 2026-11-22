@@ -47,10 +47,11 @@ async function loadActivity() {
   }
 }
 const labels = {
-  LOGIN_SUCCESS: '登录成功',
-  LOGIN_FAILED: '登录失败',
+  LOGIN_SUCCESS: '身份认证成功',
+  LOGIN_FAILED: '身份认证失败',
   UNAUTHENTICATED: '未认证访问',
   AUTHORIZATION: '鉴权判定',
+  PERMISSION_CHECK: '权限查询',
   REQUEST_DENIED: '请求拒绝',
 }
 onMounted(load)

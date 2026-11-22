@@ -55,7 +55,9 @@ public class DddApplicationIdentityService implements ApplicationIdentityUseCase
   /** 只检查当前应用投影，不接收客户端自报角色。 */
   @Override
   public boolean allowed(String header, String code) {
-    return current(header).permissions().contains(code);
+    boolean allowed = current(header).permissions().contains(code);
+    requests.permissionCheck(allowed);
+    return allowed;
   }
 
   /** 查询身份前检查本应用实际映射，不把特定应用权限码写入领域。 */
@@ -128,12 +130,15 @@ public class DddApplicationIdentityService implements ApplicationIdentityUseCase
         operation.requiresPermission()
             && (operation.permissionRoles().isEmpty()
                 || identity.roles().stream().anyMatch(operation.permissionRoles()::contains));
-    return !gated
+    boolean allowed =
+        !gated
         || hasRoute(
             facts(tokens.requireForSystem(header, identity.system())),
             identity.system(),
             operation.method(),
             operation.path());
+    requests.permissionCheck(allowed);
+    return allowed;
   }
 
   /** 真实目录和用户读取进入统一鉴权日志，授权来自当前领域投影。 */

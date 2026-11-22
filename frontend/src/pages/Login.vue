@@ -77,6 +77,7 @@ async function login() {
               v-model="password"
               :type="reveal ? 'text' : 'password'"
               autocomplete="current-password"
+              placeholder="请输入密码"
               required
             />
             <button type="button" class="text-button" @click="reveal = !reveal">

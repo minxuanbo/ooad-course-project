@@ -37,6 +37,13 @@ public class HttpRequestContext implements RequestContext {
     if (request != null) request.setAttribute("applicationAuthorizationDecision", allowed);
   }
 
+  /** 查询结果保留独立事件类别，false也可对应成功的HTTP200查询。 */
+  @Override
+  public void permissionCheck(boolean allowed) {
+    HttpServletRequest request = RequestAuditFilter.current();
+    if (request != null) request.setAttribute("permissionCheckDecision", allowed);
+  }
+
   /** 后台用例不能伪造HTTP方法或路径模板。 */
   public Operation operation() {
     HttpServletRequest request = RequestAuditFilter.current();

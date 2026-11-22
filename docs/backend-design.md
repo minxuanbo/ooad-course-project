@@ -1002,6 +1002,8 @@ JWT签名、issuer、严格到期和主体/单受众由标准JOSE/Nimbus校验�
 
 外部目录采用page从1、pageSize默认20最多100，按人员子树逐层展开直接子部门，直属人员只返回5个最小字段。IdentityDirectoryGateway在同一数据库快照先筛选、计数、分页。operationId只由IDENTITY_OPERATIONS_FILE显式配置定位，未知操作404、损坏/重复配置启动失败；permissionRoles只决定全局门禁适用角色，课程对象权限仍由课程Service判断。
 
+权限查询通过RequestContext.permissionCheck把真假结果交给共享过滤器，生成独立PERMISSION_CHECK事件；两套用例仍各自计算权限，日志技术不承载业务决策。日志Gateway在已获日志权限的事务内附带登记应用目录，Controller显式映射systems元素；不扩大GET /api/systems的资源目录准入，不新增HTTP端点或数据库表。此日志步骤为共享流程，双策略差异顺序图继续省略。
+
 课程teacher/student/course-admin及路由保存在integrations/course配置中。课程首次接入按总公司本部范围分配teacher、其余student，合格根直属五级RBAC管理员同账号兼course-admin，并建立老师课程本地绑定；由独立初始化脚本显式执行，不加入RBAC领域。课程先提交绑定、RBAC后在根锁事务发布通用授权和回执，不宣称分布式原子事务；重复回执不重置后续授权。
 
 老师原目录保持独立；原本机联调副本保留3个structured生产补丁，固定990cea2的部署副本另有DDD对等修复、当前学期标记释放及安全日志补丁。统一身份审计另2项不在RBAC8项契约中；本机支撑继续保留，服务器采用独立Waitress/MySQL持久保存课程业务审计，老师缺少的Controller等来源限制继续保留。配置、端口及已知缺口以[课程接入](course-integration.md)为准；两个后端均DDD的正式运行边界见[部署说明](../deploy/README.md)，实际云端结果见[发布记录](history/verification/ddd-production-deployment.md)。详设外部文件不改。

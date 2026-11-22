@@ -29,6 +29,12 @@ RBAC实现8项统一身份鉴权，清单和字段见[OpenAPI](../api/openapi.ya
 
 目录接口遵循page从1、pageSize默认20最多100；部门逐层展开、人员仅直属，实际API和本人子树同时受限。operationId由文件配置定位；未知操作404，配置损坏/重复阻止启动。全局门禁通过后，课程Service仍检查授课、选课、分组、课程状态等对象条件。
 
+### 身份日志与课程业务日志
+
+RBAC记录/auth/login的凭据及应用准入结果，使用course-project-management归属；课程随后检查教师/学生绑定，因此RBAC认证成功不保证课程业务登录成功。日志列表按快照倒序分页，需选择课程系统及身份认证事件重新查询，不能只看最新一页RBAC管理记录。
+
+老师后端主要通过/auth/me读取当前短码后自行执行课程对象规则，并不为每次功能调用都请求/auth/api-permissions。RBAC能记录实际收到的权限查询和门禁，无法从一次身份投影推断未上报的业务操作或最终结果。PERMISSION_CHECK为查询真假结果，课程业务审计仍由独立支撑持久化，课程日志页展示；不把两类日志混入同一数据表。
+
 ## 3. 为什么需要course-integration服务
 
 Swarm中的`ooad_course-integration`运行[deployment_gateway.py](../integrations/course/deployment_gateway.py)，由Waitress承载。它不是第三套业务系统，也不是mock；当前课程配置依赖它完成以下工作：

@@ -4,6 +4,8 @@
 
 **当前暂停再次发布。** 线上仍为七项正式服务。北京时间网页/Java日志修正及本次监控调整均待用户集中反馈后统一发布；当前[Stack](stack.yml)已准备node-exporter和CPU新口径，不能视为线上生效。终态临时任务已归档清理，证据见[时间与清理记录](../docs/history/verification/beijing-time-and-service-cleanup.md)。
 
+待统一发布清单：北京时间展示及Java日志格式、老师CPU新口径与内网node-exporter、日志响应systems和权限查询留痕、系统下拉及密码提示。需一起重建RBAC后端/前端镜像并更新监控Config；不重新执行万人导入、首次授权或重置回执。Apifox服务器验收环境已单独配置，文档中的新增日志字段仍需本次应用发布后在服务器复验。
+
 ## 1. 五节点及访问入口
 
 | 节点 | 当前硬件 | 部署职责 |

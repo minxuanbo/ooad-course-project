@@ -69,12 +69,16 @@ public class RequestAuditFilter extends OncePerRequestFilter {
           (path.equals("/api/auth/login") || path.equals("/auth/login"))
               && request.getMethod().equals("POST");
       Boolean decision = (Boolean) request.getAttribute("applicationAuthorizationDecision");
-      boolean authorized = decision == null ? status < 400 : decision;
+      Boolean check = (Boolean) request.getAttribute("permissionCheckDecision");
+      Boolean outcome = decision == null ? check : decision;
+      boolean authorized = outcome == null ? status < 400 : outcome;
       if ((path.startsWith("/api/") || identity)
-          && (login || decision != null || status == 401 || status == 403)
+          && (login || outcome != null || status == 401 || status == 403)
           && !Boolean.TRUE.equals(request.getAttribute("auditRecorded"))) {
         String event =
-            decision != null
+            check != null
+                ? "PERMISSION_CHECK"
+                : decision != null
                 ? "AUTHORIZATION"
                 : login
                     ? (status < 400 ? "LOGIN_SUCCESS" : "LOGIN_FAILED")
@@ -86,7 +90,9 @@ public class RequestAuditFilter extends OncePerRequestFilter {
                 event,
                 authorized,
                 id,
-                decision != null && authorized
+                check != null
+                    ? (authorized ? "OK" : "PERMISSION_NOT_GRANTED")
+                    : decision != null && authorized
                     ? "OK"
                     : java.util.Objects.toString(request.getAttribute("errorCode"), "OK"),
                 request.getMethod(),

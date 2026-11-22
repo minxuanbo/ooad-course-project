@@ -1,6 +1,7 @@
 package com.municipal.rbaccore.api.audit.vo;
 
 import cn.edu.xmu.clonefactory.CopyFrom;
+import com.municipal.rbaccore.api.resource.vo.SystemVO;
 import com.municipal.rbaccore.service.port.audit.LogPageResult;
 import java.util.List;
 import lombok.Getter;
@@ -20,4 +21,7 @@ public class LogPageVO {
   private Boolean hasMore;
   private long snapshotId;
   private long total;
+
+  @CopyFrom.Exclude(LogPageResult.class)
+  private List<SystemVO> systems;
 }

@@ -12,6 +12,9 @@ public interface RequestContext {
   /** 登记实际受控操作的最终访问判定，供统一过滤器去重记录。 */
   void authorizationDecision(boolean allowed);
 
+  /** 登记权限查询的真假结果，不冒充目标业务已经执行或被业务HTTP拒绝。 */
+  void permissionCheck(boolean allowed);
+
   /** 获取当前请求关联号，无HTTP请求时为空字符串。 */
   String requestId();
 

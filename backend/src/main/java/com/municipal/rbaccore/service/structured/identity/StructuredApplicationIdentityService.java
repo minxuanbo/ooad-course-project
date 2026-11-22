@@ -59,7 +59,9 @@ public class StructuredApplicationIdentityService implements ApplicationIdentity
   /** 未授予、停用或未知权限均返回false。 */
   @Override
   public boolean allowed(String header, String code) {
-    return current(header).permissions().contains(code);
+    boolean allowed = current(header).permissions().contains(code);
+    requests.permissionCheck(allowed);
+    return allowed;
   }
 
   /** 身份最小查询由本应用的实际API映射控制，不内置任何业务权限短码。 */
@@ -122,12 +124,15 @@ public class StructuredApplicationIdentityService implements ApplicationIdentity
         operation.requiresPermission()
             && (operation.permissionRoles().isEmpty()
                 || identity.roles().stream().anyMatch(operation.permissionRoles()::contains));
-    return !gated
+    boolean allowed =
+        !gated
         || hasRoute(
             tokens.requireForSystem(header, identity.system()),
             identity.system(),
             operation.method(),
             operation.path());
+    requests.permissionCheck(allowed);
+    return allowed;
   }
 
   /** 实际目录或查人操作必须有本应用API映射，最终判定统一进入鉴权日志。 */
