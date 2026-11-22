@@ -450,8 +450,8 @@ test('R16/R20 日志筛选快照、续批、详情键盘和时间校验', async 
   await page.getByRole('button', { name: '查询', exact: true }).click()
   await expect(page.getByText('没有符合条件的日志')).toBeVisible()
   await expect(page.getByText('匹配 0 条 · 已加载 0 条')).toBeVisible()
-  await page.getByLabel('开始（含）').fill('2026-11-19T10:00')
-  await page.getByLabel('结束（不含）').fill('2026-11-18T10:00')
+  await page.getByLabel('开始（北京时间，含）').fill('2026-11-19T10:00')
+  await page.getByLabel('结束（北京时间，不含）').fill('2026-11-18T10:00')
   await page.getByRole('button', { name: '查询', exact: true }).click()
   await expect(page.getByRole('alert')).toContainText(
     '开始时间必须早于结束时间',
