@@ -1,10 +1,10 @@
 # 双系统DDD部署与首次初始化
 
-本文说明节点职责、配置、首发、验收及恢复方法。两个系统已首发，实际镜像和运行证据见[云端发布记录](../docs/history/verification/ddd-production-deployment.md)；部署前本机回归见[适配验证](../docs/history/verification/ddd-deployment-adaptation.md)。
+本文说明节点职责、配置、首发、验收及恢复方法。当前镜像和运行结果见[11月23日发布记录](../docs/history/verification/release-20261123.md)；首次导入见[首发证据](../docs/history/verification/ddd-production-deployment.md)，部署前本机回归见[适配验证](../docs/history/verification/ddd-deployment-adaptation.md)。
 
-**当前暂停再次发布。** 线上仍为七项正式服务。北京时间网页/Java日志修正及本次监控调整均待用户集中反馈后统一发布；当前[Stack](stack.yml)已准备node-exporter和CPU新口径，不能视为线上生效。终态临时任务已归档清理，证据见[时间与清理记录](../docs/history/verification/beijing-time-and-service-cleanup.md)。
+2026-11-23已按用户本轮授权重新发布。线上为8项服务定义：7项replicated服务各1/1，node-exporter为global服务4/4。两Java日志已核对+08:00，监控实际配置和7个采集目标均已核对。后续源码合入或文档整理不自动触发再次发布。
 
-待统一发布清单：北京时间展示及Java日志格式、老师CPU新口径与内网node-exporter、日志响应systems和权限查询留痕、系统下拉及密码提示。需一起重建RBAC后端/前端镜像并更新监控Config；不重新执行万人导入、首次授权或重置回执。Apifox服务器验收环境已单独配置，文档中的新增日志字段仍需本次应用发布后在服务器复验。
+本轮已发布北京时间展示及Java日志格式、CPU新口径与内网node-exporter、日志响应systems和权限查询留痕、系统下拉及密码提示；RBAC后端/前端和接入支撑镜像已更新，课程前端保持老师原始源码。未重新执行万人导入、首次授权或重置回执。Apifox服务器环境已配置，接口回读与服务器HTTP验证分别记证；本轮公网浏览器被客户端拦截，未取得视觉交互通过结果。
 
 ## 1. 五节点及访问入口
 
@@ -12,7 +12,7 @@
 | --- | --- | --- |
 | A course-build | 2核、约1.8GiB可见内存、40GB | 串行构建与JMeter；首发已将原结果异机归档并释放空间，原data保留 |
 | B course-worker-mysql | 同上 | MySQL8.4，rbac_core/course_project/course_audit三库、独立应用账号；限1GiB |
-| C course-manager | 同上 | Swarm manager、两个64MiB Nginx、320MiB Prometheus；待发布node-exporter全局任务 |
+| C course-manager | 同上 | Swarm manager、两个64MiB Nginx、320MiB Prometheus及node-exporter全局任务 |
 | D course-worker-app | 同上 | 课程DDD后端，限896MiB |
 | E course-worker-log | 同上 | RBAC DDD限640MiB，独立Waitress接入/审计服务限128MiB |
 
@@ -111,11 +111,11 @@ python deploy/verify-deployment.py
 docker service logs --follow --since 2m ooad_rbac-backend
 ```
 
-待统一发布的Stack为两个Java服务显式设置LOGGING_PATTERN_DATEFORMAT，时间格式包含Asia/Shanghai及+08:00，例如2026-11-22T12:37:29.205+08:00；不依赖JVM或容器默认时区，不改变数据库/JWT的UTC语义。docker service logs --timestamps额外添加的Docker原始采集时间戳仍为UTC，不能通过Logback修改；普通课堂查看使用以上不带--timestamps的命令，取证归档可继续保留UTC采集时间。当前线上尚未应用此配置。
+Stack为两个Java服务显式设置LOGGING_PATTERN_DATEFORMAT，时间格式包含Asia/Shanghai及+08:00，例如2026-11-23T12:37:29.205+08:00；线上已实测生效。不依赖JVM或容器默认时区，不改变数据库/JWT的UTC语义。docker service logs --timestamps额外添加的Docker原始采集时间戳仍为UTC，不能通过Logback修改；普通课堂查看使用以上不带--timestamps的命令，取证归档继续保留UTC采集时间。接入支撑Python技术日志仍为UTC，不扩大两Java日志的北京时间承诺。
 
 在RBAC浏览器依次切换工作总览、部门管理、人员管理、角色与权限、资源与API、鉴权日志。核对每次实际/api请求成功，以及对应Controller/Service的开始、完成、耗时日志；不能以Nginx访问日志或数据库鉴权日志代替。无需在前端新增“日志控制台”，页面正常加载及后端日志同步出现即可。Stack明确配置三层DEBUG、根INFO；日志不含密码、JWT、Authorization、完整参数或响应。Docker每容器10MB×5轮转，退出/更新前将验收时间段导出到受控归档目录。
 
-还需在公网验证：admin同时登录两系统；本部领导/普通员工教师、分公司领导/员工学生；原JWT即时授撤权和应用隔离；DDD学期切换、组长重复保存、管理员教学班、有效学生里程碑；上传下载及重启后业务数据保留。Prometheus通过内网抓rbac-backend:8082和course-backend:8081；待发布Stack另以global node-exporter采集B/C/D/E宿主机指标，CPU为1秒采集、2秒窗口和计算间隔，详见[监控设计及离线校验](monitoring.md)。不公开9090或9100；必要时用SSH隧道查看。服务器重启和单节点故障验证单独记录，当前单manager方案不宣称高可用。
+本轮已通过108次真实公网HTTP检查，覆盖五类账号、八项身份协议、原JWT即时撤权与恢复、课程DDD业务链和上传下载；具体断言见发布证据。历史重启持久化结果只属于首发版本，本轮未追加整机重启或节点故障测试。Prometheus通过内网抓rbac-backend:8082和course-backend:8081；global node-exporter采集B/C/D/E宿主机指标，CPU为1秒采集、2秒窗口和计算间隔，实际7目标均UP，详见[监控](monitoring.md)。9090或9100不发布到宿主机或公网；访问须使用明确的内网诊断通道，不能把C的127.0.0.1:9090当成已发布端口。当前单manager方案不宣称高可用。
 
 ## 7. 备份与回滚
 

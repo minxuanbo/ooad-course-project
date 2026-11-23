@@ -6,10 +6,10 @@
 
 | 关注点 | 可追溯证据与边界 |
 | --- | --- |
-| 本轮发布核对 | [2026-11-23核对](history/verification/release-20261123.md)：Apifox回读、线上单人即时撤权、CloneFactory、健康探测TDD及图件修正；发布与覆盖率结果执行后补充 |
-| 当前正式发布 | [双DDD首发](history/verification/ddd-production-deployment.md)：实际镜像、离线导入、逐人身份、公网及重启结果；不宣称高可用或压测通过 |
-| 待统一发布 | [北京时间与终态服务清理](history/verification/beijing-time-and-service-cleanup.md)：时间修正仅本机验证，临时服务已归档清理，线上七项正式服务保留 |
-| 文档与监控调整 | [本次核对](history/verification/current-docs-and-monitoring.md)：现行文档归并、历史清理、监控及日志体验修正；代码待统一上线，Apifox环境单独配置 |
+| 当前正式发布 | [2026-11-23发布](history/verification/release-20261123.md)：两系统DDD、108次公网HTTP、即时撤权、北京时间、监控及备份；公网浏览器被客户端拦截，未取得本轮浏览器通过结果 |
+| 部署后回归及覆盖率 | RBAC两策略各215项、课程499项均无失败/错误/跳过；同字节码合并RBAC行96.19%、分支82.94%，课程行90.60%、分支62.17%；零遗漏门槛未达到，详见本轮发布证据 |
+| 首发历史 | [双DDD首发](history/verification/ddd-production-deployment.md)：首次导入、逐人身份、公网及重启结果；只代表该版本，不宣称高可用或压测通过 |
+| 时间及文档修正来源 | [北京时间与终态服务清理](history/verification/beijing-time-and-service-cleanup.md)、[文档与监控调整](history/verification/current-docs-and-monitoring.md)：保留本机及离线验证过程；其中待发布项已在11月23日发布 |
 | 两系统部署适配 | [适配回归](history/verification/ddd-deployment-adaptation.md)：两RBAC及老师副本真实MySQL、双DDD HTTP、前端构建与日志；独立于云端实测 |
 | JWT及UML | [全JWT与图件核对](history/verification/jwt-design-cleanup.md)：受众、单会话、即时撤权、82组图件及操作追溯 |
 | 完整外部协议 | [八项身份契约](history/verification/identity-eight-contract.md)：目录、operationId、退出及Apifox回读 |

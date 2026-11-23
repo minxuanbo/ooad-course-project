@@ -71,7 +71,7 @@ LOGIN_SUCCESS/LOGIN_FAILED表示RBAC凭据及应用准入结果，不证明课�
 
 首次snapshotId为当前最大日志ID，选id≤snapshotId，后续按id<上页末条降序；total为同一快照筛选总数，不随翻页缩小或读取产生的新技术记录增长。筛选/limit绑定游标，改变后清cursor；损坏/伪造/不一致400 INVALID_CURSOR。from含、to不含，必须UTC Z格式且from<to；到底nextCursor=null、hasMore=false。
 
-页面显示和筛选输入按北京时间处理，前端转换后仍提交上述UTC边界；接口occurredAt继续返回UTC ISO-8601，不因展示时区修改数据库时间、Instant时钟或JWT时效。展示修正的本机结果及待发布状态见[验证记录](history/verification/beijing-time-and-service-cleanup.md)。
+页面显示和筛选输入按北京时间处理，前端转换后仍提交上述UTC边界；接口occurredAt继续返回UTC ISO-8601，不因展示时区修改数据库时间、Instant时钟或JWT时效。实际发布与Java日志时间核对见[发布验证](history/verification/release-20261123.md)，本机修正过程见[时间记录](history/verification/beijing-time-and-service-cleanup.md)。
 
 上述最大 ID 表示已提交日志的稳定前缀。生产写入统一经 `JpaAuditWriter`：在独立事务中先锁定稳定 RBAC 系统目录行，再分配日志 ID 并提交，防止较大 ID 抢先提交、较小 ID 随后污染旧快照。新增日志写入入口也必须沿用该追加协议，不能直接调用日志仓储绕过协调。接口字段、筛选和游标形式保持不变。
 
