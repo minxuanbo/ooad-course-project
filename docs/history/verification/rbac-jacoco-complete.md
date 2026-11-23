@@ -51,7 +51,9 @@
 
 门槛检查前备份target/jacoco.exec，将按摘要核对的合并exec置于插件实际读取路径，执行`org.jacoco:jacoco-maven-plugin:0.8.14:check@coverage-check`。本轮输出`All coverage checks have been met.`，随后恢复原exec并再次核对摘要；不依赖无效的dataFile参数覆盖。
 
-原始材料留在忽略目录`.local/jacoco-complete-20261123`：`full-ddd-6.log`、`full-structured-6.log`、`evidence-6/{ddd,structured}/snapshot.json`及exec、`evidence-6/combined/{html,jacoco.xml,summary.json,jacoco.exec}`、`final-maven-gate.log`、`review-route-constants-ddd.log`和`mapping-audit.log`。`analysis-6/missed.json`为空，独立分析所得六项计数与正式合并工具一致。不提交凭据、数据库、原始运行报告或构建产物。
+原始材料留在忽略目录`.local/jacoco-complete-20261123`：`full-ddd-6.log`、`full-structured-6.log`、`evidence-6/{ddd,structured}/snapshot.json`及exec、`evidence-6/combined/{html,jacoco.xml,summary.json,jacoco.exec}`、`final-maven-gate.log`、`review-route-constants-ddd.log`和`mapping-audit.log`。`analysis-6/missed.json`为空，独立分析所得六项计数与正式合并工具一致。
+
+用户随后明确要求将报告归档并推送两仓，完整可浏览HTML、XML和摘要按授权收录于[报告目录](../../reports/jacoco/20261123-rbac/README.md)。ZIP及每个文件的摘要见同目录manifest；仅将两处机器生成的会话名称改为策略标签，时间和覆盖率计数不变。凭据、数据库、原exec、class/JAR、Surefire环境XML及原始日志仍不提交。归档及导航修改不改变生产代码，沿用上述同字节码实测结果。
 
 ## Standards
 
@@ -63,4 +65,4 @@
 
 ## 发布边界
 
-本轮不更新线上Stack、不重启正式应用、不触碰线上业务库，不改老师课程代码、Apifox或桌面外部材料。JWT修复尚未部署；当前线上状态继续以[11月23日发布记录](release-20261123.md)为准，课程系统覆盖率也保留该记录原成绩。本轮变更按新任务流程交付草稿PR，不自动合入main。
+本轮不更新线上Stack、不重启正式应用、不触碰线上业务库，不改老师课程代码、Apifox或桌面外部材料。JWT修复尚未部署；当前线上状态继续以[11月23日发布记录](release-20261123.md)为准，课程系统覆盖率也保留该记录原成绩。覆盖率完成时先交付草稿PR #47，随后用户明确授权将报告一并合入GitHub main、同步Gitee并清理已合入的闲置分支；该授权不包含再次部署。

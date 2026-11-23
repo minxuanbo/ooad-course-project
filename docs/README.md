@@ -9,7 +9,7 @@
 | 两套后端 | [后端设计](backend-design.md)，第17章包含并列类图、差异顺序图与操作追溯 |
 | 页面与 HTTP | [前端设计](frontend-design.md)、[页面接口对照](api-map.md)、[业务契约](api-contract.md)、[OpenAPI](../api/openapi.yaml) |
 | 数据与外部应用 | [初始化](initialization.md)、[课程接入](course-integration.md) |
-| 执行与验证 | [本地复现](reproduction.md)、[服务器部署](../deploy/README.md)、[监控设计](../deploy/monitoring.md)、[测试与验收](testing-acceptance.md) |
+| 执行与验证 | [本地复现](reproduction.md)、[服务器部署](../deploy/README.md)、[监控设计](../deploy/monitoring.md)、[测试与验收](testing-acceptance.md)、[JaCoCo报告](reports/jacoco/20261123-rbac/README.md) |
 
 当前契约共37项操作（29管理、8身份），structured 与 DDD 共用一套前端和数据库。OpenAPI YAML 是 HTTP 字段主规范，JSON 同源派生；业务契约补充范围、事务与错误语义。[图件入口](design/README.md)说明有效图集及生成方式。
 

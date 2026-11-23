@@ -91,6 +91,8 @@ HTTP默认8081，前端代理/api不变。后端29项管理操作与8项可选�
 
 ## 7. 双策略JaCoCo复现
 
+已完成的[完整HTML/XML报告包](../docs/reports/jacoco/20261123-rbac/README.md)可直接下载查看；其来源及边界见[本轮验证记录](../docs/history/verification/rbac-jacoco-complete.md)。下面的方法用于重新测试和生成新的报告。
+
 使用独立的真实MySQL测试实例及第2节六个专库，测试会建立和清理夹具、注入故障，不能使用业务库。纯领域、端口边界、文件和密码学测试与真实MySQL契约测试互补，不能将全部测试称为数据库测试。两套策略串行运行，避免覆盖同一个target或同时清理测试库。
 
 先安装官方JaCoCo CLI 0.8.14的nodeps JAR，例如通过Maven的`dependency:get`获取`org.jacoco:org.jacoco.cli:0.8.14:jar:nodeps`。下列命令在仓库根执行，Maven使用JDK21，测试数据库环境变量已配置；Maven镜像按本机情况选择。`.local/coverage-run`必须是本次新证据目录。
