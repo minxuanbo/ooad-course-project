@@ -28,16 +28,29 @@ function createCatalog() {
     ['departments.list', '查看部门目录', 'GET', '/api/departments', 1004],
     ['departments.create', '新增下级部门', 'POST', '/api/departments', 1004],
     ['departments.delete', '删除空部门', 'DELETE', '/api/departments/{id}', 1004],
+    ['overview', '查看总览', 'GET', '/api/overview', 1000],
   ];
+  const codes = {
+    tree: 'rbac.departments.tree.read', users: 'rbac.users.read', currentRoles: 'rbac.users.roles.read',
+    candidates: 'rbac.users.roles.candidates.read', assign: 'rbac.users.roles.write',
+    'roles.list': 'rbac.roles.read', 'roles.create': 'rbac.roles.create', 'roles.patch': 'rbac.roles.write',
+    'roles.permissions.read': 'rbac.roles.permissions.read', 'roles.permissions.write': 'rbac.roles.permissions.write',
+    systems: 'rbac.systems.read', 'permissions.tree': 'rbac.resources.read', 'apis.list': 'rbac.apis.read',
+    'permissions.patch': 'rbac.resources.write', 'apis.patch': 'rbac.apis.write',
+    'permissions.apis.read': 'rbac.resources.apis.read', 'permissions.apis.write': 'rbac.resources.apis.write',
+    disable: 'rbac.users.disable', move: 'rbac.users.department.write', logs: 'rbac.logs.read',
+    'departments.rename': 'rbac.departments.write', 'departments.list': 'rbac.departments.read',
+    'departments.create': 'rbac.departments.create', 'departments.delete': 'rbac.departments.delete', overview: 'rbac.overview.read',
+  };
   const apis = definitions.map(([key, name, method, path], index) => ({
     id: index + 1, key, name, method, path, enabled: true, systemId: 1,
   }));
   const permissions = definitions.map(([key, name, , , parentId], index) => ({
-    id: index + 1, key, code: 'RBAC_' + key.replaceAll('.', '_').toUpperCase(),
+    id: index + 1, key, code: codes[key],
     name, parentId, type: 'BUTTON', enabled: true, systemId: 1, apiIds: [index + 1],
   }));
   [['人员管理', 'people'], ['角色与权限', 'roles'], ['资源与API', 'resources'], ['鉴权日志', 'audit'], ['部门管理', 'organization']].forEach(([name, key], index) => {
-    permissions.push({ id: 1000 + index, key: 'menu.' + key, code: 'MENU_' + key.toUpperCase(), name, parentId: null, type: 'MENU', enabled: true, systemId: 1, apiIds: [] });
+    permissions.push({ id: 1000 + index, key: 'menu.' + key, code: ['rbac.workspace', 'rbac.roles.menu', 'rbac.resources.menu', 'rbac.logs.menu', 'rbac.departments.menu'][index], name, parentId: null, type: 'MENU', enabled: true, systemId: 1, apiIds: [] });
   });
   let nextPermissionId = 2000;
   const modules = new Map();

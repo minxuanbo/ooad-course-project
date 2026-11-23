@@ -10,7 +10,7 @@ public record BootstrapPlan(
     ImportManifest source, List<Assignment> employees, String manifestHash) {
   public static final String RECEIPT_KEY = "rbac-initial-roles";
   public static final String WORKSPACE_CODE = "rbac.workspace";
-  public static final String WORKSPACE_NAME = "权限管理";
+  public static final String WORKSPACE_NAME = "人员管理";
   public static final String SYSTEM_NAME = "RBAC权限管理系统";
 
   /** 分类计划用稳定基础角色级别求值。 */
@@ -18,7 +18,12 @@ public record BootstrapPlan(
 
   /** RBAC固定权限目录及清单追踪所用的顺序。 */
   public record PermissionSeed(
-      String code, String name, List<ApiResource.Route> routes, boolean scopedManagers) {}
+      String code,
+      String name,
+      List<ApiResource.Route> routes,
+      boolean scopedManagers,
+      String parentCode,
+      boolean menu) {}
 
   /** 角色目录数据及该角色应有的直接权限。 */
   public record RoleSeed(String code, String name, int level, Set<String> permissions) {}

@@ -107,6 +107,19 @@ test('R10/R17 同一人员页翻页筛选复用部门树，范围变化和手动
   assert.equal(calls.filter((path) => path === '/departments/tree').length, 3)
 })
 
+test('R10/R17 仅授予查询人员时仍可读取列表，不隐式要求查看部门树权限', async () => {
+  const calls = []
+  const page = workspace('Users', async (path) => {
+    calls.push(path)
+    return { items: [{ id: 1 }], total: 1 }
+  })
+  page.run("canRoute = (method, path) => path === '/users'")
+  await page.run('load(0)')
+  assert.equal(page.run('rows.value.length'), 1)
+  assert.equal(page.run('departments.value.length'), 0)
+  assert.ok(calls.every((path) => path.startsWith('/users?')))
+})
+
 test('R10/R17 部门树读取失败不当作空树缓存，下一次查询完整重试', async () => {
   let treeReads = 0,
     userReads = 0

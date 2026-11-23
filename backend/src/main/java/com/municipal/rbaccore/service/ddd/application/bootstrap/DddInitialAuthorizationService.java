@@ -35,16 +35,30 @@ public class DddInitialAuthorizationService implements AuthorizationBootstrapUse
           .collect(
               Collectors.toUnmodifiableMap(Map.Entry::getKey, entry -> entry.getValue().getCode()));
   private static final List<BootstrapPlan.PermissionSeed> PERMISSIONS =
-      RbacCatalog.definitions().entrySet().stream()
-          .map(
-              entry ->
-                  new BootstrapPlan.PermissionSeed(
-                      entry.getKey(),
-                      RbacCatalog.displayNames().get(entry.getKey()),
-                      entry.getValue().stream()
-                          .map(route -> new ApiResource.Route(route.method(), route.path()))
-                          .toList(),
-                      RbacCatalog.PERSONNEL.contains(entry.getKey())))
+      java.util.stream.Stream.concat(
+              RbacCatalog.menus().entrySet().stream()
+                  .map(
+                      entry ->
+                          new BootstrapPlan.PermissionSeed(
+                              entry.getKey(),
+                              entry.getValue(),
+                              List.of(),
+                              Set.of("rbac.workspace", "rbac.departments.menu")
+                                  .contains(entry.getKey()),
+                              null,
+                              true)),
+              RbacCatalog.definitions().entrySet().stream()
+                  .map(
+                      entry ->
+                          new BootstrapPlan.PermissionSeed(
+                              entry.getKey(),
+                              RbacCatalog.displayNames().get(entry.getKey()),
+                              entry.getValue().stream()
+                                  .map(route -> new ApiResource.Route(route.method(), route.path()))
+                                  .toList(),
+                              RbacCatalog.PERSONNEL.contains(entry.getKey()),
+                              RbacCatalog.parentCode(entry.getKey()),
+                              false)))
           .toList();
 
   private final SourceWorkbookReader source;

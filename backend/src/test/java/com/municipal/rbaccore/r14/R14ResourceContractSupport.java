@@ -50,32 +50,19 @@ abstract class R14ResourceContractSupport {
   private static final String USERS = "/api/users";
   private static final String LOGS = "/api/authorization-logs";
   private static final String PASSWORD = "t07-fixture-password";
-  @Autowired
-  TestRestTemplate http;
-  @Autowired
-  ObjectMapper json;
-  @Autowired
-  JdbcTemplate jdbc;
-  @Autowired
-  PasswordEncoder encoder;
-  @Autowired
-  DepartmentJpaRepository departments;
-  @Autowired
-  UserJpaRepository users;
-  @Autowired
-  RoleJpaRepository roles;
-  @Autowired
-  PermissionJpaRepository permissions;
-  @Autowired
-  ApiResourceJpaRepository apis;
-  @Autowired
-  ApplicationSystemJpaRepository systems;
-  @Autowired
-  PlatformTransactionManager transactions;
-  @Autowired
-  ManagementAuthorization effective;
-  @Autowired
-  LockObservation observedLock;
+  @Autowired TestRestTemplate http;
+  @Autowired ObjectMapper json;
+  @Autowired JdbcTemplate jdbc;
+  @Autowired PasswordEncoder encoder;
+  @Autowired DepartmentJpaRepository departments;
+  @Autowired UserJpaRepository users;
+  @Autowired RoleJpaRepository roles;
+  @Autowired PermissionJpaRepository permissions;
+  @Autowired ApiResourceJpaRepository apis;
+  @Autowired ApplicationSystemJpaRepository systems;
+  @Autowired PlatformTransactionManager transactions;
+  @Autowired ManagementAuthorization effective;
+  @Autowired LockObservation observedLock;
   private long systemId;
   private long rootId;
   private long childId;
@@ -202,7 +189,7 @@ abstract class R14ResourceContractSupport {
     String token = token("t07-admin");
     JsonNode roots = data(request("GET", TREE, token, null));
     assertEquals(1, roots.size());
-    assertEquals(13, roots.get(0).get("children").size());
+    assertEquals(25, roots.get(0).get("children").size());
     assertTrue(roots.get(0).get("parentId").isNull());
     JsonNode second = data(request("GET", APIS + "?size=1&page=1", token, null));
     JsonNode first = data(request("GET", APIS + "?size=1", token, null));
@@ -225,8 +212,8 @@ abstract class R14ResourceContractSupport {
     assertEquals(0, data(request("GET", APIS + "?q=%25", token, null)).get("total").asLong());
     long target = permissionIds.get("rbac.resources.read");
     JsonNode mapping = data(request("GET", mapping(target), token, null));
-    assertEquals(4, mapping.get("ids").size());
-    assertEquals(4, mapping.get("items").size());
+    assertEquals(1, mapping.get("ids").size());
+    assertEquals(1, mapping.get("items").size());
     assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM systems", Integer.class));
   }
 
@@ -314,7 +301,8 @@ abstract class R14ResourceContractSupport {
         "t07-local",
         childId,
         List.of(
-            permissionIds.get("rbac.resources.read"), permissionIds.get("rbac.resources.write")));
+            permissionIds.get("rbac.systems.read"),
+            permissionIds.get("rbac.resources.apis.write")));
     account("t07-write-only", rootId, List.of(permissionIds.get("rbac.resources.write")));
     String noResource = token("t07-personnel");
     String local = token("t07-local");
@@ -422,7 +410,7 @@ abstract class R14ResourceContractSupport {
         request("PUT", mapping(target), token, Map.of("ids", List.of())),
         409,
         "LAST_ADMIN_REQUIRED");
-    assertEquals(4, savedApiIds(target).size());
+    assertEquals(1, savedApiIds(target).size());
     assertEquals(
         true,
         jdbc.queryForObject("SELECT enabled FROM permissions WHERE id=?", Boolean.class, target));

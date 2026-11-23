@@ -10,6 +10,7 @@ const props = defineProps({
   savePath: String,
   kind: String,
   readonly: Boolean,
+  systemId: Number,
 })
 const emit = defineEmits(['close', 'saved', 'invalidated'])
 const selected = ref(new Set()),
@@ -77,7 +78,7 @@ async function loadCandidates(next = 0) {
       const registered = await api('/systems')
       if (!candidateGeneration.current(version)) return
       systems.value = registered
-      systemId.value = String(registered[0]?.id || '')
+      systemId.value = String(props.systemId || registered[0]?.id || '')
       if (!systemId.value) throw Error('尚未初始化RBAC资源目录。')
     }
     let items, count
@@ -166,7 +167,7 @@ onUnmounted(() => {
 })
 </script>
 <template>
-  <Modal :title="title" :busy="saving" @close="emit('close')">
+  <Modal :title="title" :busy="saving" :drawer="kind !== 'roles'" @close="emit('close')">
     <p class="muted">账号、角色与资源状态独立。停用关联仍保留，且不贡献有效权限。</p>
     <p v-if="loading && !ready" role="status">正在读取完整已保存集合…</p>
     <p v-if="error" class="error" role="alert">{{ error }}</p>

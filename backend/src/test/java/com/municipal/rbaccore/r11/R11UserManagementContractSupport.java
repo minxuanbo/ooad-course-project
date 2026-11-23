@@ -53,34 +53,20 @@ abstract class R11UserManagementContractSupport {
   private static final String CHILD_ADMIN = "t11-child-admin";
   private static final String EMPLOYEE = "t11-employee";
   private static final String SIBLING = "t11-sibling";
-  @Autowired
-  TestRestTemplate http;
-  @Autowired
-  ObjectMapper json;
-  @Autowired
-  JdbcTemplate jdbc;
-  @Autowired
-  PasswordEncoder encoder;
-  @Autowired
-  DepartmentJpaRepository departments;
-  @Autowired
-  UserJpaRepository users;
-  @Autowired
-  RoleJpaRepository roles;
-  @Autowired
-  PermissionJpaRepository permissions;
-  @Autowired
-  ApiResourceJpaRepository apis;
-  @Autowired
-  ApplicationSystemJpaRepository systems;
-  @Autowired
-  PlatformTransactionManager transactions;
-  @Autowired
-  ManagementAuthorization effective;
-  @Autowired
-  EntityManagerFactory entityManagerFactory;
-  @Autowired
-  LockObservation observedLock;
+  @Autowired TestRestTemplate http;
+  @Autowired ObjectMapper json;
+  @Autowired JdbcTemplate jdbc;
+  @Autowired PasswordEncoder encoder;
+  @Autowired DepartmentJpaRepository departments;
+  @Autowired UserJpaRepository users;
+  @Autowired RoleJpaRepository roles;
+  @Autowired PermissionJpaRepository permissions;
+  @Autowired ApiResourceJpaRepository apis;
+  @Autowired ApplicationSystemJpaRepository systems;
+  @Autowired PlatformTransactionManager transactions;
+  @Autowired ManagementAuthorization effective;
+  @Autowired EntityManagerFactory entityManagerFactory;
+  @Autowired LockObservation observedLock;
   private long rootId;
   private long childId;
   private long grandchildId;
@@ -184,6 +170,9 @@ abstract class R11UserManagementContractSupport {
             "t11-personnel",
             List.of(
                 permissionIds.get("rbac.users.read"),
+                permissionIds.get("rbac.departments.tree.read"),
+                permissionIds.get("rbac.users.roles.read"),
+                permissionIds.get("rbac.users.roles.candidates.read"),
                 permissionIds.get("rbac.users.roles.write"),
                 permissionIds.get("rbac.users.disable"),
                 permissionIds.get("rbac.users.department.write")),

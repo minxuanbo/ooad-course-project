@@ -5,6 +5,7 @@ import { errorText, organizationRows, RequestGeneration } from '../lib/presentat
 import Modal from '../components/Modal.vue'
 import Pagination from '../components/Pagination.vue'
 import CollectionEditor from '../components/CollectionEditor.vue'
+import PageActions from '../components/PageActions.vue'
 const rows = ref([]),
   departments = ref([]),
   total = ref(0),
@@ -44,7 +45,7 @@ async function load(next = 0) {
     if (departmentScope !== scope) {
       departments.value = []
       departmentScope = null
-      const tree = await api('/departments/tree')
+      const tree = canRoute('GET', '/departments/tree') ? await api('/departments/tree') : []
       if (!generation.current(version) || scopeKey() !== scope) return
       departments.value = organizationRows(tree)
       departmentScope = scope
@@ -179,6 +180,7 @@ onMounted(() => load())
 onUnmounted(() => generation.cancel())
 </script>
 <template>
+  <PageActions :busy="busy || saving" @refresh="refreshDepartments" />
   <section class="card">
     <form class="toolbar user-filters" @submit.prevent="load(0)">
       <label>
@@ -187,7 +189,7 @@ onUnmounted(() => generation.cancel())
       </label>
       <label>
         部门及下级
-        <select v-model="filters.departmentId">
+        <select v-model="filters.departmentId" :disabled="!canRoute('GET', '/departments/tree')">
           <option value="">全部管理范围</option>
           <option v-for="item in departments" :key="item.id" :value="String(item.id)">
             {{ '　'.repeat(item.depth) + item.name }}
@@ -205,14 +207,6 @@ onUnmounted(() => generation.cancel())
       <button class="primary" :disabled="busy || saving">查询</button>
       <button type="button" class="secondary" :disabled="busy || saving" @click="resetFilters">
         重置
-      </button>
-      <button
-        type="button"
-        class="secondary"
-        :disabled="busy || saving"
-        @click="refreshDepartments"
-      >
-        刷新部门
       </button>
     </form>
   </section>
@@ -260,11 +254,26 @@ onUnmounted(() => generation.cancel())
             </span>
           </td>
           <td class="row-actions">
-            <button class="text-button" :disabled="saving" @click="editRoles(user)">
-              {{ user.writable && canRoute('PUT', '/users/{id}/roles') ? '调整角色' : '查看角色' }}
+            <button
+              v-if="canRoute('GET', '/users/{id}/roles')"
+              class="text-button"
+              :disabled="saving"
+              @click="editRoles(user)"
+            >
+              {{
+                user.writable &&
+                canRoute('PUT', '/users/{id}/roles') &&
+                canRoute('GET', '/users/{id}/assignable-roles')
+                  ? '调整角色'
+                  : '查看角色'
+              }}
             </button>
             <button
-              v-if="user.writable && canRoute('PUT', '/users/{id}/department')"
+              v-if="
+                user.writable &&
+                canRoute('PUT', '/users/{id}/department') &&
+                canRoute('GET', '/departments/tree')
+              "
               class="text-button"
               :disabled="saving"
               @click="openMove(user)"
@@ -297,7 +306,11 @@ onUnmounted(() => generation.cancel())
     kind="roles"
     :read-path="`/users/${editing.id}/roles`"
     :save-path="`/users/${editing.id}/roles`"
-    :readonly="!editing.writable || !canRoute('PUT', '/users/{id}/roles')"
+    :readonly="
+      !editing.writable ||
+      !canRoute('PUT', '/users/{id}/roles') ||
+      !canRoute('GET', '/users/{id}/assignable-roles')
+    "
     @close="editing = null"
     @saved="saved"
     @invalidated="load(page)"
@@ -344,3 +357,49 @@ onUnmounted(() => generation.cancel())
     </footer>
   </Modal>
 </template>
+<style scoped>
+.toolbar {
+  padding: 20px 22px;
+}
+.toolbar label {
+  color: #8d9eb7;
+  font-size: 11px;
+}
+.toolbar input,
+.toolbar select {
+  border-color: #e0e7f1;
+  font-size: 12px;
+  padding: 10px 12px;
+  background: white;
+}
+.toolbar button {
+  font-size: 12px;
+  min-height: 38px;
+}
+th {
+  background: #f7f9fc;
+  color: #94a4bc;
+  font-size: 11px;
+}
+td {
+  color: #7b90b0;
+  font-size: 12px;
+  vertical-align: middle;
+}
+td small {
+  color: #a0b0c7;
+  font-size: 10px;
+  margin-top: 5px;
+}
+td .badge {
+  font-size: 11px;
+}
+td .text-button {
+  font-size: 12px;
+  padding: 5px;
+}
+.muted {
+  color: #91a2bd;
+  font-size: 12px;
+}
+</style>

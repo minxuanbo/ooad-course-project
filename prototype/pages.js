@@ -18,7 +18,7 @@ function createScreens(context) {
   const itemsPage = (data, action, noun = '条记录') => '<div class="pagination"><span>共 <strong>' + (data?.total ?? 0) + '</strong> ' + noun + '</span>' + pagination(data?.total ?? 0, data?.page ?? 0, data?.size ?? 10, action) + '</div>';
   function navigation() {
     return [
-      { page: 'overview', title: '总览', group: '工作台', icon: 'overview', visible: model().can('users') },
+      { page: 'overview', title: '总览', group: '工作台', icon: 'overview', visible: model().can('overview') },
       { page: 'departments', title: '部门管理', group: '组织管理', icon: 'building', visible: model().canManageDepartments() },
       { page: 'people', title: '人员管理', group: '组织管理', icon: 'users', visible: model().can('users') },
       { page: 'roles', title: '角色与权限', group: '权限管理', icon: 'shield', visible: globalCan('roles.list') },
@@ -49,24 +49,44 @@ function createScreens(context) {
   }
   function departmentPage(data) {
     const current = view('departments');
-    const matches = new Set(data.filter(item => item.name.toLowerCase().includes(current.q.toLowerCase())).map(item => item.id));
+    if (!data.length) return '<section class="panel">' + empty('暂无可见部门') + '</section>';
+    current.departmentId = data.some(item => item.id === current.departmentId) ? current.departmentId : data[0].id;
+    current.departmentExpanded ||= new Set(data.filter(item => item.depth < 2).map(item => item.id));
+    const selected = data.find(item => item.id === current.departmentId);
+    const search = (current.departmentSearch || '').trim().toLowerCase();
+    const matches = new Set(data.filter(item => item.name.toLowerCase().includes(search)).map(item => item.id));
     const visible = new Set(matches);
-    if (current.q) {
-      for (const item of data.filter(item => matches.has(item.id))) {
-        for (let parent = data.find(node => node.id === item.parentId); parent; parent = data.find(node => node.id === parent.parentId)) visible.add(parent.id);
-      }
+    for (const item of data.filter(item => matches.has(item.id))) {
+      for (let parent = data.find(node => node.id === item.parentId); parent; parent = data.find(node => node.id === parent.parentId)) visible.add(parent.id);
     }
-    const list = data.filter(item => visible.has(item.id));
-    const name = id => data.find(item => item.id === id)?.name || '—';
-    return '<section class="panel">' + filterForm('departments', '搜索部门名称', false)
-      + '<div class="department-count-note"><strong>人数口径</strong><span>直属人数只统计本节点；总人数包含全部下级及停用账号。父部门总人数已包含项目人数，请勿重复相加。</span></div>'
-      + '<div class="table-wrap management-table"><table><thead><tr><th>部门名称</th><th>组织类型</th><th>上级部门</th><th>直属人数</th><th>总人数（含下级）</th><th>操作</th></tr></thead><tbody>'
-      + list.map(item => '<tr data-department-row="' + item.id + '"><td><span class="department-name" style="padding-left:' + (item.depth * 20) + 'px">' + (item.depth ? '<span class="tree-branch" aria-hidden="true">└</span>' : '') + icon(item.type === '公司' || item.type === '分公司' ? 'building' : item.type === '项目' ? 'project' : 'folder') + h(item.name) + '</span>' + (item.isOwn ? '<small class="cell-sub">本人直属部门</small>' : current.q && !matches.has(item.id) ? '<small class="cell-sub">上级路径</small>' : '') + '</td><td><span class="badge gray">' + h(item.type) + '</span></td><td>' + h(name(item.parentId)) + '</td><td>' + item.direct + ' 人</td><td><strong>' + item.total + '</strong> 人</td><td><div class="row-actions"><button class="link-button" data-act="department-create" data-id="' + item.id + '" ' + (!item.canCreate ? 'disabled' : '') + '>新增下级</button><button class="link-button" data-act="department-rename" data-id="' + item.id + '" ' + (!item.canRename ? 'disabled title="本人部门只读"' : '') + '>修改名称</button><button class="link-button text-danger" data-act="department-delete" data-id="' + item.id + '" ' + (!item.canDelete ? 'disabled title="' + h(item.deleteReason) + '"' : '') + '>删除</button></div></td></tr>').join('')
-      + '</tbody></table>' + (!list.length ? empty('没有匹配的部门') : '') + '</div><div class="panel-note">' + icon('info') + '局部管理员仅维护下级。总公司可建分公司/部门/项目，分公司可建部门/项目，部门仅建项目，项目不可新增下级。仅删无人无下级的空部门，根不可删，不调整层级。</div></section>';
+    const glyph = item => icon(['公司', '分公司'].includes(item.type) ? 'building' : item.type === '项目' ? 'project' : 'folder');
+    const tree = parentId => data.filter(item => item.parentId === parentId && visible.has(item.id)).map(item => {
+      const children = data.some(node => node.parentId === item.id && visible.has(node.id));
+      const expanded = !!search || current.departmentExpanded.has(item.id);
+      return '<li><div class="org-tree-row ' + (item.id === selected.id ? 'selected' : '') + '">'
+        + (children ? '<button class="org-tree-toggle ' + (expanded ? 'expanded' : '') + '" data-act="department-expand" data-id="' + item.id + '" aria-label="' + (expanded ? '折叠' : '展开') + h(item.name) + '" aria-expanded="' + expanded + '">' + icon('chevron') + '</button>' : '<span class="org-tree-spacer"></span>')
+        + '<button class="org-tree-select" data-act="department-select" data-id="' + item.id + '" ' + (item.id === selected.id ? 'aria-current="true"' : '') + '>' + glyph(item) + '<span>' + h(item.name) + '</span><small title="含下级总人数">' + item.total + '</small></button></div>'
+        + (children && expanded ? '<ul>' + tree(item.id) + '</ul>' : '') + '</li>';
+    }).join('');
+    const path = [selected];
+    for (let parent = data.find(item => item.id === selected.parentId); parent; parent = data.find(item => item.id === parent.parentId)) path.unshift(parent);
+    const children = data.filter(item => item.parentId === selected.id);
+    const actions = item => '<div class="row-actions"><button class="link-button" data-act="department-members" data-id="' + item.id + '" ' + (!model().can('users') ? 'disabled' : '') + '>查看员工</button><button class="link-button" data-act="department-rename" data-id="' + item.id + '" ' + (!item.canRename ? 'disabled title="当前部门不可改名"' : '') + '>改名</button><button class="link-button text-danger" data-act="department-delete" data-id="' + item.id + '" ' + (!item.canDelete ? 'disabled title="' + h(item.deleteReason) + '"' : '') + '>删除</button></div>';
+    return '<div class="org-layout"><section class="panel org-directory"><div class="panel-heading"><h2>部门目录</h2><span class="count">' + data.length + '</span></div><div class="org-search"><div class="input-shell">' + icon('search') + '<input id="department-tree-search" aria-label="搜索部门名称" placeholder="搜索部门名称" maxlength="100" value="' + h(current.departmentSearch || '') + '"></div></div>'
+      + '<div class="org-tree-caption"><span>' + (search ? '匹配 ' + matches.size + ' 个部门' : '当前可见范围') + '</span><button class="link-button" data-act="department-expand-all">' + (search ? '清除搜索' : '展开全部') + '</button></div><nav class="org-tree" aria-label="部门目录"><ul>' + tree(null) + '</ul>' + (!matches.size ? empty('没有匹配的部门', '试试其他部门名称') : '') + '</nav><div class="org-directory-note">' + icon('shield') + '<span>仅展示你的可见部门范围</span></div></section>'
+      + '<div class="org-content"><section class="panel org-summary"><nav class="org-breadcrumb" aria-label="当前部门路径">' + path.map(item => '<button data-act="department-select" data-id="' + item.id + '">' + h(item.name) + '</button>').join('<span>/</span>') + '</nav>'
+      + '<div class="org-summary-heading"><div class="row"><span class="org-emblem">' + glyph(selected) + '</span><div><div class="row org-title"><h2>' + h(selected.name) + '</h2><span class="badge blue">' + h(selected.type) + '</span></div><p>' + (selected.isOwn ? '你的直属部门' : '上级部门：' + h(path.at(-2)?.name || '无')) + '</p></div></div>'
+      + '<div class="org-summary-actions">' + btn(icon('users') + '查看员工', 'department-members', selected.id, !model().can('users') ? 'unavailable' : '') + btn(icon('plus') + '新增下级', 'department-create', selected.id, 'primary' + (!selected.canCreate ? ' unavailable' : '')) + '</div></div>'
+      + '<div class="org-stats"><div><span>直属员工</span><strong>' + selected.direct + '<small>人</small></strong></div><div><span>总人数（含下级）</span><strong>' + selected.total + '<small>人</small></strong></div><div><span>直属下级部门</span><strong>' + children.length + '<small>个</small></strong></div></div>'
+      + '<div class="org-summary-foot"><span>人数包含停用账号；总人数已含下级，父子节点不重复相加。</span><div class="row-actions"><button class="link-button" data-act="department-rename" data-id="' + selected.id + '" ' + (!selected.canRename ? 'disabled' : '') + '>修改当前部门名称</button><button class="link-button text-danger" data-act="department-delete" data-id="' + selected.id + '" ' + (!selected.canDelete ? 'disabled title="' + h(selected.deleteReason) + '"' : '') + '>删除当前部门</button></div></div></section>'
+      + '<section class="panel org-children"><div class="panel-heading"><div><h2>直属下级部门 <span class="count">' + children.length + '</span></h2><p class="hint">点击部门名称查看下一级</p></div><span class="badge gray">仅当前部门的直接下级</span></div><div class="table-wrap"><table><thead><tr><th>部门名称</th><th>组织类型</th><th>直属人数</th><th>总人数（含下级）</th><th>操作</th></tr></thead><tbody>'
+      + children.map(item => '<tr data-department-row="' + item.id + '"><td><button class="org-child-name" data-act="department-select" data-id="' + item.id + '">' + glyph(item) + '<strong>' + h(item.name) + '</strong>' + icon('chevron') + '</button></td><td><span class="badge gray">' + h(item.type) + '</span></td><td>' + item.direct + ' 人</td><td><strong>' + item.total + '</strong> 人</td><td>' + actions(item) + '</td></tr>').join('')
+      + '</tbody></table>' + (!children.length ? empty('暂无直属下级部门', selected.canCreate ? '可通过“新增下级”创建允许类型的部门。' : selected.type === '项目' ? '项目是末级节点，可查看员工或维护当前部门。' : '当前没有可维护的下级部门。') : '') + '</div></section>'
+      + '<div class="org-policy">' + icon('info') + '<p>下级类型由当前部门决定；项目不可新增下级。局部管理员只能改删严格下级；仅能删除无人且无下级的空部门，根部门不可删除。</p></div></div></div>';
   }
   function rolePage(data) {
     return '<section class="panel">' + filterForm('roles', '搜索角色名称或编码') + '<div class="table-wrap management-table"><table><thead><tr><th>角色名称</th><th>角色编码</th><th>授予级别</th><th>状态</th><th>操作</th></tr></thead><tbody>'
-      + data.items.map(item => '<tr><td><strong>' + h(item.name) + '</strong></td><td class="mono muted">' + h(item.code) + '</td><td><span class="badge ' + (item.authorityLevel ? 'blue' : 'gray') + '">' + h(rankNames[item.authorityLevel]) + '</span></td><td>' + enabledTag(item.enabled) + '</td><td><div class="row-actions"><button class="link-button" data-act="role-permissions" data-id="' + item.id + '" ' + (!globalCan('roles.permissions.read') ? 'disabled' : '') + '>配置权限</button><button class="link-button" data-act="role-edit" data-id="' + item.id + '" ' + (!globalCan('roles.patch') ? 'disabled' : '') + '>编辑</button><button class="link-button ' + (item.enabled ? 'text-danger' : '') + '" data-act="role-toggle" data-id="' + item.id + '" ' + (!globalCan('roles.patch') ? 'disabled' : '') + '>' + (item.enabled ? '停用' : '启用') + '</button></div></td></tr>').join('')
+      + data.items.map(item => '<tr><td><strong>' + h(item.name) + '</strong></td><td class="mono muted">' + h(item.code) + '</td><td><span class="badge ' + (item.authorityLevel ? 'blue' : 'gray') + '">' + h(rankNames[item.authorityLevel]) + '</span></td><td>' + enabledTag(item.enabled) + '</td><td><div class="row-actions"><button class="link-button" data-act="role-members" data-id="' + item.id + '" ' + (!model().can('users') ? 'disabled' : '') + '>查看成员</button><button class="link-button" data-act="role-permissions" data-id="' + item.id + '" ' + (!globalCan('roles.permissions.read') ? 'disabled' : '') + '>配置权限</button><button class="link-button" data-act="role-edit" data-id="' + item.id + '" ' + (!globalCan('roles.patch') ? 'disabled' : '') + '>编辑</button><button class="link-button ' + (item.enabled ? 'text-danger' : '') + '" data-act="role-toggle" data-id="' + item.id + '" ' + (!globalCan('roles.patch') ? 'disabled' : '') + '>' + (item.enabled ? '停用' : '启用') + '</button></div></td></tr>').join('')
       + '</tbody></table>' + (!data.items.length ? empty('没有符合条件的角色', '请调整名称、编码或状态') : '') + '</div>' + itemsPage(data, 'screen-page', '个角色') + '<div class="panel-note">' + icon('info') + '授予级别按固定元数据判断，改名不会改变级别。新建自定义角色默认仅系统管理员可授予。</div></section>';
   }
   function resourceTree(permissions, parent = null, depth = 0) {
@@ -188,7 +208,7 @@ function createScreens(context) {
     }
   }
   const modalShell = (modal, title, content, { drawer = false, footer = true, saveLabel = '保存更改' } = {}) =>
-    '<dialog class="' + (drawer ? 'drawer' : 'modal') + '" id="main-dialog" aria-labelledby="screen-modal-title"><div class="' + (drawer ? 'drawer-shell' : '') + '"><header class="' + (drawer ? 'drawer-header' : 'modal-header') + '"><div><h2 id="screen-modal-title">' + h(title) + '</h2>' + (modal.targetName ? '<p>' + h(modal.targetName) + '</p>' : '') + '</div><button class="icon-button" data-act="close-modal" aria-label="关闭' + h(title) + '" ' + (state().writeBusy ? 'disabled' : '') + '>' + icon('close') + '</button></header>'
+    '<dialog class="' + (drawer ? 'drawer' : 'modal') + (modal.kind === 'screen-members' ? ' member-drawer' : '') + '" id="main-dialog" aria-labelledby="screen-modal-title"><div class="' + (drawer ? 'drawer-shell' : '') + '"><header class="' + (drawer ? 'drawer-header' : 'modal-header') + '"><div><h2 id="screen-modal-title">' + h(title) + '</h2>' + (modal.targetName ? '<p>' + h(modal.targetName) + '</p>' : '') + '</div><button class="icon-button" data-act="close-modal" aria-label="关闭' + h(title) + '" ' + (state().writeBusy ? 'disabled' : '') + '>' + icon('close') + '</button></header>'
       + '<div class="' + (drawer ? 'drawer-body' : 'modal-body') + '">' + errorBox(modal.error) + content + '</div><footer class="' + (drawer ? 'drawer-footer' : 'modal-footer') + '">'
       + (drawer ? '<span class="hint">' + (!footer ? '只读查看' : dirty(modal) ? '有未保存的修改' : '取消不会保存修改') + '</span><div class="row">' : '')
       + btn(footer ? '取消' : '关闭', 'close-modal') + (footer ? '<button class="btn primary" data-act="screen-save" ' + (modal.loading || modal.candidateBusy || state().writeBusy || !canSave(modal) || !dirty(modal) ? 'disabled' : '') + '>' + (state().writeBusy ? busy() + '保存中' : saveLabel) + '</button>' : '') + (drawer ? '</div>' : '') + '</footer></div></dialog>';
@@ -229,6 +249,15 @@ function createScreens(context) {
   }
   function modal(modal) {
     if (!modal?.kind?.startsWith('screen-')) return '';
+    if (modal.kind === 'screen-members') return modalShell(modal, '员工名单',
+      '<p class="hint">只读名单 · 仅展示当前可见部门范围内的员工' + (modal.roleId && !modal.roleEnabled ? '。此角色已停用，保留已分配关系，当前不贡献权限。' : '') + '</p>'
+      + '<form class="members-filter" id="members-filter"><div class="input-shell">' + icon('search') + '<input id="members-search" aria-label="搜索员工姓名或工号" placeholder="搜索姓名或工号" maxlength="100" value="' + h(modal.qDraft) + '"></div>'
+      + (modal.departmentId ? '<select id="members-scope" aria-label="查看范围"><option value="DIRECT" ' + (modal.scope === 'DIRECT' ? 'selected' : '') + '>仅直属员工</option><option value="SUBTREE" ' + (modal.scope === 'SUBTREE' ? 'selected' : '') + '>包含下级部门</option></select>' : '')
+      + '<select id="members-status" aria-label="员工账号状态"><option value="">全部状态</option><option value="true" ' + (modal.enabled === 'true' ? 'selected' : '') + '>启用</option><option value="false" ' + (modal.enabled === 'false' ? 'selected' : '') + '>已停用</option></select><button class="btn primary" type="submit">查询</button></form>'
+      + (modal.memberBusy ? loader() : modal.error ? btn('重新读取名单', 'members-retry') : '<div class="members-total">当前范围匹配 <strong>' + (modal.data?.total || 0) + '</strong> 人</div><div class="table-wrap"><table><thead><tr><th>姓名 / 工号</th><th>所属部门</th><th>职位</th><th>当前角色</th><th>状态</th></tr></thead><tbody>'
+        + (modal.data?.items || []).map(item => '<tr><td><strong>' + h(item.name) + '</strong><small class="cell-sub mono">' + h(item.username) + '</small></td><td>' + h(item.departmentName) + '</td><td>' + h(item.position || '未提供') + '</td><td><div class="member-role-tags">' + item.roles.map(role => '<span class="badge ' + (role.enabled ? 'blue' : 'gray') + '">' + h(role.name) + (role.enabled ? '' : '（已停用）') + '</span>').join('') + '</div></td><td>' + enabledTag(item.enabled) + '</td></tr>').join('')
+        + '</tbody></table>' + (!modal.data?.items.length ? empty('暂无匹配员工', '可切换范围或修改搜索条件') : '') + '</div>' + (modal.appliedQuery?.q !== modal.qDraft.trim() ? '<p class="hint">筛选已修改，请点击查询。</p>' : itemsPage(modal.data, 'members-page', '人'))),
+      { drawer: true, footer: false });
     if (modal.loading) return modalShell(modal, modal.title, loader(), { drawer: true });
     if (isCollectionEditor(modal) && !modal.initialReadComplete) {
       return modalShell(modal, modal.kind === 'screen-role-permissions' ? '配置角色权限' : '配置API映射',
@@ -256,7 +285,7 @@ function createScreens(context) {
     if (modal.kind === 'screen-log-detail') {
       const entry = modal.original;
       return modalShell(modal, '鉴权事件详情', '<div class="log-result ' + (entry.allowed ? 'allowed' : 'denied') + '">' + icon('shield') + '<div><strong>鉴权' + (entry.allowed ? '允许' : '拒绝') + '</strong><p>HTTP ' + entry.httpStatus + ' · ' + h(entry.reason) + '</p></div></div><dl class="detail-list log-detail-list">'
-        + [['事件ID', entry.id], ['事件时间', dateTime(entry.occurredAt) + '（北京时间）'], ['UTC原值', entry.occurredAt], ['事件类型', entry.eventType], ['用户ID', entry.userId ?? '未识别'], ['工号', entry.username ?? '未识别'], ['系统', entry.appCode], ['权限编码', entry.permissionCode || '未定位'], ['HTTP方法', entry.httpMethod], ['安全路径', entry.requestPath], ['请求标识', entry.requestId]].map(([label, value]) => '<dt>' + label + '</dt><dd class="mono">' + h(value) + '</dd>').join('') + '</dl><p class="hint">鉴权允许与业务成功分别记录，不包含手机号、口令、令牌或查询串。</p>', { drawer: true, footer: false });
+        + [['事件ID', entry.id], ['事件时间', dateTime(entry.occurredAt) + '（北京时间）'], ['UTC原值', entry.occurredAt], ['事件类型', entry.eventType], ['用户ID', entry.userId ?? '未识别'], ['工号', entry.username ?? '未识别'], ['系统', entry.appCode], ['来源IP', entry.clientIp || '未记录'], ['权限编码', entry.permissionCode || '未定位'], ['HTTP方法', entry.httpMethod], ['安全路径', entry.requestPath], ['请求标识', entry.requestId]].map(([label, value]) => '<dt>' + label + '</dt><dd class="mono">' + h(value) + '</dd>').join('') + '</dl><p class="hint">离线IP为虚构演示值，不采集实际客户端地址。鉴权允许与业务成功分别记录，不包含手机号、口令、令牌或查询串。</p>', { drawer: true, footer: false });
     }
     return '';
   }
@@ -310,6 +339,28 @@ function createScreens(context) {
   function write(operation, message, confirmed = false) {
     return context.writeOperation(operation, message, { confirmation: confirmed, refresh: () => load(state().route) });
   }
+  async function loadMembers(page = 0) {
+    const modal = state().modal;
+    if (modal?.kind !== 'screen-members') return;
+    const sequence = modal.sequence = (modal.sequence || 0) + 1;
+    const query = { departmentId: modal.departmentId, roleId: modal.roleId, departmentScope: modal.scope,
+      q: modal.qDraft.trim(), enabled: modal.enabled, page, size: 10 };
+    modal.memberBusy = true; modal.error = null; modal.data = null; context.renderOverlays();
+    try {
+      const result = await context.request(() => model().list(query));
+      if (state().modal === modal && sequence === modal.sequence) { modal.data = result; modal.appliedQuery = query; }
+    } catch (error) {
+      if (error.name !== 'AbortError' && state().modal === modal && sequence === modal.sequence && !context.handleSessionError(error)) modal.error = error;
+    } finally {
+      if (state().modal === modal && sequence === modal.sequence) { modal.memberBusy = false; context.renderOverlays(); }
+    }
+  }
+  function openMembers(target, isRole = false) {
+    if (!target || !model().can('users')) return;
+    state().modal = { kind: 'screen-members', targetName: target.name, departmentId: isRole ? undefined : target.id,
+      roleId: isRole ? target.id : undefined, roleEnabled: target.enabled, scope: isRole ? 'SUBTREE' : 'DIRECT', qDraft: '', enabled: '', data: null };
+    loadMembers();
+  }
   function saveModal(confirmed = false) {
     const modal = state().modal;
     if (!dirty(modal) || state().writeBusy || !canSave(modal)) return;
@@ -340,6 +391,23 @@ function createScreens(context) {
       case 'overview-people': context.navigate('people', { departmentId: id }); return true;
       case 'screen-reset': current.q = ''; current.qDraft = ''; current.enabled = ''; current.page = 0; load(); return true;
       case 'screen-page': current.page = Number(button.dataset.page); load(); return true;
+      case 'department-select': {
+        const item = current.data?.find(item => item.id === id);
+        if (!item) return true;
+        current.departmentId = id;
+        for (let parent = current.data.find(node => node.id === item.parentId); parent; parent = current.data.find(node => node.id === parent.parentId)) current.departmentExpanded.add(parent.id);
+        context.render(); return true;
+      }
+      case 'department-expand': if (current.departmentExpanded.has(id)) current.departmentExpanded.delete(id); else current.departmentExpanded.add(id); context.render(); return true;
+      case 'department-expand-all': current.departmentSearch = ''; current.departmentExpanded = new Set(current.data.map(item => item.id)); context.render(); return true;
+      case 'department-members': openMembers(current.data?.find(item => item.id === id)); return true;
+      case 'role-members': openMembers(current.data?.items.find(item => item.id === id), true); return true;
+      case 'members-retry': loadMembers(); return true;
+      case 'members-page': {
+        const modal = state().modal;
+        if (modal?.appliedQuery && !modal.memberBusy && modal.qDraft.trim() === modal.appliedQuery.q) loadMembers(Number(button.dataset.page));
+        return true;
+      }
       case 'department-rename': {
         const item = current.data.find(item => item.id === id);
         if (!item?.canRename) return true;
@@ -400,6 +468,8 @@ function createScreens(context) {
     }
   }
   function input(element) {
+    if (element.id === 'department-tree-search') { view('departments').departmentSearch = element.value; context.render(); }
+    if (element.id === 'members-search' && state().modal?.kind === 'screen-members') { state().modal.qDraft = element.value; context.renderOverlays(); }
     if (element.id === 'screen-search') view(state().route).qDraft = element.value;
     if (element.id === 'edit-name' && state().modal?.values) state().modal.values.name = element.value;
     if (element.id === 'edit-code' && state().modal?.kind === 'screen-role-new') state().modal.values.code = element.value;
@@ -408,6 +478,9 @@ function createScreens(context) {
     if (['edit-name', 'edit-code'].includes(element.id)) context.renderOverlays();
   }
   function change(element) {
+    if (['members-scope', 'members-status'].includes(element.id) && state().modal?.kind === 'screen-members') {
+      state().modal[element.id === 'members-scope' ? 'scope' : 'enabled'] = element.value; loadMembers();
+    }
     if (element.id === 'department-parent' && state().modal?.kind === 'screen-department-new') {
       const modal = state().modal;
       modal.values.parentId = Number(element.value);
@@ -436,6 +509,7 @@ function createScreens(context) {
     if (element.id === 'log-limit') { view('logs').limit = Number(element.value); view('logs').filtersDirty = true; context.render(); }
   }
   function submit(id) {
+    if (id === 'members-filter') { loadMembers(); return true; }
     if (id === 'screen-filter') { const current = view(state().route); current.q = current.qDraft.trim(); current.page = 0; load(); return true; }
     if (id === 'logs-filter') { load('logs'); return true; }
     if (id === 'mapping-filter') { const modal = state().modal; if (modal?.kind === 'screen-mapping' && modal.initialReadComplete) { modal.q = modal.qDraft.trim(); modal.page = 0; mappingCandidates(); } return true; }

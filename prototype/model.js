@@ -3,7 +3,7 @@
 'use strict';
 const { createCatalog } = typeof module !== 'undefined' && module.exports ? require('./catalog.js') : globalThis.MunicipalCatalog;
 /** 原型内存模型：人员/组织虚构，业务矩阵取自原Excel；不调用后端或持久化存储。 */
-const PEOPLE = ['tree', 'users', 'currentRoles', 'candidates', 'assign', 'disable', 'move', 'departments.list', 'departments.rename', 'departments.create', 'departments.delete'];
+const PEOPLE = ['tree', 'overview', 'users', 'currentRoles', 'candidates', 'assign', 'disable', 'move', 'departments.list', 'departments.rename', 'departments.create', 'departments.delete'];
 /** 与现行17项维护恢复操作对应；日志、停用和调动不属于完整K。 */
 const MAINTENANCE = [
   'tree', 'users', 'currentRoles', 'candidates', 'assign',
@@ -60,7 +60,7 @@ function createDemoModel() {
     { id: 23, parentId: 22, name: '新城项目部', type: '项目' },
   ];
   const roles = [
-    { id: 1, name: '系统管理员', code: 'SYSTEM_ADMIN', enabled: true, permissions: [...MAINTENANCE, 'disable', 'move', 'logs',
+    { id: 1, name: '系统管理员', code: 'SYSTEM_ADMIN', enabled: true, permissions: [...MAINTENANCE, 'overview', 'disable', 'move', 'logs',
       'departments.rename', 'departments.list', 'departments.create', 'departments.delete',
       ...permissionCatalog.filter(item => item.systemId !== 1).map(item => item.key)], description: '完整系统维护与日志查询' },
     { id: 2, name: '公司领导', code: 'COMPANY_LEADER', enabled: true, permissions: [...PEOPLE, ...initialBusinessPermissions(1)], description: '范围内人员/部门管理，业务权限初始按Excel公司领导列' },
@@ -236,7 +236,7 @@ function createDemoModel() {
   const logs = [];
   const cursorIndex = new Map();
   const record = ({ actor = null, eventType = 'AUTHORIZATION', allowed = true, reason = 'OK', httpMethod = 'GET', requestPath = '/api/users', httpStatus = 200, permissionCode = null, occurredAt = new Date().toISOString(), requestId = 'demo-' + globalThis.crypto.randomUUID().slice(0, 8) } = {}) => {
-    const entry = { id: logs.length + 1, occurredAt, userId: actor?.id ?? null, username: actor?.username ?? null, eventType, allowed, reason, httpMethod, requestPath, httpStatus, permissionCode, appCode: 'RBAC', requestId };
+    const entry = { id: logs.length + 1, occurredAt, userId: actor?.id ?? null, username: actor?.username ?? null, eventType, allowed, reason, httpMethod, requestPath, httpStatus, permissionCode, appCode: 'RBAC', requestId, clientIp: '192.0.2.24' };
     logs.push(entry);
     return entry;
   };
@@ -280,15 +280,17 @@ function createDemoModel() {
         ...item, parentId: visible.has(item.parentId) ? item.parentId : null,
       }));
     },
-    list({ departmentId, q = '', enabled = '', page = 0, size = 10 } = {}) {
+    list({ departmentId, departmentScope = 'SUBTREE', roleId, q = '', enabled = '', page = 0, size = 10 } = {}) {
       const actor = authorize('users');
+      if (!['DIRECT', 'SUBTREE'].includes(departmentScope) || (departmentScope === 'DIRECT' && !departmentId)) fail(400, 'INVALID_ARGUMENT', '直属查询需要指定有效部门');
       const visible = descendants(actor.departmentId);
       const selectedId = Number(departmentId || actor.departmentId);
       if (!visible.has(selectedId)) fail(403, 'MANAGEMENT_SCOPE_DENIED', '该部门不在你的管理范围内');
-      const selectedScope = descendants(selectedId);
+      const selectedScope = departmentScope === 'DIRECT' ? new Set([selectedId]) : descendants(selectedId);
       const search = q.trim().toLowerCase();
       if (search.length > 100) fail(400, 'INVALID_ARGUMENT', '搜索内容最多100个字符');
       const filtered = users.filter(person => visible.has(person.departmentId) && selectedScope.has(person.departmentId)
+        && (roleId === undefined || person.roleIds.includes(Number(roleId)))
         && (!search || [person.name, person.username].some(value => value.toLowerCase().includes(search)))
         && (enabled === '' || person.enabled === (enabled === 'true')));
       return { items: filtered.slice(page * size, (page + 1) * size).map(person => {
@@ -334,7 +336,7 @@ function createDemoModel() {
       preserveMaintenance(selected, () => { selected.roleIds = [...keepIds]; });
     },
     overview() {
-      const actor = authorize('users');
+      const actor = authorize('overview');
       const visible = descendants(actor.departmentId);
       const people = users.filter(person => visible.has(person.departmentId));
       const branches = departments.filter(item => item.parentId === actor.departmentId).map(item => ({

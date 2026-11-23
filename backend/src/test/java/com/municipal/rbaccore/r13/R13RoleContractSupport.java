@@ -50,34 +50,20 @@ abstract class R13RoleContractSupport {
   private static final String TREE = "/api/permissions/tree";
   private static final String PERMISSIONS = "/api/permissions";
   private static final String PASSWORD = "t09-isolated-fixture-password";
-  @Autowired
-  TestRestTemplate http;
-  @Autowired
-  ObjectMapper json;
-  @Autowired
-  JdbcTemplate jdbc;
-  @Autowired
-  PasswordEncoder encoder;
-  @Autowired
-  DepartmentJpaRepository departments;
-  @Autowired
-  UserJpaRepository users;
-  @Autowired
-  RoleJpaRepository roles;
-  @Autowired
-  PermissionJpaRepository permissions;
-  @Autowired
-  ApiResourceJpaRepository apis;
-  @Autowired
-  ApplicationSystemJpaRepository systems;
-  @Autowired
-  PlatformTransactionManager transactions;
-  @Autowired
-  ManagementAuthorization effective;
-  @Autowired
-  LockObservation observedLock;
-  @Autowired
-  RoleCountObservation observedCount;
+  @Autowired TestRestTemplate http;
+  @Autowired ObjectMapper json;
+  @Autowired JdbcTemplate jdbc;
+  @Autowired PasswordEncoder encoder;
+  @Autowired DepartmentJpaRepository departments;
+  @Autowired UserJpaRepository users;
+  @Autowired RoleJpaRepository roles;
+  @Autowired PermissionJpaRepository permissions;
+  @Autowired ApiResourceJpaRepository apis;
+  @Autowired ApplicationSystemJpaRepository systems;
+  @Autowired PlatformTransactionManager transactions;
+  @Autowired ManagementAuthorization effective;
+  @Autowired LockObservation observedLock;
+  @Autowired RoleCountObservation observedCount;
   private long systemId;
   private long rootId;
   private long childId;
@@ -706,7 +692,8 @@ abstract class R13RoleContractSupport {
   @DisplayName("R13/R15 任一权限映射实际API即可放行，完整K采用同一OR语义")
   void R13_HonorsAlternativeApiMappings() throws Exception {
     long alternative = alternativePermission("t09-alternative-read", "rbac.roles.read");
-    account("t09-api-reader", rootId, List.of(alternative));
+    long detail = alternativePermission("t09-alternative-detail", "rbac.roles.permissions.read");
+    account("t09-api-reader", rootId, List.of(alternative, detail));
     String reader = token("t09-api-reader");
 
     success(request("GET", ROLES, reader, null), 200);
@@ -723,6 +710,28 @@ abstract class R13RoleContractSupport {
     success(request("PUT", selected(adminRoleId), admin, Map.of("ids", replacement)), 200);
 
     success(request("GET", ROLES, admin, null), 200);
+  }
+
+  /** 默认操作权限无需改映射即可独立授予，列表、新建及配置详情互不放行。 */
+  @Test
+  @DisplayName("R13/R14 默认目录按按钮独立授权，不因同页关系放行其他操作")
+  void R13_DefaultOperationsAreIndependent() throws Exception {
+    account("t09-atomic-reader", rootId, List.of(permissionIds.get("rbac.roles.read")));
+    String reader = token("t09-atomic-reader");
+    success(request("GET", ROLES, reader, null), 200);
+    assertError(request("GET", selected(adminRoleId), reader, null), 403, "PERMISSION_DENIED");
+    assertError(
+        request("POST", ROLES, reader, Map.of("code", "atomic-denied", "name", "拒绝创建")),
+        403,
+        "PERMISSION_DENIED");
+    account("t09-atomic-creator", rootId, List.of(permissionIds.get("rbac.roles.create")));
+    String creator = token("t09-atomic-creator");
+    success(request("POST", ROLES, creator, Map.of("code", "atomic-created", "name", "独立创建")), 201);
+    assertError(request("GET", ROLES, creator, null), 403, "PERMISSION_DENIED");
+    assertError(
+        request("PATCH", role(adminRoleId), creator, Map.of("name", "越权改名")),
+        403,
+        "PERMISSION_DENIED");
   }
 
   /** A08-4：同组接口中只授予列表路由，详情仍单独拒绝。 */

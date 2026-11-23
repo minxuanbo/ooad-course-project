@@ -148,20 +148,20 @@ public class JpaInitializationRepositoryAdapter implements InitializationReposit
   /** 使用稳定目录标识去重API，关系按计划直接持久化。 */
   private Map<String, PermissionEntity> savePermissions(
       ApplicationSystemEntity system, List<BootstrapPlan.PermissionSeed> entries) {
-    PermissionEntity workspace =
-        permissions.save(
-            new PermissionEntity(
-                system,
-                BootstrapPlan.WORKSPACE_CODE,
-                BootstrapPlan.WORKSPACE_NAME,
-                PermissionType.MENU));
     Map<String, PermissionEntity> byCode = new HashMap<>();
-    byCode.put(BootstrapPlan.WORKSPACE_CODE, workspace);
     Map<ApiResource.Route, ApiResourceEntity> byRoute = new HashMap<>();
     for (BootstrapPlan.PermissionSeed seed : entries) {
       PermissionEntity row =
-          new PermissionEntity(system, seed.code(), seed.name(), PermissionType.BUTTON);
-      row.moveTo(workspace);
+          new PermissionEntity(
+              system,
+              seed.code(),
+              seed.name(),
+              seed.menu() ? PermissionType.MENU : PermissionType.BUTTON);
+      byCode.put(seed.code(), permissions.save(row));
+    }
+    for (BootstrapPlan.PermissionSeed seed : entries) {
+      PermissionEntity row = byCode.get(seed.code());
+      if (seed.parentCode() != null) row.moveTo(byCode.get(seed.parentCode()));
       for (ApiResource.Route route : seed.routes()) {
         row.mapApi(
             byRoute.computeIfAbsent(
@@ -169,7 +169,6 @@ public class JpaInitializationRepositoryAdapter implements InitializationReposit
                 mapping ->
                     apis.save(new ApiResourceEntity(system, mapping.method(), mapping.path()))));
       }
-      byCode.put(seed.code(), permissions.save(row));
     }
     return byCode;
   }
@@ -177,8 +176,10 @@ public class JpaInitializationRepositoryAdapter implements InitializationReposit
   /** 来源文档JSON仅承载原列，不映射领域或HTTP对象。 */
   private InitializationState.Source readSource(ImportSourceEntity row) {
     InitializationState.Kind kind = InitializationState.Kind.valueOf(row.getKind().name());
-    List<String> columns = kind == InitializationState.Kind.BOOTSTRAP
-        ? List.of() : sourceJson.decode(row.getSourceJson());
+    List<String> columns =
+        kind == InitializationState.Kind.BOOTSTRAP
+            ? List.of()
+            : sourceJson.decode(row.getSourceJson());
     return new InitializationState.Source(
         kind,
         row.getSourceKey(),
