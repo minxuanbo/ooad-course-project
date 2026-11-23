@@ -21,6 +21,9 @@
 !integrations/course/requirements-deployment.txt
 !scripts/
 !scripts/initialize_course_integration.py
+!scripts/initialize_business_catalog.py
+!scripts/build-prototype-applications.py
+!市政公司应用软件功能权限清单.xlsx
 **/__pycache__/
 **/*private*
 **/.env
