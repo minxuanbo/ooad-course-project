@@ -6,6 +6,7 @@
 
 | 关注点 | 可追溯证据与边界 |
 | --- | --- |
+| 本轮发布核对 | [2026-11-23核对](history/verification/release-20261123.md)：Apifox回读、线上单人即时撤权、CloneFactory、健康探测TDD及图件修正；发布与覆盖率结果执行后补充 |
 | 当前正式发布 | [双DDD首发](history/verification/ddd-production-deployment.md)：实际镜像、离线导入、逐人身份、公网及重启结果；不宣称高可用或压测通过 |
 | 待统一发布 | [北京时间与终态服务清理](history/verification/beijing-time-and-service-cleanup.md)：时间修正仅本机验证，临时服务已归档清理，线上七项正式服务保留 |
 | 文档与监控调整 | [本次核对](history/verification/current-docs-and-monitoring.md)：现行文档归并、历史清理、监控及日志体验修正；代码待统一上线，Apifox环境单独配置 |
