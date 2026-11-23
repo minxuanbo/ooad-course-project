@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS authorization_logs (
   http_method VARCHAR(16) NOT NULL,
   request_path VARCHAR(512) NOT NULL,
   http_status INT NOT NULL,
+  client_ip VARCHAR(45),
   PRIMARY KEY (id),
   INDEX ix_authorization_log_user (user_id, id),
   INDEX ix_authorization_log_time (occurred_at, id),
@@ -24,5 +25,6 @@ CREATE TABLE IF NOT EXISTS bootstrap_receipts (
   seed_key VARCHAR(64) NOT NULL,
   manifest_sha256 VARCHAR(64) NOT NULL,
   completed_at DATETIME(3) NOT NULL,
+  source_json LONGTEXT,
   PRIMARY KEY (seed_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;

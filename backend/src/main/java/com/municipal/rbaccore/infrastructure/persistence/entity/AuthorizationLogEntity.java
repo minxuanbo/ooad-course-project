@@ -57,6 +57,9 @@ public class AuthorizationLogEntity {
   @Column(name = "http_status", nullable = false)
   private int httpStatus;
 
+  @Column(name = "client_ip", length = 45)
+  private String clientIp;
+
   /** 仅接收过滤器/AOP的安全事件，归属由实际入口确定，不伪称课程业务审计。 */
   public AuthorizationLogEntity(AuditEvent event, Instant now) {
     this.occurredAt = now;
@@ -71,5 +74,6 @@ public class AuthorizationLogEntity {
     this.requestPath =
         event.requestPath().substring(0, Math.min(event.requestPath().length(), 512));
     this.httpStatus = event.httpStatus();
+    this.clientIp = event.clientIp();
   }
 }

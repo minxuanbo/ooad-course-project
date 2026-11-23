@@ -10,7 +10,9 @@ import com.municipal.rbaccore.service.port.audit.AuditWriter;
 import com.municipal.rbaccore.service.port.department.DepartmentUseCase;
 import com.municipal.rbaccore.service.port.error.BusinessException;
 import com.municipal.rbaccore.service.port.resource.ResourceUseCase;
+import com.municipal.rbaccore.service.port.role.RoleUseCase;
 import com.municipal.rbaccore.service.port.security.ManagementAccessUseCase;
+import com.municipal.rbaccore.service.port.security.RbacCatalog;
 import com.municipal.rbaccore.service.port.user.UserManagementUseCase;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -29,6 +31,7 @@ public class ManagementPreflight implements HandlerInterceptor {
   private final ResourceUseCase resources;
   private final UserManagementUseCase users;
   private final DepartmentUseCase departments;
+  private final RoleUseCase roles;
   private final AuditWriter audit;
 
   /** 只处理已评审的管理控制器，人员接口保留部门范围而不要求共同根。 */
@@ -56,6 +59,10 @@ public class ManagementPreflight implements HandlerInterceptor {
             !request.getMethod().equals("GET")
                 || template.equals("/api/users/{id}/assignable-roles");
         users.checkTarget(header, id, protectSelf);
+        return true;
+      }
+      if (RoleController.class.isAssignableFrom(method.getBeanType())) {
+        roles.checkTarget(header, id, !request.getMethod().equals("GET"));
         return true;
       }
       access.require(header);
@@ -114,6 +121,8 @@ public class ManagementPreflight implements HandlerInterceptor {
             exception.getCode(),
             request.getMethod(),
             template,
-            exception.getStatus()));
+            exception.getStatus(),
+            RbacCatalog.SYSTEM_CODE,
+            RequestAuditFilter.clientIp()));
   }
 }

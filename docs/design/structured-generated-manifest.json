@@ -99,6 +99,7 @@
         "saveAndFlush"
       ],
       "model": [
+        "belongTo",
         "grantPermission",
         "revokePermission"
       ],
@@ -108,7 +109,10 @@
       ],
       "fields": [
         "id",
-        "code",
+        "type",
+        "ownerDepartment",
+        "application",
+        "managementLevel",
         "enabled",
         "permissions"
       ]
@@ -350,7 +354,8 @@
         "id",
         "code",
         "name",
-        "enabled"
+        "enabled",
+        "connectionStatus"
       ]
     }
   },

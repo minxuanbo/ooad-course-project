@@ -22,8 +22,10 @@ CREATE TABLE IF NOT EXISTS systems (
   code VARCHAR(100) NOT NULL,
   name VARCHAR(191) NOT NULL,
   enabled BIT NOT NULL,
+  connection_status VARCHAR(16) NOT NULL DEFAULT 'CONNECTED',
   PRIMARY KEY (id),
-  CONSTRAINT uk_system_code UNIQUE (code)
+  CONSTRAINT uk_system_code UNIQUE (code),
+  CONSTRAINT ck_system_connection_status CHECK (connection_status IN ('PENDING','CONNECTED'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
 
 CREATE TABLE IF NOT EXISTS roles (
@@ -32,9 +34,20 @@ CREATE TABLE IF NOT EXISTS roles (
   name VARCHAR(100) NOT NULL,
   enabled BIT NOT NULL,
   management_level INT,
+  role_type VARCHAR(24) NOT NULL DEFAULT 'GLOBAL_CUSTOM',
+  owner_department_id BIGINT,
+  application_id BIGINT,
   PRIMARY KEY (id),
   CONSTRAINT uk_role_code UNIQUE (code)
   ,CONSTRAINT ck_role_level CHECK (management_level BETWEEN 1 AND 5)
+  ,CONSTRAINT fk_role_owner_department FOREIGN KEY (owner_department_id) REFERENCES departments(id)
+  ,CONSTRAINT fk_role_application FOREIGN KEY (application_id) REFERENCES systems(id)
+  ,CONSTRAINT ck_role_scope CHECK (
+    (role_type='SYSTEM_BUILTIN' AND management_level IS NOT NULL AND owner_department_id IS NULL AND application_id IS NULL)
+    OR (role_type='APPLICATION_PRESET' AND management_level IS NULL AND owner_department_id IS NULL AND application_id IS NOT NULL)
+    OR (role_type='DEPARTMENT_CUSTOM' AND management_level IS NULL AND owner_department_id IS NOT NULL AND application_id IS NULL)
+    OR (role_type='GLOBAL_CUSTOM' AND management_level IS NULL AND owner_department_id IS NULL AND application_id IS NULL)
+  )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
 
 CREATE TABLE IF NOT EXISTS users (

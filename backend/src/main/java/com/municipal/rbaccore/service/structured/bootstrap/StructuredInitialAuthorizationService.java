@@ -189,9 +189,14 @@ public class StructuredInitialAuthorizationService implements AuthorizationBoots
   private Map<InitialRole, RoleEntity> createCatalog() {
     ApplicationSystemEntity system =
         systems.save(new ApplicationSystemEntity(RbacCatalog.SYSTEM_CODE, "RBAC权限管理系统"));
-    PermissionEntity workspace =
-        permissions.save(
-            new PermissionEntity(system, "rbac.workspace", "权限管理", PermissionType.MENU));
+    Map<String, PermissionEntity> menus = new LinkedHashMap<>();
+    RbacCatalog.menus()
+        .forEach(
+            (code, name) ->
+                menus.put(
+                    code,
+                    permissions.save(
+                        new PermissionEntity(system, code, name, PermissionType.MENU))));
     Map<String, PermissionEntity> resourcePermissions = new LinkedHashMap<>();
     Map<RbacCatalog.Route, ApiResourceEntity> resourceApis = new HashMap<>();
     for (Map.Entry<String, List<RbacCatalog.Route>> definition :
@@ -202,7 +207,7 @@ public class StructuredInitialAuthorizationService implements AuthorizationBoots
               definition.getKey(),
               RbacCatalog.displayNames().get(definition.getKey()),
               PermissionType.BUTTON);
-      permission.moveTo(workspace);
+      permission.moveTo(menus.get(RbacCatalog.parentCode(definition.getKey())));
       for (RbacCatalog.Route route : definition.getValue()) {
         ApiResourceEntity api =
             resourceApis.computeIfAbsent(
@@ -216,11 +221,12 @@ public class StructuredInitialAuthorizationService implements AuthorizationBoots
       RoleEntity role = new RoleEntity(initial.getCode(), initial.getName());
       role.setManagementLevel(initial.getManagementLevel());
       if (initial != InitialRole.EMPLOYEE) {
-        role.grantPermission(workspace);
+        if (initial == InitialRole.SYSTEM_ADMIN) menus.values().forEach(role::grantPermission);
         resourcePermissions.forEach(
             (code, permission) -> {
               if (initial == InitialRole.SYSTEM_ADMIN || RbacCatalog.PERSONNEL.contains(code)) {
                 role.grantPermission(permission);
+                role.grantPermission(menus.get(RbacCatalog.parentCode(code)));
               }
             });
       }

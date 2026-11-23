@@ -4,8 +4,10 @@
 
 | 材料 | 保留用途 |
 | --- | --- |
+| [应用目录及部门角色覆盖率](verification/access-extension-coverage-20261124.md) | 双策略各328项、347份class一致、六项100%及原Maven门槛，完整脱敏报告归档 |
+| [18系统与部门角色](verification/access-extension-20261124.md) | 本轮未发布源码、原表矩阵、部门授撤边界、双策略317项及Apifox1.6.0回读；记录新增代码后的真实覆盖率及限制 |
 | [JWT修复发布](verification/jwt-coverage-release-20261123.md) | 当前RBAC镜像、单服务更新、91次HTTP、其余服务不变及剩余验收/来源限制 |
-| [RBAC JaCoCo补齐](verification/rbac-jacoco-complete.md) | 当前源码双策略六项100%、同字节码合并和原门槛证据；不替代线上流量覆盖率 |
+| [RBAC JaCoCo补齐](verification/rbac-jacoco-complete.md) | 11月23日发布源码双策略六项100%、同字节码合并和原门槛证据；不替代后续改动及线上流量覆盖率 |
 | [11月23日发布与JaCoCo](verification/release-20261123.md) | 前次集中发布镜像、HTTP、实时撤权、北京时间、监控及当时覆盖率限制 |
 | [老师纪要复核](rbac-rectification/RBAC检查记录复核说明.md) | 保留原始技术摘录、来源事实及早期确认语境 |
 | [原型确认](design-decisions/prototype.md) | 保留多轮用户选择及原表矩阵的转换解释，不作为当前待办 |
@@ -21,3 +23,5 @@
 | [文档与监控](verification/current-docs-and-monitoring.md) | 当前文档归并、删除依据及离线监控验证 |
 
 过期开发计划、重复文档整理说明、被当前模型/验收覆盖的早期实施报告、重复设计决策和旧图已清理，未再转存另一层历史目录。需要原版本时从清理前提交`7fed862dca56844e02b8793d44527b9538e48dee`或Git历史读取。原Excel、用户外部设计文件、旧库/卷和原始运行日志均保留。
+
+- [成员查询与来源IP验证](verification/member-queries-audit-ip-20261123.md)：本轮双策略回归、必要前端/接入检查与未发布边界。

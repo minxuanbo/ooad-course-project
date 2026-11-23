@@ -442,7 +442,7 @@ for (const item of design.entries) {
       x: 1330,
       y: 405,
       w: 450,
-      h: 345,
+      h: Math.max(345, 110 + (item.fields.length + item.methods.length) * 28),
       title: item.model,
       fields: item.fields,
       methods: item.methods,

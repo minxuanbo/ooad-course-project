@@ -22,8 +22,9 @@ public interface ApiResourceJpaRepository
   /** 权限和API均须属于同一个启用系统，多角色多权限按OR汇总去重。 */
   @Query(
       "select distinct a from UserEntity u join u.roles r join r.permissions p join p.apis a where"
-          + " u.id=:userId and u.enabled=true and r.enabled=true and p.enabled=true and"
-          + " a.enabled=true and p.system.id=a.system.id and a.system.enabled=true and"
+          + " u.id=:userId and r.id in :roleIds and u.enabled=true and r.enabled=true and"
+          + " p.enabled=true and a.enabled=true and p.system.id=a.system.id and"
+          + " a.system.enabled=true and a.system.connectionStatus=ConnectionStatus.CONNECTED and"
           + " a.system.code=:system")
-  List<ApiResourceEntity> effectiveApis(Long userId, String system);
+  List<ApiResourceEntity> effectiveApis(Long userId, java.util.Set<Long> roleIds, String system);
 }

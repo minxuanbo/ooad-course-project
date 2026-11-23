@@ -36,13 +36,14 @@ MySQL8.4、InnoDB、utf8mb4/utf8mb4_0900_bin。实体BIGINT主键自增，对外
 | code | VARCHAR(100) | 否 | 稳定业务编码 |
 | name | VARCHAR(191) | 否 | 显示名称 |
 | enabled | BIT | 否 | 是否启用，影响实际有效性 |
+| connection_status | VARCHAR(16) | 否 | PENDING/CONNECTED，与enabled独立；CHECK兜底 |
 
 现有约束/索引：
 
 - `PRIMARY KEY (id)`
 - `CONSTRAINT uk_system_code UNIQUE (code)`
 
-## 4. roles：共享角色定义
+## 4. roles：角色定义与来源归属
 
 | 字段 | SQL类型 | 可空 | 含义/生成方式 |
 | --- | --- | --- | --- |
@@ -50,13 +51,17 @@ MySQL8.4、InnoDB、utf8mb4/utf8mb4_0900_bin。实体BIGINT主键自增，对外
 | code | VARCHAR(100) | 否 | 稳定业务编码 |
 | name | VARCHAR(100) | 否 | 显示名称 |
 | enabled | BIT | 否 | 是否启用，影响实际有效性 |
-| management_level | INT | 是 | 基础角色5/4/3/2/1，自定义NULL；HTTP不可修改 |
+| management_level | INT | 是 | SYSTEM_BUILTIN为5/4/3/2/1，其余NULL；HTTP不可修改 |
+| role_type | VARCHAR(24) | 否 | SYSTEM_BUILTIN/APPLICATION_PRESET/DEPARTMENT_CUSTOM/GLOBAL_CUSTOM |
+| owner_department_id | BIGINT | 是 | DEPARTMENT_CUSTOM必有所属部门，其余为空；FK departments |
+| application_id | BIGINT | 是 | APPLICATION_PRESET必有来源应用，其余为空；FK systems |
 
 现有约束/索引：
 
 - `PRIMARY KEY (id)`
 - `CONSTRAINT uk_role_code UNIQUE (code)`
 - `CONSTRAINT ck_role_level CHECK (management_level BETWEEN 1 AND 5)`
+- `fk_role_owner_department`、`fk_role_application`两条外键；`ck_role_scope`保证分类、级别及归属组合一致，完整表达式以首次SQL为准。
 
 角色补充字段management_level INT可空，CHECK范围1—5。首次五角色分别为5/4/3/2/1；自定义NULL。级别不参与HTTP PATCH复制，仅用于授予上限、目标保护及完整维护者资格；不能根据可变名称或职位重算。
 
@@ -188,6 +193,7 @@ MySQL8.4、InnoDB、utf8mb4/utf8mb4_0900_bin。实体BIGINT主键自增，对外
 | permission_code | VARCHAR(191) | 是 | 已定位权限编码，可空 |
 | allowed | BIT | 否 | 实际允许/拒绝结论 |
 | request_id | VARCHAR(64) | 否 | 请求关联标识 |
+| client_ip | VARCHAR(45) | 是 | 服务端核实的请求来源IPv4/IPv6；历史未采集为空，不接收客户端自报值 |
 | reason | VARCHAR(64) | 否 | 稳定安全原因码 |
 | event_type | VARCHAR(32) | 否 | 登录或鉴权事件 |
 | http_method | VARCHAR(16) | 否 | 规范HTTP方法 |
@@ -208,6 +214,7 @@ MySQL8.4、InnoDB、utf8mb4/utf8mb4_0900_bin。实体BIGINT主键自增，对外
 | seed_key | VARCHAR(64) | 否 | 首次授权方案键 |
 | manifest_sha256 | VARCHAR(64) | 否 | 首次清单摘要 |
 | completed_at | DATETIME(3) | 否 | 完成UTC时间，毫秒精度 |
+| source_json | LONGTEXT | 是 | 独立业务目录来源矩阵、摘要及计划；不参与运行授权 |
 
 现有约束/索引：
 

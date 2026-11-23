@@ -1,5 +1,7 @@
 """Swarm独立接入应用：实时身份转接、配置短码核查及外部业务审计。"""
 import json
+from contextvars import ContextVar
+import ipaddress
 import logging
 import os
 from pathlib import Path
@@ -15,18 +17,44 @@ from integrations.course.local_identity_gateway import exchange, project_identit
 
 MAX_BODY = 1048576
 LOGGER = logging.getLogger('course.integration')
+_CLIENT_IP = ContextVar('course_request_client_ip', default=None)
+
+
+def literal_ip(value):
+    """仅接受IPv4/IPv6字面量，不转发主机名、端口、地址链或区域标识。"""
+    if not value or len(value) > 45 or '%' in value:
+        return None
+    try:
+        return ipaddress.ip_address(value)
+    except ValueError:
+        return None
+
+
+def request_ip(environ, trusted):
+    """可信代理的单值转发头才代表来源，否则保留实际调用方。"""
+    peer = literal_ip(environ.get('REMOTE_ADDR'))
+    if peer is None:
+        return None
+    if any(peer in network for network in trusted):
+        source = literal_ip(environ.get('HTTP_X_FORWARDED_FOR'))
+        if source is not None:
+            return str(source)
+    return str(peer)
 
 
 class Gateway:
     """WSGI处理器由Waitress提供有界HTTP运行器，不启动本地实验HTTPServer。"""
 
-    def __init__(self, upstream, store, catalog, origins=(), health_probe=None):
+    def __init__(self, upstream, store, catalog, origins=(), health_probe=None, trusted_proxies=()):
         self.upstream = upstream
         self.store = store
         self.catalog = catalog
         self.system = catalog['system']
         self.origins = set(origins)
         self.health_probe = health_probe
+        if any('/' not in value for value in trusted_proxies):
+            raise ValueError('可信代理必须配置IP/CIDR')
+        self.trusted_proxies = tuple(ipaddress.ip_network(value.strip(), strict=False) for value in trusted_proxies)
 
     def dispatch(self, method, path, query, token, body):
         """逐次读取真实RBAC授权，拒绝跨应用及未声明路由；不使用mock或授权缓存。"""
@@ -98,8 +126,12 @@ class Gateway:
                         status, result = 413, {'code': 'REQUEST_TOO_LARGE'}
                     else:
                         body = json.loads(raw) if raw else None
-                        status, result = self.dispatch(method, path, environ.get('QUERY_STRING', ''),
-                                                       environ.get('HTTP_AUTHORIZATION'), body)
+                        context = _CLIENT_IP.set(request_ip(environ, self.trusted_proxies))
+                        try:
+                            status, result = self.dispatch(method, path, environ.get('QUERY_STRING', ''),
+                                                           environ.get('HTTP_AUTHORIZATION'), body)
+                        finally:
+                            _CLIENT_IP.reset(context)
         except AuditConflict:
             status, result = 409, {'code': 'AUDIT_IDEMPOTENCY_CONFLICT'}
         except (ValueError, KeyError, TypeError, OverflowError):
@@ -140,9 +172,11 @@ def create_app():
         connection_factory('course_project', 'course_context', os.environ.get('COURSE_READ_PASSWORD_FILE', '/run/secrets/course_read_password')))
     def upstream(path, method='GET', token=None, body=None):
         """请求真实RBAC，不记录请求或响应内容。"""
-        return exchange(base, path, method, token, body)
+        return exchange(base, path, method, token, body, client_ip=_CLIENT_IP.get())
     health_base = os.environ['RBAC_HEALTH_BASE_URL'].rstrip('/')
     def health_probe():
         """内部运维端口的健康检查不进入登录或鉴权事件采集。"""
         return exchange(health_base, '/actuator/health')
-    return Gateway(upstream, store, catalog, os.environ['ALLOWED_ORIGINS'].split(','), health_probe)
+    proxies = os.environ.get('AUDIT_TRUSTED_PROXIES', '')
+    return Gateway(upstream, store, catalog, os.environ['ALLOWED_ORIGINS'].split(','), health_probe,
+                   proxies.split(',') if proxies else ())

@@ -10,6 +10,7 @@ public final class ApplicationAuthorizationPolicy {
   /** 无映射权限可表示菜单或资格，有映射则全部同系统启用才可导出粗粒度短码。 */
   public static Set<Permission> exported(AuthorizationFacts facts, String system) {
     return AuthorizationPolicy.directPermissions(facts, Set.of(system)).stream()
+        .filter(permission -> permission.system().connected())
         .filter(
             permission -> permission.type() != Permission.Type.API || !permission.apis().isEmpty())
         .filter(

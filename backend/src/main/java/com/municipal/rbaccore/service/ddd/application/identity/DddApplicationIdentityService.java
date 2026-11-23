@@ -2,6 +2,7 @@ package com.municipal.rbaccore.service.ddd.application.identity;
 
 import com.municipal.rbaccore.service.ddd.domain.model.*;
 import com.municipal.rbaccore.service.ddd.domain.model.policy.ApplicationAuthorizationPolicy;
+import com.municipal.rbaccore.service.ddd.domain.model.policy.OrganizationPolicy;
 import com.municipal.rbaccore.service.ddd.domain.repository.*;
 import com.municipal.rbaccore.service.port.auth.AuthenticationUseCase;
 import com.municipal.rbaccore.service.port.auth.LoginCommand;
@@ -92,9 +93,7 @@ public class DddApplicationIdentityService implements ApplicationIdentityUseCase
     User actor = requireRoute(header, "/auth/departments");
     OrganizationFacts organization = organizations.load();
     Set<Long> visible =
-        com.municipal.rbaccore.service.ddd.domain.model.policy.OrganizationPolicy.scope(
-                organization, actor.department().id())
-            .departmentIds();
+        OrganizationPolicy.scope(organization, actor.department().id()).departmentIds();
     if (parentId != null) requireDepartment(actor, organization, parentId, visible);
     return directory.departments(
         actor.department().id(), parentId, visible, keyword, page, pageSize);
@@ -110,9 +109,7 @@ public class DddApplicationIdentityService implements ApplicationIdentityUseCase
     User actor = requireRoute(header, "/auth/departments/{departmentId}/users");
     OrganizationFacts organization = organizations.load();
     Set<Long> visible =
-        com.municipal.rbaccore.service.ddd.domain.model.policy.OrganizationPolicy.scope(
-                organization, actor.department().id())
-            .departmentIds();
+        OrganizationPolicy.scope(organization, actor.department().id()).departmentIds();
     requireDepartment(actor, organization, departmentId, visible);
     return directory.users(departmentId, keyword, page, pageSize);
   }
@@ -132,11 +129,11 @@ public class DddApplicationIdentityService implements ApplicationIdentityUseCase
                 || identity.roles().stream().anyMatch(operation.permissionRoles()::contains));
     boolean allowed =
         !gated
-        || hasRoute(
-            facts(tokens.requireForSystem(header, identity.system())),
-            identity.system(),
-            operation.method(),
-            operation.path());
+            || hasRoute(
+                facts(tokens.requireForSystem(header, identity.system())),
+                identity.system(),
+                operation.method(),
+                operation.path());
     requests.permissionCheck(allowed);
     return allowed;
   }
@@ -163,8 +160,7 @@ public class DddApplicationIdentityService implements ApplicationIdentityUseCase
   private void requireDepartment(
       User actor, OrganizationFacts organization, Long id, Set<Long> visible) {
     if (!visible.contains(id)) {
-      if (!com.municipal.rbaccore.service.ddd.domain.model.policy.OrganizationPolicy.global(
-              organization, actor.department().id())
+      if (!OrganizationPolicy.global(organization, actor.department().id())
           || directory.department(id).isPresent()) {
         requests.authorizationDecision(false);
         throw BusinessException.scopeDenied();
@@ -187,6 +183,7 @@ public class DddApplicationIdentityService implements ApplicationIdentityUseCase
     List<String> roles =
         facts.user().roles().stream()
             .filter(Role::enabled)
+            .filter(role -> role.applicable(facts.ancestorIds()))
             .filter(
                 role ->
                     role.permissions().stream()
@@ -227,7 +224,7 @@ public class DddApplicationIdentityService implements ApplicationIdentityUseCase
     if (RbacCatalog.SYSTEM_CODE.equals(code))
       throw BusinessException.bad("INVALID_ARGUMENT", "管理端请使用管理登录接口");
     if (systems.catalog().stream()
-        .noneMatch(system -> code.equals(system.code()) && system.enabled()))
-      throw new BusinessException(403, "APPLICATION_ACCESS_DENIED", "应用未登记或已停用");
+        .noneMatch(system -> code.equals(system.code()) && system.enabled() && system.connected()))
+      throw new BusinessException(403, "APPLICATION_ACCESS_DENIED", "应用未登记、未启用或尚未完成接入");
   }
 }

@@ -28,4 +28,5 @@ public class LogEntryVO {
   private String httpMethod;
   private String requestPath;
   private int httpStatus;
+  private String clientIp;
 }

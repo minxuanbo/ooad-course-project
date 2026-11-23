@@ -2,7 +2,9 @@ package com.municipal.rbaccore.api.role.dto;
 
 import cn.edu.xmu.clonefactory.CopyTo;
 import com.municipal.rbaccore.api.role.support.RoleText;
+import com.municipal.rbaccore.api.shared.ApiLimits;
 import com.municipal.rbaccore.service.port.role.RoleQuery;
+import com.municipal.rbaccore.service.port.role.RoleType;
 import jakarta.validation.constraints.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -21,7 +23,14 @@ public class RoleQueryDTO {
   @CopyTo.Exclude(RoleQuery.class)
   private String enabled;
 
+  private RoleType type;
+
+  @Positive
+  @Max(ApiLimits.MAX_ID)
+  private Long ownerDepartmentId;
+
   @Min(0)
+
   private int page;
 
   @Min(1)

@@ -48,7 +48,8 @@ public class DddDepartmentView {
             routes.contains(new Route("POST", "/api/departments")),
             routes.contains(new Route("PATCH", "/api/departments/{id}")),
             routes.contains(new Route("DELETE", "/api/departments/{id}")),
-            facts.trustedRootId());
+            facts.trustedRootId(),
+            facts.roleOwnerIds());
     List<DepartmentResult> tree = new ArrayList<>();
     append(root, null, children, counts, capabilities, tree);
     return new View(tree, statistics.enabled());
@@ -83,7 +84,8 @@ public class DddDepartmentView {
             && capabilities.delete()
             && !department.id().equals(capabilities.root())
             && direct == 0
-            && descendants.isEmpty());
+            && descendants.isEmpty()
+            && !capabilities.roleOwners().contains(department.id()));
     result.add(node);
     long total = direct;
     for (Department child : descendants) {
@@ -103,5 +105,6 @@ public class DddDepartmentView {
       boolean create,
       boolean edit,
       boolean delete,
-      Long root) {}
+      Long root,
+      Set<Long> roleOwners) {}
 }

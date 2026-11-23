@@ -328,7 +328,7 @@ test('R24 部门页面从服务端标记禁用本人，创建父级仅取可创�
   const { screens, state, model } = screensHarness();
   login(model, 'SG000002'); state.session = model.me(); state.route = 'departments';
   await screens.load();
-  assert.match(screens.page('departments'), /本人直属部门/);
+  assert.match(screens.page('departments'), /你的直属部门/);
   screens.handleAction('department-rename', 3, {});
   assert.equal(state.modal, undefined);
   screens.handleAction('department-create', 3, {});
@@ -389,16 +389,16 @@ test('R24 部门按父子子树连续展示，直属及含下级人数满足加�
   assert.ok(model.departments().slice(1).every(item => item.depth === 1));
 });
 
-test('R24 部门搜索保留祖先及缩进，不把项目变成根的平级节点', async () => {
+test('R24 部门目录搜索保留祖先与嵌套，右侧仍只展示当前部门直属下级', async () => {
   const { screens, state } = screensHarness();
   state.route = 'departments';
   await screens.load();
-  screens.input({ id: 'screen-search', value: '滨江', dataset: {} });
-  screens.submit('screen-filter');
-  await settled();
+  screens.input({ id: 'department-tree-search', value: '滨江', dataset: {} });
   const html = screens.page('departments');
-  assert.deepEqual([...html.matchAll(/data-department-row="(\d+)"/g)].map(match => Number(match[1])), [1, 3, 5]);
+  const tree = html.split('<nav class="org-tree"')[1].split('</nav>')[0];
+  assert.deepEqual([...tree.matchAll(/data-act="department-select" data-id="(\d+)"/g)].map(match => Number(match[1])), [1, 3, 5]);
+  assert.match(tree, /<ul><li>.*工程管理部.*<ul><li>.*滨江项目部/);
+  assert.deepEqual([...html.matchAll(/data-department-row="(\d+)"/g)].map(match => Number(match[1])), [2, 3, 4, 10, 20]);
   assert.match(html, /总人数（含下级）/);
-  assert.match(html, /父部门总人数已包含项目人数/);
-  assert.match(html, /padding-left:40px/);
+  assert.match(html, /父子节点不重复相加/);
 });

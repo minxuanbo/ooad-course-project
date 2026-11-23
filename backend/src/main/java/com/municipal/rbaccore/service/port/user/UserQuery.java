@@ -9,8 +9,12 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class UserQuery {
+  public static final String DIRECT = "DIRECT";
+  public static final String SUBTREE = "SUBTREE";
   private String q;
   private Long departmentId;
+  private String departmentScope = SUBTREE;
+  private Long roleId;
   private Boolean enabled;
   private int page;
   private int size;

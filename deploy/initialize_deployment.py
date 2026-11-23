@@ -8,6 +8,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
+from initialize_business_catalog import build_plan, load_source, initialize as initialize_business
 from initialize_course_integration import (course_bindings_sql, manifest, plan_initialization,
                                            read_snapshot, rbac_initialization_sql, sql_text)
 
@@ -112,7 +113,9 @@ def main():
     catalog = json.loads((ROOT / 'integrations/course/catalog.json').read_text(encoding='utf-8'))
     rbac = Database('rbac_core', 'rbac', '/run/secrets/rbac_db_password')
     course = Database('course_project', 'course_app', '/run/secrets/course_db_password')
-    print(json.dumps(initialize(rbac, course, configuration, catalog, args.apply), ensure_ascii=False))
+    business = initialize_business(rbac, build_plan(load_source(ROOT / '市政公司应用软件功能权限清单.xlsx')), args.apply)
+    course_report = initialize(rbac, course, configuration, catalog, args.apply)
+    print(json.dumps({'business': business, 'course': course_report}, ensure_ascii=False))
 
 
 if __name__ == '__main__':

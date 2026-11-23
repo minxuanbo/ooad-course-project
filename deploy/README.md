@@ -59,7 +59,7 @@ export COURSE_SOURCE="$PWD/.local/course-release-r34"
 bash deploy/build-images.sh
 ```
 
-构建脚本串行生成两个Java、两个前端、一个接入服务镜像；不会推送或发布。镜像打包显式跳过测试，必须另有当前源码的完整回归。A可用deploy/test-backend.sh配合ooad-java-build:clonefactory-0.0.2执行隔离MySQL测试，默认DDD；该脚本执行test及JaCoCo报告。RBAC双策略的完整六项零遗漏检查按[后端复现第7节](../backend/README.md#7-双策略jacoco复现)执行，本次源码已通过；不能将单策略报告或跳过测试的打包结果称为整个工程100%。不要同时构建和压测。
+构建脚本串行生成两个Java、两个前端、一个接入服务镜像；不会推送或发布。镜像打包显式跳过测试，必须另有当前源码的完整回归。A可用deploy/test-backend.sh配合ooad-java-build:clonefactory-0.0.2执行隔离MySQL测试，默认DDD；该脚本执行test及JaCoCo报告。RBAC双策略的完整六项零遗漏检查按[后端复现第7节](../backend/README.md#7-双策略jacoco复现)执行，各版本是否通过以[验收记录](../docs/testing-acceptance.md)为准；不能将单策略报告或跳过测试的打包结果称为整个工程100%。不要同时构建和压测。
 
 登录有写权限的SWR后分别推送五个镜像，将生产env改成回读得到的RepoDigest；将deploy、integrations/course/operations.json和非秘密env传到C同一发布根。数据库/监控镜像也记录实际摘要。每次变更使用新RELEASE_ID，保留上一版配置及镜像摘要用于回滚。
 
@@ -142,3 +142,13 @@ Pop-Location
 
 
 本机组织账号导入、五角色预检/首次授权及默认JAR仍按[后端说明](../backend/README.md#3-新项目本地初始化与运行)和[复现指南](../docs/reproduction.md)执行。默认初始化仅登记RBAC；课程配置独立显式接入，不由产品启动自动触发。用户桌面设计交付与实际发布资料按明确修订任务同步；老师原目录保持不变。
+
+## 请求来源IP（本轮源码，等待集中发布）
+
+RBAC与正式接入服务默认不信任任何转发头。下次发布前分别核对实际Nginx/接入服务的对端地址及专用内网，设置RBAC_AUDIT_TRUSTED_PROXIES和INTEGRATION_AUDIT_TRUSTED_PROXIES；值为逗号分隔的IPv4/IPv6 CIDR，仅包含可信代理，不配置公网、整个云内网或0/0。Stack分别传入AUDIT_TRUSTED_PROXIES，RBAC禁用框架自动解析转发头，以免绕过此边界。
+
+Nginx在/api/、/auth/与/course-identity/均使用X-Forwarded-For=$remote_addr覆盖公网输入。接入服务仅信任已配置对端，按请求隔离来源后传给真实RBAC；多值、重复或非法转发头均回退实际连接地址。课程后端调用接入服务若没有可信原始用户地址，就记录服务调用地址；不修改老师前端来让浏览器自报IP。若新增前置负载均衡，应先重新设计可信链，不直接采用外部任意地址链。
+
+日志详情显示请求来源IP，旧日志为空并显示未采集。client_ip为新库首次结构；旧库不会自动增加列，本轮不提供升级脚本或执行线上DDL。正式发布须先另行核对保留现有人事/授权/日志的数据兼容方案，再验管理登录、课程浏览器登录、服务调用及伪造头的实际记录。
+
+正式Waitress入口使用--no-clear-untrusted-proxy-headers保留原始头，同时保持trusted_proxy=None，不由运行器改写REMOTE_ADDR。是否采用来源头仅由Gateway的实际连接方CIDR与单值IP校验决定；默认空信任配置仍忽略所有转发头。测试从Docker CMD解析实际Waitress参数并经过其中间件，防止运行器提前清头导致来源退化为Nginx地址。

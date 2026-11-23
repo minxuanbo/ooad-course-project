@@ -46,11 +46,16 @@ public class StructuredUserQueryService implements UserQueryUseCase {
   public UserPageResult list(String header, UserQuery query) {
     CurrentIdentity actor = auth.require(header);
     List<Long> departmentIds = scope.filteredIds(actor, query.getDepartmentId());
+    List<Long> selectedDepartments = UserQuery.DIRECT.equals(query.getDepartmentScope())
+        ? List.of(query.getDepartmentId()) : departmentIds;
     String search = query.getQ() == null ? "" : query.getQ().toLowerCase(Locale.ROOT);
     Specification<UserEntity> specification =
         (root, criteria, builder) -> {
           List<Predicate> predicates = new ArrayList<>();
-          predicates.add(root.get("department").get("id").in(departmentIds));
+          predicates.add(root.get("department").get("id").in(selectedDepartments));
+          if (query.getRoleId() != null) {
+            predicates.add(builder.equal(root.join("roles").get("id"), query.getRoleId()));
+          }
           if (!search.isEmpty()) {
             String escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
             predicates.add(

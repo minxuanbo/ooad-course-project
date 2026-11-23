@@ -10,17 +10,19 @@ import org.springframework.data.jpa.repository.Query;
 public interface PermissionJpaRepository extends JpaRepository<PermissionEntity, Long> {
   /** 当前RBAC授权子集比较包含没有API映射的菜单和按钮。 */
   @Query(
-      "select distinct p from UserEntity u join u.roles r join r.permissions p where"
-          + " u.id=:userId and u.enabled=true and r.enabled=true and p.enabled=true"
-          + " and p.system.enabled=true and p.system.code='rbac' order by p.id")
-  List<PermissionEntity> effectiveRbacPermissions(Long userId);
+      "select distinct p from UserEntity u join u.roles r join r.permissions p where u.id=:userId"
+          + " and r.id in :roleIds and u.enabled=true and r.enabled=true and p.enabled=true and"
+          + " p.system.enabled=true and p.system.connectionStatus=ConnectionStatus.CONNECTED and"
+          + " p.system.code='rbac' order by p.id")
+  List<PermissionEntity> effectiveRbacPermissions(Long userId, java.util.Set<Long> roleIds);
 
   /** 显式接入目录中的完整直接有效权限，包含无API菜单和身份标记。 */
   @Query(
-      "select distinct p from UserEntity u join u.roles r join r.permissions p where"
-          + " u.id=:userId and u.enabled=true and r.enabled=true and p.enabled=true"
-          + " and p.system.enabled=true and p.system.code in :systems order by p.id")
-  List<PermissionEntity> directPermissions(Long userId, java.util.Set<String> systems);
+      "select distinct p from UserEntity u join u.roles r join r.permissions p where u.id=:userId"
+          + " and r.id in :roleIds and u.enabled=true and r.enabled=true and p.enabled=true and"
+          + " p.system.enabled=true and p.system.code in :systems order by p.id")
+  List<PermissionEntity> directPermissions(
+      Long userId, java.util.Set<Long> roleIds, java.util.Set<String> systems);
 
   /** 受限系统的小型权限树一次读取，按ID稳定组装且保留停用节点。 */
   @EntityGraph(attributePaths = {"system", "parent"})
@@ -29,8 +31,10 @@ public interface PermissionJpaRepository extends JpaRepository<PermissionEntity,
   /** 每项返回权限至少关联一个同系统有效API；父菜单不隐式授予子按钮。 */
   @Query(
       "select distinct p from UserEntity u join u.roles r join r.permissions p join p.apis a where"
-          + " u.id=:userId and u.enabled=true and r.enabled=true and p.enabled=true and"
-          + " a.enabled=true and p.system.id=a.system.id and p.system.enabled=true and"
+          + " u.id=:userId and r.id in :roleIds and u.enabled=true and r.enabled=true and"
+          + " p.enabled=true and a.enabled=true and p.system.id=a.system.id and"
+          + " p.system.enabled=true and p.system.connectionStatus=ConnectionStatus.CONNECTED and"
           + " p.system.code=:system order by p.id")
-  List<PermissionEntity> effectivePermissions(Long userId, String system);
+  List<PermissionEntity> effectivePermissions(
+      Long userId, java.util.Set<Long> roleIds, String system);
 }

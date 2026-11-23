@@ -9,6 +9,7 @@ import com.municipal.rbaccore.service.port.auth.AuthenticationUseCase;
 import com.municipal.rbaccore.service.port.error.BusinessException;
 import com.municipal.rbaccore.service.port.user.*;
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -38,10 +39,12 @@ public class DddUserQueryService implements UserQueryUseCase {
     OrganizationFacts facts = scope.facts();
     OrganizationFacts.Scope visible =
         scope.filter(facts, actor.department().id(), query.getDepartmentId());
+    OrganizationFacts.Scope selected = UserQuery.DIRECT.equals(query.getDepartmentScope())
+        ? new OrganizationFacts.Scope(Set.of(query.getDepartmentId())) : visible;
     DomainPage<User> page =
         users.search(
             new SearchCriteria.Users(
-                visible, query.getQ(), query.getEnabled(), query.getPage(), query.getSize()));
+                selected, query.getQ(), query.getEnabled(), query.getRoleId(), query.getPage(), query.getSize()));
     boolean global = OrganizationPolicy.global(facts, actor.department().id());
     return new UserPageResult(
         page.items().stream()

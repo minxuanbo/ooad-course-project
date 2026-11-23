@@ -84,6 +84,187 @@ abstract class R13RoleContractSupport {
   private long adminRoleId;
   private final Map<String, Long> permissionIds = new LinkedHashMap<>();
 
+  /** 所属筛选在数据库分页前生效，应用预置通过领域仓储保存后完整往返。 */
+  @Test
+  @DisplayName("R28 角色所属筛选及应用预置来源真实MySQL往返")
+  void R28_RoleOwnershipAndPresetRoundTrip() throws Exception {
+    String admin = token("t09-admin");
+    long departmentRole =
+        success(
+                request(
+                    "POST",
+                    ROLES,
+                    admin,
+                    Map.of(
+                        "code",
+                        "r28-dept",
+                        "name",
+                        "部门角色",
+                        "type",
+                        "DEPARTMENT_CUSTOM",
+                        "ownerDepartmentId",
+                        childId)),
+                201)
+            .path("id")
+            .asLong();
+    JsonNode page =
+        success(request("GET", ROLES + "?ownerDepartmentId=" + childId, admin, null), 200);
+    assertEquals(1, page.path("total").asLong());
+    assertEquals(departmentRole, page.path("items").get(0).path("id").asLong());
+    assertEquals(
+        "已维护部门角色",
+        success(request("PATCH", role(departmentRole), admin, Map.of("name", "已维护部门角色")), 200)
+            .path("name")
+            .asText());
+    assertEquals(
+        0,
+        success(request("GET", ROLES + "?ownerDepartmentId=" + rootId, admin, null), 200)
+            .path("total")
+            .asLong());
+    long preset =
+        new TransactionTemplate(transactions)
+            .execute(
+                status -> {
+                  com.municipal.rbaccore.infrastructure.persistence.ddd.JpaRoleRepositoryAdapter
+                      repository =
+                          new com.municipal.rbaccore.infrastructure.persistence.ddd
+                              .JpaRoleRepositoryAdapter(roles, permissions, departments, systems);
+                  com.municipal.rbaccore.service.ddd.domain.model.ApplicationSystem source =
+                      new com.municipal.rbaccore.service.ddd.domain.model.ApplicationSystem(
+                          systemId, "rbac", "权限系统", true);
+                  com.municipal.rbaccore.service.ddd.domain.model.Role role =
+                      new com.municipal.rbaccore.service.ddd.domain.model.Role(
+                          null,
+                          "r28-preset",
+                          "应用预置",
+                          null,
+                          true,
+                          Set.of(),
+                          com.municipal.rbaccore.service.ddd.domain.model.Role.Type
+                              .APPLICATION_PRESET,
+                          null,
+                          source);
+                  com.municipal.rbaccore.service.ddd.domain.model.Role saved =
+                      repository.save(role);
+                  assertEquals(source.id(), saved.application().id());
+                  assertNull(saved.managementLevel());
+                  com.municipal.rbaccore.infrastructure.persistence.ddd
+                          .JpaAuthorizationRepositoryAdapter
+                      authorization =
+                          new com.municipal.rbaccore.infrastructure.persistence.ddd
+                              .JpaAuthorizationRepositoryAdapter(users, roles, departments);
+                  assertTrue(
+                      authorization
+                          .candidates(
+                              new com.municipal.rbaccore.service.ddd.domain.model.AuthorizationFacts
+                                  .AssignableRoleCriteria(1, false, Set.of(), "r28-preset", 0, 20))
+                          .items()
+                          .isEmpty());
+                  return saved.id();
+                });
+    JsonNode presets =
+        success(request("GET", ROLES + "?type=APPLICATION_PRESET", admin, null), 200);
+    assertEquals(preset, presets.path("items").get(0).path("id").asLong());
+    assertEquals(systemId, presets.path("items").get(0).path("applicationId").asLong());
+    assertFalse(presets.path("items").get(0).path("applicationName").asText().isBlank());
+  }
+
+  /** 部门角色的定义、范围读取、差集分配和实时失效共同验证。 */
+  @Test
+  @DisplayName("R35 部门领导只能分配适用且权限为本人子集的部门角色，调动原子撤权")
+  void R35_DepartmentAssignmentAndTransfer() throws Exception {
+    String admin = token("t09-admin");
+    account("t35-manager", childId, new ArrayList<>(permissionIds.values()));
+    account("t35-employee", childId, List.of());
+    jdbc.update("UPDATE roles SET management_level=3 WHERE code='t35-manager'");
+    jdbc.update("UPDATE roles SET management_level=1 WHERE code='t35-employee'");
+    long target =
+        jdbc.queryForObject("SELECT id FROM users WHERE username='t35-employee'", Long.class);
+    long managerId =
+        jdbc.queryForObject("SELECT id FROM users WHERE username='t35-manager'", Long.class);
+    long baseRole =
+        jdbc.queryForObject("SELECT id FROM roles WHERE code='t35-employee'", Long.class);
+    String manager = token("t35-manager");
+    JsonNode created =
+        success(
+            request(
+                "POST",
+                ROLES,
+                admin,
+                Map.of(
+                    "code",
+                    "t35-dept",
+                    "name",
+                    "工程查看",
+                    "type",
+                    "DEPARTMENT_CUSTOM",
+                    "ownerDepartmentId",
+                    childId)),
+            201);
+    long role = created.path("id").asLong();
+    long allowed = permissionIds.get("rbac.users.read");
+    success(request("PUT", selected(role), admin, Map.of("ids", List.of(allowed))), 200);
+    JsonNode listed =
+        success(request("GET", ROLES + "?type=DEPARTMENT_CUSTOM", manager, null), 200);
+    assertEquals(1, listed.path("total").asInt());
+    assertEquals(role, listed.path("items").get(0).path("id").asLong());
+    success(request("GET", selected(role), manager, null), 200);
+    // 全局自定义不能借部门领导资格授予；本人/同级保护同样独立。
+    long global = create(admin, "t35-global", "全局空角色");
+    assertError(
+        request(
+            "PUT",
+            USERS + "/" + target + "/roles",
+            manager,
+            Map.of("ids", List.of(baseRole, global))),
+        403,
+        "MANAGEMENT_SCOPE_DENIED");
+
+    assertError(
+        request("GET", selected(adminRoleId), manager, null), 403, "MANAGEMENT_SCOPE_DENIED");
+    assertError(
+        request("POST", ROLES, manager, Map.of("code", "bad", "name", "禁止")),
+        403,
+        "MANAGEMENT_SCOPE_DENIED");
+    assertError(
+        request("PUT", USERS + "/" + managerId + "/roles", manager, Map.of("ids", List.of(role))),
+        403,
+        "MANAGEMENT_SCOPE_DENIED");
+    JsonNode candidates =
+        success(
+            request("GET", USERS + "/" + target + "/assignable-roles?q=t35-dept", manager, null),
+            200);
+    assertEquals(1, candidates.path("total").asInt());
+    success(
+        request(
+            "PUT",
+            USERS + "/" + target + "/roles",
+            manager,
+            Map.of("ids", List.of(baseRole, role))),
+        200);
+    assertTrue(effective.allows(target, "GET", USERS));
+    // 独立数据变化不能复用分配时结论；每次真实授权读取当前归属。
+    jdbc.update("UPDATE users SET department_id=? WHERE id=?", rootId, target);
+    assertFalse(effective.allows(target, "GET", USERS));
+    jdbc.update("UPDATE users SET department_id=? WHERE id=?", childId, target);
+    success(
+        request("PUT", USERS + "/" + target + "/department", admin, Map.of("departmentId", rootId)),
+        200);
+    assertEquals(
+        0,
+        jdbc.queryForObject(
+            "SELECT COUNT(*) FROM user_roles WHERE user_id=? AND role_id=?",
+            Integer.class,
+            target,
+            role));
+    assertFalse(effective.allows(target, "GET", USERS));
+    assertError(
+        request(
+            "PUT", USERS + "/" + target + "/roles", admin, Map.of("ids", List.of(baseRole, role))),
+        403,
+        "MANAGEMENT_SCOPE_DENIED");
+  }
+
   /** 并发同步只观察真实锁入口，不替换数据库或鉴权实现。 */
   @TestConfiguration(proxyBeanMethods = false)
   static class LockFixtures {
@@ -207,7 +388,8 @@ abstract class R13RoleContractSupport {
     assertEquals("new-role", created.get("code").asText());
     assertEquals("新角色", created.get("name").asText());
     assertTrue(created.get("enabled").asBoolean());
-    assertEquals(5, created.size());
+    assertEquals(10, created.size());
+    assertEquals("GLOBAL_CUSTOM", created.get("type").asText());
     assertEquals(0, success(request("GET", selected(id), admin, null), 200).get("ids").size());
     JsonNode renamed = success(request("PATCH", role(id), admin, Map.of("name", " 更名 ")), 200);
     assertEquals("更名", renamed.get("name").asText());
@@ -617,7 +799,10 @@ abstract class R13RoleContractSupport {
       Object body = route[0].equals("GET") ? null : Map.of();
       assertError(request(route[0], route[1], null, body), 401, "AUTHENTICATION_REQUIRED");
       assertError(request(route[0], route[1], noAccess, body), 403, "PERMISSION_DENIED");
-      assertError(request(route[0], route[1], department, body), 403, "MANAGEMENT_SCOPE_DENIED");
+      assertError(
+          request(route[0], route[1], department, body),
+          route[0].equals("GET") ? 400 : 403,
+          route[0].equals("GET") ? "INVALID_ARGUMENT" : "MANAGEMENT_SCOPE_DENIED");
     }
     assertEquals(200, request("GET", ROLES, reader, null).getStatusCode().value());
     assertError(request("GET", TREE, reader, null), 403, "PERMISSION_DENIED");
@@ -706,7 +891,8 @@ abstract class R13RoleContractSupport {
   @DisplayName("R13/R15 任一权限映射实际API即可放行，完整K采用同一OR语义")
   void R13_HonorsAlternativeApiMappings() throws Exception {
     long alternative = alternativePermission("t09-alternative-read", "rbac.roles.read");
-    account("t09-api-reader", rootId, List.of(alternative));
+    long detail = alternativePermission("t09-alternative-detail", "rbac.roles.permissions.read");
+    account("t09-api-reader", rootId, List.of(alternative, detail));
     String reader = token("t09-api-reader");
 
     success(request("GET", ROLES, reader, null), 200);
@@ -723,6 +909,59 @@ abstract class R13RoleContractSupport {
     success(request("PUT", selected(adminRoleId), admin, Map.of("ids", replacement)), 200);
 
     success(request("GET", ROLES, admin, null), 200);
+  }
+
+  /** 默认操作权限无需改映射即可独立授予，列表、新建及配置详情互不放行。 */
+  @Test
+  @DisplayName("R13/R14 默认目录按按钮独立授权，不因同页关系放行其他操作")
+  void R13_DefaultOperationsAreIndependent() throws Exception {
+    account("t09-atomic-reader", rootId, List.of(permissionIds.get("rbac.roles.read")));
+    String reader = token("t09-atomic-reader");
+    success(request("GET", ROLES, reader, null), 200);
+    assertError(request("GET", selected(adminRoleId), reader, null), 403, "PERMISSION_DENIED");
+    assertError(
+        request("POST", ROLES, reader, Map.of("code", "atomic-denied", "name", "拒绝创建")),
+        403,
+        "PERMISSION_DENIED");
+    account("t09-atomic-creator", rootId, List.of(permissionIds.get("rbac.roles.create")));
+    String creator = token("t09-atomic-creator");
+    success(request("POST", ROLES, creator, Map.of("code", "atomic-created", "name", "独立创建")), 201);
+    assertError(request("GET", ROLES, creator, null), 403, "PERMISSION_DENIED");
+    assertError(
+        request("PATCH", role(adminRoleId), creator, Map.of("name", "越权改名")),
+        403,
+        "PERMISSION_DENIED");
+  }
+
+  /** 管理员显式建立所属部门角色，类型和归属由持久化真值读回。 */
+  @Test
+  @DisplayName("R13/R28 部门自定义角色具有明确类型和所属部门，默认空权限且不提升级别")
+  void R13_CreatesDepartmentRole() throws Exception {
+    String admin = token("t09-admin");
+    JsonNode created =
+        success(
+            request(
+                "POST",
+                ROLES,
+                admin,
+                Map.of(
+                    "code",
+                    "t09-department-custom",
+                    "name",
+                    "工程资料查看",
+                    "type",
+                    "DEPARTMENT_CUSTOM",
+                    "ownerDepartmentId",
+                    childId)),
+            201);
+    assertEquals("DEPARTMENT_CUSTOM", created.path("type").asText());
+    assertEquals(childId, created.path("ownerDepartmentId").asLong());
+    assertTrue(created.path("managementLevel").isNull());
+    assertEquals(
+        0,
+        success(request("GET", selected(created.path("id").asLong()), admin, null), 200)
+            .path("ids")
+            .size());
   }
 
   /** A08-4：同组接口中只授予列表路由，详情仍单独拒绝。 */
@@ -1007,6 +1246,62 @@ abstract class R13RoleContractSupport {
         .stream()
         .filter(id -> effective.routes(id).containsAll(RbacCatalog.maintenanceRoutes()))
         .count();
+  }
+
+  /** 角色来源组合在API校验，所属角色也阻止软删除空部门。 */
+  @Test
+  @DisplayName("R13/R24 部门角色必须有效归属且阻止所属部门软删除")
+  void R13_DepartmentRoleValidationAndDeletion() throws Exception {
+    String admin = token("t09-admin");
+    for (Map<String, Object> body :
+        List.<Map<String, Object>>of(
+            Map.of("code", "bad-scope", "name", "无所属", "type", "DEPARTMENT_CUSTOM"),
+            Map.of("code", "bad-global", "name", "多余所属", "ownerDepartmentId", childId),
+            Map.of("code", "bad-built", "name", "冒充内置", "type", "SYSTEM_BUILTIN"))) {
+      assertError(request("POST", ROLES, admin, body), 400, "INVALID_ARGUMENT");
+    }
+    assertError(
+        request(
+            "POST",
+            ROLES,
+            admin,
+            Map.of(
+                "code",
+                "unknown-owner",
+                "name",
+                "未知所属",
+                "type",
+                "DEPARTMENT_CUSTOM",
+                "ownerDepartmentId",
+                99999999)),
+        404,
+        "RESOURCE_NOT_FOUND");
+    long owner =
+        new TransactionTemplate(transactions)
+            .execute(
+                status -> {
+                  DepartmentEntity node = new DepartmentEntity("t35-empty-owner", "空但有所属角色");
+                  node.moveTo(departments.findById(rootId).orElseThrow());
+                  return departments.save(node).getId();
+                });
+    success(
+        request(
+            "POST",
+            ROLES,
+            admin,
+            Map.of(
+                "code",
+                "owned",
+                "name",
+                "占用定义",
+                "type",
+                "DEPARTMENT_CUSTOM",
+                "ownerDepartmentId",
+                owner)),
+        201);
+    assertError(
+        request("DELETE", "/api/departments/" + owner, admin, null), 409, "DEPARTMENT_NOT_EMPTY");
+    assertFalse(departments.findById(owner).orElseThrow().isDeleted());
   }
 
   /** 测试账号以真实JPA角色关系建立，名称本身不产生权限。 */

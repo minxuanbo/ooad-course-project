@@ -10,7 +10,7 @@
 
 本RBAC自己保存口令并认证，不照搬课程项目的外部统一身份。课程按通用身份协议显式接入；Redis、语音、存储和其他示例集成不纳入RBAC范围。
 
-默认首次授权管理RBAC自身权限，通用应用目录按登记事实读取，课程独立配置接入，共用Vue、29项管理HTTP操作与8项可选通用应用身份操作、22项HTTP错误、12表首次SQL、固定五级角色及17项完整维护能力集合K。18个外系统仅保留离线原型演示，不进入正式目录、授权或初始化。课程身份适配职责见[课程接入](course-integration.md)，两策略各自计算权限，不将业务实现放入共享port。
+默认首次授权管理RBAC自身权限，通用应用目录按登记事实读取，课程独立配置接入，共用Vue、29项管理HTTP操作与8项可选通用应用身份操作、22项HTTP错误、12表首次SQL、固定五级角色及17项完整维护能力集合K。18业务系统经独立首次配置进入正式计划授权，默认PENDING；实际登录、短码及API仍要求CONNECTED。课程身份适配职责见[课程接入](course-integration.md)，两策略各自计算权限，不将业务实现放入共享port。
 
 共享用例端口隔离HTTP与业务实现，领域仓储隔离领域与持久化，配置互斥装配两种策略。RBAC负责本地账号认证与通用应用授权；课程业务及Teacher/Student绑定属于独立课程系统。
 
@@ -152,7 +152,11 @@ StructuredPersonnelAuthority集中角色级别与目标保护；StructuredDepart
 
 角色基础级别在 `Role` 中以 `public static final` 归口：`DEFAULT_LEVEL`、`PROJECT_MANAGER_LEVEL`、`DEPARTMENT_MANAGER_LEVEL`、`COMPANY_LEADER_LEVEL`、`ADMIN_LEVEL`。`FIRST_MANAGER_LEVEL` 引用项目经理级别，`InitialAuthorizationPolicy` 使用这些领域常量完成首次分类，不再单独定义级别值。
 
+共享ClientIpResolver属于HTTP技术边界，启动时解析app.audit.trusted-proxies的CIDR，默认无可信代理；禁用容器自动转发头改写。RequestAuditFilter在链入口核实IP并绑定当前请求，过滤器、ManagedAspect和ManagementPreflight把同一值装入AuditEvent.clientIp；JpaAuditWriter保存后由真实CloneFactory映射到日志VO。解析只接受IPv4/IPv6字面量，不查DNS、不信任多地址链。
+
 ### 6.3 领域仓储与复杂查询边界
+
+人员查询在已核实的可见范围中选择直属或子树口径，再组合roleId、搜索和状态。structured在查询Service组装JPA谓词；DDD应用把范围与roleId放入SearchCriteria.Users，由UserRepository适配器构造同条件计数与分页。角色过滤匹配保存的关联，停用角色仍可查成员，不改变分配规则或共享角色维护门禁。
 
 领域仓储输入输出使用领域对象，容器使用 JDK 集合、Optional 或 DomainPage。仓储协议独立于 HTTP 及 JPA。
 
@@ -954,10 +958,10 @@ structured的Service执行exportable筛选并投影角色/短码；DDD由Applica
 | `GET /api/users/{id}/assignable-roles` | `UserManagementUseCase.assignableRoles` | assignable-roles | 完整权限子集、有效级别、自定义资格及范围均在分页前过滤。 |
 | `PATCH /api/users/{id}/status` | `UserManagementUseCase.disable` | user-disable | 目标保护后实体修改与领域行为不同，原JWT停用即时拒绝相同。 |
 | `PUT /api/users/{id}/department` | `UserManagementUseCase.move` | user-transfer | 原部门和目标部门的双范围及不可变归属修改。 |
-| `GET /api/roles` | `RoleUseCase.list` | user-query（分页模式复用） | RoleJpaRepository.count/findAll 对 RoleRepository.search(Roles)；无新分页算法。 |
+| `GET /api/roles` | `RoleUseCase.list` | user-query（分页模式复用） | 同一数据库过滤分页模式；共同根读取全部，局部仅本人子树的部门角色，type/owner交集后计数。 |
 | `POST /api/roles` | `RoleUseCase.create` | role-create | 空权限角色构造及唯一约束翻译边界。 |
 | `PATCH /api/roles/{id}` | `RoleUseCase.patch` | role-update | 字段原地拷贝对领域Role.revise。 |
-| `GET /api/roles/{id}/permissions` | `RoleUseCase.selected` | 共同集合读取，不画 | Entity/领域Role读取直接权限编号后排序；类型差异由两套role类图说明。 |
+| `GET /api/roles/{id}/permissions` | `RoleUseCase.selected` | 共同集合读取，不画 | 先RoleUseCase.checkTarget按实际API及部门角色范围核实，再读完整保存集合；集合读取不重复画。 |
 | `PUT /api/roles/{id}/permissions` | `RoleUseCase.replacePermissions` | role-permissions | 直接权限完整集合替换，不按API子集误判。 |
 | `GET /api/systems` | `ResourceUseCase.systems` | 共同目录读取，不画 | 均按已登记应用及状态读取；ApplicationSystemJpaRepository对领域ApplicationSystemRepository，静态边界见systems类图。 |
 | `GET /api/permissions/tree` | `ResourceUseCase.tree` | 共同只读投影，不画 | 按系统读取并转换权限树；PermissionJpaRepository对领域PermissionRepository，静态边界见resource类图。 |
@@ -1009,3 +1013,13 @@ JWT签名、issuer及时间由标准JOSE/Nimbus校验，编解码器继续核对
 课程teacher/student/course-admin及路由保存在integrations/course配置中。课程首次接入按总公司本部范围分配teacher、其余student，合格根直属五级RBAC管理员同账号兼course-admin，并建立老师课程本地绑定；由独立初始化脚本显式执行，不加入RBAC领域。课程先提交绑定、RBAC后在根锁事务发布通用授权和回执，不宣称分布式原子事务；重复回执不重置后续授权。
 
 老师原目录保持独立；原本机联调副本保留3个structured生产补丁，固定990cea2的部署副本另有DDD对等修复、当前学期标记释放及安全日志补丁。统一身份审计另2项不在RBAC8项契约中；本机支撑继续保留，服务器采用独立Waitress/MySQL持久保存课程业务审计，老师缺少的Controller等来源限制继续保留。配置、端口及已知缺口以[课程接入](course-integration.md)为准；两个后端均DDD的正式运行边界见[部署说明](../deploy/README.md)，实际云端结果见[发布记录](history/verification/ddd-production-deployment.md)。详设外部文件不改。
+
+## 19. 应用目录和部门角色职责
+
+ApplicationSystem增加独立Connection状态；角色Role记录Type、ownerDepartment及application。枚举在领域对象内部归口，传输端口使用对应协议枚举，JPA适配器显式转换。source_json只保存首次配置来源，不参与授权。
+
+structured在StructuredUserManagementService直接读取实体、祖先事实和当前权限，数据库候选先过滤所属部门/目标适用范围及完整子集；整体保存只验锁后差集。DDD由Role.applicable、RoleAssignmentPolicy.departmental及OrganizationPolicy.ancestors表达适用与组织规则，AuthorizationFacts携带当前祖先事实；JpaAuthorizationRepositoryAdapter仅装配事实和执行明确筛选条件。Service事务中调动与不适用角色撤回一起提交，部门删除核对所属角色。
+
+StructuredRoleService与DddRoleService为角色读取提供受限部门范围，ManagementPreflight调用RoleUseCase.checkTarget在输入解析前核实；定义写入仍沿共同根门禁，部门定义额外要求有效五级。领导读取不开放角色选权、启停或归属变更。两种身份授权实现每次过滤不适用部门角色，再检查CONNECTED；角色导出同样过滤，不能借其他角色同名权限带出过期身份。
+
+独立scripts/initialize_business_catalog.py只发布一次外部配置，复用原表只读解析，不新增另一套Java运行授权实现。18待接入系统无真实API，配置能力不代表业务系统已接入；正式接入需要方法/模板、operationId映射及对象范围验收。已有课程前端与业务保持原接入边界。

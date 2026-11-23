@@ -4,6 +4,7 @@ import com.municipal.rbaccore.infrastructure.persistence.entity.DepartmentEntity
 import com.municipal.rbaccore.infrastructure.persistence.entity.ImportSourceEntity;
 import com.municipal.rbaccore.infrastructure.persistence.repository.DepartmentJpaRepository;
 import com.municipal.rbaccore.infrastructure.persistence.repository.ImportSourceJpaRepository;
+import com.municipal.rbaccore.infrastructure.persistence.repository.RoleJpaRepository;
 import com.municipal.rbaccore.infrastructure.persistence.repository.UserJpaRepository;
 import com.municipal.rbaccore.service.ddd.domain.model.Department;
 import com.municipal.rbaccore.service.ddd.domain.model.OrganizationFacts;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Repository;
 public class JpaOrganizationRepositoryAdapter implements OrganizationRepository {
   private final DepartmentJpaRepository rows;
   private final UserJpaRepository users;
+  private final RoleJpaRepository roles;
   private final ImportSourceJpaRepository sources;
 
   /** 加锁前只取来源指向的编号，确保锁后读取新事实。 */
@@ -39,7 +41,7 @@ public class JpaOrganizationRepositoryAdapter implements OrganizationRepository 
             .filter(row -> !row.isDeleted())
             .map(JpaDomainMapper::department)
             .toList();
-    return new OrganizationFacts(root, departments);
+    return new OrganizationFacts(root, departments, roles.ownerDepartmentIds());
   }
 
   /** 根据稳定ID返回存储事实。 */
@@ -59,7 +61,9 @@ public class JpaOrganizationRepositoryAdapter implements OrganizationRepository 
   @Override
   public OrganizationFacts.Usage usage(Department.Key key) {
     return new OrganizationFacts.Usage(
-        users.existsByDepartmentId(key.value()), rows.existsByParentIdAndDeletedFalse(key.value()));
+        users.existsByDepartmentId(key.value()),
+        rows.existsByParentIdAndDeletedFalse(key.value()),
+        roles.existsByOwnerDepartmentId(key.value()));
   }
 
   /** 仅新建节点需绑定父级，已有节点不更新类型或父级。 */

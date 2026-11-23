@@ -16,6 +16,8 @@ spring:
   web.resources.add-mappings: false
   jackson.deserialization.fail-on-unknown-properties: true
 server.port: ${PORT:8081}
+server.forward-headers-strategy: none
+app.audit.trusted-proxies: ${AUDIT_TRUSTED_PROXIES:}
 app.backend-strategy: ${APP_BACKEND_STRATEGY:structured}
 app.identity.enabled: ${APP_IDENTITY_ENABLED:false}
 app.identity.allowed-origins: ${IDENTITY_ALLOWED_ORIGINS:}

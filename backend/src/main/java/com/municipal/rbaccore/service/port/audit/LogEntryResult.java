@@ -24,4 +24,5 @@ public class LogEntryResult {
   private String httpMethod;
   private String requestPath;
   private int httpStatus;
+  private String clientIp;
 }

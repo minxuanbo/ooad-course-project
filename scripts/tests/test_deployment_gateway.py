@@ -11,6 +11,7 @@ import uuid
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from integrations.course.deployment_gateway import Gateway
+from integrations.course.deployment_gateway import _CLIENT_IP
 from integrations.course.deployment_store import AuditConflict, MysqlAuditStore
 import pymysql
 
@@ -38,6 +39,74 @@ class GatewayTest(unittest.TestCase):
         catalog = {'system': 'course-project-management',
                    'routes': {'TCM': [['PUT', '/current-term'], ['DELETE', '/current-term']]}}
         self.app = Gateway(upstream, None, catalog, ['http://course.test'])
+
+    def test_R16_source_ip_trust_and_request_context_are_isolated(self):
+        """WSGI边界验证来源头仅在可信代理后生效，且并发与异常请求不串来源。"""
+        from threading import Barrier
+        from ipaddress import ip_network
+        self.app.trusted_proxies = (ip_network('10.0.0.0/24'),)
+        def request(peer, forwarded=None):
+            env = {'REQUEST_METHOD': 'POST', 'PATH_INFO': '/auth/logout', 'QUERY_STRING': '',
+                   'wsgi.input': io.BytesIO(b''), 'CONTENT_LENGTH': '0'}
+            if peer is not None:
+                env['REMOTE_ADDR'] = peer
+            if forwarded is not None:
+                env['HTTP_X_FORWARDED_FOR'] = forwarded
+            raw = b''.join(self.app(env, lambda *_: None))
+            return json.loads(raw)
+        def upstream(*args, **kwargs):
+            return 200, {'source': _CLIENT_IP.get()}
+        self.app.upstream = upstream
+        for peer, header, expected in [
+                ('10.0.0.2', '203.0.113.4', '203.0.113.4'),
+                ('10.1.0.2', '203.0.113.4', '10.1.0.2'),
+                ('10.0.0.2', '203.0.113.4, 10.0.0.1', '10.0.0.2'),
+                ('10.0.0.2', 'example.test', '10.0.0.2'),
+                ('10.0.0.2', 'fe80::1%zone', '10.0.0.2'),
+                ('10.0.0.2', '::1', '::1'),
+                (None, '203.0.113.4', None)]:
+            self.assertEqual(expected, request(peer, header)['source'])
+            self.assertIsNone(_CLIENT_IP.get())
+        barrier = Barrier(2)
+        def simultaneous(*args, **kwargs):
+            barrier.wait(timeout=5)
+            return 200, {'source': _CLIENT_IP.get()}
+        self.app.upstream = simultaneous
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results = list(pool.map(lambda ip: request('10.0.0.2', ip)['source'],
+                                    ['203.0.113.5', '203.0.113.6']))
+        self.assertEqual(['203.0.113.5', '203.0.113.6'], results)
+        self.app.upstream = lambda *args, **kwargs: (_ for _ in ()).throw(OSError('offline'))
+        self.assertEqual('EXTERNAL_SERVICE_UNAVAILABLE', request('10.0.0.2')['code'])
+        self.assertIsNone(_CLIENT_IP.get())
+
+    def test_R16_waitress_preserves_headers_for_gateway_validation(self):
+        """采用正式Docker启动参数构造实际中间件，原始连接方必须保留给网关验证。"""
+        from ipaddress import ip_network
+        from waitress.adjustments import Adjustments
+        from waitress.proxy_headers import proxy_headers_middleware
+        dockerfile = (Path(__file__).resolve().parents[2] / 'deploy/integration.Dockerfile').read_text(encoding='utf-8')
+        command = json.loads(next(line[4:] for line in dockerfile.splitlines() if line.startswith('CMD ')))
+        options, arguments = Adjustments.parse_args(command[1:])
+        del options['call'], options['help']
+        settings = Adjustments(**options)
+        self.assertIsNone(settings.trusted_proxy)
+        self.assertFalse(settings.clear_untrusted_proxy_headers)
+        self.app.trusted_proxies = (ip_network('10.0.0.0/24'),)
+        self.app.upstream = lambda *args, **kwargs: (200, {'source': _CLIENT_IP.get()})
+        application = proxy_headers_middleware(self.app, trusted_proxy=settings.trusted_proxy,
+            trusted_proxy_count=settings.trusted_proxy_count, trusted_proxy_headers=settings.trusted_proxy_headers,
+            clear_untrusted=settings.clear_untrusted_proxy_headers)
+        for peer, forwarded, expected in [('10.0.0.2', '203.0.113.4', '203.0.113.4'),
+                ('192.0.2.2', '203.0.113.4', '192.0.2.2'),
+                ('10.0.0.2', '203.0.113.4, 10.0.0.3', '10.0.0.2')]:
+            environment = {'REQUEST_METHOD': 'POST', 'PATH_INFO': '/auth/logout', 'QUERY_STRING': '',
+                'CONTENT_LENGTH': '0', 'wsgi.input': io.BytesIO(b''), 'REMOTE_ADDR': peer,
+                'HTTP_X_FORWARDED_FOR': forwarded}
+            result = json.loads(b''.join(application(environment, lambda status, headers: None)))
+            self.assertEqual(expected, result['source'])
+            self.assertEqual(peer, environment['REMOTE_ADDR'])
+            self.assertIsNone(_CLIENT_IP.get())
 
     def request(self, path, method='GET', token='Bearer private-token', origin=None, raw=b''):
         """通过WSGI边界读取实际状态、头和字节，不直接调用授权内部方法。"""

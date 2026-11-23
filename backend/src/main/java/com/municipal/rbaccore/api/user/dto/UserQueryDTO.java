@@ -4,6 +4,7 @@ import cn.edu.xmu.clonefactory.CopyTo;
 import com.municipal.rbaccore.api.shared.ApiLimits;
 import com.municipal.rbaccore.service.port.user.UserQuery;
 import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
@@ -26,6 +27,19 @@ public class UserQueryDTO {
   @Positive
   @Max(ApiLimits.MAX_ID)
   private Long departmentId;
+
+  @Pattern(regexp = "DIRECT|SUBTREE")
+  private String departmentScope = UserQuery.SUBTREE;
+
+  @Positive
+  @Max(ApiLimits.MAX_ID)
+  private Long roleId;
+
+  /** 直属口径必须指定具体部门，不能把整个管理范围误当作本部门。 */
+  @AssertTrue(message = "DIRECT必须同时提供departmentId")
+  public boolean isDepartmentScopeConsistent() {
+    return !UserQuery.DIRECT.equals(departmentScope) || departmentId != null;
+  }
 
   @Pattern(regexp = "true|false")
   @CopyTo.Exclude(UserQuery.class)

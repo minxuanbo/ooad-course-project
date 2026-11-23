@@ -11,7 +11,12 @@ final class JpaDomainMapper {
 
   /** 保留系统当前启用状态以便独立计算有效链。 */
   static ApplicationSystem system(ApplicationSystemEntity row) {
-    return new ApplicationSystem(row.getId(), row.getCode(), row.getName(), row.isEnabled());
+    return new ApplicationSystem(
+        row.getId(),
+        row.getCode(),
+        row.getName(),
+        row.isEnabled(),
+        ApplicationSystem.Connection.valueOf(row.getConnectionStatus().name()));
   }
 
   /** 方法和模板属于同一个路由值。 */
@@ -44,7 +49,10 @@ final class JpaDomainMapper {
         row.getName(),
         row.getManagementLevel(),
         row.isEnabled(),
-        Set.of());
+        Set.of(),
+        Role.Type.valueOf(row.getType().name()),
+        row.getOwnerDepartment() == null ? null : department(row.getOwnerDepartment()),
+        row.getApplication() == null ? null : system(row.getApplication()));
   }
 
   /** 角色写入和授权策略使用角色的完整直接关联。 */

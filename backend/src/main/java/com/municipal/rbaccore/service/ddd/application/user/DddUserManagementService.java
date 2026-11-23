@@ -9,6 +9,7 @@ import com.municipal.rbaccore.service.ddd.domain.repository.*;
 import com.municipal.rbaccore.service.port.auth.AuthenticationUseCase;
 import com.municipal.rbaccore.service.port.error.BusinessException;
 import com.municipal.rbaccore.service.port.security.CurrentIdentity;
+import com.municipal.rbaccore.service.port.security.ManagedApplications;
 import com.municipal.rbaccore.service.port.user.*;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -22,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class DddUserManagementService implements UserManagementUseCase {
-  private final com.municipal.rbaccore.service.port.security.ManagedApplications applications;
+  private final ManagedApplications applications;
   private final AuthenticationUseCase authentication;
   private final UserRepository users;
   private final RoleRepository roles;
@@ -38,7 +39,10 @@ public class DddUserManagementService implements UserManagementUseCase {
     CurrentIdentity actor = authentication.require(header);
     OrganizationFacts organization = scope.facts();
     target(actor, organization, id);
-    User user = operator(id).user();
+    AuthorizationFacts targetFacts = operator(id);
+    User user = targetFacts.user();
+    Set<Long> owners = scope.filter(organization, actor.departmentId(), null).departmentIds();
+    Set<String> systemCodes = applications.codes();
     AuthorizationFacts operator = operator(actor.id());
     Set<Long> allowed = subset(operator);
     boolean custom = customPermitted(operator.user(), organization);
@@ -51,7 +55,13 @@ public class DddUserManagementService implements UserManagementUseCase {
                 role ->
                     !editable
                         || !RoleAssignmentPolicy.canRemove(
-                            role, operator.user().level(), custom, allowed, applications.codes()))
+                            role,
+                            operator.user().level(),
+                            custom,
+                            allowed,
+                            systemCodes,
+                            owners,
+                            targetFacts.ancestorIds()))
             .map(Role::id)
             .sorted()
             .toList();
@@ -76,7 +86,9 @@ public class DddUserManagementService implements UserManagementUseCase {
                 query.getQ(),
                 query.getPage(),
                 query.getSize(),
-                applications.codes()));
+                applications.codes(),
+                scope.filter(organization, actor.departmentId(), null).departmentIds(),
+                operator(id).ancestorIds()));
     return new AssignableRolePageResult(
         page.items().stream().map(DddResults::role).toList(),
         page.total(),
@@ -93,7 +105,10 @@ public class DddUserManagementService implements UserManagementUseCase {
         actor -> {
           OrganizationFacts organization = scope.facts();
           target(actor, organization, id);
-          User target = operator(id).user();
+          AuthorizationFacts targetFacts = operator(id);
+          User target = targetFacts.user();
+          Set<Long> owners = scope.filter(organization, actor.departmentId(), null).departmentIds();
+          Set<String> systemCodes = applications.codes();
           AuthorizationFacts operator = operator(actor.id());
           requireEditable(operator.user(), organization, target);
           Set<Long> ids = Set.copyOf(command.getIds());
@@ -109,7 +124,13 @@ public class DddUserManagementService implements UserManagementUseCase {
                   .allMatch(
                       role ->
                           RoleAssignmentPolicy.canAssign(
-                              role, operator.user().level(), custom, allowed, applications.codes()))
+                              role,
+                              operator.user().level(),
+                              custom,
+                              allowed,
+                              systemCodes,
+                              owners,
+                              targetFacts.ancestorIds()))
               || !target.roles().stream()
                   .filter(role -> !ids.contains(role.id()))
                   .allMatch(
@@ -119,7 +140,9 @@ public class DddUserManagementService implements UserManagementUseCase {
                               operator.user().level(),
                               custom,
                               allowed,
-                              applications.codes()))) {
+                              systemCodes,
+                              owners,
+                              targetFacts.ancestorIds()))) {
             throw BusinessException.scopeDenied();
           }
           return DddResults.updated(users.save(target.replaceRoles(selected)));
@@ -148,7 +171,9 @@ public class DddUserManagementService implements UserManagementUseCase {
         header,
         actor -> {
           OrganizationFacts organization = scope.facts();
-          User target = target(actor, organization, id);
+          target(actor, organization, id);
+          AuthorizationFacts targetFacts = operator(id);
+          User target = targetFacts.user();
           requireEditable(person(actor.id()), organization, target);
           scope.filter(organization, actor.departmentId(), command.getDepartmentId());
           Department department =
@@ -156,7 +181,12 @@ public class DddUserManagementService implements UserManagementUseCase {
                   .find(new Department.Key(command.getDepartmentId()))
                   .filter(node -> !node.deleted())
                   .orElseThrow(BusinessException::scopeDenied);
-          return DddResults.updated(users.save(target.transfer(department)));
+          Set<Long> ancestors = OrganizationPolicy.ancestors(organization, department.id());
+          Set<Role> retained =
+              target.roles().stream()
+                  .filter(role -> role.applicable(ancestors))
+                  .collect(Collectors.toUnmodifiableSet());
+          return DddResults.updated(users.save(target.transfer(department).replaceRoles(retained)));
         });
   }
 

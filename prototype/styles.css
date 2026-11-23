@@ -510,6 +510,87 @@ input[readonly] { color: #94a2b7; cursor: default; }
 .log-result strong { font-size: 14px; font-weight: 500; }
 .log-result p { font-size: 11px; margin: 8px 0 0; }
 .log-detail-list dd { font-size: 11px; word-break: break-word; }
+/* 部门目录与当前节点分开浏览；人数及人员查询沿用现行范围。 */
+.org-layout { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 22px; align-items: start; }
+.org-directory { position: sticky; top: 90px; overflow: hidden; }
+.org-directory .panel-heading { padding: 22px 20px 16px; border-bottom: 0; }
+.org-search { padding: 0 16px; }
+.org-tree-caption { padding: 17px 20px 9px; display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--muted); }
+.org-tree-caption .link-button { font-size: 11px; }
+.org-tree { padding: 0 10px 20px; max-height: 590px; overflow: auto; }
+.org-tree ul { list-style: none; margin: 0; padding: 0; }
+.org-tree ul ul { padding-left: 17px; border-left: 1px solid #eaf0f8; margin-left: 15px; }
+.org-tree-row { display: flex; align-items: center; min-height: 42px; border-radius: 7px; margin: 3px 0; }
+.org-tree-row:hover { background: #f6f8fc; }
+.org-tree-row.selected { background: var(--blue-soft); color: var(--blue-dark); }
+.org-tree-toggle, .org-tree-spacer { width: 24px; height: 32px; flex: 0 0 24px; display: grid; place-items: center; }
+.org-tree-toggle .icon { width: 12px; height: 12px; }
+.org-tree-toggle.expanded .icon { transform: rotate(90deg); }
+.org-tree-select { display: flex; align-items: center; gap: 8px; min-width: 0; text-align: left; padding: 11px 8px 11px 0; flex: 1; font-size: 12px; }
+.org-tree-select > .icon { width: 15px; height: 15px; color: #7b96bd; }
+.org-tree-row.selected .org-tree-select > .icon { color: var(--blue); }
+.org-tree-select span { flex: 1; overflow-wrap: anywhere; }
+.org-tree-select small { color: #8d9bb0; font-size: 10px; }
+.org-directory-note { display: flex; align-items: center; gap: 8px; padding: 15px 20px; font-size: 11px; color: #8b99af; background: #fafcff; border-top: 1px solid var(--line); }
+.org-directory-note .icon { width: 14px; height: 14px; }
+.org-content { min-width: 0; display: flex; flex-direction: column; gap: 20px; }
+.org-summary { overflow: hidden; }
+.org-breadcrumb { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 20px 24px 0; color: #a1adbd; font-size: 11px; }
+.org-breadcrumb button { color: #7e8da4; padding: 2px 0; text-align: left; }
+.org-breadcrumb button:last-child { color: #3c5e8b; }
+.org-summary-heading { padding: 22px 24px 26px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; }
+.org-emblem { height: 48px; width: 48px; border-radius: 12px; display: grid; place-items: center; background: #edf4ff; color: var(--blue); flex: 0 0 auto; }
+.org-emblem .icon { width: 25px; height: 25px; }
+.org-title { flex-wrap: wrap; }
+.org-title h2 { margin: 0; font-size: 20px; font-weight: 650; color: var(--ink); overflow-wrap: anywhere; }
+.org-summary-heading p { font-size: 11px; color: #8c99ac; margin: 8px 0 0; }
+.org-summary-actions { display: flex; flex-wrap: wrap; gap: 9px; }
+.org-stats { display: grid; grid-template-columns: repeat(3, 1fr); margin: 0 24px; padding: 23px 0; border-top: 1px solid var(--line); }
+.org-stats > div { padding-left: 26px; border-left: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; }
+.org-stats > div:first-child { padding-left: 0; border-left: 0; }
+.org-stats span { color: #8190a6; font-size: 12px; }
+.org-stats strong { font-size: 28px; font-weight: 600; color: #28466e; line-height: 1; }
+.org-stats small { font-size: 11px; margin-left: 7px; color: #8f9cb0; font-weight: 400; }
+.org-summary-foot { padding: 13px 24px; background: #fafcff; border-top: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 9px; }
+.org-summary-foot > span { font-size: 10px; color: #909db0; line-height: 1.8; }
+.org-summary-foot .link-button { font-size: 11px; }
+.org-children { overflow: hidden; }
+.org-children .panel-heading { padding: 22px 24px 18px; gap: 10px; flex-wrap: wrap; }
+.org-children .panel-heading h2 { display: flex; align-items: center; gap: 8px; }
+.org-children .panel-heading p { margin: 8px 0 0; font-size: 11px; }
+.org-children table { min-width: 660px; }
+.org-children td { height: 70px; }
+.org-children th { background: #f5f8fd; color: #7b8ea9; font-size: 11px; }
+.org-child-name { display: flex; align-items: center; gap: 8px; text-align: left; color: #3e608e; padding: 8px 0; }
+.org-child-name strong { font-size: 12px; font-weight: 550; }
+.org-child-name > .icon { width: 15px; height: 15px; color: #89a3c5; }
+.org-child-name > .icon:last-child { width: 12px; height: 12px; }
+.org-children .row-actions { white-space: nowrap; }
+.org-policy { display: flex; gap: 8px; align-items: flex-start; color: #8b9ab0; padding: 0 4px; }
+.org-policy .icon { width: 15px; height: 15px; margin-top: 2px; }
+.org-policy p { margin: 0; font-size: 11px; line-height: 1.9; }
+.member-drawer { width: min(920px, 100vw); }
+.member-drawer .drawer-body { padding: 24px; }
+.members-filter { display: flex; gap: 8px; flex-wrap: wrap; margin: 20px 0; }
+.members-filter .input-shell { flex: 1 1 180px; }
+.members-total { margin: 18px 0 12px; color: #7c8ba1; font-size: 12px; }
+.member-drawer table { min-width: 670px; }
+.member-role-tags { display: flex; flex-wrap: wrap; gap: 4px; max-width: 260px; }
+@media (max-width: 1200px) {
+  .org-layout { grid-template-columns: 240px minmax(0, 1fr); gap: 16px; }
+}
+@media (max-width: 780px) {
+  .org-layout { grid-template-columns: minmax(0, 1fr); }
+  .org-directory { position: static; }
+  .org-tree { max-height: 245px; }
+  .org-summary-heading, .org-summary-foot { padding-left: 18px; padding-right: 18px; }
+  .org-breadcrumb { padding-left: 18px; padding-right: 18px; }
+  .org-stats { margin: 0 18px; }
+  .org-stats > div { padding-left: 12px; }
+  .org-stats span { font-size: 10px; }
+  .org-stats strong { font-size: 24px; }
+  .member-drawer .drawer-body { padding: 18px; }
+}
 @media (max-width: 1200px) {
   .metric-grid { gap: 12px; }
   .metric-card { padding: 17px; }

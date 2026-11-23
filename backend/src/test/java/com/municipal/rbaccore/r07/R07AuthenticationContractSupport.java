@@ -4,11 +4,13 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.municipal.rbaccore.infrastructure.logging.JpaAuditWriter;
+import com.municipal.rbaccore.infrastructure.logging.AuditPageCursor;
 import com.municipal.rbaccore.infrastructure.logging.JpaAuditQueryGateway;
+import com.municipal.rbaccore.infrastructure.logging.JpaAuditWriter;
 import com.municipal.rbaccore.infrastructure.persistence.entity.AuthorizationLogEntity;
 import com.municipal.rbaccore.infrastructure.persistence.entity.RoleEntity;
 import com.municipal.rbaccore.infrastructure.persistence.entity.UserEntity;
+import com.municipal.rbaccore.infrastructure.persistence.repository.ApplicationSystemJpaRepository;
 import com.municipal.rbaccore.infrastructure.persistence.repository.AuthorizationLogJpaRepository;
 import com.municipal.rbaccore.infrastructure.persistence.repository.DepartmentJpaRepository;
 import com.municipal.rbaccore.infrastructure.persistence.repository.RoleJpaRepository;
@@ -103,31 +105,185 @@ abstract class R07AuthenticationContractSupport {
   AuditQueryGateway auditQueries;
   @Autowired
   AuthorizationLogJpaRepository auditRows;
+
   @Autowired
-  com.municipal.rbaccore.infrastructure.persistence.repository.ApplicationSystemJpaRepository systems;
+
+  ApplicationSystemJpaRepository systems;
+
   private long rootId;
   private long departmentManagerId;
   private String departmentManager;
+
+  /** 部门入口默认直属，角色筛选与组织范围在数据库内相交且不重复计数。 */
+  @Test
+  @DisplayName("R10 部门直属与角色成员组合查询保持范围、状态和分页一致")
+  void R10_DepartmentAndRoleMembers() throws Exception {
+    String admin = token("admin", ADMIN_PASSWORD);
+    long role = jdbc.queryForObject("SELECT id FROM roles WHERE management_level=3", Long.class);
+    long direct =
+        jdbc.queryForObject("SELECT COUNT(*) FROM users WHERE department_id=?", Long.class, rootId);
+    JsonNode root =
+        body(request(
+                "GET",
+                USERS + "?departmentId=" + rootId + "&departmentScope=DIRECT&size=100",
+                admin,
+                null))
+            .path("data");
+    assertEquals(direct, root.path("total").asLong());
+    for (JsonNode user : root.path("items"))
+      assertEquals(rootId, user.path("departmentId").asLong());
+    long all =
+        jdbc.queryForObject("SELECT COUNT(*) FROM user_roles WHERE role_id=?", Long.class, role);
+    JsonNode members =
+        body(request("GET", USERS + "?roleId=" + role + "&size=1", admin, null)).path("data");
+    assertEquals(all, members.path("total").asLong());
+    assertEquals(1, members.path("items").size());
+    assertTrue(
+        members
+            .path("items")
+            .get(0)
+            .path("roles")
+            .findValuesAsText("id")
+            .contains(Long.toString(role)));
+    long own =
+        jdbc.queryForObject(
+            "SELECT department_id FROM users WHERE id=?", Long.class, departmentManagerId);
+    long localCount =
+        jdbc.queryForObject(
+            "SELECT COUNT(*) FROM users u JOIN user_roles ur ON u.id=ur.user_id WHERE"
+                + " u.department_id=? AND ur.role_id=?",
+            Long.class,
+            own,
+            role);
+    String local = token(departmentManager, PASSWORD);
+    JsonNode localMembers =
+        body(request(
+                "GET",
+                USERS + "?roleId=" + role + "&departmentId=" + own + "&departmentScope=DIRECT",
+                local,
+                null))
+            .path("data");
+    assertEquals(localCount, localMembers.path("total").asLong());
+    assertTrue(localCount < all);
+    assertEquals(
+        403,
+        request("GET", USERS + "?departmentId=" + rootId + "&departmentScope=DIRECT", local, null)
+            .getStatusCode()
+            .value());
+    assertEquals(
+        404,
+        request("GET", USERS + "?departmentId=999999999&departmentScope=DIRECT", admin, null)
+            .getStatusCode()
+            .value());
+    assertEquals(
+        0,
+        body(request("GET", USERS + "?roleId=999999999", admin, null))
+            .path("data")
+            .path("total")
+            .asLong());
+    jdbc.update("UPDATE roles SET enabled=0 WHERE id=?", role);
+    try {
+      assertEquals(
+          all,
+          body(request("GET", USERS + "?roleId=" + role, admin, null))
+              .path("data")
+              .path("total")
+              .asLong());
+      assertEquals(
+          0,
+          body(request("GET", USERS + "?roleId=" + role + "&enabled=false", admin, null))
+              .path("data")
+              .path("total")
+              .asLong());
+    } finally {
+      jdbc.update("UPDATE roles SET enabled=1 WHERE id=?", role);
+    }
+  }
+
+  /** 新筛选在API边界拒绝非法ID和缺少目标部门的直属查询。 */
+  @Test
+  @DisplayName("R18 成员筛选拒绝不合法枚举与非安全整数")
+  void R18_MemberQueryValidation() throws Exception {
+    String admin = token("admin", ADMIN_PASSWORD);
+    for (String query :
+        List.of(
+            "roleId=0",
+            "roleId=-1",
+            "roleId=9007199254740992",
+            "roleId=abc",
+            "departmentScope=direct",
+            "departmentScope=ALL",
+            "departmentScope=DIRECT")) {
+      assertEquals(
+          400, request("GET", USERS + "?" + query, admin, null).getStatusCode().value(), query);
+    }
+  }
+
+  /** 真实HTTP采集连接来源，公网伪造转发头不能污染日志并且接口回读包含IP。 */
+  @Test
+  @DisplayName("R16 登录和实际管理请求记录来源IP且拒绝伪造转发头")
+  void R16_RequestSourceIp() throws Exception {
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    headers.set("X-Forwarded-For", "203.0.113.77");
+    ResponseEntity<String> login =
+        http.exchange(
+            LOGIN,
+            HttpMethod.POST,
+            new HttpEntity<>(Map.of("account", "admin", "password", ADMIN_PASSWORD), headers),
+            String.class);
+    String admin = "Bearer " + body(login).path("data").path("token").asText();
+    ResponseEntity<String> denied = request("GET", USERS, null, null);
+    ResponseEntity<String> allowed = request("GET", USERS, admin, null);
+    ResponseEntity<String> preflight =
+        request("POST", "/api/roles", token(departmentManager, PASSWORD), Map.of());
+    assertEquals(403, preflight.getStatusCode().value());
+    for (ResponseEntity<String> response : List.of(login, denied, allowed, preflight)) {
+      String ip =
+          jdbc.queryForObject(
+              "SELECT client_ip FROM authorization_logs WHERE request_id=?",
+              String.class,
+              response.getHeaders().getFirst("X-Request-Id"));
+      assertTrue(java.net.InetAddress.getByName(ip).isLoopbackAddress());
+      assertNotEquals("203.0.113.77", ip);
+    }
+    JsonNode logs =
+        body(request("GET", LOGS + "?limit=100", admin, null)).path("data").path("items");
+    assertTrue(
+        logs.findValuesAsText("clientIp").stream()
+            .anyMatch(ip -> ip.contains("127.") || ip.contains(":")));
+  }
 
   /** 回执存在也要核实当前来源，不能将损坏数据解释为重新初始化的依据。 */
   @Test
   @DisplayName("R06 首次授权预检对来源损坏稳定拒绝，独立管理员名来自实际来源")
   void R06_BootstrapPreflightRejectsStoredSourceDrift() {
     assertEquals("admin", bootstrap.initialAdminUsername());
-    List<String> mutations = List.of(
-        "DELETE FROM import_sources WHERE source_type='EMPLOYEE' AND source_key='SG000001'",
-        "UPDATE import_sources SET file_sha256=REPEAT('b',64) WHERE source_type='EMPLOYEE' AND source_key='SG000001'",
-        "UPDATE import_sources SET source_row=999999 WHERE source_type='EMPLOYEE' AND source_key='SG000001'",
-        "UPDATE import_sources SET source_json='not-json' WHERE source_type='EMPLOYEE' AND source_key='SG000001'",
-        "UPDATE users SET username='r06-renamed-source' WHERE username='SG000001'",
-        "UPDATE import_sources SET source_type='EMPLOYEE' WHERE source_type='BOOTSTRAP'");
+    List<String> mutations =
+        List.of(
+            "DELETE FROM import_sources WHERE source_type='EMPLOYEE' AND source_key='SG000001'",
+            "UPDATE import_sources SET file_sha256=REPEAT('b',64) WHERE source_type='EMPLOYEE' AND"
+                + " source_key='SG000001'",
+            "UPDATE import_sources SET source_row=999999 WHERE source_type='EMPLOYEE' AND"
+                + " source_key='SG000001'",
+            "UPDATE import_sources SET source_json='not-json' WHERE source_type='EMPLOYEE' AND"
+                + " source_key='SG000001'",
+            "UPDATE users SET username='r06-renamed-source' WHERE username='SG000001'",
+            "UPDATE import_sources SET source_type='EMPLOYEE' WHERE source_type='BOOTSTRAP'");
     for (String sql : mutations) {
-      new TransactionTemplate(transactions).executeWithoutResult(status -> {
-        jdbc.update(sql);
-        assertEquals("BOOTSTRAP_CONFLICT", assertThrows(BusinessException.class,
-            () -> bootstrap.preview(TestProjectPaths.sources())).getCode(), sql);
-        status.setRollbackOnly();
-      });
+      new TransactionTemplate(transactions)
+          .executeWithoutResult(
+              status -> {
+                jdbc.update(sql);
+                assertEquals(
+                    "BOOTSTRAP_CONFLICT",
+                    assertThrows(
+                            BusinessException.class,
+                            () -> bootstrap.preview(TestProjectPaths.sources()))
+                        .getCode(),
+                    sql);
+                status.setRollbackOnly();
+              });
     }
   }
 
@@ -136,10 +292,24 @@ abstract class R07AuthenticationContractSupport {
   @DisplayName("R16 日志按主体和拒绝结果筛选，指纹生成失败不返回分页数据")
   void R16_AuditFiltersAndFingerprintFailures() throws Exception {
     Long admin = jdbc.queryForObject("SELECT id FROM users WHERE username='admin'", Long.class);
-    auditWriter.record(new AuditEvent(admin, "admin", "AUTHORIZATION", false, "r16-boundary",
-        "PERMISSION_DENIED", "GET", USERS, 403));
-    JsonNode result = body(request("GET", LOGS + "?userId=" + admin + "&allowed=false&username=admin",
-        token("admin", ADMIN_PASSWORD), null)).path("data");
+    auditWriter.record(
+        new AuditEvent(
+            admin,
+            "admin",
+            "AUTHORIZATION",
+            false,
+            "r16-boundary",
+            "PERMISSION_DENIED",
+            "GET",
+            USERS,
+            403));
+    JsonNode result =
+        body(request(
+                "GET",
+                LOGS + "?userId=" + admin + "&allowed=false&username=admin",
+                token("admin", ADMIN_PASSWORD),
+                null))
+            .path("data");
     assertTrue(result.path("total").asLong() > 0);
     for (JsonNode entry : result.path("items")) {
       assertEquals(admin.longValue(), entry.path("userId").asLong());
@@ -148,16 +318,19 @@ abstract class R07AuthenticationContractSupport {
     ObjectMapper broken = org.mockito.Mockito.mock(ObjectMapper.class);
     org.mockito.Mockito.when(broken.writeValueAsBytes(org.mockito.ArgumentMatchers.any()))
         .thenThrow(new com.fasterxml.jackson.core.JsonProcessingException("serializer failure") {});
-    JpaAuditQueryGateway gateway = new JpaAuditQueryGateway(auditRows,
-        new com.municipal.rbaccore.infrastructure.logging.AuditPageCursor(), broken, systems);
-    assertEquals("INTERNAL_ERROR", assertThrows(BusinessException.class,
-        () -> gateway.list(new LogQuery())).getCode());
-    try (org.mockito.MockedStatic<java.security.MessageDigest> digest = org.mockito.Mockito.mockStatic(
-        java.security.MessageDigest.class, org.mockito.Mockito.CALLS_REAL_METHODS)) {
-      digest.when(() -> java.security.MessageDigest.getInstance("SHA-256"))
+    JpaAuditQueryGateway gateway =
+        new JpaAuditQueryGateway(auditRows, new AuditPageCursor(), broken, systems);
+    assertEquals(
+        "INTERNAL_ERROR",
+        assertThrows(BusinessException.class, () -> gateway.list(new LogQuery())).getCode());
+    try (org.mockito.MockedStatic<java.security.MessageDigest> digest =
+        org.mockito.Mockito.mockStatic(
+            java.security.MessageDigest.class, org.mockito.Mockito.CALLS_REAL_METHODS)) {
+      digest
+          .when(() -> java.security.MessageDigest.getInstance("SHA-256"))
           .thenThrow(new java.security.NoSuchAlgorithmException("provider unavailable"));
-      BusinessException failure = assertThrows(BusinessException.class,
-          () -> auditQueries.list(new LogQuery()));
+      BusinessException failure =
+          assertThrows(BusinessException.class, () -> auditQueries.list(new LogQuery()));
       assertEquals(500, failure.getStatus());
       assertEquals("INTERNAL_ERROR", failure.getCode());
     }
@@ -340,6 +513,19 @@ abstract class R07AuthenticationContractSupport {
     assertEquals(5, roles.count());
     assertEquals(10001, jdbc.queryForObject("SELECT count(*) FROM user_roles", Integer.class));
     assertEquals(25, jdbc.queryForObject("SELECT count(*) FROM api_resources", Integer.class));
+    assertEquals(
+        5,
+        jdbc.queryForObject("SELECT count(*) FROM permissions WHERE type='MENU'", Integer.class));
+    assertEquals(
+        25,
+        jdbc.queryForObject("SELECT count(*) FROM permissions WHERE type='BUTTON'", Integer.class));
+    assertEquals(
+        0,
+        jdbc.queryForObject(
+            "SELECT count(*) FROM (SELECT p.id FROM permissions p LEFT JOIN permission_apis pa ON"
+                + " pa.permission_id=p.id WHERE p.type='BUTTON' GROUP BY p.id HAVING"
+                + " count(pa.api_id)<>1) grouped_permissions",
+            Integer.class));
     assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM systems", Integer.class));
     assertEquals(
         0,

@@ -1,10 +1,17 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { api, canRoute, notify, refreshSession } from '../api.js'
-import { errorText, RequestGeneration } from '../lib/presentation.js'
+import { api, canRoute, notify, refreshSession, session } from '../api.js'
+import { errorText, RequestGeneration, organizationRows } from '../lib/presentation.js'
 import Modal from '../components/Modal.vue'
 import Pagination from '../components/Pagination.vue'
 import CollectionEditor from '../components/CollectionEditor.vue'
+import MemberList from '../components/MemberList.vue'
+import AppIcon from '../components/AppIcon.vue'
+import PageActions from '../components/PageActions.vue'
+const members = ref(null), departments = ref([]), roleType = ref('')
+const typeNames = { SYSTEM_BUILTIN: '系统内置', APPLICATION_PRESET: '应用预置', DEPARTMENT_CUSTOM: '部门自定义', GLOBAL_CUSTOM: '全局自定义' }
+const isAdministrator = () => session.me?.user.globalScope && session.me?.user.managementLevel === 5
+const canDefine = (role, method, path) => canRoute(method, path, true) && (role?.type !== 'DEPARTMENT_CUSTOM' || isAdministrator())
 const rows = ref([]),
   q = ref(''),
   enabled = ref(''),
@@ -19,6 +26,7 @@ const form = ref({ code: '', name: '', enabled: true }),
   actionError = ref('')
 const confirmChange = ref(false)
 const actionDenied = ref(false)
+const toggling = ref(null)
 const generation = new RequestGeneration()
 const levels = { 5: '系统管理员', 4: '公司领导', 3: '部门经理', 2: '项目经理', 1: '普通员工' }
 /** 列表由数据库搜索、计数与分页，权限定义读取与候选独立。 */
@@ -30,6 +38,7 @@ async function load(next = 0) {
   try {
     const query = new URLSearchParams({ page: next, size: 20, q: q.value.trim() })
     if (enabled.value !== '') query.set('enabled', enabled.value)
+    if (roleType.value) query.set('type', roleType.value)
     const result = await api('/roles?' + query)
     if (generation.current(version)) {
       rows.value = result.items
@@ -42,9 +51,14 @@ async function load(next = 0) {
     if (generation.current(version)) busy.value = false
   }
 }
-function edit(role = null) {
+async function edit(role = null) {
   editing.value = role || { create: true }
   form.value = { code: role?.code || '', name: role?.name || '', enabled: role?.enabled ?? true }
+  form.value.type = role?.type || 'GLOBAL_CUSTOM'
+  form.value.ownerDepartmentId = role?.ownerDepartmentId || ''
+  if (!role && isAdministrator() && canRoute('GET', '/departments/tree')) {
+    try { departments.value = organizationRows(await api('/departments/tree')) } catch (e) { actionError.value = errorText(e); return }
+  }
   actionError.value = ''
   actionDenied.value = false
   confirmChange.value = false
@@ -63,7 +77,7 @@ async function save() {
       editing.value.create ? '/roles' : `/roles/${editing.value.id}`,
       editing.value.create ? 'POST' : 'PATCH',
       editing.value.create
-        ? { code: form.value.code.trim(), name: form.value.name.trim() }
+        ? { code: form.value.code.trim(), name: form.value.name.trim(), type: form.value.type, ...(form.value.type === 'DEPARTMENT_CUSTOM' ? { ownerDepartmentId: Number(form.value.ownerDepartmentId) } : {}) }
         : { name: form.value.name.trim(), enabled: form.value.enabled },
     )
     editing.value = null
@@ -85,22 +99,54 @@ async function saved() {
   await refreshSession()
   load(page.value)
 }
+/** 独立启停入口先展示影响，确认后仅提交状态，不连带覆盖名称。 */
+function openToggle(role) {
+  if (saving.value || !canDefine(role, 'PATCH', '/roles/{id}')) return
+  toggling.value = role
+  actionError.value = ''
+  actionDenied.value = false
+}
+async function toggleRole() {
+  if (!toggling.value || saving.value || actionDenied.value) return
+  saving.value = true
+  actionError.value = ''
+  try {
+    await api(`/roles/${toggling.value.id}`, 'PATCH', { enabled: !toggling.value.enabled })
+    toggling.value = null
+    notify('角色状态已更新。')
+    await refreshSession()
+    await load(page.value)
+  } catch (e) {
+    actionError.value = errorText(e)
+    if (e.status === 403) {
+      actionDenied.value = true
+      await load(page.value)
+    }
+  } finally {
+    saving.value = false
+  }
+}
+function resetFilters() {
+  q.value = ''
+  enabled.value = ''
+  roleType.value = ''
+  load(0)
+}
 onMounted(() => load())
 onUnmounted(() => generation.cancel())
 </script>
 <template>
+  <PageActions :busy="busy || saving" @refresh="load(page)"
+    ><button
+      v-if="canRoute('POST', '/roles', true)"
+      class="primary role-create"
+      :disabled="busy || saving"
+      @click="edit()"
+    >
+      <AppIcon name="plus" />新建角色
+    </button></PageActions
+  >
   <section class="card panel">
-    <div class="section-heading">
-      <div>
-        <h2>角色与权限</h2>
-        <p class="muted">
-          基础角色的授予级别固定。自定义角色默认仅系统管理员可授予，不提高持有人的管理级别。
-        </p>
-      </div>
-      <button v-if="canRoute('POST', '/roles', true)" class="primary" @click="edit()">
-        新建角色
-      </button>
-    </div>
     <form class="toolbar" @submit.prevent="load(0)">
       <label>
         搜索角色
@@ -114,60 +160,85 @@ onUnmounted(() => generation.cancel())
           <option value="false">停用</option>
         </select>
       </label>
-      <button class="secondary" :disabled="busy">查询</button>
+      <label>角色类型<select v-model="roleType"><option value="">全部类型</option><option v-for="(name, type) in typeNames" :key="type" :value="type">{{ name }}</option></select></label>
+      <button class="primary" :disabled="busy">查询</button
+      ><button type="button" class="text-button" :disabled="busy" @click="resetFilters">
+        重置
+      </button>
     </form>
-  </section>
-  <p v-if="error" class="error card panel" role="alert">
-    {{ error }}
-    <button class="secondary" @click="load(page)">重试</button>
-  </p>
-  <section class="card table-scroll">
-    <table>
-      <thead>
-        <tr>
-          <th>角色名称 / 编码</th>
-          <th>固定管理级别</th>
-          <th>角色状态</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="role in rows" :key="role.id">
-          <td>
-            {{ role.name }}
-            <small>{{ role.code }}</small>
-          </td>
-          <td>{{ levels[role.managementLevel] || '自定义 · 仅管理员可授予' }}</td>
-          <td>
-            <span class="badge" :class="role.enabled ? 'green' : 'red'">
-              {{ role.enabled ? '启用' : '停用' }}
-            </span>
-          </td>
-          <td>
-            <button
-              v-if="canRoute('PATCH', '/roles/{id}', true)"
-              class="text-button"
-              @click="edit(role)"
-            >
-              编辑定义
-            </button>
-            <button
-              v-if="canRoute('GET', '/roles/{id}/permissions', true)"
-              class="text-button"
-              @click="assigning = role"
-            >
-              {{ canRoute('PUT', '/roles/{id}/permissions', true) ? '配置权限' : '查看权限' }}
-            </button>
-          </td>
-        </tr>
-        <tr v-if="!rows.length">
-          <td colspan="4" class="empty">
-            {{ busy ? '正在读取角色…' : error ? '角色读取失败' : '暂无匹配角色' }}
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <p v-if="error" class="error card panel" role="alert">
+      {{ error }}
+      <button class="secondary" @click="load(page)">重试</button>
+    </p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>角色名称</th>
+            <th>角色编码</th>
+            <th>来源 / 适用范围</th>
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="role in rows" :key="role.id">
+            <td>
+              <strong>{{ role.name }}</strong>
+            </td>
+            <td class="mono">{{ role.code }}</td>
+            <td>
+              <span class="badge" :class="{ blue: role.managementLevel }">{{
+                levels[role.managementLevel] || typeNames[role.type] || '全局自定义'
+              }}</span><small v-if="role.ownerDepartmentName" class="role-owner">{{ role.ownerDepartmentName }}及下级</small><small v-else-if="role.applicationName" class="role-owner">{{ role.applicationName }}</small>
+            </td>
+            <td>
+              <span class="role-status" :class="{ off: !role.enabled }">
+                {{ role.enabled ? '启用' : '已停用' }}
+              </span>
+            </td>
+            <td>
+              <button v-if="canRoute('GET', '/users')" class="text-button" @click="members = role">
+                查看成员
+              </button>
+              <button
+                v-if="canRoute('GET', '/roles/{id}/permissions')"
+                class="text-button"
+                @click="assigning = role"
+              >
+                {{ canDefine(role, 'PUT', '/roles/{id}/permissions') ? '配置权限' : '查看权限' }}
+              </button>
+              <button
+                v-if="canDefine(role, 'PATCH', '/roles/{id}')"
+                class="text-button"
+                @click="edit(role)"
+              >
+                编辑
+              </button>
+              <button
+                v-if="canDefine(role, 'PATCH', '/roles/{id}')"
+                class="text-button"
+                :class="{ danger: role.enabled }"
+                @click="openToggle(role)"
+              >
+                {{ role.enabled ? '停用' : '启用' }}
+              </button>
+            </td>
+          </tr>
+          <tr v-if="!rows.length">
+            <td colspan="5" class="empty">
+              {{ busy ? '正在读取角色…' : error ? '角色读取失败' : '暂无匹配角色' }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
     <Pagination :page="page" :size="20" :total="total" :busy="busy" @change="load" />
+    <div class="role-footnote">
+      <AppIcon
+        name="info"
+      />授予级别按固定元数据判断，改名不会改变级别。全局及应用角色由管理员授予；部门角色由所属部门及上级获准领导在范围内分配，不改变人员级别。
+    </div>
   </section>
   <Modal
     v-if="editing"
@@ -184,6 +255,10 @@ onUnmounted(() => generation.cancel())
         角色名称
         <input v-model="form.name" required maxlength="100" />
       </label>
+      <template v-if="editing.create">
+        <label>角色类型<select v-model="form.type"><option value="GLOBAL_CUSTOM">全局自定义</option><option v-if="isAdministrator()" value="DEPARTMENT_CUSTOM">部门自定义</option></select></label>
+        <label v-if="form.type === 'DEPARTMENT_CUSTOM'">所属部门<select v-model="form.ownerDepartmentId" required><option value="" disabled>选择所属部门</option><option v-for="department in departments" :key="department.id" :value="department.id">{{ '　'.repeat(department.depth) + department.name }}</option></select></label>
+      </template>
       <label v-if="!editing.create" class="checkbox-label">
         <input v-model="form.enabled" type="checkbox" />
         启用角色
@@ -213,8 +288,122 @@ onUnmounted(() => generation.cancel())
     kind="permissions"
     :read-path="`/roles/${assigning.id}/permissions`"
     :save-path="`/roles/${assigning.id}/permissions`"
-    :readonly="!canRoute('PUT', '/roles/{id}/permissions', true)"
+    :readonly="!canDefine(assigning, 'PUT', '/roles/{id}/permissions')"
     @close="assigning = null"
     @saved="saved"
   />
+  <MemberList v-if="members" :key="members.id" :role="members" @close="members = null" />
+  <Modal
+    v-if="toggling"
+    :title="toggling.enabled ? '停用这个角色？' : '启用这个角色？'"
+    :busy="saving"
+    @close="toggling = null"
+    ><strong>{{ toggling.name }}</strong>
+    <p>修改影响全部持有该角色的人员，已分配关系会保留。最后完整维护者受保护。</p>
+    <p v-if="actionError" class="error" role="alert">{{ actionError }}</p>
+    <p v-if="actionDenied" class="error">权限或范围已变化，请关闭后重新进入。</p>
+    <footer class="dialog-actions">
+      <button class="secondary" :disabled="saving" @click="toggling = null">取消</button
+      ><button class="primary" :disabled="saving || actionDenied" @click="toggleRole">
+        {{ toggling.enabled ? '确认停用' : '确认启用' }}
+      </button>
+    </footer></Modal
+  >
 </template>
+<style scoped>
+.role-owner { display: block; margin-top: 5px; font-size: 11px; color: #8c9db7; }
+.panel {
+  padding: 0;
+}
+.toolbar {
+  padding: 20px 22px;
+  margin: 0;
+}
+.toolbar label {
+  font-size: 11px;
+  color: #8c9db7;
+}
+.toolbar input,
+.toolbar select {
+  font-size: 12px;
+  padding: 10px 12px;
+  background: white;
+}
+.toolbar button {
+  font-size: 12px;
+  min-height: 38px;
+}
+.table-scroll {
+  margin-top: 0;
+}
+table {
+  min-width: 840px;
+}
+th {
+  background: #f7f9fc;
+  font-size: 11px;
+  color: #93a3bb;
+}
+td {
+  color: #7b91b0;
+  font-size: 12px;
+  vertical-align: middle;
+}
+td strong {
+  color: #536f95;
+  font-weight: 550;
+}
+td.mono {
+  color: #9aa9bd;
+  font-size: 11px;
+}
+td:last-child {
+  white-space: nowrap;
+}
+td .text-button {
+  padding: 5px;
+  font-size: 12px;
+}
+.badge {
+  font-size: 10px;
+}
+.role-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #32a184;
+}
+.role-status::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.role-status.off {
+  color: #9aa7b9;
+}
+.role-footnote {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 17px 22px;
+  background: #fafcff;
+  border-top: 1px solid #edf1f8;
+  font-size: 11px;
+  color: #9cabc1;
+}
+.role-footnote :deep(.ui-icon) {
+  width: 14px;
+  height: 14px;
+  margin-top: 2px;
+}
+.role-create {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  min-height: 38px;
+}
+</style>

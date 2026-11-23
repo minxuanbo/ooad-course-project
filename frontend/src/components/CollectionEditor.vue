@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import Modal from './Modal.vue'
 import Pagination from './Pagination.vue'
-import { api, notify } from '../api.js'
+import { api, notify, canRoute } from '../api.js'
 import { errorText, RequestGeneration } from '../lib/presentation.js'
 const props = defineProps({
   title: String,
@@ -10,6 +10,7 @@ const props = defineProps({
   savePath: String,
   kind: String,
   readonly: Boolean,
+  systemId: Number,
 })
 const emit = defineEmits(['close', 'saved', 'invalidated'])
 const selected = ref(new Set()),
@@ -74,11 +75,14 @@ async function loadCandidates(next = 0) {
   page.value = next
   try {
     if (props.kind !== 'roles' && !systems.value.length) {
-      const registered = await api('/systems')
+      const registered = canRoute('GET', '/systems', true)
+        ? await api('/systems')
+        : [{ id: props.systemId || '', name: props.systemId ? '当前权限所属系统' : '当前RBAC系统' }]
       if (!candidateGeneration.current(version)) return
       systems.value = registered
-      systemId.value = String(registered[0]?.id || '')
-      if (!systemId.value) throw Error('尚未初始化RBAC资源目录。')
+      systemId.value = String(props.systemId || registered[0]?.id || '')
+      if (!systemId.value && canRoute('GET', '/systems', true))
+        throw Error('尚未初始化RBAC资源目录。')
     }
     let items, count
     if (props.kind === 'roles') {
@@ -93,7 +97,7 @@ async function loadCandidates(next = 0) {
       const result = await api(
         '/api-resources?' +
           new URLSearchParams({
-            systemId: systemId.value,
+            ...(systemId.value ? { systemId: systemId.value } : {}),
             page: next,
             size: 30,
             q: q.value.trim(),
@@ -103,7 +107,8 @@ async function loadCandidates(next = 0) {
       count = result.total
     } else {
       const roots = await api(
-        '/permissions/tree?' + new URLSearchParams({ systemId: systemId.value }),
+        '/permissions/tree?' +
+          new URLSearchParams(systemId.value ? { systemId: systemId.value } : {}),
       )
       items = []
       const flatten = (nodes, depth = 0) =>
@@ -166,7 +171,7 @@ onUnmounted(() => {
 })
 </script>
 <template>
-  <Modal :title="title" :busy="saving" @close="emit('close')">
+  <Modal :title="title" :busy="saving" :drawer="kind !== 'roles'" @close="emit('close')">
     <p class="muted">账号、角色与资源状态独立。停用关联仍保留，且不贡献有效权限。</p>
     <p v-if="loading && !ready" role="status">正在读取完整已保存集合…</p>
     <p v-if="error" class="error" role="alert">{{ error }}</p>
@@ -196,7 +201,7 @@ onUnmounted(() => {
             所属系统
             <select v-model="systemId" :disabled="saving || loading" @change="loadCandidates(0)">
               <option v-for="system in systems" :key="system.id" :value="String(system.id)">
-                {{ system.name }}
+                {{ system.name }}{{ system.connectionStatus === 'PENDING' ? '（待接入）' : '' }}
               </option>
             </select>
           </label>

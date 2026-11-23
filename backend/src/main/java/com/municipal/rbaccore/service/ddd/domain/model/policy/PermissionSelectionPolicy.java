@@ -25,7 +25,7 @@ public final class PermissionSelectionPolicy {
     if (selected.size() != requested
         || !selected.stream()
             .allMatch(permission -> AuthorizationPolicy.active(permission, systems))) {
-      throw invalid("只能保存已接入系统的启用权限");
+      throw invalid("只能保存已登记系统的启用权限");
     }
     return role.replacePermissions(selected);
   }

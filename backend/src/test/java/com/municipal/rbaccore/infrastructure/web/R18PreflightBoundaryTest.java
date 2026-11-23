@@ -3,6 +3,8 @@ package com.municipal.rbaccore.infrastructure.web;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.municipal.rbaccore.api.resource.ResourceController;
+import com.municipal.rbaccore.api.resource.dto.ResourceSystemQueryDTO;
 import com.municipal.rbaccore.api.role.RoleController;
 import com.municipal.rbaccore.api.role.dto.RoleQueryDTO;
 import com.municipal.rbaccore.service.port.audit.AuditWriter;
@@ -23,6 +25,40 @@ import org.springframework.web.servlet.HandlerMapping;
 class R18PreflightBoundaryTest {
   private static final String ICON = "/favicon.ico";
   private static final String ROLES = "/api/roles";
+
+  /** 已匹配资源路由却没有合法对象变量时，只执行入口检查，不伪造目标。 */
+  @Test
+  @DisplayName("R18 API资源缺少路径变量保持入口鉴权")
+  void R18_apiResourceWithoutPathVariablesKeepsGate() throws Exception {
+    ManagementAccessUseCase access = mock(ManagementAccessUseCase.class);
+    ResourceUseCase resources = mock(ResourceUseCase.class);
+    ManagementPreflight preflight =
+        new ManagementPreflight(
+            access,
+            resources,
+            mock(UserManagementUseCase.class),
+            mock(DepartmentUseCase.class),
+            mock(RoleUseCase.class),
+            mock(AuditWriter.class));
+    MockHttpServletRequest request =
+        new MockHttpServletRequest("PATCH", "/api/api-resources/not-an-id");
+    request.addHeader("Authorization", "Bearer test");
+    request.setAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE, "/api/api-resources/{id}");
+    HandlerMethod handler =
+        new HandlerMethod(
+            new ResourceController(resources),
+            ResourceController.class.getMethod("tree", String.class, ResourceSystemQueryDTO.class));
+    assertTrue(preflight.preHandle(request, new MockHttpServletResponse(), handler));
+    verify(access).require("Bearer test");
+    verifyNoInteractions(resources);
+    request.setAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE, "/api/permissions/tree");
+    request.setAttribute(
+        HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE, java.util.Map.of("id", "9"));
+    assertTrue(preflight.preHandle(request, new MockHttpServletResponse(), handler));
+    verify(access, times(2)).require("Bearer test");
+    verifyNoInteractions(resources);
+  }
+
   /** 静态资源与非管理方法不应触发后台权限检查。 */
   @Test
   @DisplayName("R18 预鉴权不干预静态资源和未纳入管理的处理器")
@@ -32,12 +68,18 @@ class R18PreflightBoundaryTest {
     UserManagementUseCase users = mock(UserManagementUseCase.class);
     DepartmentUseCase departments = mock(DepartmentUseCase.class);
     AuditWriter audit = mock(AuditWriter.class);
-    ManagementPreflight preflight = new ManagementPreflight(access, resources, users, departments, audit);
+    ManagementPreflight preflight =
+        new ManagementPreflight(
+            access, resources, users, departments, mock(RoleUseCase.class), audit);
     MockHttpServletRequest request = new MockHttpServletRequest("GET", ICON);
     MockHttpServletResponse response = new MockHttpServletResponse();
     assertTrue(preflight.preHandle(request, response, new Object()));
-    assertTrue(preflight.preHandle(request, response, new HandlerMethod(new Object(), Object.class.getMethod("toString"))));
-    verifyNoInteractions(access, resources, users, departments, audit);
+    assertTrue(
+        preflight.preHandle(
+            request,
+            response,
+            new HandlerMethod(new Object(), Object.class.getMethod("toString"))));
+    verifyNoInteractions(access, resources, users, departments, mock(RoleUseCase.class), audit);
   }
 
   /** 没有Spring路径变量时仍检查入口权限，不能从其他属性猜目标ID。 */
@@ -46,15 +88,25 @@ class R18PreflightBoundaryTest {
   void R18_missingPathVariablesKeepRouteGate() throws Exception {
     ManagementAccessUseCase access = mock(ManagementAccessUseCase.class);
     ResourceUseCase resources = mock(ResourceUseCase.class);
-    ManagementPreflight preflight = new ManagementPreflight(access, resources,
-        mock(UserManagementUseCase.class), mock(DepartmentUseCase.class), mock(AuditWriter.class));
+    RoleUseCase roles = mock(RoleUseCase.class);
+    ManagementPreflight preflight =
+        new ManagementPreflight(
+            access,
+            resources,
+            mock(UserManagementUseCase.class),
+            mock(DepartmentUseCase.class),
+            roles,
+            mock(AuditWriter.class));
     MockHttpServletRequest request = new MockHttpServletRequest("GET", ROLES);
     request.addHeader("Authorization", "Bearer test");
     request.setAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE, ROLES);
-    HandlerMethod handler = new HandlerMethod(new RoleController(mock(RoleUseCase.class)),
-        RoleController.class.getMethod("list", String.class, RoleQueryDTO.class));
+    HandlerMethod handler =
+        new HandlerMethod(
+            new RoleController(mock(RoleUseCase.class)),
+            RoleController.class.getMethod("list", String.class, RoleQueryDTO.class));
     assertTrue(preflight.preHandle(request, new MockHttpServletResponse(), handler));
-    verify(access).require("Bearer test");
+    verify(roles).checkTarget("Bearer test", null, false);
+    verifyNoInteractions(access);
     verifyNoInteractions(resources);
   }
 

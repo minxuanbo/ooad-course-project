@@ -5,12 +5,15 @@ import com.municipal.rbaccore.infrastructure.persistence.entity.DepartmentEntity
 import com.municipal.rbaccore.infrastructure.persistence.entity.PermissionEntity;
 import com.municipal.rbaccore.infrastructure.persistence.entity.RoleEntity;
 import com.municipal.rbaccore.infrastructure.persistence.entity.UserEntity;
+import com.municipal.rbaccore.infrastructure.persistence.mapping.RoleResultMapping;
 import com.municipal.rbaccore.infrastructure.persistence.repository.DepartmentJpaRepository;
 import com.municipal.rbaccore.infrastructure.persistence.repository.RoleJpaRepository;
 import com.municipal.rbaccore.infrastructure.persistence.repository.UserJpaRepository;
 import com.municipal.rbaccore.service.port.error.BusinessException;
 import com.municipal.rbaccore.service.port.role.RoleResult;
+import com.municipal.rbaccore.service.port.role.RoleType;
 import com.municipal.rbaccore.service.port.security.CurrentIdentity;
+import com.municipal.rbaccore.service.port.security.ManagedApplications;
 import com.municipal.rbaccore.service.port.security.RequestContext;
 import com.municipal.rbaccore.service.port.user.AssignableRolePageResult;
 import com.municipal.rbaccore.service.port.user.AssignableRoleQuery;
@@ -51,15 +54,14 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class StructuredUserManagementService implements UserManagementUseCase {
-  private final com.municipal.rbaccore.service.port.security.ManagedApplications applications;
+  private final ManagedApplications applications;
   private final StructuredAuthenticationService auth;
   private final RequestContext requestContext;
   private final StructuredEffectivePermissionService permissions;
   private final StructuredDepartmentScopeService scope;
   private final StructuredMaintenanceGuard guard;
   private final UserJpaRepository users;
-  private final com.municipal.rbaccore.service.structured.security.StructuredPersonnelAuthority
-      authority;
+  private final StructuredPersonnelAuthority authority;
   private final RoleJpaRepository roles;
   private final DepartmentJpaRepository departments;
 
@@ -78,7 +80,13 @@ public class StructuredUserManagementService implements UserManagementUseCase {
     StructuredPersonnelAuthority.AuthoritySnapshot operator = authority.snapshot(actor);
     if (!authority.canManage(operator, target(actor, id))) throw BusinessException.scopeDenied();
     String search = query.getQ() == null ? "" : query.getQ().toLowerCase(Locale.ROOT);
-    Specification<RoleEntity> filter = assignableFilter(ownPermissionIds(actor), operator, search);
+    Specification<RoleEntity> filter =
+        assignableFilter(
+            ownPermissionIds(actor),
+            operator,
+            search,
+            Set.copyOf(scope.allowedIds(actor)),
+            departments.ancestorIds(target(actor, id).getDepartment().getId()));
     long total = roles.count(filter);
     long offset = (long) query.getPage() * query.getSize();
     if (offset >= total) {
@@ -113,14 +121,21 @@ public class StructuredUserManagementService implements UserManagementUseCase {
                   .map(RoleEntity::getId)
                   .collect(Collectors.toUnmodifiableSet());
           Set<Long> ownIds = ownPermissionIds(actor);
+          Set<Long> owners = Set.copyOf(scope.allowedIds(actor));
+          Set<Long> ancestors = departments.ancestorIds(target.getDepartment().getId());
+          Set<String> systems = applications.codes();
           boolean invalidAdded =
               selected.stream()
                   .filter(role -> !existingIds.contains(role.getId()))
-                  .anyMatch(role -> !role.isEnabled() || !canRemove(role, operator, ownIds));
+                  .anyMatch(
+                      role ->
+                          !role.isEnabled()
+                              || !applicable(role, ancestors)
+                              || !canRemove(role, operator, ownIds, owners, ancestors, systems));
           boolean invalidRemoved =
               target.getRoles().stream()
                   .filter(role -> !wanted.contains(role.getId()))
-                  .anyMatch(role -> !canRemove(role, operator, ownIds));
+                  .anyMatch(role -> !canRemove(role, operator, ownIds, owners, ancestors, systems));
           if (invalidAdded || invalidRemoved) {
             throw BusinessException.scopeDenied();
           }
@@ -167,6 +182,9 @@ public class StructuredUserManagementService implements UserManagementUseCase {
           requireInScope(actor, departmentId);
           DepartmentEntity department =
               departments.findById(departmentId).orElseThrow(BusinessException::scopeDenied);
+          Set<Long> ancestors = departments.ancestorIds(departmentId);
+          for (RoleEntity role : List.copyOf(target.getRoles()))
+            if (!applicable(role, ancestors)) target.removeRole(role);
           target.moveTo(department);
           users.saveAndFlush(target);
           return withRoles(target);
@@ -234,7 +252,11 @@ public class StructuredUserManagementService implements UserManagementUseCase {
 
   /** 数据库排除任何超出本人有效权限的角色，外系统权限不因过滤而变成空集。 */
   private Specification<RoleEntity> assignableFilter(
-      Set<Long> ownIds, StructuredPersonnelAuthority.AuthoritySnapshot operator, String search) {
+      Set<Long> ownIds,
+      StructuredPersonnelAuthority.AuthoritySnapshot operator,
+      String search,
+      Set<Long> manageableOwners,
+      Set<Long> targetAncestors) {
     String pattern =
         "%" + search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
     return (root, query, builder) -> {
@@ -258,7 +280,15 @@ public class StructuredUserManagementService implements UserManagementUseCase {
               ? builder.or(
                   builder.isNull(root.get("managementLevel")),
                   builder.le(root.get("managementLevel"), operator.level()))
-              : builder.le(root.get("managementLevel"), operator.level()),
+              : builder.or(
+                  builder.le(root.get("managementLevel"), operator.level()),
+                  builder.and(
+                      builder.equal(root.get("type"), RoleType.DEPARTMENT_CUSTOM),
+                      root.get("ownerDepartment").get("id").in(manageableOwners),
+                      root.get("ownerDepartment").get("id").in(targetAncestors))),
+          builder.or(
+              builder.notEqual(root.get("type"), RoleType.DEPARTMENT_CUSTOM),
+              root.get("ownerDepartment").get("id").in(targetAncestors)),
           builder.not(builder.exists(forbidden)),
           builder.or(
               builder.like(builder.lower(root.get("name")), pattern, '\\'),
@@ -266,19 +296,36 @@ public class StructuredUserManagementService implements UserManagementUseCase {
     };
   }
 
+  /** 调动和新增均按当前祖先事实判断部门角色适用性。 */
+  private boolean applicable(RoleEntity role, Set<Long> ancestors) {
+    return role.getType() != RoleType.DEPARTMENT_CUSTOM
+        || role.getOwnerDepartment() != null
+            && ancestors.contains(role.getOwnerDepartment().getId());
+  }
+
   /** 角色元数据按ID升序输出，状态显式转换不依赖primitive映射。 */
   private RoleResult roleResult(RoleEntity role) {
-    RoleResult result = CloneFactory.copy(new RoleResult(), role);
-    result.setEnabled(role.isEnabled());
-    return result;
+    return RoleResultMapping.result(role);
   }
 
   /** 删除关联必须满足级别与完整有效子集，自定义项只允许可信根管理员调整。 */
   private boolean canRemove(
-      RoleEntity role, StructuredPersonnelAuthority.AuthoritySnapshot actor, Set<Long> ownIds) {
+      RoleEntity role,
+      StructuredPersonnelAuthority.AuthoritySnapshot actor,
+      Set<Long> ownIds,
+      Set<Long> manageableOwners,
+      Set<Long> targetAncestors,
+      Set<String> systems) {
     Integer level = role.getManagementLevel();
-    if (level == null ? !actor.administrator() : level > actor.level()) return false;
-    Set<String> systems = applications.codes();
+    boolean departmental =
+        role.getType() == RoleType.DEPARTMENT_CUSTOM
+            && role.getOwnerDepartment() != null
+            && !role.getOwnerDepartment().isDeleted()
+            && manageableOwners.contains(role.getOwnerDepartment().getId())
+            && targetAncestors.contains(role.getOwnerDepartment().getId());
+    if (level == null
+        ? !(actor.administrator() || actor.level() >= 2 && departmental)
+        : level > actor.level()) return false;
     return role.getPermissions().stream()
         .allMatch(
             permission ->
@@ -297,10 +344,15 @@ public class StructuredUserManagementService implements UserManagementUseCase {
             .toList();
     StructuredPersonnelAuthority.AuthoritySnapshot operator = authority.snapshot(actor);
     Set<Long> ownIds = ownPermissionIds(actor);
+    Set<Long> owners = Set.copyOf(scope.allowedIds(actor));
+    Set<Long> ancestors = departments.ancestorIds(user.getDepartment().getId());
+    Set<String> systems = applications.codes();
     List<Long> locked =
         user.getRoles().stream()
             .filter(
-                role -> !authority.canManage(operator, user) || !canRemove(role, operator, ownIds))
+                role ->
+                    !authority.canManage(operator, user)
+                        || !canRemove(role, operator, ownIds, owners, ancestors, systems))
             .map(RoleEntity::getId)
             .sorted()
             .toList();

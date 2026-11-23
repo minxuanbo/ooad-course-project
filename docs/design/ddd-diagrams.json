@@ -61,8 +61,9 @@
       "policy": "RoleAssignmentPolicy",
       "policyMethods": [
         "+ canManage(actor, global, target): boolean",
-        "+ canAssign(role, level, customPermitted, ids, systems): boolean",
-        "+ canRemove(role, level, customPermitted, ids, systems): boolean"
+        "+ departmental(role, level, owners, ancestors): boolean",
+        "+ canAssign(role, level, admin, ids, systems, owners, ancestors): boolean",
+        "+ canRemove(role, level, admin, ids, systems, owners, ancestors): boolean"
       ],
       "serviceMethods": [
         "+ replaceRoles(header, id, command): UserWithRolesResult",
@@ -86,6 +87,7 @@
         "- scope: OrganizationFacts.Scope",
         "- q: String",
         "- enabled: Boolean",
+        "- roleId: Long",
         "- page, size: int"
       ],
       "methods": [],
@@ -116,11 +118,16 @@
         "- id: Long",
         "- code, name: String",
         "- managementLevel: Integer",
+        "- type: Role.Type",
+        "- ownerDepartment: Department",
+        "- application: ApplicationSystem",
         "- enabled: boolean",
         "- permissions: Set<Permission>"
       ],
       "methods": [
         "+ custom(code, name, enabled): Role {static}",
+        "+ departmental(code, name, owner): Role {static}",
+        "+ applicable(ancestors): boolean",
         "+ revise(name, enabled): Role",
         "+ replacePermissions(selected): Role"
       ],
@@ -398,10 +405,12 @@
       "fields": [
         "- id: Long",
         "- code, name: String",
-        "- enabled: boolean"
+        "- enabled: boolean",
+        "- connectionStatus: Connection"
       ],
       "methods": [
-        "+ isRbac(): boolean"
+        "+ isRbac(): boolean",
+        "+ connected(): boolean"
       ],
       "policy": "ManagementAccessUseCase",
       "policyMethods": [
@@ -425,7 +434,8 @@
       ],
       "model": "AuthorizationFacts",
       "fields": [
-        "- user: User"
+        "- user: User",
+        "- ancestorIds: Set<Long>"
       ],
       "methods": [],
       "policy": "AuthorizationPolicy",
@@ -488,8 +498,13 @@
           ],
           [
             1,
+            1,
+            "roleIds = applicableRoleIds(userId)"
+          ],
+          [
+            1,
             2,
-            "values = effectiveApis(userId, RBAC)"
+            "values = effectiveApis(userId, roleIds, RBAC)"
           ]
         ]
       },
@@ -519,7 +534,16 @@
             "effective = routes(facts)"
           ]
         ],
-        "loops": []
+        "loops": [],
+        "notes": [
+          {
+            "who": 1,
+            "lines": [
+              "AuthorizationFacts携带当前祖先，Role.applicable过滤归属。",
+              "运行API另查CONNECTED；计划授权仍包含PENDING权限。"
+            ]
+          }
+        ]
       },
       "dddSource": "DddAuthorizationService",
       "dddAnchor": "routes"
@@ -978,7 +1002,7 @@
           [
             1,
             2,
-            "new Users(scope, query, enabled, page, size)"
+            "new Users(scope, query, enabled, roleId, page, size)"
           ],
           [
             1,
@@ -1193,7 +1217,7 @@
           [
             1,
             1,
-            "filter = assignableFilter(ownIds, operator, search)"
+            "filter = assignableFilter(ownIds, operator, search, owners, ancestors)"
           ],
           [
             1,
@@ -1306,16 +1330,35 @@
           ],
           [
             1,
+            1,
+            "valid = applicable(role, ancestors)"
+          ],
+          [
+            1,
+            2,
+            "removeRole(role)"
+          ],
+          [
+            1,
             2,
             "moveTo(department)"
           ]
+        ],
+        "opts": [
+          {
+            "first": 3,
+            "last": 3,
+            "text": "[部门角色不适用新部门]"
+          }
         ]
       },
       "ddd": {
         "lifelines": [
           "service: DddUserManagementService",
           "scope: DddScope",
-          "target: User"
+          "target: User",
+          "role: Role",
+          "OrganizationPolicy"
         ],
         "calls": [
           [
@@ -1330,9 +1373,27 @@
           ],
           [
             1,
+            5,
+            "ancestors = ancestors(organization, department.id)"
+          ],
+          [
+            1,
+            4,
+            "applicable(ancestors)"
+          ],
+          [
+            1,
             3,
             "changed = transfer(department)"
+          ],
+          [
+            1,
+            3,
+            "changed = replaceRoles(retained)"
           ]
+        ],
+        "meta": [
+          5
         ]
       }
     },
@@ -1347,7 +1408,8 @@
         "lifelines": [
           "service: StructuredRoleService",
           "roles: RoleJpaRepository",
-          "RoleEntity"
+          "RoleEntity",
+          "created: RoleEntity"
         ],
         "calls": [
           [
@@ -1364,10 +1426,22 @@
             1,
             3,
             "new RoleEntity(code, name)"
+          ],
+          [
+            1,
+            4,
+            "belongTo(owner)"
           ]
         ],
         "meta": [
           3
+        ],
+        "opts": [
+          {
+            "first": 3,
+            "last": 3,
+            "text": "[type = DEPARTMENT_CUSTOM，owner已核实]"
+          }
         ]
       },
       "ddd": {
@@ -1385,10 +1459,25 @@
             1,
             2,
             "role = custom(code, name, null)"
+          ],
+          [
+            1,
+            2,
+            "created = departmental(code, name, owner)"
           ]
         ],
         "meta": [
           2
+        ],
+        "alts": [
+          {
+            "first": 1,
+            "last": 1,
+            "elseFirst": 2,
+            "elseLast": 2,
+            "text": "[type = GLOBAL_CUSTOM]",
+            "elseText": "[type = DEPARTMENT_CUSTOM，owner已核实]"
+          }
         ]
       }
     },
@@ -2274,7 +2363,7 @@
         "path": "/api/roles",
         "useCase": "RoleUseCase.list",
         "fragments": "user-query（分页模式复用）",
-        "reason": "RoleJpaRepository.count/findAll 对 RoleRepository.search(Roles)；无新分页算法。"
+        "reason": "同一数据库过滤分页模式；共同根读取全部，局部仅本人子树的部门角色，type/owner交集后计数。"
       },
       {
         "operationId": "createRole",
@@ -2298,7 +2387,7 @@
         "path": "/api/roles/{id}/permissions",
         "useCase": "RoleUseCase.selected",
         "fragments": "共同集合读取，不画",
-        "reason": "Entity/领域Role读取直接权限编号后排序；类型差异由两套role类图说明。"
+        "reason": "先RoleUseCase.checkTarget按实际API及部门角色范围核实，再读完整保存集合；集合读取不重复画。"
       },
       {
         "operationId": "replaceRolePermissions",

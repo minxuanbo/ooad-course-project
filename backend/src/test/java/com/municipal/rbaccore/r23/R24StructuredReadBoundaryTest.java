@@ -7,6 +7,7 @@ import com.municipal.rbaccore.infrastructure.persistence.entity.*;
 import com.municipal.rbaccore.infrastructure.persistence.repository.*;
 import com.municipal.rbaccore.service.port.department.*;
 import com.municipal.rbaccore.service.port.error.BusinessException;
+import com.municipal.rbaccore.service.port.importing.ImportPlan;
 import com.municipal.rbaccore.service.port.resource.PermissionType;
 import com.municipal.rbaccore.service.port.role.ReplaceRolePermissionsCommand;
 import com.municipal.rbaccore.service.port.security.*;
@@ -27,14 +28,17 @@ import org.springframework.test.util.ReflectionTestUtils;
 class R24StructuredReadBoundaryTest {
   private static final String HEADER = "Bearer unit-boundary";
   private static final RbacCatalog.Route CREATE = new RbacCatalog.Route("POST", "/api/departments");
-  private static final RbacCatalog.Route EDIT = new RbacCatalog.Route("PATCH", "/api/departments/{id}");
-  private static final RbacCatalog.Route DELETE = new RbacCatalog.Route("DELETE", "/api/departments/{id}");
+  private static final RbacCatalog.Route EDIT =
+      new RbacCatalog.Route("PATCH", "/api/departments/{id}");
+  private static final RbacCatalog.Route DELETE =
+      new RbacCatalog.Route("DELETE", "/api/departments/{id}");
 
   /** 按钮取决于真实路由和人员级别，不能由管理员名称或树根位置推断。 */
   @Test
   @DisplayName("R24 结构化部门按钮逐项受路由、级别和节点类型控制")
   void R24_projectsIndependentDepartmentCapabilities() {
-    for (Set<RbacCatalog.Route> routes : List.of(Set.<RbacCatalog.Route>of(), Set.of(CREATE), Set.of(EDIT), Set.of(DELETE))) {
+    for (Set<RbacCatalog.Route> routes :
+        List.of(Set.<RbacCatalog.Route>of(), Set.of(CREATE), Set.of(EDIT), Set.of(DELETE))) {
       Fixture f = new Fixture();
       when(f.permissions.routes(1L)).thenReturn(routes);
       List<DepartmentResult> rows = f.departmentService.list(HEADER);
@@ -47,13 +51,18 @@ class R24StructuredReadBoundaryTest {
     }
     Fixture employee = new Fixture();
     when(employee.authority.level(employee.actor)).thenReturn(1);
-    assertTrue(employee.departmentService.list(HEADER).stream().noneMatch(row -> row.getCanEdit() || row.getCanCreate()));
+    assertTrue(
+        employee.departmentService.list(HEADER).stream()
+            .noneMatch(row -> row.getCanEdit() || row.getCanCreate()));
     Fixture local = new Fixture();
     when(local.scope.isGlobal(local.actor)).thenReturn(false);
     assertFalse(local.departmentService.list(HEADER).getFirst().getCanEdit());
     Fixture detached = new Fixture();
     detached.child.moveTo(null);
     assertNull(detached.departmentService.list(HEADER).get(1).getParentId());
+    Fixture owned = new Fixture();
+    when(owned.roles.ownerDepartmentIds()).thenReturn(Set.of(3L));
+    assertFalse(owned.departmentService.list(HEADER).get(2).getCanDelete());
   }
 
   /** 查询预检可以只读；权限已撤销、墓碑或非可信总公司类型一律拒绝。 */
@@ -67,14 +76,16 @@ class R24StructuredReadBoundaryTest {
     verify(f.departments, never()).saveAndFlush(any());
     Fixture deleted = new Fixture();
     deleted.child.setDeleted(true);
-    assertCode("MANAGEMENT_SCOPE_DENIED", () -> deleted.departmentService.checkTarget(HEADER, 2L, false));
+    assertCode(
+        "MANAGEMENT_SCOPE_DENIED", () -> deleted.departmentService.checkTarget(HEADER, 2L, false));
     Fixture untrusted = new Fixture();
     untrusted.child.setType(DepartmentType.HEADQUARTERS);
     CreateDepartmentCommand command = new CreateDepartmentCommand();
     command.setParentId(2L);
     command.setName("新部门");
     command.setType(DepartmentType.DEPARTMENT);
-    assertCode("DEPARTMENT_TYPE_INVALID", () -> untrusted.departmentService.create(HEADER, command));
+    assertCode(
+        "DEPARTMENT_TYPE_INVALID", () -> untrusted.departmentService.create(HEADER, command));
     verify(untrusted.departments, never()).saveAndFlush(any());
   }
 
@@ -85,13 +96,13 @@ class R24StructuredReadBoundaryTest {
     DepartmentJpaRepository departments = mock(DepartmentJpaRepository.class);
     ImportSourceJpaRepository sources = mock(ImportSourceJpaRepository.class);
     DepartmentEntity root = department(1L, null, DepartmentType.HEADQUARTERS);
-    com.municipal.rbaccore.service.port.importing.ImportPlan.Organization row =
-        new com.municipal.rbaccore.service.port.importing.ImportPlan.Organization(2, "总公司", "负责人", "", "总公司", "root");
+    ImportPlan.Organization row = new ImportPlan.Organization(2, "总公司", "负责人", "", "总公司", "root");
     when(sources.findByKindAndSourceKey(ImportSourceEntity.Kind.ORGANIZATION, "总公司"))
         .thenReturn(Optional.of(ImportSourceEntity.organization(row, "hash", "[]", root)));
     when(departments.subtreeIds(1L)).thenReturn(List.of(1L));
     when(departments.countByDeletedFalse()).thenReturn(2L);
-    StructuredDepartmentScopeService scope = new StructuredDepartmentScopeService(departments, sources);
+    StructuredDepartmentScopeService scope =
+        new StructuredDepartmentScopeService(departments, sources);
     CurrentIdentity actor = new CurrentIdentity(1L, "admin", 1L);
     assertFalse(scope.isGlobal(actor));
     root.moveTo(department(2L, null, DepartmentType.COMPANY));
@@ -103,13 +114,16 @@ class R24StructuredReadBoundaryTest {
   @DisplayName("R24 人员候选和角色替换执行同级保护，后台调用缺操作元数据拒绝")
   void R24_personnelGuardsAndMissingOperationFailClosed() {
     Fixture f = new Fixture();
-    assertCode("MANAGEMENT_SCOPE_DENIED", () -> f.userService.assignableRoles(HEADER, 2L, new AssignableRoleQuery()));
+    assertCode(
+        "MANAGEMENT_SCOPE_DENIED",
+        () -> f.userService.assignableRoles(HEADER, 2L, new AssignableRoleQuery()));
     ReplaceUserRolesCommand command = new ReplaceUserRolesCommand();
     command.setIds(List.of());
     assertCode("MANAGEMENT_SCOPE_DENIED", () -> f.userService.replaceRoles(HEADER, 2L, command));
     when(f.requests.operation()).thenReturn(null);
     assertCode("SESSION_INVALID", () -> f.userService.checkTarget(HEADER, null, false));
-    StructuredGlobalManagementAccess access = new StructuredGlobalManagementAccess(f.auth, f.requests, f.permissions, f.scope, f.guard);
+    StructuredGlobalManagementAccess access =
+        new StructuredGlobalManagementAccess(f.auth, f.requests, f.permissions, f.scope, f.guard);
     assertCode("SESSION_INVALID", () -> access.require(HEADER));
     Fixture missingScope = new Fixture();
     when(missingScope.scope.allowedIds(missingScope.actor)).thenReturn(List.of(1L));
@@ -123,9 +137,22 @@ class R24StructuredReadBoundaryTest {
   void R24_roleApplicationBoundariesAreExplicit() {
     Fixture f = new Fixture();
     StructuredGlobalManagementAccess access = mock(StructuredGlobalManagementAccess.class);
-    doAnswer(invocation -> ((java.util.function.Supplier<?>) invocation.getArgument(1)).get()).when(access).write(any(), any());
+    doAnswer(invocation -> ((java.util.function.Supplier<?>) invocation.getArgument(1)).get())
+        .when(access)
+        .write(any(), any());
     PermissionJpaRepository permissions = mock(PermissionJpaRepository.class);
-    StructuredRoleService service = new StructuredRoleService(() -> Set.of("rbac"), f.roles, permissions, access);
+    StructuredRoleService service =
+        new StructuredRoleService(
+            () -> Set.of("rbac"),
+            f.roles,
+            permissions,
+            access,
+            f.auth,
+            f.permissions,
+            f.requests,
+            f.scope,
+            f.authority,
+            f.departments);
     RoleEntity role = new RoleEntity("sample", "样例");
     ApplicationSystemEntity foreign = application(9L, "foreign", true);
     PermissionEntity outside = permission(9L, foreign);
@@ -142,8 +169,10 @@ class R24StructuredReadBoundaryTest {
     assertCode("INVALID_ARGUMENT", () -> service.replacePermissions(HEADER, 1L, command));
     verify(f.roles, never()).saveAndFlush(any());
 
-    when(f.authority.canManage(any(StructuredPersonnelAuthority.AuthoritySnapshot.class), any())).thenReturn(true);
-    when(f.authority.snapshot(f.actor)).thenReturn(new StructuredPersonnelAuthority.AuthoritySnapshot(1L, 5, true));
+    when(f.authority.canManage(any(StructuredPersonnelAuthority.AuthoritySnapshot.class), any()))
+        .thenReturn(true);
+    when(f.authority.snapshot(f.actor))
+        .thenReturn(new StructuredPersonnelAuthority.AuthoritySnapshot(1L, 5, true));
     ReflectionTestUtils.setField(role, "id", 1L);
     f.target.assignRole(role);
     role.grantPermission(outside);
@@ -159,7 +188,8 @@ class R24StructuredReadBoundaryTest {
   }
 
   /** 构造有明确身份的组织事实。 */
-  private static DepartmentEntity department(Long id, DepartmentEntity parent, DepartmentType type) {
+  private static DepartmentEntity department(
+      Long id, DepartmentEntity parent, DepartmentType type) {
     DepartmentEntity result = new DepartmentEntity("d" + id, "部门" + id);
     ReflectionTestUtils.setField(result, "id", id);
     result.setType(type);
@@ -192,10 +222,13 @@ class R24StructuredReadBoundaryTest {
     private final DepartmentJpaRepository departments = mock(DepartmentJpaRepository.class);
     private final UserJpaRepository users = mock(UserJpaRepository.class);
     private final RoleJpaRepository roles = mock(RoleJpaRepository.class);
-    private final StructuredAuthenticationService auth = mock(StructuredAuthenticationService.class);
-    private final StructuredDepartmentScopeService scope = mock(StructuredDepartmentScopeService.class);
+    private final StructuredAuthenticationService auth =
+        mock(StructuredAuthenticationService.class);
+    private final StructuredDepartmentScopeService scope =
+        mock(StructuredDepartmentScopeService.class);
     private final StructuredPersonnelAuthority authority = mock(StructuredPersonnelAuthority.class);
-    private final StructuredEffectivePermissionService permissions = mock(StructuredEffectivePermissionService.class);
+    private final StructuredEffectivePermissionService permissions =
+        mock(StructuredEffectivePermissionService.class);
     private final StructuredMaintenanceGuard guard = mock(StructuredMaintenanceGuard.class);
     private final RequestContext requests = mock(RequestContext.class);
     private final StructuredDepartmentService departmentService;
@@ -208,17 +241,31 @@ class R24StructuredReadBoundaryTest {
       when(scope.isGlobal(actor)).thenReturn(true);
       when(scope.trustedRootId()).thenReturn(1L);
       when(authority.level(actor)).thenReturn(5);
-      when(authority.snapshot(actor)).thenReturn(new StructuredPersonnelAuthority.AuthoritySnapshot(1L, 5, true));
+      when(authority.snapshot(actor))
+          .thenReturn(new StructuredPersonnelAuthority.AuthoritySnapshot(1L, 5, true));
       when(permissions.routes(1L)).thenReturn(Set.of(CREATE, EDIT, DELETE));
       when(permissions.allows(any(), any(), any())).thenReturn(true);
-      when(requests.operation()).thenReturn(new RequestContext.Operation("PATCH", "/api/departments/{id}"));
+      when(requests.operation())
+          .thenReturn(new RequestContext.Operation("PATCH", "/api/departments/{id}"));
       when(departments.findAllById(List.of(1L, 2L, 3L))).thenReturn(List.of(root, child, project));
       when(departments.findById(2L)).thenReturn(Optional.of(child));
       ReflectionTestUtils.setField(target, "id", 2L);
       when(users.findById(2L)).thenReturn(Optional.of(target));
-      departmentService = new StructuredDepartmentService(departments, users, auth, scope, authority, permissions, guard, requests);
-      userService = new StructuredUserManagementService(() -> Set.of("rbac"), auth, requests, permissions,
-          scope, guard, users, authority, roles, departments);
+      departmentService =
+          new StructuredDepartmentService(
+              departments, users, roles, auth, scope, authority, permissions, guard, requests);
+      userService =
+          new StructuredUserManagementService(
+              () -> Set.of("rbac"),
+              auth,
+              requests,
+              permissions,
+              scope,
+              guard,
+              users,
+              authority,
+              roles,
+              departments);
     }
   }
 }
