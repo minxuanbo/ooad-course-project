@@ -39,16 +39,6 @@
 
 Apifox仍对应已发布契约，本轮仅修改仓库契约；写入需用户明确授权。18系统导入、应用预置角色分类与部门角色运行规则，以及后续集中验收/发布，等待用户确认。角色成员查询不提前开放部门领导的全局角色维护能力。
 
-## 4. 双轴审核与修复
-
-### Standards
-
-首轮1项：机器契约重复声明departmentScope/roleId及required.clientIp，严格标准校验拒绝。已移除重复参数及重复必填项，从YAML同源生成JSON，并通过OpenAPI及JSON Schema校验；其余规范未发现问题。
-
-### Spec
-
-首轮2项：上述机器契约问题，以及Waitress默认清除来源头使正式网关链路退化为代理地址。已使运行器保留头且不改写REMOTE_ADDR，仍由Gateway独立进行CIDR/单值核查。新增测试先以实际Docker启动参数复现RED，再经过真实Waitress中间件验证可信、非可信及非法来源，修复后41项Python完整回归通过。
-
 ## Standards
 
 规范轴首次发现1项P2：新增OpenAPI参数重复及required数组重复，严格校验拒绝。4b79028已去重并从YAML同源生成JSON，两份OpenAPI及LogEntryVO JSON Schema严格校验均通过。独立审核复核未解决项0；其余分层、真实CloneFactory、隐私及编码规范未发现阻断问题。
