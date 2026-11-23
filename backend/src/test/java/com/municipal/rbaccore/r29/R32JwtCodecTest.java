@@ -61,6 +61,29 @@ class R32JwtCodecTest {
     assertThrows(
         IllegalStateException.class, () -> new JwtIdentityCodec(CLOCK, "invalid!", "issuer"));
     assertThrows(IllegalStateException.class, () -> new JwtIdentityCodec(CLOCK, "YQ==", "issuer"));
+    assertThrows(IllegalStateException.class, () -> new JwtIdentityCodec(CLOCK, secret(), " "));
+  }
+
+  /** 即使使用正确签名，省略必需身份声明的令牌也不能接受。 */
+  @Test
+  @DisplayName("R32 正确签名但缺少jti或时间声明的JWT仍拒绝")
+  void R32_RejectsMissingRequiredClaims() throws Exception {
+    String key = secret();
+    JwtIdentityCodec codec = new JwtIdentityCodec(CLOCK, key, "https://rbac.example.test");
+    for (String missing : java.util.List.of("jti", "iat", "exp")) {
+      com.nimbusds.jwt.JWTClaimsSet.Builder builder = new com.nimbusds.jwt.JWTClaimsSet.Builder()
+              .issuer("https://rbac.example.test").subject("7").audience(java.util.List.of("application-a"));
+      if (!missing.equals("jti")) builder.jwtID("test-id");
+      if (!missing.equals("iat")) builder.issueTime(java.util.Date.from(NOW));
+      if (!missing.equals("exp")) builder.expirationTime(java.util.Date.from(NOW.plusSeconds(60)));
+      com.nimbusds.jwt.SignedJWT signed = new com.nimbusds.jwt.SignedJWT(
+          new com.nimbusds.jose.JWSHeader(com.nimbusds.jose.JWSAlgorithm.HS256), builder.build());
+      signed.sign(new com.nimbusds.jose.crypto.MACSigner(Base64.getDecoder().decode(key)));
+      String token = signed.serialize();
+      assertFalse(signed.getJWTClaimsSet().getClaims().containsKey(missing));
+      assertEquals(401, assertThrows(BusinessException.class,
+          () -> codec.verify(token, 7L, "application-a"), missing).getStatus());
+    }
   }
 
   /** 测试秘密每次独立生成，不给产品引入测试默认密钥。 */

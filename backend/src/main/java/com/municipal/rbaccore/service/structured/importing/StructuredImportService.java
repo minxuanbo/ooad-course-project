@@ -1,7 +1,6 @@
 package com.municipal.rbaccore.service.structured.importing;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.municipal.rbaccore.infrastructure.excel.SourceCellsJson;
 import com.municipal.rbaccore.infrastructure.excel.LoginIdentifiers;
 import com.municipal.rbaccore.infrastructure.excel.WorkbookImportPlanner;
 import com.municipal.rbaccore.infrastructure.persistence.entity.DepartmentEntity;
@@ -34,7 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 /** T03 的离线导入事务，组织、账号及来源记录整体提交或整体回滚。 */
 @RequiredArgsConstructor
 public class StructuredImportService implements ImportUseCase {
-  private static final ObjectMapper SOURCE_JSON = new ObjectMapper();
+  private final SourceCellsJson sourceJson;
   private final DepartmentJpaRepository departments;
   private final UserJpaRepository users;
   private final ImportSourceJpaRepository sources;
@@ -259,12 +258,12 @@ public class StructuredImportService implements ImportUseCase {
   }
 
   /** 组织来源保留原表三列，不覆盖合并前名称与负责人。 */
-  private static String organizationJson(ImportPlan.Organization organization) {
+  private String organizationJson(ImportPlan.Organization organization) {
     return json(List.of(organization.name(), organization.manager(), organization.parent()));
   }
 
   /** 人员来源逐列保留原六列，手机号与工号始终按字符串保存。 */
-  private static String employeeJson(ImportPlan.Employee employee) {
+  private String employeeJson(ImportPlan.Employee employee) {
     return json(
         List.of(
             employee.name(),
@@ -276,12 +275,8 @@ public class StructuredImportService implements ImportUseCase {
   }
 
   /** 序列化固定来源列，不进行DTO映射，也不把秘密加入来源JSON。 */
-  private static String json(List<String> cells) {
-    try {
-      return SOURCE_JSON.writeValueAsString(cells);
-    } catch (JsonProcessingException exception) {
-      throw new ImportException("SOURCE_FIELD_INVALID", "来源字段无法保存");
-    }
+  private String json(List<String> cells) {
+    return sourceJson.encode(cells);
   }
 
   /** 报告只提供数量、文件摘要和维护账号ID，授权准备由T05另行验收。 */

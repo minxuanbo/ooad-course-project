@@ -62,6 +62,7 @@ class R03ImportJpaContractTest {
       basePackageClasses = {DepartmentJpaRepository.class, ImportSourceJpaRepository.class})
   @Import({
     ImportStrategySelector.class,
+    com.municipal.rbaccore.infrastructure.excel.SourceCellsJson.class,
     com.municipal.rbaccore.infrastructure.security.BCryptPasswordHashing.class
   })
   static class ImportTestConfiguration {
@@ -111,6 +112,50 @@ class R03ImportJpaContractTest {
 
   private static final BootstrapCredentials CREDENTIALS =
       new BootstrapCredentials("test-employee-password", "test-admin-password", "admin");
+
+  /** 来源表不可读取时返回导入数据库错误，不误判为空库并开始重建。 */
+  @Test
+  @DisplayName("R03 来源读取数据库故障失败关闭且不生成账号")
+  void R03_SourceDatabaseReadFailureDoesNotInitialize() {
+    jdbc.execute("RENAME TABLE import_sources TO r03_held_import_sources");
+    try {
+      assertEquals("IMPORT_DATABASE_ERROR", assertThrows(ImportException.class,
+          () -> service.importDirectory(TestProjectPaths.sources(), CREDENTIALS)).getCode());
+      assertEquals(0, users.count());
+      assertEquals(0, departments.count());
+    } finally {
+      jdbc.execute("RENAME TABLE r03_held_import_sources TO import_sources");
+    }
+  }
+
+  /** 缺少初始化输入不得开始文件读取或写入；两套实现遵循同一配置错误协议。 */
+  @Test
+  @DisplayName("R03 缺少初始化凭据时不创建任何组织或账号")
+  void R03_RejectsMissingCredentialsBeforeWriting() {
+    assertEquals("BOOTSTRAP_CONFIG_INVALID", assertThrows(ImportException.class,
+        () -> service.importDirectory(TestProjectPaths.sources(), null)).getCode());
+    assertEquals(0, users.count());
+    assertEquals(0, departments.count());
+    assertEquals(0, sources.count());
+  }
+
+  /** 真实数据库中的来源摘要、源行、目标账号及父级漂移不能被重复导入修补。 */
+  @Test
+  @DisplayName("R03 重复导入逐项拒绝来源摘要、行号、目标账号及组织层级漂移")
+  void R03_RejectsEachPersistedSourceDrift() {
+    service.importDirectory(TestProjectPaths.sources(), CREDENTIALS);
+    assertRejectedMutation("UPDATE import_sources SET file_sha256=REPEAT('a',64) WHERE source_type='EMPLOYEE' AND source_key='SG000001'", "SOURCE_CHANGED");
+    assertRejectedMutation("UPDATE import_sources SET source_row=999999 WHERE source_type='EMPLOYEE' AND source_key='SG000001'", "SOURCE_CHANGED");
+    assertRejectedMutation("UPDATE import_sources SET source_json='not-json' WHERE source_type='EMPLOYEE' AND source_key='SG000001'", "SOURCE_CHANGED");
+    assertRejectedMutation("UPDATE users SET username='renamed-employee' WHERE username='SG000001'", "SOURCE_CHANGED");
+    assertRejectedMutation("UPDATE users SET username='renamed-administrator' WHERE username='admin'", "SOURCE_CHANGED");
+    assertRejectedMutation("UPDATE import_sources SET department_id=(SELECT id FROM departments WHERE code<>(SELECT code FROM departments WHERE parent_id IS NULL) ORDER BY id LIMIT 1) WHERE source_type='ORGANIZATION' AND source_key='总公司'", "SOURCE_CHANGED");
+    Long root = jdbc.queryForObject("SELECT id FROM departments WHERE parent_id IS NULL", Long.class);
+    Long nested = jdbc.queryForObject("SELECT id FROM departments WHERE parent_id IS NOT NULL AND parent_id<>? ORDER BY id LIMIT 1", Long.class, root);
+    assertRejectedMutation("UPDATE departments SET parent_id=" + root + " WHERE id=" + nested, "TARGET_TREE_CHANGED");
+    assertEquals(10001, users.count());
+    assertEquals(10112, sources.count());
+  }
 
   /** 仅清理本测试守卫允许的专库，清理顺序遵守外键，不关闭约束。 */
   @BeforeEach

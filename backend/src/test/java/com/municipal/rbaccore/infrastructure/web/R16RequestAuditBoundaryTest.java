@@ -23,6 +23,12 @@ class R16RequestAuditBoundaryTest {
       assertEquals("", RequestAuditFilter.requestId());
       RequestAuditFilter.actor(1L, "background");
       RequestAuditFilter.error("test");
+      RequestAuditFilter.recorded();
+      HttpRequestContext background = new HttpRequestContext();
+      background.application("application-a");
+      background.authorizationDecision(false);
+      background.permissionCheck(false);
+      assertNull(background.operation());
       org.springframework.http.ResponseEntity<com.municipal.rbaccore.api.shared.ApiResponse<Object>>
           response =
               new ApiExceptionHandler(new HttpRequestContext())

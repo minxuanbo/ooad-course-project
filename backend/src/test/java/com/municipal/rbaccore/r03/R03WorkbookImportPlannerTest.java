@@ -18,6 +18,26 @@ import org.junit.jupiter.api.Test;
 /** 用真实源文件验证 T03 的全量解析、领导节点合并及字符串标识保留。 */
 class R03WorkbookImportPlannerTest {
 
+  /** 空表、稀疏必填列及超长标识不能被清洗成可导入人员。 */
+  @Test
+  @DisplayName("R03 空表、稀疏必填字段、超长标识及未知公司分别拒绝")
+  void R03_RejectsEmptySparseAndOversizedInputs() {
+    WorkbookImportPlanner planner = new WorkbookImportPlanner();
+    assertEquals("SOURCE_HEADER_INVALID", assertThrows(ImportException.class,
+        () -> planner.plan(List.of(), employees("001", "002", "财务部"), "org", "people")).getCode());
+    for (List<WorkbookRow> invalid : List.of(
+        employees("u".repeat(101), "002", "财务部"),
+        employees("001", "2".repeat(33), "财务部"),
+        List.of(row(1, "姓名", "用户名", "分公司", "部门", "岗位", "电话号码"), row(2, "只有姓名")))) {
+      assertEquals("SOURCE_FIELD_INVALID", assertThrows(ImportException.class,
+          () -> planner.plan(organizations(), invalid, "org", "people")).getCode());
+    }
+    List<WorkbookRow> unknown = List.of(row(1, "姓名", "用户名", "分公司", "部门", "岗位", "电话号码"),
+        row(2, "样例", "001", "未知分公司", "财务部", "员工", "002"));
+    assertEquals("DEPARTMENT_UNRESOLVED", assertThrows(ImportException.class,
+        () -> planner.plan(organizations(), unknown, "org", "people")).getCode());
+  }
+
   /** 声明范围 A1 不得截断读取，合并节点不能丢失任何来源行。 */
   @Test
   @DisplayName("R03/R04/R05/R06 111个来源组织映射110个目标，保留10000名员工及来源哈希")

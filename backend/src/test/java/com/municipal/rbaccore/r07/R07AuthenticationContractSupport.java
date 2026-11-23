@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.municipal.rbaccore.infrastructure.logging.JpaAuditWriter;
+import com.municipal.rbaccore.infrastructure.logging.JpaAuditQueryGateway;
 import com.municipal.rbaccore.infrastructure.persistence.entity.AuthorizationLogEntity;
 import com.municipal.rbaccore.infrastructure.persistence.entity.RoleEntity;
 import com.municipal.rbaccore.infrastructure.persistence.entity.UserEntity;
@@ -100,9 +101,67 @@ abstract class R07AuthenticationContractSupport {
   AuditWriter auditWriter;
   @Autowired
   AuditQueryGateway auditQueries;
+  @Autowired
+  AuthorizationLogJpaRepository auditRows;
+  @Autowired
+  com.municipal.rbaccore.infrastructure.persistence.repository.ApplicationSystemJpaRepository systems;
   private long rootId;
   private long departmentManagerId;
   private String departmentManager;
+
+  /** 回执存在也要核实当前来源，不能将损坏数据解释为重新初始化的依据。 */
+  @Test
+  @DisplayName("R06 首次授权预检对来源损坏稳定拒绝，独立管理员名来自实际来源")
+  void R06_BootstrapPreflightRejectsStoredSourceDrift() {
+    assertEquals("admin", bootstrap.initialAdminUsername());
+    List<String> mutations = List.of(
+        "DELETE FROM import_sources WHERE source_type='EMPLOYEE' AND source_key='SG000001'",
+        "UPDATE import_sources SET file_sha256=REPEAT('b',64) WHERE source_type='EMPLOYEE' AND source_key='SG000001'",
+        "UPDATE import_sources SET source_row=999999 WHERE source_type='EMPLOYEE' AND source_key='SG000001'",
+        "UPDATE import_sources SET source_json='not-json' WHERE source_type='EMPLOYEE' AND source_key='SG000001'",
+        "UPDATE users SET username='r06-renamed-source' WHERE username='SG000001'",
+        "UPDATE import_sources SET source_type='EMPLOYEE' WHERE source_type='BOOTSTRAP'");
+    for (String sql : mutations) {
+      new TransactionTemplate(transactions).executeWithoutResult(status -> {
+        jdbc.update(sql);
+        assertEquals("BOOTSTRAP_CONFLICT", assertThrows(BusinessException.class,
+            () -> bootstrap.preview(TestProjectPaths.sources())).getCode(), sql);
+        status.setRollbackOnly();
+      });
+    }
+  }
+
+  /** 真实日志筛选按主体及真假决定，序列化和摘要提供者故障都不能产生无绑定快照。 */
+  @Test
+  @DisplayName("R16 日志按主体和拒绝结果筛选，指纹生成失败不返回分页数据")
+  void R16_AuditFiltersAndFingerprintFailures() throws Exception {
+    Long admin = jdbc.queryForObject("SELECT id FROM users WHERE username='admin'", Long.class);
+    auditWriter.record(new AuditEvent(admin, "admin", "AUTHORIZATION", false, "r16-boundary",
+        "PERMISSION_DENIED", "GET", USERS, 403));
+    JsonNode result = body(request("GET", LOGS + "?userId=" + admin + "&allowed=false&username=admin",
+        token("admin", ADMIN_PASSWORD), null)).path("data");
+    assertTrue(result.path("total").asLong() > 0);
+    for (JsonNode entry : result.path("items")) {
+      assertEquals(admin.longValue(), entry.path("userId").asLong());
+      assertFalse(entry.path("allowed").asBoolean());
+    }
+    ObjectMapper broken = org.mockito.Mockito.mock(ObjectMapper.class);
+    org.mockito.Mockito.when(broken.writeValueAsBytes(org.mockito.ArgumentMatchers.any()))
+        .thenThrow(new com.fasterxml.jackson.core.JsonProcessingException("serializer failure") {});
+    JpaAuditQueryGateway gateway = new JpaAuditQueryGateway(auditRows,
+        new com.municipal.rbaccore.infrastructure.logging.AuditPageCursor(), broken, systems);
+    assertEquals("INTERNAL_ERROR", assertThrows(BusinessException.class,
+        () -> gateway.list(new LogQuery())).getCode());
+    try (org.mockito.MockedStatic<java.security.MessageDigest> digest = org.mockito.Mockito.mockStatic(
+        java.security.MessageDigest.class, org.mockito.Mockito.CALLS_REAL_METHODS)) {
+      digest.when(() -> java.security.MessageDigest.getInstance("SHA-256"))
+          .thenThrow(new java.security.NoSuchAlgorithmException("provider unavailable"));
+      BusinessException failure = assertThrows(BusinessException.class,
+          () -> auditQueries.list(new LogQuery()));
+      assertEquals(500, failure.getStatus());
+      assertEquals("INTERNAL_ERROR", failure.getCode());
+    }
+  }
 
   /** R34内部运维协议保持原始JSON和Prometheus文本，不能套用业务响应包装。 */
   @Test

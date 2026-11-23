@@ -27,9 +27,11 @@ import org.springframework.test.context.ActiveProfiles;
 class R23PrototypeContractTest {
   private static final String OVERVIEW = "/api/overview";
   private static final String ME = "/api/me";
+  private static final String MY_PERMISSIONS = "/api/me/permissions";
   private static final String LOGIN = "/api/auth/login";
   private static final String DEPARTMENTS = "/api/departments";
   private static final String USERS = "/api/users";
+  private static final String PERMISSION_TREE = "/api/permissions/tree?systemId=1";
   private static final String PASSWORD = "isolated-stage4-fixture";
   @Autowired
   TestRestTemplate http;
@@ -37,11 +39,201 @@ class R23PrototypeContractTest {
   JdbcTemplate jdbc;
   @Autowired
   PasswordEncoder encoder;
+  @Autowired
+  com.municipal.rbaccore.service.port.department.DepartmentUseCase departmentService;
+  @Autowired
+  com.municipal.rbaccore.service.port.user.UserQueryUseCase userQueries;
+  @Autowired
+  com.municipal.rbaccore.infrastructure.persistence.repository.UserJpaRepository userRows;
+  @Autowired
+  com.municipal.rbaccore.infrastructure.persistence.repository.RoleJpaRepository roleRows;
+  @Autowired
+  com.municipal.rbaccore.infrastructure.persistence.repository.DepartmentJpaRepository departmentRows;
+  @Autowired
+  com.municipal.rbaccore.service.port.identity.IdentityDirectoryGateway directory;
+  @Autowired
+  org.springframework.transaction.PlatformTransactionManager transactions;
+
+  /** 本人权限投影保留真实父ID，不凭导航祖先补发授权。 */
+  @Test
+  @DisplayName("R08 本人已授权子权限保留父ID但不额外授予祖先")
+  void R08_SelectedChildRetainsItsParentId() {
+    Long child = jdbc.queryForObject("SELECT MIN(id) FROM permissions WHERE system_id=1 AND id<>1", Long.class);
+    jdbc.update("UPDATE permissions SET parent_id=1 WHERE id=?", child);
+    try {
+      JsonNode data = call(HttpMethod.GET, MY_PERMISSIONS, token(1), null).getBody().path("data");
+      JsonNode selected = java.util.stream.StreamSupport.stream(data.spliterator(), false)
+          .filter(item -> item.path("id").asLong() == child).findFirst().orElseThrow();
+      assertEquals(1, selected.path("parentId").asInt());
+    } finally {
+      jdbc.update("UPDATE permissions SET parent_id=NULL WHERE id=?", child);
+    }
+  }
+
+  /** 空有效权限集合应由真实SQL排除非空授权角色，不退回全量候选。 */
+  @Test
+  @DisplayName("R24 结构化候选真实JPA对空权限集合只保留空授权角色")
+  void R24_StructuredCandidateQueryWithNoEffectivePermissions() {
+    new org.springframework.transaction.support.TransactionTemplate(transactions).executeWithoutResult(status -> {
+      com.municipal.rbaccore.service.structured.auth.StructuredAuthenticationService auth = org.mockito.Mockito.mock(
+          com.municipal.rbaccore.service.structured.auth.StructuredAuthenticationService.class);
+      com.municipal.rbaccore.service.port.security.CurrentIdentity actor =
+          new com.municipal.rbaccore.service.port.security.CurrentIdentity(1L, "stage4-1", 1L);
+      org.mockito.Mockito.when(auth.require("Bearer boundary")).thenReturn(actor);
+      com.municipal.rbaccore.service.structured.security.StructuredDepartmentScopeService scope = org.mockito.Mockito.mock(
+          com.municipal.rbaccore.service.structured.security.StructuredDepartmentScopeService.class);
+      org.mockito.Mockito.when(scope.allowedIds(actor)).thenReturn(List.of(1L, 2L, 3L));
+      com.municipal.rbaccore.service.structured.security.StructuredPersonnelAuthority authority = org.mockito.Mockito.mock(
+          com.municipal.rbaccore.service.structured.security.StructuredPersonnelAuthority.class);
+      org.mockito.Mockito.when(authority.snapshot(actor)).thenReturn(
+          new com.municipal.rbaccore.service.structured.security.StructuredPersonnelAuthority.AuthoritySnapshot(1L, 5, true));
+      org.mockito.Mockito.when(authority.canManage(org.mockito.ArgumentMatchers.any(
+          com.municipal.rbaccore.service.structured.security.StructuredPersonnelAuthority.AuthoritySnapshot.class), org.mockito.ArgumentMatchers.any())).thenReturn(true);
+      com.municipal.rbaccore.service.structured.user.StructuredUserManagementService service =
+          new com.municipal.rbaccore.service.structured.user.StructuredUserManagementService(
+              () -> java.util.Set.of("rbac", "business"), auth,
+              org.mockito.Mockito.mock(com.municipal.rbaccore.service.port.security.RequestContext.class),
+              org.mockito.Mockito.mock(com.municipal.rbaccore.service.structured.security.StructuredEffectivePermissionService.class),
+              scope, org.mockito.Mockito.mock(com.municipal.rbaccore.service.structured.security.StructuredMaintenanceGuard.class),
+              userRows, authority, roleRows, departmentRows);
+      com.municipal.rbaccore.service.port.user.AssignableRoleQuery query = new com.municipal.rbaccore.service.port.user.AssignableRoleQuery();
+      query.setSize(20);
+      assertEquals(List.of("custom"), service.assignableRoles("Bearer boundary", 4L, query).getItems().stream()
+          .map(com.municipal.rbaccore.service.port.role.RoleResult::getCode).toList());
+      status.setRollbackOnly();
+    });
+  }
+
+  /** 物理外键仍允许历史跨系统父引用，查询不能丢弃损坏节点而伪造完整树。 */
+  @Test
+  @DisplayName("R14 跨应用父引用损坏时权限树查询明确409且不泄漏外应用节点")
+  void R14_PermissionTreeRejectsCrossApplicationParent() {
+    String admin = token(1);
+    jdbc.update("UPDATE permissions SET parent_id=999 WHERE id=1");
+    try {
+      ResponseEntity<JsonNode> response = call(HttpMethod.GET, PERMISSION_TREE, admin, null);
+      assertEquals(409, response.getStatusCode().value());
+      assertEquals("DATA_CONFLICT", response.getBody().path("code").asText());
+      assertTrue(response.getBody().path("data").isNull());
+    } finally {
+      jdbc.update("UPDATE permissions SET parent_id=NULL WHERE id=1");
+    }
+  }
+
+  /** 数据库先过滤状态和范围，空范围及极大页码不能退回全量数据。 */
+  @Test
+  @DisplayName("R10/R29 真实JPA查询处理空范围、停用筛选、越末页及墓碑")
+  void R10_ReadAdaptersKeepEmptyScopesAndTypedFilters() {
+    String admin = token(1);
+    jdbc.update("UPDATE users SET enabled=0 WHERE id=4");
+    JsonNode filtered = call(HttpMethod.GET, USERS + "?enabled=false", admin, null).getBody().path("data");
+    assertEquals(1, filtered.path("total").asInt());
+    assertEquals(4, filtered.path("items").get(0).path("id").asInt());
+    com.municipal.rbaccore.service.port.user.UserQuery query = new com.municipal.rbaccore.service.port.user.UserQuery();
+    query.setSize(20);
+    query.setEnabled(false);
+    query.setDepartmentId(2L);
+    assertEquals(1, userQueries.list("Bearer " + admin, query).getTotal());
+    new org.springframework.transaction.support.TransactionTemplate(transactions).executeWithoutResult(status -> {
+      com.municipal.rbaccore.infrastructure.persistence.ddd.JpaUserRepositoryAdapter adapter =
+          new com.municipal.rbaccore.infrastructure.persistence.ddd.JpaUserRepositoryAdapter(userRows, roleRows, departmentRows);
+      com.municipal.rbaccore.service.ddd.domain.model.OrganizationFacts.Scope empty =
+          new com.municipal.rbaccore.service.ddd.domain.model.OrganizationFacts.Scope(java.util.Set.of());
+      assertEquals(0, adapter.search(new com.municipal.rbaccore.service.ddd.domain.model.SearchCriteria.Users(empty, null, null, 0, 20)).total());
+      assertEquals(0, adapter.statistics(empty).total());
+      com.municipal.rbaccore.infrastructure.persistence.ddd.JpaAuthorizationRepositoryAdapter authorization =
+          new com.municipal.rbaccore.infrastructure.persistence.ddd.JpaAuthorizationRepositoryAdapter(userRows, roleRows);
+      assertEquals(List.of("custom"), authorization.candidates(
+          new com.municipal.rbaccore.service.ddd.domain.model.AuthorizationFacts.AssignableRoleCriteria(
+              5, true, java.util.Set.of(), null, 0, 20)).items().stream()
+          .map(com.municipal.rbaccore.service.ddd.domain.model.Role::code).toList());
+      assertNull(directory.department(1L).orElseThrow().parentId());
+      assertEquals(1L, directory.department(2L).orElseThrow().parentId());
+      assertTrue(directory.users(1L, null, 2, 20).items().isEmpty());
+      assertTrue(directory.users(1L, null, Integer.MAX_VALUE, 100).items().isEmpty());
+      assertTrue(directory.departments(1L, 1L, java.util.Set.of(1L, 2L, 3L), null, 2, 20).items().isEmpty());
+      assertTrue(directory.departments(1L, 1L, java.util.Set.of(1L, 2L, 3L), null, Integer.MAX_VALUE, 100).items().isEmpty());
+      jdbc.update("UPDATE departments SET deleted=1 WHERE id=3");
+      assertTrue(directory.department(3L).isEmpty());
+      status.setRollbackOnly();
+    });
+  }
+
+  /** 所有父子类型逐项通过真实HTTP核对，不只验证一种非法组合。 */
+  @Test
+  @DisplayName("R24 部门父子类型矩阵和可信根改名通过真实MySQL验证")
+  void R24_DepartmentTypeMatrixAndRootRename() {
+    jdbc.update("INSERT INTO departments(id,code,name,parent_id,type) VALUES(10,'company','样例分公司',1,'COMPANY')");
+    String admin = token(1);
+    Map<Long, List<String>> permitted = Map.of(
+        1L, List.of("COMPANY", "DEPARTMENT", "PROJECT"), 10L, List.of("DEPARTMENT", "PROJECT"),
+        2L, List.of("PROJECT"), 3L, List.of());
+    for (long parent : List.of(1L, 10L, 2L, 3L)) {
+      for (String type : List.of("HEADQUARTERS", "COMPANY", "DEPARTMENT", "PROJECT")) {
+        ResponseEntity<JsonNode> response = call(HttpMethod.POST, DEPARTMENTS, admin,
+            Map.of("parentId", parent, "name", "组合-" + parent + "-" + type, "type", type));
+        boolean allowed = permitted.get(parent).contains(type);
+        assertEquals(allowed ? 200 : 400, response.getStatusCode().value(), parent + "/" + type + ":" + response.getBody());
+        if (allowed) assertEquals(parent, response.getBody().path("data").path("parentId").asLong());
+        else assertEquals("DEPARTMENT_TYPE_INVALID", response.getBody().path("code").asText());
+      }
+    }
+    assertEquals(200, call(HttpMethod.PATCH, DEPARTMENTS + "/1", admin,
+        Map.of("name", "总公司新名称")).getStatusCode().value());
+    assertEquals("总公司", jdbc.queryForObject("SELECT source_key FROM import_sources WHERE department_id=1", String.class));
+    assertEquals("总公司新名称", jdbc.queryForObject("SELECT name FROM departments WHERE id=1", String.class));
+    assertEquals("DEPARTMENT_NOT_EMPTY", call(HttpMethod.DELETE, DEPARTMENTS + "/10", admin, null).getBody().path("code").asText());
+  }
+
+  /** 拥有实际API仍不能跳过人员级别和直属根条件。 */
+  @Test
+  @DisplayName("R24 普通员工获部门API仍不能写，非根五级人员仍保护本人部门")
+  void R24_ApiPermissionDoesNotReplaceManagerQualification() {
+    jdbc.update("INSERT IGNORE INTO role_permissions(role_id,permission_id) SELECT 3,id FROM permissions WHERE system_id=1");
+    String employee = token(4);
+    JsonNode tree = call(HttpMethod.GET, DEPARTMENTS, employee, null).getBody().path("data");
+    assertFalse(tree.isEmpty());
+    for (JsonNode node : tree) {
+      assertFalse(node.path("canCreate").asBoolean());
+      assertFalse(node.path("canEdit").asBoolean());
+      assertFalse(node.path("canDelete").asBoolean());
+    }
+    assertEquals(403, call(HttpMethod.POST, DEPARTMENTS, employee,
+        Map.of("parentId", 2, "name", "员工建项目", "type", "PROJECT")).getStatusCode().value());
+    jdbc.update("DELETE FROM user_roles WHERE user_id=2");
+    jdbc.update("INSERT INTO user_roles VALUES(2,1)");
+    assertEquals(403, call(HttpMethod.PATCH, DEPARTMENTS + "/2", token(2),
+        Map.of("name", "非根管理员本人部门")).getStatusCode().value());
+    String administrator = token(1);
+    int missingContext = assertThrows(com.municipal.rbaccore.service.port.error.BusinessException.class,
+        () -> departmentService.checkTarget("Bearer " + administrator, 2L, true)).getStatus();
+    assertTrue(List.of(401, 403).contains(missingContext));
+  }
+
+  /** 故障注入只在专库建短期触发器，保存失败后的数据库必须完整回滚。 */
+  @Test
+  @DisplayName("R24 部门保存约束失败翻译409且没有部分新增")
+  void R24_DatabaseFailureRollsBackDepartmentCreation() {
+    String admin = token(1);
+    jdbc.execute("CREATE TRIGGER r24_reject_new_department BEFORE INSERT ON departments FOR EACH ROW "
+        + "SIGNAL SQLSTATE '23000' SET MYSQL_ERRNO=1062, MESSAGE_TEXT='isolated department constraint failure'");
+    try {
+      ResponseEntity<JsonNode> response = call(HttpMethod.POST, DEPARTMENTS, admin,
+          Map.of("parentId", 2, "name", "失败项目", "type", "PROJECT"));
+      assertEquals(409, response.getStatusCode().value(), String.valueOf(response.getBody()));
+      assertEquals("DATA_CONFLICT", response.getBody().path("code").asText());
+      assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM departments WHERE name='失败项目'", Integer.class));
+    } finally {
+      jdbc.execute("DROP TRIGGER r24_reject_new_department");
+    }
+  }
+
 
   /** 专库内构造独立根管理员、部门经理和跨系统无API权限，不触及业务库。 */
   @BeforeEach
   void prepare() {
     assertEquals("rbac_core_t11_test", jdbc.queryForObject("SELECT DATABASE()", String.class));
+    jdbc.update("UPDATE permissions SET parent_id=NULL");
     for (String table :
         List.of(
             "authorization_logs",

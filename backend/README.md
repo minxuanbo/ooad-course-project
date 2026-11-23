@@ -20,8 +20,8 @@ backend/
 │   ├── infrastructure/{persistence,security,web,logging,excel}
 │   ├── config
 │   └── bootstrap
-├── src/test/java/com/municipal/rbaccore/{r01,r03,r04,r06,r07,r11,r13,r14,r18,r22,r23,architecture,infrastructure,shared}
-└── scripts/{accept-runtime.py,tests,test-backend.ps1}
+├── src/test/java/com/municipal/rbaccore/{api,architecture,bootstrap,config,infrastructure,r01,r03,r04,r06,r07,r11,r13,r14,r18,r22,r23,r29,shared}
+└── scripts/{accept-runtime.py,jacoco-evidence.py,tests,test-backend.ps1}
 ```
 
 DDD 持久化适配器位于 `infrastructure/persistence/ddd`。`r23` 同时包含共享 HTTP 契约 `R23PrototypeContractTest` 和纯领域测试 `R24DepartmentPolicyTest`；后者检查可信根保护、空节点删除与同父名称唯一规则，不连接数据库。部门规则由 `OrganizationPolicy` 执行，五个基础管理级别的领域常量统一定义在 `Role`，应用服务负责事务与错误翻译。
@@ -34,7 +34,7 @@ mvn -f backend/pom.xml clean package
 python -B -m unittest discover -s backend/scripts/tests -v
 ```
 
-完整package包含真实MySQL测试，必须先提供对应本机专库及测试账号；不能指向业务库。测试变量/库映射见下节，JaCoCo仍单独报告，当前不作为阻塞。打包结果为backend/target/rbac0-0.1.0.jar，默认入口com.municipal.rbaccore.bootstrap.RbacApplication。
+完整package包含真实MySQL测试，必须先提供对应本机专库及测试账号；不能指向业务库。测试变量/库映射见下节；双策略覆盖率按第7节合并并执行原六项零遗漏门槛，单策略报告不代表整个工程的合并覆盖率。打包结果为backend/target/rbac0-0.1.0.jar，默认入口com.municipal.rbaccore.bootstrap.RbacApplication。
 
 ## 2. 本地回归与隔离
 
@@ -88,3 +88,44 @@ HTTP默认8081，前端代理/api不变。后端29项管理操作与8项可选�
 ## 6. 管理与外部应用统一JWT
 
 两类登录通过JwtIdentityStore/JwtIdentityCodec统一签发及校验HS256 JWT；管理aud为rbac，外部aud为单一登记应用，使用Bearer请求头，继续实时读取权限。IDENTITY_JWT_SECRET/IDENTITY_JWT_ISSUER同时用于两类JWT，APP_IDENTITY_ENABLED仅控制外部8项端点。未配秘密时每进程随机；无论密钥是否固定，当前进程内会话索引在重启后丢失，须重新登录。当前测试与证据从[验收入口](../docs/testing-acceptance.md)阅读。
+
+## 7. 双策略JaCoCo复现
+
+已完成的[完整HTML/XML报告包](../docs/reports/jacoco/20261123-rbac/README.md)可直接下载查看；其来源及边界见[本轮验证记录](../docs/history/verification/rbac-jacoco-complete.md)。下面的方法用于重新测试和生成新的报告。
+
+使用独立的真实MySQL测试实例及第2节六个专库，测试会建立和清理夹具、注入故障，不能使用业务库。纯领域、端口边界、文件和密码学测试与真实MySQL契约测试互补，不能将全部测试称为数据库测试。两套策略串行运行，避免覆盖同一个target或同时清理测试库。
+
+先安装官方JaCoCo CLI 0.8.14的nodeps JAR，例如通过Maven的`dependency:get`获取`org.jacoco:org.jacoco.cli:0.8.14:jar:nodeps`。下列命令在仓库根执行，Maven使用JDK21，测试数据库环境变量已配置；Maven镜像按本机情况选择。`.local/coverage-run`必须是本次新证据目录。
+
+```powershell
+$env:APP_BACKEND_STRATEGY='ddd'
+mvn -f backend/pom.xml clean package
+if ($LASTEXITCODE -ne 0) { throw 'DDD回归失败' }
+python backend/scripts/jacoco-evidence.py snapshot --target backend/target --strategy ddd --output .local/coverage-run/ddd
+if ($LASTEXITCODE -ne 0) { throw 'DDD快照失败' }
+$env:APP_BACKEND_STRATEGY='structured'
+mvn -f backend/pom.xml clean package
+if ($LASTEXITCODE -ne 0) { throw 'structured回归失败' }
+python backend/scripts/jacoco-evidence.py snapshot --target backend/target --strategy structured --output .local/coverage-run/structured
+if ($LASTEXITCODE -ne 0) { throw 'structured快照失败' }
+$coverageCli="$env:USERPROFILE/.m2/repository/org/jacoco/org.jacoco.cli/0.8.14/org.jacoco.cli-0.8.14-nodeps.jar"
+python backend/scripts/jacoco-evidence.py merge --ddd .local/coverage-run/ddd --structured .local/coverage-run/structured --classes backend/target/classes --sources backend/src/main/java --cli $coverageCli --java java --output .local/coverage-run/combined
+if ($LASTEXITCODE -ne 0) { throw '覆盖率合并或零遗漏检查失败' }
+```
+
+工具保存测试计数、全部生产class的SHA-256及执行数据摘要；不复制可能含环境凭据的Surefire XML，不覆盖旧证据。合并时必须两份快照和当前class全部一致，使用官方CLI输出HTML/XML，再检查INSTRUCTION、BRANCH、LINE、COMPLEXITY、METHOD、CLASS全部missed=0；没有包排除或降门槛开关。
+
+最后将同一合并exec交给pom中原有`coverage-check`，不能用单策略exec替代，也不要再执行clean或重编译。以下操作保留并恢复structured原exec：
+
+```powershell
+Copy-Item backend/target/jacoco.exec .local/coverage-run/structured-original.exec -ErrorAction Stop
+try {
+  Copy-Item .local/coverage-run/combined/jacoco.exec backend/target/jacoco.exec
+  mvn -f backend/pom.xml org.jacoco:jacoco-maven-plugin:0.8.14:check@coverage-check
+  if ($LASTEXITCODE -ne 0) { throw 'Maven六项门槛未通过' }
+} finally {
+  Copy-Item .local/coverage-run/structured-original.exec backend/target/jacoco.exec
+}
+```
+
+100%表示当前测试执行覆盖全部JaCoCo可测计数，不证明不存在缺陷、完成所有业务场景、已通过压测或线上已发布。每次生产代码变更后须重新取得同字节码的完整双策略证据；历史报告不能直接沿用。
