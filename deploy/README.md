@@ -1,12 +1,10 @@
 # 双系统DDD部署与首次初始化
 
-本文说明节点职责、配置、首发、验收及恢复方法。当前RBAC镜像和运行结果见[JWT修复发布](../docs/history/verification/jwt-coverage-release-20261123.md)，其余服务沿[11月23日集中发布](../docs/history/verification/release-20261123.md)；首次导入见[首发证据](../docs/history/verification/ddd-production-deployment.md)，部署前本机回归见[适配验证](../docs/history/verification/ddd-deployment-adaptation.md)。
+本文说明节点职责、配置、首发、验收及恢复方法。当前镜像、18目录和部门角色数据适配见[11月24日发布](../docs/history/verification/access-extension-release-20261124.md)；首次导入见[首发证据](../docs/history/verification/ddd-production-deployment.md)，最初本机部署回归见[适配验证](../docs/history/verification/ddd-deployment-adaptation.md)。
 
-2026-11-23已按用户本轮授权重新发布。线上为8项服务定义：7项replicated服务各1/1，node-exporter为global服务4/4。两Java日志已核对+08:00，监控实际配置和7个采集目标均已核对。后续源码合入或文档整理不自动触发再次发布。
+线上为8项服务定义：7项replicated服务各1/1，node-exporter为global服务4/4。两Java日志使用+08:00，7个监控采集目标UP。现行发布更新RBAC后端、前端及接入服务，其他五项定义不变；课程镜像保持原样。采用固定摘要的docker service update及离线数据副本切换，未重建整个Stack；重启后的两系统需要重新登录。后续源码合入或文档整理不自动触发再次发布。
 
-同日13:05已按追加授权单独更新RBAC后端，部署JWT必填iat修复；其余七项服务定义、运行配置和Secrets保持原样。采用固定摘要的`docker service update`，没有再次运行全量Stack、初始化或重授角色；两系统旧JWT随RBAC重启失效，需重新登录。
-
-本轮已发布北京时间展示及Java日志格式、CPU新口径与内网node-exporter、日志响应systems和权限查询留痕、系统下拉及密码提示；RBAC后端/前端和接入支撑镜像已更新，课程前端保持老师原始源码。未重新执行万人导入、首次授权或重置回执。Apifox服务器环境已配置，接口回读与服务器HTTP验证分别记证；本轮公网浏览器被客户端拦截，未取得视觉交互通过结果。
+既有北京时间展示及Java日志格式、CPU新口径与内网node-exporter、日志systems及权限查询留痕继续保留。未重新执行万人导入或重置原回执；18业务目录使用独立首次回执追加。Apifox回读、服务器HTTP及浏览器结果分别记证，当前RBAC真实浏览器通过8组，课程浏览器客户端阻断未取得通过结果。
 
 ## 1. 五节点及访问入口
 
@@ -117,7 +115,7 @@ Stack为两个Java服务显式设置LOGGING_PATTERN_DATEFORMAT，时间格式包
 
 在RBAC浏览器依次切换工作总览、部门管理、人员管理、角色与权限、资源与API、鉴权日志。核对每次实际/api请求成功，以及对应Controller/Service的开始、完成、耗时日志；不能以Nginx访问日志或数据库鉴权日志代替。无需在前端新增“日志控制台”，页面正常加载及后端日志同步出现即可。Stack明确配置三层DEBUG、根INFO；日志不含密码、JWT、Authorization、完整参数或响应。Docker每容器10MB×5轮转，退出/更新前将验收时间段导出到受控归档目录。
 
-首次集中发布通过108次真实公网HTTP检查；本次RBAC补发另通过91次，分别记录，不互相替代。两轮覆盖五类账号、八项身份协议、原JWT即时撤权与恢复等，完整课程业务链和上传下载属于前轮证据。历史重启持久化结果只属于首发版本，本轮未追加整机重启或节点故障测试。Prometheus通过内网抓rbac-backend:8082和course-backend:8081；global node-exporter采集B/C/D/E宿主机指标，CPU为1秒采集、2秒窗口和计算间隔，实际7目标均UP，详见[监控](monitoring.md)。9090或9100不发布到宿主机或公网；访问须使用明确的内网诊断通道，不能把C的127.0.0.1:9090当成已发布端口。当前单manager方案不宣称高可用。
+11月24日发布通过97项公网HTTP及8组真实RBAC浏览器检查，课程浏览器受本机客户端阻断，完整范围见[本次发布](../docs/history/verification/access-extension-release-20261124.md)。11月23日集中发布的108次HTTP、后续JWT补发的91次HTTP及首发重启持久化检查均为历史证据，不替代当前版本验证；本次未追加整机重启或节点故障测试。Prometheus通过内网抓rbac-backend:8082和course-backend:8081；global node-exporter采集B/C/D/E宿主机指标，CPU为1秒采集、2秒窗口和计算间隔，实际7目标均UP，详见[监控](monitoring.md)。9090或9100不发布到宿主机或公网；访问须使用明确的内网诊断通道，不能把C的127.0.0.1:9090当成已发布端口。当前单manager方案不宣称高可用。
 
 ## 7. 备份与回滚
 
@@ -143,12 +141,12 @@ Pop-Location
 
 本机组织账号导入、五角色预检/首次授权及默认JAR仍按[后端说明](../backend/README.md#3-新项目本地初始化与运行)和[复现指南](../docs/reproduction.md)执行。默认初始化仅登记RBAC；课程配置独立显式接入，不由产品启动自动触发。用户桌面设计交付与实际发布资料按明确修订任务同步；老师原目录保持不变。
 
-## 请求来源IP（本轮源码，等待集中发布）
+## 请求来源IP
 
 RBAC与正式接入服务默认不信任任何转发头。下次发布前分别核对实际Nginx/接入服务的对端地址及专用内网，设置RBAC_AUDIT_TRUSTED_PROXIES和INTEGRATION_AUDIT_TRUSTED_PROXIES；值为逗号分隔的IPv4/IPv6 CIDR，仅包含可信代理，不配置公网、整个云内网或0/0。Stack分别传入AUDIT_TRUSTED_PROXIES，RBAC禁用框架自动解析转发头，以免绕过此边界。
 
 Nginx在/api/、/auth/与/course-identity/均使用X-Forwarded-For=$remote_addr覆盖公网输入。接入服务仅信任已配置对端，按请求隔离来源后传给真实RBAC；多值、重复或非法转发头均回退实际连接地址。课程后端调用接入服务若没有可信原始用户地址，就记录服务调用地址；不修改老师前端来让浏览器自报IP。若新增前置负载均衡，应先重新设计可信链，不直接采用外部任意地址链。
 
-日志详情显示请求来源IP，旧日志为空并显示未采集。client_ip为新库首次结构；旧库不会自动增加列，本轮不提供升级脚本或执行线上DDL。正式发布须先另行核对保留现有人事/授权/日志的数据兼容方案，再验管理登录、课程浏览器登录、服务调用及伪造头的实际记录。
+日志详情显示请求来源IP，旧日志为空并显示未采集。client_ip为新库首次结构；旧库不会自动增加列，不交付升级SQL。现行发布在服务器内部备份后，以首次SQL建立新结构副本，复制并核对原数据，再离线原子换表，旧表完整另存；无自动JPA升级或清空重建。实际可信对端、数据保留及管理/接入来源防伪造结果见本次发布记录，后续代理或网络变更必须重新核对。
 
 正式Waitress入口使用--no-clear-untrusted-proxy-headers保留原始头，同时保持trusted_proxy=None，不由运行器改写REMOTE_ADDR。是否采用来源头仅由Gateway的实际连接方CIDR与单值IP校验决定；默认空信任配置仍忽略所有转发头。测试从Docker CMD解析实际Waitress参数并经过其中间件，防止运行器提前清头导致来源退化为Nginx地址。
