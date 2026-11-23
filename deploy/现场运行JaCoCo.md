@@ -1,6 +1,6 @@
 # JaCoCo回归与报告
 
-报告记录测试JVM实际执行的代码，不是线上进程的运行覆盖率。测试使用独立可丢弃MySQL，不能把测试URL指向正式业务库；不重新初始化线上、不重启产品服务。最近实测见[2026-11-23发布证据](../docs/history/verification/release-20261123.md)。
+报告记录测试JVM实际执行的代码，不是线上进程的运行覆盖率。测试使用独立可丢弃MySQL，不能把测试URL指向正式业务库；不重新初始化线上、不重启产品服务。最近双策略各328项及六项100%实测见[11月24日覆盖率](../docs/history/verification/access-extension-coverage-20261124.md)，[完整报告](../docs/reports/jacoco/20261124-rbac/README.md)提供脱敏HTML、XML及摘要。
 
 ## 本机执行
 

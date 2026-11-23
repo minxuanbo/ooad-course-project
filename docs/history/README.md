@@ -4,9 +4,10 @@
 
 | 材料 | 保留用途 |
 | --- | --- |
+| [18系统与部门角色发布](verification/access-extension-release-20261124.md) | 当前镜像、三项服务更新、双份备份及原库保留、97项公网HTTP、真实RBAC浏览器8组及课程浏览器限制 |
 | [应用目录及部门角色覆盖率](verification/access-extension-coverage-20261124.md) | 双策略各328项、347份class一致、六项100%及原Maven门槛，完整脱敏报告归档 |
-| [18系统与部门角色](verification/access-extension-20261124.md) | 本轮未发布源码、原表矩阵、部门授撤边界、双策略317项及Apifox1.6.0回读；记录新增代码后的真实覆盖率及限制 |
-| [JWT修复发布](verification/jwt-coverage-release-20261123.md) | 当前RBAC镜像、单服务更新、91次HTTP、其余服务不变及剩余验收/来源限制 |
+| [18系统与部门角色](verification/access-extension-20261124.md) | 发布前源码、原表矩阵、部门授撤边界、双策略317项及Apifox1.6.0回读；记录新增代码后的真实覆盖率及限制 |
+| [JWT修复发布](verification/jwt-coverage-release-20261123.md) | 11月23日RBAC镜像、单服务更新、91次HTTP、其余服务不变及当时验收/来源限制 |
 | [RBAC JaCoCo补齐](verification/rbac-jacoco-complete.md) | 11月23日发布源码双策略六项100%、同字节码合并和原门槛证据；不替代后续改动及线上流量覆盖率 |
 | [11月23日发布与JaCoCo](verification/release-20261123.md) | 前次集中发布镜像、HTTP、实时撤权、北京时间、监控及当时覆盖率限制 |
 | [老师纪要复核](rbac-rectification/RBAC检查记录复核说明.md) | 保留原始技术摘录、来源事实及早期确认语境 |
