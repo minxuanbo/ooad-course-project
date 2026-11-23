@@ -80,6 +80,33 @@ class R33JwtIdentityStoreTest {
     assertEquals(7L, first.require("Bearer " + token));
   }
 
+  /** 时间跨过会话到期点后，读取及新签发的清理不能继续接受旧会话。 */
+  @Test
+  @DisplayName("R33 到期会话读取拒绝，签发新会话时安全清理且不误撤有效会话")
+  void R33_ExpiresAndPrunesSessions() {
+    java.util.concurrent.atomic.AtomicReference<Instant> time = new java.util.concurrent.atomic.AtomicReference<>(NOW);
+    Clock moving = org.mockito.Mockito.mock(Clock.class);
+    org.mockito.Mockito.when(moving.instant()).thenAnswer(invocation -> time.get());
+    JwtIdentityCodec codec = new JwtIdentityCodec(moving, "", ISSUER);
+    JwtIdentityStore store = new JwtIdentityStore(moving, codec);
+    String oldest = "Bearer " + store.issue(7L);
+    time.set(NOW.plusSeconds(1));
+    String recent = "Bearer " + store.issue(8L);
+    time.set(NOW.plusSeconds(store.expiresIn()));
+    assertThrows(BusinessException.class, () -> store.require(oldest));
+    assertEquals(8L, store.require(recent));
+    String prune = "Bearer " + store.issue(9L);
+    time.set(time.get().plusSeconds(store.expiresIn()));
+    String fresh = "Bearer " + store.issue(10L);
+    assertThrows(BusinessException.class, () -> store.require(recent));
+    assertThrows(BusinessException.class, () -> store.require(prune));
+    assertEquals(10L, store.require(fresh));
+    store.revoke(null);
+    store.revoke("Basic ignored");
+    store.revoke(fresh);
+    assertThrows(BusinessException.class, () -> store.require(fresh));
+  }
+
   /** 每个用例生成独立测试密钥，不引入可用于产品的固定默认秘密。 */
   private JwtIdentityCodec codec() {
     byte[] secret = new byte[32];

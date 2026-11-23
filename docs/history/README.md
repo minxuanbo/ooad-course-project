@@ -4,6 +4,7 @@
 
 | 材料 | 保留用途 |
 | --- | --- |
+| [RBAC JaCoCo补齐](verification/rbac-jacoco-complete.md) | 当前源码双策略六项100%、同字节码合并和原门槛证据；JWT修复未发布，不替代线上记录 |
 | [11月23日发布与JaCoCo](verification/release-20261123.md) | 当前镜像、部署后HTTP、实时撤权、北京时间、监控及覆盖率限制 |
 | [老师纪要复核](rbac-rectification/RBAC检查记录复核说明.md) | 保留原始技术摘录、来源事实及早期确认语境 |
 | [原型确认](design-decisions/prototype.md) | 保留多轮用户选择及原表矩阵的转换解释，不作为当前待办 |

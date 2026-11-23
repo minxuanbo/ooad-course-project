@@ -51,7 +51,7 @@ public class JpaIdentityDirectoryGateway implements IdentityDirectoryGateway {
             .setParameter("keyword", pattern(keyword))
             .getSingleResult();
     long offset = (long) (page - 1) * pageSize;
-    if (offset >= total || offset > Integer.MAX_VALUE) {
+    if (offset > Integer.MAX_VALUE || offset >= total) {
       return new ApplicationDirectoryPage<>(List.of(), total, page, pageSize);
     }
     TypedQuery<Object[]> query =
@@ -96,7 +96,7 @@ public class JpaIdentityDirectoryGateway implements IdentityDirectoryGateway {
             .setParameter("keyword", pattern(keyword))
             .getSingleResult();
     long offset = (long) (page - 1) * pageSize;
-    if (offset >= total || offset > Integer.MAX_VALUE) {
+    if (offset > Integer.MAX_VALUE || offset >= total) {
       return new ApplicationDirectoryPage<>(List.of(), total, page, pageSize);
     }
     List<ApplicationDepartmentUserResult> rows =

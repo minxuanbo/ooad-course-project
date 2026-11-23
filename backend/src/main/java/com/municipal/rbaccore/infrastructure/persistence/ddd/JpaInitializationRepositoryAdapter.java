@@ -1,8 +1,6 @@
 package com.municipal.rbaccore.infrastructure.persistence.ddd;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.municipal.rbaccore.infrastructure.excel.SourceCellsJson;
 import com.municipal.rbaccore.infrastructure.persistence.entity.*;
 import com.municipal.rbaccore.infrastructure.persistence.repository.*;
 import com.municipal.rbaccore.service.ddd.domain.model.*;
@@ -21,8 +19,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 @RequiredArgsConstructor
 public class JpaInitializationRepositoryAdapter implements InitializationRepository {
-  private static final ObjectMapper SOURCE_JSON = new ObjectMapper();
-  private static final TypeReference<List<String>> CELLS = new TypeReference<>() {};
+  private final SourceCellsJson sourceJson;
 
   private final DepartmentJpaRepository departments;
   private final UserJpaRepository users;
@@ -180,15 +177,8 @@ public class JpaInitializationRepositoryAdapter implements InitializationReposit
   /** 来源文档JSON仅承载原列，不映射领域或HTTP对象。 */
   private InitializationState.Source readSource(ImportSourceEntity row) {
     InitializationState.Kind kind = InitializationState.Kind.valueOf(row.getKind().name());
-    List<String> columns;
-    try {
-      columns =
-          kind == InitializationState.Kind.BOOTSTRAP
-              ? List.of()
-              : SOURCE_JSON.readValue(row.getSourceJson(), CELLS);
-    } catch (JsonProcessingException exception) {
-      columns = List.of();
-    }
+    List<String> columns = kind == InitializationState.Kind.BOOTSTRAP
+        ? List.of() : sourceJson.decode(row.getSourceJson());
     return new InitializationState.Source(
         kind,
         row.getSourceKey(),
@@ -201,10 +191,6 @@ public class JpaInitializationRepositoryAdapter implements InitializationReposit
 
   /** 只编码拟保存的原始列，异常不输出人员内容。 */
   private String cellsJson(List<String> cells) {
-    try {
-      return SOURCE_JSON.writeValueAsString(cells);
-    } catch (JsonProcessingException exception) {
-      throw new ImportException("SOURCE_FIELD_INVALID", "来源字段无法保存");
-    }
+    return sourceJson.encode(cells);
   }
 }

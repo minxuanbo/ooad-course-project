@@ -23,6 +23,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @EnableJpaRepositories(basePackageClasses = DepartmentJpaRepository.class)
 @Import({
   ImportStrategySelector.class,
+  com.municipal.rbaccore.infrastructure.excel.SourceCellsJson.class,
   com.municipal.rbaccore.infrastructure.security.BCryptPasswordHashing.class
 })
 public class ImportConfiguration {

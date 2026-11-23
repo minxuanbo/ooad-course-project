@@ -29,6 +29,8 @@
 
 API与Vue只依赖共享用例/HTTP契约，两种业务实现相互独立；持久化模型和技术支撑可以复用，业务判断不放入公共技术类。数据库不因实现策略而复制两套表。
 
+原始来源列由`infrastructure.excel.SourceCellsJson`统一编码和解码，沿用独立JSON设置，编码故障返回稳定来源错误，坏JSON交给后续一致性核验拒绝。它只承担技术转换；组织依赖排序、来源认领、首次授权及回执判断仍由各策略独立实现。
+
 ## 3. 包结构
 
 ### 3.1 包职责说明
@@ -996,7 +998,7 @@ RBAC负责通用应用、角色、权限、API资源与身份协议。`Applicati
 
 管理端`/api/auth/login`与外部`/auth/login`统一经`JwtIdentityStore`和`JwtIdentityCodec`签发HS256 JWT，只有sub/aud/iss/iat/exp/jti，没有角色权限快照。管理aud固定rbac；外部aud为单个已登记启用应用。两种入口保持原字段token/accessToken及响应包装，均通过Authorization: Bearer携带；相同格式不能越过受众或管理准入。
 
-JWT签名、issuer、严格到期和主体/单受众由标准JOSE/Nimbus校验。进程内会话索引用于单会话即时退出，重启后旧会话失效；固定签名秘密也不代表已支持多实例共享会话。IDENTITY_JWT_SECRET可配置至少256位Base64密钥，未配置每进程随机；IDENTITY_JWT_ISSUER配置issuer，两者同时用于两类JWT，APP_IDENTITY_ENABLED只控制外部8项端点，不控制管理JWT。
+JWT签名、issuer及时间由标准JOSE/Nimbus校验，编解码器继续核对主体、单受众及jti/iat/exp必填声明。框架类型转换不能将原始载荷缺失的iat补成有效身份事实，缺声明的签名令牌仍须拒绝。进程内会话索引用于单会话即时退出，重启后旧会话失效；固定签名秘密也不代表已支持多实例共享会话。IDENTITY_JWT_SECRET可配置至少256位Base64密钥，未配置每进程随机；IDENTITY_JWT_ISSUER配置issuer，两者同时用于两类JWT，APP_IDENTITY_ENABLED只控制外部8项端点，不控制管理JWT。
 
 角色、账号启停、权限及部门范围逐请求读取。API类型短码须有实际映射且全部映射同应用启用；通用/auth/me返回subject、roles、permissions、system、permissionApis。角色可跨应用拥有权限，Permission与ApiResource映射必须同应用。
 

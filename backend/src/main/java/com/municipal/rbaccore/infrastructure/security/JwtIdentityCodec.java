@@ -7,6 +7,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
@@ -48,6 +49,14 @@ public class JwtIdentityCodec {
         NimbusJwtDecoder.withSecretKey(new SecretKeySpec(secret, "HmacSHA256"))
             .macAlgorithm(MacAlgorithm.HS256)
             .build();
+    MappedJwtClaimSetConverter claimsConverter = MappedJwtClaimSetConverter.withDefaults(Map.of());
+    // 标准转换器会补上缺失的iat，身份协议必须校验签名载荷实际提供的声明。
+    verifier.setClaimSetConverter(
+        claims -> {
+          Map<String, Object> converted = claimsConverter.convert(claims);
+          if (!claims.containsKey("iat")) converted.remove("iat");
+          return converted;
+        });
     JwtTimestampValidator timestamp = new JwtTimestampValidator(Duration.ZERO);
     timestamp.setClock(clock);
     verifier.setJwtValidator(
