@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import Modal from './Modal.vue'
 import Pagination from './Pagination.vue'
-import { api, notify } from '../api.js'
+import { api, notify, canRoute } from '../api.js'
 import { errorText, RequestGeneration } from '../lib/presentation.js'
 const props = defineProps({
   title: String,
@@ -75,11 +75,14 @@ async function loadCandidates(next = 0) {
   page.value = next
   try {
     if (props.kind !== 'roles' && !systems.value.length) {
-      const registered = await api('/systems')
+      const registered = canRoute('GET', '/systems', true)
+        ? await api('/systems')
+        : [{ id: props.systemId || '', name: props.systemId ? '当前权限所属系统' : '当前RBAC系统' }]
       if (!candidateGeneration.current(version)) return
       systems.value = registered
       systemId.value = String(props.systemId || registered[0]?.id || '')
-      if (!systemId.value) throw Error('尚未初始化RBAC资源目录。')
+      if (!systemId.value && canRoute('GET', '/systems', true))
+        throw Error('尚未初始化RBAC资源目录。')
     }
     let items, count
     if (props.kind === 'roles') {
@@ -94,7 +97,7 @@ async function loadCandidates(next = 0) {
       const result = await api(
         '/api-resources?' +
           new URLSearchParams({
-            systemId: systemId.value,
+            ...(systemId.value ? { systemId: systemId.value } : {}),
             page: next,
             size: 30,
             q: q.value.trim(),
@@ -104,7 +107,8 @@ async function loadCandidates(next = 0) {
       count = result.total
     } else {
       const roots = await api(
-        '/permissions/tree?' + new URLSearchParams({ systemId: systemId.value }),
+        '/permissions/tree?' +
+          new URLSearchParams(systemId.value ? { systemId: systemId.value } : {}),
       )
       items = []
       const flatten = (nodes, depth = 0) =>

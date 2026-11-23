@@ -9,7 +9,7 @@ const directory = new URL(
 ).pathname.replace(/^\/([A-Za-z]:)/, '$1')
 
 /** 仅供页面渲染的168人虚构夹具，不连接部署环境或冒充真实业务回归。 */
-async function preview(page, allowed = null) {
+async function preview(page, allowed = null, eventOverride = null) {
   const model = createDemoModel()
   model.login('admin', DEMO_PASSWORD)
   const requests = []
@@ -63,15 +63,13 @@ async function preview(page, allowed = null) {
           })),
         }
       } else if (path === '/departments' && method === 'GET')
-        data = model
-          .departments()
-          .map((item) => ({
-            ...item,
-            type: types[item.type],
-            canEdit: item.canRename,
-            directUsers: item.direct,
-            totalUsers: item.total,
-          }))
+        data = model.departments().map((item) => ({
+          ...item,
+          type: types[item.type],
+          canEdit: item.canRename,
+          directUsers: item.direct,
+          totalUsers: item.total,
+        }))
       else if (path === '/departments' && method === 'POST')
         data = model.createDepartment({ ...body, type: inverse[body.type] })
       else if (/^\/departments\/\d+$/.test(path))
@@ -132,7 +130,13 @@ async function preview(page, allowed = null) {
         })
         data = {
           ...result,
-          items: result.items.slice(0, limit).map((item) => ({ ...item, appCode: 'rbac' })),
+          items: result.items
+            .slice(0, limit)
+            .map((item, index) => ({
+              ...item,
+              appCode: 'rbac',
+              ...(index === 0 ? eventOverride : {}),
+            })),
           systems: [{ id: 1, code: 'rbac', name: 'RBAC权限管理系统', enabled: true }],
         }
       } else throw Error('未定义的界面夹具：' + method + ' ' + path)
@@ -268,4 +272,33 @@ test('R17 部分按钮权限只展示获准操作，缺少映射读取权限不�
   await page.goto('/resources')
   await expect(page.getByText('当前没有读取映射的权限。')).toBeVisible()
   expect(requests.some((item) => /^\/permissions\/\d+\/apis$/.test(item.path))).toBe(false)
+})
+
+test('R16 总览及日志不把HTTP200无权限查询误标为请求拒绝', async ({ page }) => {
+  await preview(page, null, { eventType: 'PERMISSION_CHECK', allowed: false, httpStatus: 200 })
+  await page.goto('/')
+  await expect(page.locator('.overview-activity')).toContainText('无权限')
+  await page.goto('/logs')
+  await expect(page.locator('tbody tr').first()).toContainText('无权限')
+})
+
+test('R17 仅授API目录或权限树读取时有可用资源入口，无隐含系统列表请求', async ({ page }) => {
+  for (const capability of ['GET /api/api-resources', 'GET /api/permissions/tree']) {
+    const context = await page.context().browser().newContext()
+    const isolated = await context.newPage()
+    const { requests } = await preview(isolated, [capability])
+    await isolated.goto('/')
+    await isolated
+      .getByRole('navigation', { name: '管理工作区' })
+      .getByRole('link', { name: '资源与API' })
+      .click()
+    await expect(isolated.getByRole('heading', { level: 1, name: '资源与API' })).toBeVisible()
+    await expect(isolated.getByLabel('所属系统')).toBeDisabled()
+    if (capability.includes('api-resources'))
+      await expect(isolated.locator('tbody tr')).toHaveCount(20)
+    else await expect(isolated.locator('.permission-tree button')).toHaveCount(30)
+    await expect(isolated.getByRole('alert')).toHaveCount(0)
+    expect(requests.some((item) => item.path === '/systems')).toBe(false)
+    await context.close()
+  }
 })

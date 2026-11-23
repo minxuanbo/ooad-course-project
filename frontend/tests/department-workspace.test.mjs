@@ -2,7 +2,12 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import vm from 'node:vm'
 import { readFileSync } from 'node:fs'
-import { organizationRows, RequestGeneration, errorText } from '../src/lib/presentation.js'
+import {
+  organizationRows,
+  RequestGeneration,
+  errorText,
+  resourcePageAvailable,
+} from '../src/lib/presentation.js'
 
 /** 运行真实部门页面脚本，用受控响应验证选中节点与授权变化，避免复制页面算法。 */
 function workspace(api) {
@@ -201,6 +206,7 @@ function navigation(permissions, globalScope) {
     useRouter: () => ({}),
     session: {},
     canRoute: (method, path, global) => allowed.has(path) && (!global || globalScope),
+    resourcePageAvailable,
   })
   const source = readFileSync(new URL('../src/App.vue', import.meta.url), 'utf8')
     .match(/<script setup>([\s\S]*?)<\/script>/)[1]

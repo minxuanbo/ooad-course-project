@@ -73,21 +73,36 @@ abstract class R07AuthenticationContractSupport {
   private static final String ACTUATOR_METRICS = "/actuator/prometheus";
   private static final String PASSWORD = "t05-employee-password";
   private static final String ADMIN_PASSWORD = "t05-admin-password";
-  @Autowired TestRestTemplate http;
-  @Autowired ObjectMapper json;
-  @Autowired JdbcTemplate jdbc;
-  @Autowired ImportUseCase importer;
-  @Autowired AuthorizationBootstrapUseCase bootstrap;
-  @Autowired PasswordEncoder encoder;
-  @Autowired UserJpaRepository users;
-  @Autowired RoleJpaRepository roles;
-  @Autowired DepartmentJpaRepository departments;
-  @Autowired PlatformTransactionManager transactions;
-  @Autowired MaintenanceProtection maintenance;
-  @Autowired FailureEvents failures;
-  @Autowired AuditWriter auditWriter;
-  @Autowired AuditQueryGateway auditQueries;
-  @Autowired AuthorizationLogJpaRepository auditRows;
+  @Autowired
+  TestRestTemplate http;
+  @Autowired
+  ObjectMapper json;
+  @Autowired
+  JdbcTemplate jdbc;
+  @Autowired
+  ImportUseCase importer;
+  @Autowired
+  AuthorizationBootstrapUseCase bootstrap;
+  @Autowired
+  PasswordEncoder encoder;
+  @Autowired
+  UserJpaRepository users;
+  @Autowired
+  RoleJpaRepository roles;
+  @Autowired
+  DepartmentJpaRepository departments;
+  @Autowired
+  PlatformTransactionManager transactions;
+  @Autowired
+  MaintenanceProtection maintenance;
+  @Autowired
+  FailureEvents failures;
+  @Autowired
+  AuditWriter auditWriter;
+  @Autowired
+  AuditQueryGateway auditQueries;
+  @Autowired
+  AuthorizationLogJpaRepository auditRows;
 
   @Autowired
   com.municipal.rbaccore.infrastructure.persistence.repository.ApplicationSystemJpaRepository

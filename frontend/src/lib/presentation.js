@@ -7,6 +7,19 @@ export function errorText(error) {
   )
 }
 
+/** 权限查询的否定结果不是请求拒绝，认证结果也须与业务鉴权区分展示。 */
+export function authorizationResultLabel(row) {
+  if (row.eventType === 'PERMISSION_CHECK') return row.allowed ? '有权限' : '无权限'
+  if (row.eventType === 'LOGIN_SUCCESS' || row.eventType === 'LOGIN_FAILED')
+    return row.allowed ? '认证成功' : '认证失败'
+  return row.allowed ? '允许' : '拒绝'
+}
+
+/** 资源页可由任一目录读取能力进入，系统列表是独立的系统切换能力。 */
+export function resourcePageAvailable(canRoute) {
+  return canRoute('GET', '/permissions/tree', true) || canRoute('GET', '/api-resources', true)
+}
+
 const beijingFormatter = new Intl.DateTimeFormat('zh-CN', {
   timeZone: 'Asia/Shanghai',
   year: 'numeric',

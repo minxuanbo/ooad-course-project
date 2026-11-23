@@ -159,3 +159,23 @@ test('R14/R17 API页保留真实分页与搜索，切换系统清除旧权限及
   assert.equal(page.run('q.value'), '')
   assert.match(paths.at(-1), /systemId=9/)
 })
+
+test('R14/R17 只有权限树或API读取能力时使用服务端默认系统，不请求未授权目录', async () => {
+  for (const tab of ['permissions', 'apis']) {
+    const paths = []
+    const capability = tab === 'permissions' ? '/permissions/tree' : '/api-resources'
+    const page = workspace(
+      async (path) => {
+        paths.push(path)
+        return path.startsWith('/permissions/tree')
+          ? structuredClone(roots)
+          : { items: [], total: 0 }
+      },
+      (method, path) => path === capability,
+    )
+    await page.run(`tab.value = '${tab}'; load()`)
+    assert.ok(paths.every((path) => !path.startsWith('/systems')))
+    assert.equal(new URLSearchParams(paths[0].split('?')[1]).has('systemId'), false)
+    assert.equal(page.run('error.value'), '')
+  }
+})

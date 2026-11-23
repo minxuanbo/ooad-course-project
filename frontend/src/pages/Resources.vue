@@ -98,16 +98,18 @@ async function load(next = 0) {
   apis.value = []
   clearMapping()
   try {
-    const registered = await api('/systems')
+    const canReadSystems = canRoute('GET', '/systems', true)
+    const registered = canReadSystems ? await api('/systems') : []
     if (!generation.current(version) || identity !== identityKey()) return
     systems.value = registered
     if (!systems.value.some((item) => String(item.id) === systemId.value))
       systemId.value = String(systems.value[0]?.id || '')
-    if (!systemId.value) throw Error('尚未初始化RBAC资源目录。')
+    if (canReadSystems && !systemId.value) throw Error('尚未初始化RBAC资源目录。')
     if (requestedTab === 'permissions') {
       if (!canRoute('GET', '/permissions/tree', true)) throw Error('当前没有读取权限目录的权限。')
       const roots = await api(
-        '/permissions/tree?' + new URLSearchParams({ systemId: systemId.value }),
+        '/permissions/tree?' +
+          new URLSearchParams(systemId.value ? { systemId: systemId.value } : {}),
       )
       if (!generation.current(version) || identity !== identityKey()) return
       const flatten = (items) =>
@@ -125,7 +127,7 @@ async function load(next = 0) {
       const result = await api(
         '/api-resources?' +
           new URLSearchParams({
-            systemId: systemId.value,
+            ...(systemId.value ? { systemId: systemId.value } : {}),
             q: q.value.trim(),
             page: next,
             size: 20,
@@ -229,9 +231,10 @@ onUnmounted(() => {
       <select
         id="resource-system"
         v-model="systemId"
-        :disabled="busy || saving"
+        :disabled="busy || saving || !canRoute('GET', '/systems', true)"
         @change="changeSystem"
       >
+        <option v-if="!canRoute('GET', '/systems', true)" value="">当前RBAC系统</option>
         <option v-for="system in systems" :key="system.id" :value="String(system.id)">
           {{ system.name }}
         </option>
@@ -245,7 +248,7 @@ onUnmounted(() => {
         :disabled="saving"
         @click="selectTab('permissions')"
       >
-        权限目录
+        菜单与按钮
       </button>
       <button
         v-if="canRoute('GET', '/api-resources', true)"
@@ -307,7 +310,7 @@ onUnmounted(() => {
             <dt>权限编码</dt>
             <dd class="mono">{{ selected.code }}</dd>
             <dt>所属系统</dt>
-            <dd>{{ selectedSystem?.name }}</dd>
+            <dd>{{ selectedSystem?.name || '当前RBAC系统' }}</dd>
             <dt>上级权限</dt>
             <dd>{{ nodes.find((node) => node.id === selected.parentId)?.name || '无上级' }}</dd>
             <dt>启用状态</dt>

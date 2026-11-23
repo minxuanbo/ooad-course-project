@@ -50,19 +50,32 @@ abstract class R14ResourceContractSupport {
   private static final String USERS = "/api/users";
   private static final String LOGS = "/api/authorization-logs";
   private static final String PASSWORD = "t07-fixture-password";
-  @Autowired TestRestTemplate http;
-  @Autowired ObjectMapper json;
-  @Autowired JdbcTemplate jdbc;
-  @Autowired PasswordEncoder encoder;
-  @Autowired DepartmentJpaRepository departments;
-  @Autowired UserJpaRepository users;
-  @Autowired RoleJpaRepository roles;
-  @Autowired PermissionJpaRepository permissions;
-  @Autowired ApiResourceJpaRepository apis;
-  @Autowired ApplicationSystemJpaRepository systems;
-  @Autowired PlatformTransactionManager transactions;
-  @Autowired ManagementAuthorization effective;
-  @Autowired LockObservation observedLock;
+  @Autowired
+  TestRestTemplate http;
+  @Autowired
+  ObjectMapper json;
+  @Autowired
+  JdbcTemplate jdbc;
+  @Autowired
+  PasswordEncoder encoder;
+  @Autowired
+  DepartmentJpaRepository departments;
+  @Autowired
+  UserJpaRepository users;
+  @Autowired
+  RoleJpaRepository roles;
+  @Autowired
+  PermissionJpaRepository permissions;
+  @Autowired
+  ApiResourceJpaRepository apis;
+  @Autowired
+  ApplicationSystemJpaRepository systems;
+  @Autowired
+  PlatformTransactionManager transactions;
+  @Autowired
+  ManagementAuthorization effective;
+  @Autowired
+  LockObservation observedLock;
   private long systemId;
   private long rootId;
   private long childId;

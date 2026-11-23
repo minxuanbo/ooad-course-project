@@ -5,6 +5,7 @@ import Modal from '../components/Modal.vue'
 import PageActions from '../components/PageActions.vue'
 import AppIcon from '../components/AppIcon.vue'
 import { formatBeijingTime, beijingInputToUtc } from '../lib/presentation.js'
+import { authorizationResultLabel } from '../lib/presentation.js'
 const filters = ref({
   userId: '',
   username: '',
@@ -52,13 +53,6 @@ const detailFields = [
 /** 应用名称来自日志查询返回的登记目录；旧记录仍保留稳定编码用于定位。 */
 function systemName(code) {
   return systems.value.find((item) => item.code === code)?.name || code
-}
-/** 权限查询返回false仍是HTTP200，不能显示为课程业务执行失败。 */
-function resultLabel(row) {
-  if (row.eventType === 'PERMISSION_CHECK') return row.allowed ? '有权限' : '无权限'
-  if (row.eventType === 'LOGIN_SUCCESS' || row.eventType === 'LOGIN_FAILED')
-    return row.allowed ? '认证成功' : '认证失败'
-  return row.allowed ? '允许' : '拒绝'
 }
 /** 查询指纹包含每批条数，输入按北京时间解释后转换UTC提交。 */
 function query() {
@@ -244,7 +238,7 @@ onUnmounted(() => {
             </td>
             <td>
               <span class="audit-result" :class="{ denied: !row.allowed }">{{
-                resultLabel(row)
+                authorizationResultLabel(row)
               }}</span>
             </td>
             <td class="mono">
@@ -277,7 +271,7 @@ onUnmounted(() => {
     <div class="audit-detail-result" :class="{ denied: !detail.allowed }">
       <AppIcon name="shield" />
       <div>
-        <strong>{{ resultLabel(detail) }}</strong>
+        <strong>{{ authorizationResultLabel(detail) }}</strong>
         <p>HTTP {{ detail.httpStatus }} · {{ detail.reason }}</p>
       </div>
     </div>

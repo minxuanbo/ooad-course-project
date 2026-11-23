@@ -53,20 +53,34 @@ abstract class R11UserManagementContractSupport {
   private static final String CHILD_ADMIN = "t11-child-admin";
   private static final String EMPLOYEE = "t11-employee";
   private static final String SIBLING = "t11-sibling";
-  @Autowired TestRestTemplate http;
-  @Autowired ObjectMapper json;
-  @Autowired JdbcTemplate jdbc;
-  @Autowired PasswordEncoder encoder;
-  @Autowired DepartmentJpaRepository departments;
-  @Autowired UserJpaRepository users;
-  @Autowired RoleJpaRepository roles;
-  @Autowired PermissionJpaRepository permissions;
-  @Autowired ApiResourceJpaRepository apis;
-  @Autowired ApplicationSystemJpaRepository systems;
-  @Autowired PlatformTransactionManager transactions;
-  @Autowired ManagementAuthorization effective;
-  @Autowired EntityManagerFactory entityManagerFactory;
-  @Autowired LockObservation observedLock;
+  @Autowired
+  TestRestTemplate http;
+  @Autowired
+  ObjectMapper json;
+  @Autowired
+  JdbcTemplate jdbc;
+  @Autowired
+  PasswordEncoder encoder;
+  @Autowired
+  DepartmentJpaRepository departments;
+  @Autowired
+  UserJpaRepository users;
+  @Autowired
+  RoleJpaRepository roles;
+  @Autowired
+  PermissionJpaRepository permissions;
+  @Autowired
+  ApiResourceJpaRepository apis;
+  @Autowired
+  ApplicationSystemJpaRepository systems;
+  @Autowired
+  PlatformTransactionManager transactions;
+  @Autowired
+  ManagementAuthorization effective;
+  @Autowired
+  EntityManagerFactory entityManagerFactory;
+  @Autowired
+  LockObservation observedLock;
   private long rootId;
   private long childId;
   private long grandchildId;

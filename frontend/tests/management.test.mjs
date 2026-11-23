@@ -30,6 +30,7 @@ function editor(api, props = {}) {
       unmount = fn
     },
     api,
+    canRoute: () => true,
     notify() {},
     errorText,
     RequestGeneration,

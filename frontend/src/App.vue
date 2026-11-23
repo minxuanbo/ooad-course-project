@@ -3,6 +3,7 @@ import { watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { session, api, setToken, notify, canRoute } from './api.js'
 import AppIcon from './components/AppIcon.vue'
+import { resourcePageAvailable } from './lib/presentation.js'
 const route = useRoute(),
   router = useRouter()
 const navigation = [
@@ -28,7 +29,7 @@ const navigation = [
     label: '资源与API',
     group: '权限管理',
     icon: 'resource',
-    capability: '/systems',
+    resource: true,
     global: true,
   },
   {
@@ -42,8 +43,10 @@ const navigation = [
 ]
 /** 分组只包含最新服务端能力允许的入口，撤权后不留下空分组。 */
 const navGroups = computed(() => {
-  const visible = navigation.filter(
-    (item) => !item.capability || canRoute('GET', item.capability, item.global),
+  const visible = navigation.filter((item) =>
+    item.resource
+      ? resourcePageAvailable(canRoute)
+      : !item.capability || canRoute('GET', item.capability, item.global),
   )
   return ['工作台', '组织管理', '权限管理', '安全审计']
     .map((label) => ({ label, items: visible.filter((item) => item.group === label) }))

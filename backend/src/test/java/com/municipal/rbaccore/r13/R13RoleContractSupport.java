@@ -50,20 +50,34 @@ abstract class R13RoleContractSupport {
   private static final String TREE = "/api/permissions/tree";
   private static final String PERMISSIONS = "/api/permissions";
   private static final String PASSWORD = "t09-isolated-fixture-password";
-  @Autowired TestRestTemplate http;
-  @Autowired ObjectMapper json;
-  @Autowired JdbcTemplate jdbc;
-  @Autowired PasswordEncoder encoder;
-  @Autowired DepartmentJpaRepository departments;
-  @Autowired UserJpaRepository users;
-  @Autowired RoleJpaRepository roles;
-  @Autowired PermissionJpaRepository permissions;
-  @Autowired ApiResourceJpaRepository apis;
-  @Autowired ApplicationSystemJpaRepository systems;
-  @Autowired PlatformTransactionManager transactions;
-  @Autowired ManagementAuthorization effective;
-  @Autowired LockObservation observedLock;
-  @Autowired RoleCountObservation observedCount;
+  @Autowired
+  TestRestTemplate http;
+  @Autowired
+  ObjectMapper json;
+  @Autowired
+  JdbcTemplate jdbc;
+  @Autowired
+  PasswordEncoder encoder;
+  @Autowired
+  DepartmentJpaRepository departments;
+  @Autowired
+  UserJpaRepository users;
+  @Autowired
+  RoleJpaRepository roles;
+  @Autowired
+  PermissionJpaRepository permissions;
+  @Autowired
+  ApiResourceJpaRepository apis;
+  @Autowired
+  ApplicationSystemJpaRepository systems;
+  @Autowired
+  PlatformTransactionManager transactions;
+  @Autowired
+  ManagementAuthorization effective;
+  @Autowired
+  LockObservation observedLock;
+  @Autowired
+  RoleCountObservation observedCount;
   private long systemId;
   private long rootId;
   private long childId;

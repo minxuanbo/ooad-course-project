@@ -9,6 +9,7 @@ import Roles from './pages/Roles.vue'
 import Resources from './pages/Resources.vue'
 import AuditLogs from './pages/AuditLogs.vue'
 import { session, refreshSession, notify, canRoute } from './api.js'
+import { resourcePageAvailable } from './lib/presentation.js'
 import './style.css'
 const router = createRouter({
   history: createWebHistory(),
@@ -29,7 +30,7 @@ const router = createRouter({
     {
       path: '/resources',
       component: Resources,
-      meta: { title: '资源与API', capability: '/systems', global: true },
+      meta: { title: '资源与API', resource: true },
     },
     {
       path: '/logs',
@@ -45,7 +46,10 @@ router.beforeEach(async function (to) {
   if (!session.token) return '/login'
   try {
     await refreshSession()
-    if (to.meta.capability && !canRoute('GET', to.meta.capability, to.meta.global)) {
+    if (
+      (to.meta.resource && !resourcePageAvailable(canRoute)) ||
+      (to.meta.capability && !canRoute('GET', to.meta.capability, to.meta.global))
+    ) {
       notify('当前账号没有该页面的访问权限。')
       return '/'
     }

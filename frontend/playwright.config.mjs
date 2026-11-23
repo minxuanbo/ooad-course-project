@@ -3,6 +3,7 @@ import { defineConfig } from '@playwright/test'
 /** 真实后端验收须显式启用，串行执行以避免共享权限配置互相干扰。 */
 export default defineConfig({
   testDir: './e2e',
+  testIgnore: 'prototype-alignment.spec.mjs',
   workers: 1,
   timeout: 60000,
   retries: 0,

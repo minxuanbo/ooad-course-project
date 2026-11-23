@@ -2,6 +2,8 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { api, canRoute, session } from '../api.js'
 import { errorText, RequestGeneration, formatBeijingTime } from '../lib/presentation.js'
+import { authorizationResultLabel } from '../lib/presentation.js'
+import { resourcePageAvailable } from '../lib/presentation.js'
 import AppIcon from '../components/AppIcon.vue'
 import PageActions from '../components/PageActions.vue'
 import MemberList from '../components/MemberList.vue'
@@ -58,7 +60,7 @@ const shortcuts = computed(() =>
     { path: '/roles', capability: '/roles', name: '角色与权限', icon: 'shield', global: true },
     {
       path: '/resources',
-      capability: '/systems',
+      resource: true,
       name: '资源与API',
       icon: 'resource',
       global: true,
@@ -70,7 +72,9 @@ const shortcuts = computed(() =>
       icon: 'history',
       global: true,
     },
-  ].filter((item) => canRoute('GET', item.capability, item.global)),
+  ].filter((item) =>
+    item.resource ? resourcePageAvailable(canRoute) : canRoute('GET', item.capability, item.global),
+  ),
 )
 /** 主统计与辅助日志分开反馈；日志失败不能阻塞或清除已取得的范围统计。 */
 async function load() {
@@ -235,7 +239,7 @@ onUnmounted(() => {
             {{ row.requestPath }}</small
           ></span
         ><span class="badge" :class="row.allowed ? 'blue' : 'amber'">{{
-          row.allowed ? '允许' : '拒绝'
+          authorizationResultLabel(row)
         }}</span>
         <time :datetime="row.occurredAt" :title="row.occurredAt">
           {{ formatBeijingTime(row.occurredAt) }}
