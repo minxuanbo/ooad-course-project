@@ -90,4 +90,4 @@ name用于人员理解，code保持稳定，不能按中文名称鉴权。两套
 
 课程首次配置将3角色标为APPLICATION_PRESET并关联来源ApplicationSystem，无管理级别；五基础角色SYSTEM_BUILTIN无所属部门/应用。新建DEPARTMENT_CUSTOM必须有效ownerDepartmentId，GLOBAL_CUSTOM保留旧全局角色语义，不能根据名称猜分类。定义、选权与启停由管理员维护；领导只分配/撤回，不在初始化时任意认领既有角色。
 
-部署离线首次阶段由deploy/initialize_deployment.py分别执行业务目录及课程初始化，镜像包含原表只读副本。本轮不执行线上初始化或部署。新字段仅交付首次SQL；既有部署库需另行核对兼容方案，不能使用CREATE IF NOT EXISTS伪装升级。
+部署离线首次阶段由deploy/initialize_deployment.py分别执行业务目录及课程初始化，镜像包含原表只读副本。新字段仅交付首次SQL；既有部署库在授权发布时先备份，另建全新结构副本并核对原账号、口令、授权及日志，再停写切换；原库保留。产品启动和CREATE IF NOT EXISTS不能代替数据兼容处理。

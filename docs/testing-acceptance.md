@@ -6,7 +6,7 @@
 
 | 关注点 | 可追溯证据与边界 |
 | --- | --- |
-| 本轮源码，尚未发布 | [18系统与部门角色](history/verification/access-extension-20261124.md)：两策略各317项真实MySQL回归无失败/错误/跳过，Vue53项及8组隔离浏览器通过，Apifox1.6.0回读差异0；合并行99.61%、分支97.64%，六项零遗漏门槛未通过，不沿用旧100%成绩 |
+| 本轮源码，发布验收中 | [18系统与部门角色](history/verification/access-extension-20261124.md)及[覆盖率补齐](history/verification/access-extension-coverage-20261124.md)：两策略各328项真实MySQL回归无失败/错误/跳过，347份生产class一致，合并六项100%且原门槛通过；Vue53项及8组隔离浏览器、Apifox1.6.0差异0见各自证据，不替代公网部署验收 |
 | 前期成员查询与来源IP | [验证记录](history/verification/member-queries-audit-ip-20261123.md)：当时双策略各311项及六项100%，保留其独立验证边界，不替代后续业务扩展结果 |
 | 当前正式发布 | [JWT修复发布](history/verification/jwt-coverage-release-20261123.md)：13:05完成RBAC更新，其余七项服务定义不变；91次公网HTTP、即时撤权、健康/时间/监控及备份通过；浏览器导航超时，交互验收未取得结果 |
 | RBAC源码覆盖率（对应已发布源码） | [验证记录](history/verification/rbac-jacoco-complete.md)、[完整JaCoCo报告](reports/jacoco/20261123-rbac/README.md)：两策略各304项无失败/错误/跳过；测试产物中340份生产class摘要一致，合并六项100%，原六项零遗漏门槛通过；不冒充正式进程流量覆盖率 |

@@ -4,6 +4,7 @@
 
 | 材料 | 保留用途 |
 | --- | --- |
+| [应用目录及部门角色覆盖率](verification/access-extension-coverage-20261124.md) | 双策略各328项、347份class一致、六项100%及原Maven门槛，完整脱敏报告归档 |
 | [18系统与部门角色](verification/access-extension-20261124.md) | 本轮未发布源码、原表矩阵、部门授撤边界、双策略317项及Apifox1.6.0回读；记录新增代码后的真实覆盖率及限制 |
 | [JWT修复发布](verification/jwt-coverage-release-20261123.md) | 当前RBAC镜像、单服务更新、91次HTTP、其余服务不变及剩余验收/来源限制 |
 | [RBAC JaCoCo补齐](verification/rbac-jacoco-complete.md) | 11月23日发布源码双策略六项100%、同字节码合并和原门槛证据；不替代后续改动及线上流量覆盖率 |
