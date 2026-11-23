@@ -35,7 +35,7 @@
 
 宿主机公式依赖node_cpu_seconds_total，Java Actuator本身只暴露process_cpu_usage、system_cpu_usage等不同口径；不能替换指标名后宣称同一公式。待发布Stack增加`ooad_node-exporter`，global模式在Swarm的B/C/D/E各运行一个任务；A是独立构建机，不在此自动采集范围。
 
-node-exporter只读挂载宿主机/proc、/sys及根目录，显式配置host路径，仅启用CPU、内存、文件系统、磁盘及主机信息采集器。文件系统排除Docker虚拟挂载，96MiB上限/24MiB预留。Prometheus通过overlay DNS `tasks.node-exporter:9100`逐任务发现，不能用单个VIP随机采到不同节点后合并成一条计数器；instance为任务IP:9100，可通过node_uname_info关联主机名，任务重建后形成新时序。
+node-exporter只读挂载宿主机/proc、/sys及根目录，显式配置host路径，仅启用CPU、内存、文件系统、磁盘及主机信息采集器。文件系统排除Docker虚拟挂载，96MiB上限/24MiB预留。Prometheus通过overlay DNS `tasks.node-exporter:9100`逐任务发现，不能用单个VIP随机采到不同节点后合并成一条计数器；instance为任务IP:9100，容器hostname通过Swarm的Node.Hostname模板取实际节点名，node_uname_info可据此关联节点，避免显示容器ID。任务重建后形成新时序。
 
 overlay容器的/proc/net/dev仍受网络命名空间限制，只读挂载宿主/proc不等于获得宿主网络统计。因此不启用netdev，也不复制老师两条node_network速率规则，避免把exporter容器流量冒充节点流量。当前保留老师13条中的11条原表达式；宿主网络监控需另行设计采集通道，本次不使用host网络或增加公网端口。
 

@@ -230,6 +230,7 @@ services:
 
   node-exporter:
     image: ${NODE_EXPORTER_IMAGE}
+    hostname: "{{.Node.Hostname}}"
     command:
       - --path.procfs=/host/proc
       - --path.sysfs=/host/sys
