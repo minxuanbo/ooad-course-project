@@ -245,8 +245,8 @@ async function packageDiagram(ddd) {
           from: 'adapter',
           to: 'repo',
           points: [
-            [1200, 940],
-            [1290, 940],
+            [1200, 970],
+            [1290, 970],
             [1290, 630],
             [1340, 630],
           ],
@@ -340,7 +340,7 @@ async function packageDiagram(ddd) {
       ddd ? 'DDD · 包图' : '结构化 · 包图',
       '文件夹形框表示包，虚线空心箭头表示包依赖；具体类型的接口实现关系见类图。',
       edges.map(edge).join('') + boxes.map((b) => {
-        const tabWidth = Math.min(b.w - 20, Math.max(250, b.title.length * 11))
+        const tabWidth = Math.min(b.w - 20, Math.max(b.w * 0.6, 250, b.title.length * 11))
         return `<path d="M${b.x},${b.y + 42}V${b.y}h${tabWidth}v42h${b.w - tabWidth}v${b.h - 42}H${b.x}Z" fill="${b.center ? '#eef5ff' : 'white'}" stroke="#223046" stroke-width="1.5"/>` +
           text(b.x + 12, b.y + 28, b.title, 21, 'start', tabWidth - 24) +
           [...b.fields, ...b.methods].map((line, i) => text(b.x + 14, b.y + 80 + i * 30, line, 19, 'start', b.w - 28)).join('')
