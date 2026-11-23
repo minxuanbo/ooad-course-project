@@ -54,6 +54,7 @@ services:
       IDENTITY_ALLOWED_ORIGINS: ${COURSE_PUBLIC_ORIGIN}
       IDENTITY_OPERATIONS_FILE: file:///app/config/operations.json
       IDENTITY_JWT_ISSUER: ${RBAC_PUBLIC_ORIGIN}
+      AUDIT_TRUSTED_PROXIES: ${RBAC_AUDIT_TRUSTED_PROXIES:-}
       MANAGEMENT_SERVER_PORT: "8082"
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,prometheus
       MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: never
@@ -137,6 +138,7 @@ services:
     environment:
       RBAC_BASE_URL: http://rbac-backend:8081
       RBAC_HEALTH_BASE_URL: http://rbac-backend:8082
+      AUDIT_TRUSTED_PROXIES: ${INTEGRATION_AUDIT_TRUSTED_PROXIES:-}
       DB_HOST: mysql
       ALLOWED_ORIGINS: ${COURSE_PUBLIC_ORIGIN}
     secrets: [audit_db_password, course_read_password]

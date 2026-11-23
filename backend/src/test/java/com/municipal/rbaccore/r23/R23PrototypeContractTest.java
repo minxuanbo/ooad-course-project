@@ -139,7 +139,7 @@ class R23PrototypeContractTest {
           new com.municipal.rbaccore.infrastructure.persistence.ddd.JpaUserRepositoryAdapter(userRows, roleRows, departmentRows);
       com.municipal.rbaccore.service.ddd.domain.model.OrganizationFacts.Scope empty =
           new com.municipal.rbaccore.service.ddd.domain.model.OrganizationFacts.Scope(java.util.Set.of());
-      assertEquals(0, adapter.search(new com.municipal.rbaccore.service.ddd.domain.model.SearchCriteria.Users(empty, null, null, 0, 20)).total());
+      assertEquals(0, adapter.search(new com.municipal.rbaccore.service.ddd.domain.model.SearchCriteria.Users(empty, null, null, null, 0, 20)).total());
       assertEquals(0, adapter.statistics(empty).total());
       com.municipal.rbaccore.infrastructure.persistence.ddd.JpaAuthorizationRepositoryAdapter authorization =
           new com.municipal.rbaccore.infrastructure.persistence.ddd.JpaAuthorizationRepositoryAdapter(userRows, roleRows);

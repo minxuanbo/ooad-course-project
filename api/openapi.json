@@ -306,7 +306,7 @@
           "部门与人员"
         ],
         "summary": "人员组合查询与分页",
-        "description": "q匹配姓名或工号；数据库先范围再AND组合过滤、同条件计数、id升序分页。越末页items=[]，total保持。",
+        "description": "q匹配姓名或工号；departmentScope默认SUBTREE（含下级），DIRECT仅查指定departmentId的直属员工且必须同时提供departmentId。roleId按已保存角色关联筛选，包含停用角色的成员；未知角色返回空页。数据库先范围再AND组合过滤、同条件计数、id升序分页，角色与部门条件不能扩张操作者范围。越末页items=[]，total保持。",
         "responses": {
           "200": {
             "description": "成功",
@@ -375,6 +375,35 @@
           },
           {
             "$ref": "#/components/parameters/DepartmentId"
+          },
+          {
+            "$ref": "#/components/parameters/DepartmentScope"
+          },
+          {
+            "$ref": "#/components/parameters/RoleId"
+          },
+          {
+            "name": "departmentScope",
+            "in": "query",
+            "description": "SUBTREE含下级（兼容原行为）；DIRECT仅直属，必须提供departmentId。",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "DIRECT",
+                "SUBTREE"
+              ],
+              "default": "SUBTREE"
+            }
+          },
+          {
+            "name": "roleId",
+            "in": "query",
+            "description": "按已保存角色关联查询成员，停用角色仍可查；未知ID返回空页。",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
           },
           {
             "$ref": "#/components/parameters/Enabled"
@@ -3109,6 +3138,29 @@
       }
     },
     "parameters": {
+      "DepartmentScope": {
+        "name": "departmentScope",
+        "in": "query",
+        "description": "SUBTREE含指定部门及下级；DIRECT只含直属且必须同时传departmentId。不传departmentId时默认本人可见子树。",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "DIRECT",
+            "SUBTREE"
+          ],
+          "default": "SUBTREE"
+        }
+      },
+      "RoleId": {
+        "name": "roleId",
+        "in": "query",
+        "description": "按已保存角色关联筛选，含停用角色；未知ID返回空页，始终与本人组织范围相交。",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
       "Id": {
         "name": "id",
         "in": "path",
@@ -3999,6 +4051,14 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "clientIp": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 45,
+            "description": "服务端采集的请求来源IPv4/IPv6；仅显式可信代理可转交单个来源。服务间调用可能是服务地址，不宣称为最终用户公网IP；历史未采集为null。"
+          },
           "id": {
             "type": "integer",
             "minimum": 1,
@@ -4066,6 +4126,7 @@
           }
         },
         "required": [
+          "clientIp",
           "id",
           "occurredAt",
           "userId",
@@ -4078,7 +4139,8 @@
           "eventType",
           "httpMethod",
           "requestPath",
-          "httpStatus"
+          "httpStatus",
+          "clientIp"
         ]
       },
       "LogPageVO": {

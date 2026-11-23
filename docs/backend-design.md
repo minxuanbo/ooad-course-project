@@ -152,7 +152,11 @@ StructuredPersonnelAuthority集中角色级别与目标保护；StructuredDepart
 
 角色基础级别在 `Role` 中以 `public static final` 归口：`DEFAULT_LEVEL`、`PROJECT_MANAGER_LEVEL`、`DEPARTMENT_MANAGER_LEVEL`、`COMPANY_LEADER_LEVEL`、`ADMIN_LEVEL`。`FIRST_MANAGER_LEVEL` 引用项目经理级别，`InitialAuthorizationPolicy` 使用这些领域常量完成首次分类，不再单独定义级别值。
 
+共享ClientIpResolver属于HTTP技术边界，启动时解析app.audit.trusted-proxies的CIDR，默认无可信代理；禁用容器自动转发头改写。RequestAuditFilter在链入口核实IP并绑定当前请求，过滤器、ManagedAspect和ManagementPreflight把同一值装入AuditEvent.clientIp；JpaAuditWriter保存后由真实CloneFactory映射到日志VO。解析只接受IPv4/IPv6字面量，不查DNS、不信任多地址链。
+
 ### 6.3 领域仓储与复杂查询边界
+
+人员查询在已核实的可见范围中选择直属或子树口径，再组合roleId、搜索和状态。structured在查询Service组装JPA谓词；DDD应用把范围与roleId放入SearchCriteria.Users，由UserRepository适配器构造同条件计数与分页。角色过滤匹配保存的关联，停用角色仍可查成员，不改变分配规则或共享角色维护门禁。
 
 领域仓储输入输出使用领域对象，容器使用 JDK 集合、Optional 或 DomainPage。仓储协议独立于 HTTP 及 JPA。
 

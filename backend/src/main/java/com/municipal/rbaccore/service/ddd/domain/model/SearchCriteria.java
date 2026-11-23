@@ -6,7 +6,7 @@ public final class SearchCriteria {
 
   /** 按已核实的组织范围搜索人员。 */
   public record Users(
-      OrganizationFacts.Scope scope, String q, Boolean enabled, int page, int size) {}
+      OrganizationFacts.Scope scope, String q, Boolean enabled, Long roleId, int page, int size) {}
 
   /** 共享角色支持名称、编码与启停过滤。 */
   public record Roles(String q, Boolean enabled, int page, int size) {}

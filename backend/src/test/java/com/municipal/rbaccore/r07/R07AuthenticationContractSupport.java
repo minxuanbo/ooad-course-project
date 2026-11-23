@@ -109,6 +109,77 @@ abstract class R07AuthenticationContractSupport {
   private long departmentManagerId;
   private String departmentManager;
 
+  /** 部门入口默认直属，角色筛选与组织范围在数据库内相交且不重复计数。 */
+  @Test
+  @DisplayName("R10 部门直属与角色成员组合查询保持范围、状态和分页一致")
+  void R10_DepartmentAndRoleMembers() throws Exception {
+    String admin = token("admin", ADMIN_PASSWORD);
+    long role = jdbc.queryForObject("SELECT id FROM roles WHERE management_level=3", Long.class);
+    long direct = jdbc.queryForObject("SELECT COUNT(*) FROM users WHERE department_id=?", Long.class, rootId);
+    JsonNode root = body(request("GET", USERS + "?departmentId=" + rootId
+        + "&departmentScope=DIRECT&size=100", admin, null)).path("data");
+    assertEquals(direct, root.path("total").asLong());
+    for (JsonNode user : root.path("items")) assertEquals(rootId, user.path("departmentId").asLong());
+    long all = jdbc.queryForObject("SELECT COUNT(*) FROM user_roles WHERE role_id=?", Long.class, role);
+    JsonNode members = body(request("GET", USERS + "?roleId=" + role + "&size=1", admin, null)).path("data");
+    assertEquals(all, members.path("total").asLong());
+    assertEquals(1, members.path("items").size());
+    assertTrue(members.path("items").get(0).path("roles").findValuesAsText("id").contains(Long.toString(role)));
+    long own = jdbc.queryForObject("SELECT department_id FROM users WHERE id=?", Long.class, departmentManagerId);
+    long localCount = jdbc.queryForObject("SELECT COUNT(*) FROM users u JOIN user_roles ur ON u.id=ur.user_id WHERE u.department_id=? AND ur.role_id=?", Long.class, own, role);
+    String local = token(departmentManager, PASSWORD);
+    JsonNode localMembers = body(request("GET", USERS + "?roleId=" + role + "&departmentId=" + own
+        + "&departmentScope=DIRECT", local, null)).path("data");
+    assertEquals(localCount, localMembers.path("total").asLong());
+    assertTrue(localCount < all);
+    assertEquals(403, request("GET", USERS + "?departmentId=" + rootId + "&departmentScope=DIRECT", local, null).getStatusCode().value());
+    assertEquals(404, request("GET", USERS + "?departmentId=999999999&departmentScope=DIRECT", admin, null).getStatusCode().value());
+    assertEquals(0, body(request("GET", USERS + "?roleId=999999999", admin, null)).path("data").path("total").asLong());
+    jdbc.update("UPDATE roles SET enabled=0 WHERE id=?", role);
+    try {
+      assertEquals(all, body(request("GET", USERS + "?roleId=" + role, admin, null)).path("data").path("total").asLong());
+      assertEquals(0, body(request("GET", USERS + "?roleId=" + role + "&enabled=false", admin, null)).path("data").path("total").asLong());
+    } finally {
+      jdbc.update("UPDATE roles SET enabled=1 WHERE id=?", role);
+    }
+
+  }
+
+  /** 新筛选在API边界拒绝非法ID和缺少目标部门的直属查询。 */
+  @Test
+  @DisplayName("R18 成员筛选拒绝不合法枚举与非安全整数")
+  void R18_MemberQueryValidation() throws Exception {
+    String admin = token("admin", ADMIN_PASSWORD);
+    for (String query : List.of("roleId=0", "roleId=-1", "roleId=9007199254740992",
+        "roleId=abc", "departmentScope=direct", "departmentScope=ALL", "departmentScope=DIRECT")) {
+      assertEquals(400, request("GET", USERS + "?" + query, admin, null).getStatusCode().value(), query);
+    }
+  }
+
+  /** 真实HTTP采集连接来源，公网伪造转发头不能污染日志并且接口回读包含IP。 */
+  @Test
+  @DisplayName("R16 登录和实际管理请求记录来源IP且拒绝伪造转发头")
+  void R16_RequestSourceIp() throws Exception {
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    headers.set("X-Forwarded-For", "203.0.113.77");
+    ResponseEntity<String> login = http.exchange(LOGIN, HttpMethod.POST,
+        new HttpEntity<>(Map.of("account", "admin", "password", ADMIN_PASSWORD), headers), String.class);
+    String admin = "Bearer " + body(login).path("data").path("token").asText();
+    ResponseEntity<String> denied = request("GET", USERS, null, null);
+    ResponseEntity<String> allowed = request("GET", USERS, admin, null);
+    ResponseEntity<String> preflight = request("GET", "/api/roles", token(departmentManager, PASSWORD), null);
+    assertEquals(403, preflight.getStatusCode().value());
+    for (ResponseEntity<String> response : List.of(login, denied, allowed, preflight)) {
+      String ip = jdbc.queryForObject("SELECT client_ip FROM authorization_logs WHERE request_id=?",
+          String.class, response.getHeaders().getFirst("X-Request-Id"));
+      assertTrue(java.net.InetAddress.getByName(ip).isLoopbackAddress());
+      assertNotEquals("203.0.113.77", ip);
+    }
+    JsonNode logs = body(request("GET", LOGS + "?limit=100", admin, null)).path("data").path("items");
+    assertTrue(logs.findValuesAsText("clientIp").stream().anyMatch(ip -> ip.contains("127.") || ip.contains(":")));
+  }
+
   /** 回执存在也要核实当前来源，不能将损坏数据解释为重新初始化的依据。 */
   @Test
   @DisplayName("R06 首次授权预检对来源损坏稳定拒绝，独立管理员名来自实际来源")

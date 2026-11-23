@@ -70,6 +70,9 @@ public class JpaUserRepositoryAdapter implements UserRepository {
         (root, query, builder) -> {
           List<Predicate> clauses = new ArrayList<>();
           clauses.add(root.get("department").get("id").in(criteria.scope().departmentIds()));
+          if (criteria.roleId() != null) {
+            clauses.add(builder.equal(root.join("roles").get("id"), criteria.roleId()));
+          }
           clauses.add(
               builder.or(
                   builder.like(builder.lower(root.get("name")), text, '\\'),

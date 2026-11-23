@@ -76,7 +76,9 @@ public class ManagedAspect {
               reason,
               request.getMethod(),
               template,
-              status));
+              status,
+              com.municipal.rbaccore.service.port.security.RbacCatalog.SYSTEM_CODE,
+              RequestAuditFilter.clientIp()));
     }
   }
 }

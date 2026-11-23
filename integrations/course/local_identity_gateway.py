@@ -81,9 +81,11 @@ class AuditStore:
                 'items': records[(page-1)*size:page*size]}
 
 
-def exchange(base, path, method='GET', token=None, body=None):
+def exchange(base, path, method='GET', token=None, body=None, client_ip=None):
     """连接真实身份服务，不缓存授权、记录令牌或返回虚假成功。"""
     headers = {'Content-Type': 'application/json'}
+    if client_ip:
+        headers['X-Forwarded-For'] = client_ip
     if token: headers['Authorization'] = token
     request = Request(base + path, method=method, headers=headers,
                       data=json.dumps(body).encode('utf-8') if body is not None else None)

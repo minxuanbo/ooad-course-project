@@ -5,6 +5,8 @@ import { errorText, RequestGeneration } from '../lib/presentation.js'
 import Modal from '../components/Modal.vue'
 import Pagination from '../components/Pagination.vue'
 import CollectionEditor from '../components/CollectionEditor.vue'
+import MemberList from '../components/MemberList.vue'
+const members = ref(null)
 const rows = ref([]),
   q = ref(''),
   enabled = ref(''),
@@ -144,6 +146,7 @@ onUnmounted(() => generation.cancel())
             </span>
           </td>
           <td>
+            <button v-if="canRoute('GET', '/users')" class="text-button" @click="members = role">查看成员</button>
             <button
               v-if="canRoute('PATCH', '/roles/{id}', true)"
               class="text-button"
@@ -217,4 +220,5 @@ onUnmounted(() => generation.cancel())
     @close="assigning = null"
     @saved="saved"
   />
+  <MemberList v-if="members" :key="members.id" :role="members" @close="members = null" />
 </template>

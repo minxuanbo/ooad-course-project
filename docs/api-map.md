@@ -14,7 +14,7 @@
 | 部门管理 | `PATCH /api/departments/{id}` | 仅改名 | DepartmentRenameDTO | DepartmentVO |
 | 部门管理 | `DELETE /api/departments/{id}` | 删除空且非根节点 | 无body | null |
 | 部门与人员 | `GET /api/departments/tree` | 可管理部门树 | 路径/query/无body，见规范 | 数组 |
-| 部门与人员 | `GET /api/users` | 人员组合查询与分页 | 路径/query/无body，见规范 | UserPageVO |
+| 部门与人员、部门员工/角色成员弹窗 | `GET /api/users` | departmentScope直属/子树、roleId关联与搜索状态组合分页 | 路径/query/无body，见规范 | UserPageVO |
 | 人员授权 | `GET /api/users/{id}/roles` | 当前完整角色 | 路径/query/无body，见规范 | UserRolesVO |
 | 人员授权 | `GET /api/users/{id}/assignable-roles` | 受限候选角色分页 | 路径/query/无body，见规范 | AssignableRolePageVO |
 | 人员授权 | `PUT /api/users/{id}/roles` | 整体替换人员角色 | IdsDTO | UserWithRolesVO |

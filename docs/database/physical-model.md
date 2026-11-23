@@ -188,6 +188,7 @@ MySQL8.4、InnoDB、utf8mb4/utf8mb4_0900_bin。实体BIGINT主键自增，对外
 | permission_code | VARCHAR(191) | 是 | 已定位权限编码，可空 |
 | allowed | BIT | 否 | 实际允许/拒绝结论 |
 | request_id | VARCHAR(64) | 否 | 请求关联标识 |
+| client_ip | VARCHAR(45) | 是 | 服务端核实的请求来源IPv4/IPv6；历史未采集为空，不接收客户端自报值 |
 | reason | VARCHAR(64) | 否 | 稳定安全原因码 |
 | event_type | VARCHAR(32) | 否 | 登录或鉴权事件 |
 | http_method | VARCHAR(16) | 否 | 规范HTTP方法 |

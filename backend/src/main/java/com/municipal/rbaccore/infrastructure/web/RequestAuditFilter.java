@@ -17,6 +17,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @RequiredArgsConstructor
 public class RequestAuditFilter extends OncePerRequestFilter {
   private final AuditWriter recorder;
+  private final ClientIpResolver clientIps;
+
+  /** 身份上下文中只传递过滤器核实的来源，不重新读取不可信转发头。 */
+  public static String clientIp() {
+    HttpServletRequest request = current();
+    return request == null ? null : (String) request.getAttribute("auditClientIp");
+  }
 
   /** 后台调用没有请求上下文，不能构造虚假HTTP身份。 */
   public static HttpServletRequest current() {
@@ -57,6 +64,7 @@ public class RequestAuditFilter extends OncePerRequestFilter {
       HttpServletRequest request, HttpServletResponse response, FilterChain chain)
       throws ServletException, IOException {
     String id = UUID.randomUUID().toString();
+    request.setAttribute("auditClientIp", clientIps.resolve(request));
     request.setAttribute("requestId", id);
     response.setHeader("X-Request-Id", id);
     try {
@@ -99,7 +107,8 @@ public class RequestAuditFilter extends OncePerRequestFilter {
                 path,
                 status,
                 java.util.Objects.toString(
-                    request.getAttribute("auditAppCode"), RbacCatalog.SYSTEM_CODE)));
+                    request.getAttribute("auditAppCode"), RbacCatalog.SYSTEM_CODE),
+                (String) request.getAttribute("auditClientIp")));
       }
     }
   }

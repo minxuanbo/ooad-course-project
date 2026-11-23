@@ -250,9 +250,9 @@ onUnmounted(() => {
   <Modal v-if="detail" title="日志详情" @close="detail = null">
     <dl class="log-detail">
       <template v-for="(value, key) in detail" :key="key">
-        <dt>{{ key === 'occurredAt' ? '时间（北京时间）' : key }}</dt>
+        <dt>{{ key === 'occurredAt' ? '时间（北京时间）' : key === 'clientIp' ? '请求来源 IP' : key }}</dt>
         <dd :title="key === 'occurredAt' ? value : undefined">
-          {{ key === 'occurredAt' ? formatBeijingTime(value) : value ?? '—' }}
+          {{ key === 'occurredAt' ? formatBeijingTime(value) : value ?? (key === 'clientIp' ? '未采集' : '—') }}
         </dd>
       </template>
     </dl>

@@ -1,8 +1,10 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { api, notify, session } from '../api.js'
+import { api, canRoute, notify, session } from '../api.js'
 import { errorText, organizationRows, RequestGeneration } from '../lib/presentation.js'
 import Modal from '../components/Modal.vue'
+import MemberList from '../components/MemberList.vue'
+const members = ref(null)
 const nodes = ref([]),
   q = ref(''),
   busy = ref(false),
@@ -150,6 +152,7 @@ onUnmounted(() => generation.cancel())
           <td>{{ node.directUsers }}</td>
           <td>{{ node.totalUsers }}</td>
           <td class="row-actions">
+            <button v-if="canRoute('GET', '/users')" class="text-button" @click="members = node">查看员工</button>
             <button
               v-if="node.canCreate"
               class="text-button"
@@ -251,4 +254,5 @@ onUnmounted(() => generation.cancel())
       </button>
     </footer>
   </Modal>
+  <MemberList v-if="members" :key="members.id" :department="members" @close="members = null" />
 </template>

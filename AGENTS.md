@@ -8,6 +8,8 @@ structured和DDD均已实现；服务器两系统使用DDD。2026-11-23已按用
 
 PR44的日志系统下拉、密码提示、实际权限查询留痕和Apifox服务器环境已完成，目标9042431；本轮已另获合入、双仓同步和重新部署授权。用户已要求按现行需求和设计职责整理全部docs，允许删除无当前价值的历史文件，保留有用来源及证据。外部详设及教师问答仅在用户指定桌面目录同步，原件已备份；原Excel、老师原目录、旧库/卷及原始日志仍保留。T14/T15不自动关闭；Apifox写入需明确授权，不由文档修改触发。新任务按[CONTRIBUTING](CONTRIBUTING.md)从main建立codex/分支、审核后推送草稿PR，单次合入和发布授权不延续至新任务。
 
+用户本轮仅授权成员查询与日志IP实现，以及18业务系统/部门角色的设计准备。部门与角色入口复用受限GET /api/users（departmentScope、roleId），日志来源clientIp采用显式可信代理。18系统导入、8预置角色分类落库、部门领导分配、集中验收与部署等待后续确认；方案见docs/requirements/access-extension-plan.md，不提前改变现行授权规则。
+
 ## 业务与架构
 
 - 当前业务依据为[需求](docs/requirements.md)，字段主规范为api/openapi.yaml，JSON同源；业务语义见docs/api-contract.md。当前37操作、31路径、71 Schema，完整维护能力K17。

@@ -48,7 +48,7 @@ class R16RequestAuditBoundaryTest {
   void R16_nonApiRequestsAreNotRecorded() throws Exception {
     AuditWriter recorder = mock(AuditWriter.class);
     MockHttpServletResponse response = new MockHttpServletResponse();
-    new RequestAuditFilter(recorder)
+    new RequestAuditFilter(recorder, new ClientIpResolver(""))
         .doFilterInternal(
             new MockHttpServletRequest("GET", "/favicon.ico"),
             response,

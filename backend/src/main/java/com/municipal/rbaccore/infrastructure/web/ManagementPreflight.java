@@ -114,6 +114,8 @@ public class ManagementPreflight implements HandlerInterceptor {
             exception.getCode(),
             request.getMethod(),
             template,
-            exception.getStatus()));
+            exception.getStatus(),
+            com.municipal.rbaccore.service.port.security.RbacCatalog.SYSTEM_CODE,
+            RequestAuditFilter.clientIp()));
   }
 }
