@@ -1,10 +1,10 @@
 # 双系统DDD部署与首次初始化
 
-本文说明节点职责、配置、首发、验收及恢复方法。当前镜像、18目录和部门角色数据适配见[11月24日发布](../docs/history/verification/access-extension-release-20261124.md)；首次导入见[首发证据](../docs/history/verification/ddd-production-deployment.md)，最初本机部署回归见[适配验证](../docs/history/verification/ddd-deployment-adaptation.md)。
+本文说明节点职责、配置、首发、验收及恢复方法。当前RBAC镜像及菜单性能见[性能优化发布](../docs/history/verification/authorization-loading-performance-20261124.md)，18目录和部门角色数据适配见[目录发布](../docs/history/verification/access-extension-release-20261124.md)；首次导入见[首发证据](../docs/history/verification/ddd-production-deployment.md)，最初本机部署回归见[适配验证](../docs/history/verification/ddd-deployment-adaptation.md)。
 
-线上为8项服务定义：7项replicated服务各1/1，node-exporter为global服务4/4。两Java日志使用+08:00，7个监控采集目标UP。现行发布更新RBAC后端、前端及接入服务，其他五项定义不变；课程镜像保持原样。采用固定摘要的docker service update及离线数据副本切换，未重建整个Stack；重启后的两系统需要重新登录。后续源码合入或文档整理不自动触发再次发布。
+线上为8项服务定义：7项replicated服务各1/1，node-exporter为global服务4/4。两Java日志使用+08:00，7个监控采集目标UP。现行性能优化只更新两个RBAC镜像，其他六项服务定义相同；课程与接入镜像保持原样。采用固定摘要的docker service update，未重建Stack、修改数据库结构或重跑初始化；RBAC重启后两系统旧JWT失效，需要重新登录。后续源码合入或文档整理不自动触发再次发布。
 
-既有北京时间展示及Java日志格式、CPU新口径与内网node-exporter、日志systems及权限查询留痕继续保留。未重新执行万人导入或重置原回执；18业务目录使用独立首次回执追加。Apifox回读、服务器HTTP及浏览器结果分别记证，当前RBAC真实浏览器通过8组，课程浏览器客户端阻断未取得通过结果。
+既有北京时间展示及Java日志格式、CPU新口径与内网node-exporter、日志systems及权限查询留痕继续保留。18业务目录及原回执保留，逐请求读库和锁后重鉴权不变。Apifox回读、97项服务器HTTP及三轮RBAC菜单读取分别记证；本次没有新增课程浏览器交互通过结果，不改变前轮客户端阻断的记录。
 
 ## 1. 五节点及访问入口
 
@@ -115,7 +115,7 @@ Stack为两个Java服务显式设置LOGGING_PATTERN_DATEFORMAT，时间格式包
 
 在RBAC浏览器依次切换工作总览、部门管理、人员管理、角色与权限、资源与API、鉴权日志。核对每次实际/api请求成功，以及对应Controller/Service的开始、完成、耗时日志；不能以Nginx访问日志或数据库鉴权日志代替。无需在前端新增“日志控制台”，页面正常加载及后端日志同步出现即可。Stack明确配置三层DEBUG、根INFO；日志不含密码、JWT、Authorization、完整参数或响应。Docker每容器10MB×5轮转，退出/更新前将验收时间段导出到受控归档目录。
 
-11月24日发布通过97项公网HTTP及8组真实RBAC浏览器检查，课程浏览器受本机客户端阻断，完整范围见[本次发布](../docs/history/verification/access-extension-release-20261124.md)。11月23日集中发布的108次HTTP、后续JWT补发的91次HTTP及首发重启持久化检查均为历史证据，不替代当前版本验证；本次未追加整机重启或节点故障测试。Prometheus通过内网抓rbac-backend:8082和course-backend:8081；global node-exporter采集B/C/D/E宿主机指标，CPU为1秒采集、2秒窗口和计算间隔，实际7目标均UP，详见[监控](monitoring.md)。9090或9100不发布到宿主机或公网；访问须使用明确的内网诊断通道，不能把C的127.0.0.1:9090当成已发布端口。当前单manager方案不宣称高可用。
+当前性能发布通过97项公网HTTP和三轮18次真实RBAC菜单读取，耗时及范围见[本次发布](../docs/history/verification/authorization-loading-performance-20261124.md)。此前18目录发布的97项HTTP/8组浏览器、11月23日的108次及JWT补发91次HTTP、首发重启持久化均独立保留，不替代当前版本验证；本次未追加整机重启、节点故障或课程浏览器测试。Prometheus通过内网抓rbac-backend:8082和course-backend:8081；global node-exporter采集B/C/D/E宿主机指标，CPU为1秒采集、2秒窗口和计算间隔，实际7目标均UP，详见[监控](monitoring.md)。9090或9100不发布到宿主机或公网；访问须使用明确的内网诊断通道，不能把C的127.0.0.1:9090当成已发布端口。当前单manager方案不宣称高可用。
 
 ## 7. 备份与回滚
 

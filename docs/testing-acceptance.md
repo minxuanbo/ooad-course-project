@@ -6,8 +6,9 @@
 
 | 关注点 | 可追溯证据与边界 |
 | --- | --- |
-| 当前正式发布 | [18系统与部门角色发布](history/verification/access-extension-release-20261124.md)：PR49/50已合main并同步两仓；三项服务定义更新、其余五项不变；97项公网HTTP、真实RBAC浏览器8组、来源IP防伪造及七监控目标UP。原账号/口令、关联、3186条原日志及旧表保留；课程浏览器导航受本机限制，未算通过 |
-| 当前RBAC源码覆盖率 | [覆盖率补齐](history/verification/access-extension-coverage-20261124.md)、[完整报告](reports/jacoco/20261124-rbac/README.md)：两策略各328项真实MySQL回归无失败/错误/跳过，347份生产class一致，合并六项100%且原门槛通过。Vue53项及8组隔离浏览器、Apifox1.6.0差异0见各自证据，不替代公网验收 |
+| 当前正式发布与性能 | [授权装载优化](history/verification/authorization-loading-performance-20261124.md)：PR52已合main并同步两仓，仅两个RBAC镜像更新，其余六项服务定义相同；本轮97项公网HTTP、三轮18次RBAC菜单读取及目录检查通过，七监控目标UP。资源页中位数2.15秒，其余0.69—1.18秒；单轮旧版基线和当前三轮中位数不冒充压测或延迟保证 |
+| 当前RBAC源码覆盖率 | [本轮证据](history/verification/authorization-loading-performance-20261124.md)、[完整报告](reports/jacoco/20261124-performance-rbac/README.md)：两策略各330项回归无失败/错误/跳过，347份生产class一致，合并六项100%且原门槛通过；Vue54项及构建通过，Apifox1.6.0差异0，不以功能覆盖率代替性能实测 |
+| 18系统目录与部门角色发布 | [PR49/50发布](history/verification/access-extension-release-20261124.md)：三项服务更新和原库保留；当时97项HTTP、8组RBAC浏览器及来源IP防伪造通过，课程浏览器受客户端阻断。其328项覆盖率报告只代表当时源码 |
 | 前期成员查询与来源IP | [验证记录](history/verification/member-queries-audit-ip-20261123.md)：当时双策略各311项及六项100%，保留其独立验证边界，不替代后续业务扩展结果 |
 | 11月23日JWT发布 | [历史发布](history/verification/jwt-coverage-release-20261123.md)：13:05完成当时RBAC更新，其余七项服务定义不变；91次公网HTTP通过；浏览器导航超时，交互验收未取得结果 |
 | 11月23日源码覆盖率 | [历史记录](history/verification/rbac-jacoco-complete.md)、[当时报告](reports/jacoco/20261123-rbac/README.md)：两策略各304项无失败/错误/跳过；340份生产class一致，合并六项100%且原门槛通过；不代表后续源码 |
