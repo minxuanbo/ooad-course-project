@@ -230,22 +230,6 @@ paths:
       - $ref: '#/components/parameters/DepartmentId'
       - $ref: '#/components/parameters/DepartmentScope'
       - $ref: '#/components/parameters/RoleId'
-      - name: departmentScope
-        in: query
-        description: SUBTREE含下级（兼容原行为）；DIRECT仅直属，必须提供departmentId。
-        schema:
-          type: string
-          enum:
-          - DIRECT
-          - SUBTREE
-          default: SUBTREE
-      - name: roleId
-        in: query
-        description: 按已保存角色关联查询成员，停用角色仍可查；未知ID返回空页。
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 9007199254740991
       - $ref: '#/components/parameters/Enabled'
       - $ref: '#/components/parameters/Page'
       - $ref: '#/components/parameters/Size'
@@ -2665,7 +2649,6 @@ components:
       - httpMethod
       - requestPath
       - httpStatus
-      - clientIp
     LogPageVO:
       type: object
       additionalProperties: false

@@ -12,4 +12,4 @@ USER 10001:10001
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 EXPOSE 8085
-CMD ["waitress-serve", "--listen=0.0.0.0:8085", "--threads=4", "--channel-timeout=30", "--max-request-body-size=1048576", "--call", "integrations.course.deployment_gateway:create_app"]
+CMD ["waitress-serve", "--listen=0.0.0.0:8085", "--threads=4", "--channel-timeout=30", "--max-request-body-size=1048576", "--no-clear-untrusted-proxy-headers", "--call", "integrations.course.deployment_gateway:create_app"]
