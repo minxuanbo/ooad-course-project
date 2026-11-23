@@ -2,9 +2,9 @@
 
 ## 当前状态与工作边界
 
-structured和DDD均已实现；服务器两系统使用DDD，实际发布与待发布项见[验收入口](docs/testing-acceptance.md)。北京时间、监控及日志体验修正等待用户集中反馈后统一发布；不因源码提交、合入或文档整理更新线上Stack或重启正式应用。
+structured和DDD均已实现；服务器两系统使用DDD。2026-11-23已按用户本轮授权发布北京时间、监控及日志体验修正，实际版本及验证限制见[验收入口](docs/testing-acceptance.md)。以后不因源码提交、合入或文档整理自动更新线上Stack或重启正式应用。
 
-用户要求PR44继续修正日志系统下拉、密码提示、实际权限查询留痕并配置Apifox服务器环境；本轮该授权覆盖旧不写Apifox限制，目标仍9042431，不部署。用户已要求按现行需求和设计职责整理全部docs，允许删除无当前价值的历史文件，保留有用来源及证据。原Excel、用户外部Word/PDF/PPT、老师原目录、旧库/卷及原始日志仍保留。T14/T15不自动关闭；Apifox写入需明确授权，不由文档修改触发。新任务按[CONTRIBUTING](CONTRIBUTING.md)从main建立codex/分支、审核后推送草稿PR，单次历史合入授权不延续至新任务。
+PR44的日志系统下拉、密码提示、实际权限查询留痕和Apifox服务器环境已完成，目标9042431；本轮已另获合入、双仓同步和重新部署授权。用户已要求按现行需求和设计职责整理全部docs，允许删除无当前价值的历史文件，保留有用来源及证据。外部详设及教师问答仅在用户指定桌面目录同步，原件已备份；原Excel、老师原目录、旧库/卷及原始日志仍保留。T14/T15不自动关闭；Apifox写入需明确授权，不由文档修改触发。新任务按[CONTRIBUTING](CONTRIBUTING.md)从main建立codex/分支、审核后推送草稿PR，单次合入和发布授权不延续至新任务。
 
 ## 业务与架构
 
@@ -22,7 +22,7 @@ structured和DDD均已实现；服务器两系统使用DDD，实际发布与待�
 
 真实CloneFactory0.0.2固定spring-fundamentals提交40583ff94764d2e758bcb13be17f5c05ea4d6352，普通依赖和处理器统一版本。新版支持构造器映射，但本项目不可变领域record/final仍显式构造；可变同名同类型字段优先真实处理器并核对生成赋值，不以空包或改名旧jar替代。
 
-老师课程来源固定990cea2，prepare_course_source.py导出独立副本，应用structured三补丁及DDD/学期/安全日志补丁；不改原目录、pom、Flyway或Vue业务源码。5项缺Controller、个人制批改、学生建组归属及普通教师日志范围等限制见docs/course-integration.md，不擅自补写整套课程业务。
+老师课程来源固定990cea2，2026-11-23重新获取远端后未发现更新。prepare_course_source.py导出独立副本，应用structured三补丁及已确认DDD/学期/安全日志补丁；不改原目录、pom、Flyway或Vue业务源码。课程前端全部按老师原样，菜单行为不另行改写；当前DDD已验证，若有实际问题再评估structured。5项缺Controller、个人制批改、学生建组归属及普通教师日志范围等限制见docs/course-integration.md，不擅自补写整套课程业务。
 
 类图/差异顺序图使用用户提供20261117新版UML skill；包图遵守UML包语义。当前82组图件（2包图、32类图、48差异顺序图）保留，37操作和两类离线入口逐项追溯；共同流程不画双份。
 
@@ -30,6 +30,6 @@ structured和DDD均已实现；服务器两系统使用DDD，实际发布与待�
 
 正式入口C的80（课程）、8088（RBAC），数据库/Java/Actuator/监控留内网。当前会话索引在进程内，后端各单副本、stop-first，不宣称高可用。course-integration负责实时身份转接、完整短码校验及独立MySQL业务审计，不混入RBAC日志。
 
-监控参考老师spring-fundamentals/4. SpringAOP，CPU采用1秒采集、2秒窗口和2秒规则计算；配置覆盖、镜像摘要及内网node-exporter设计见deploy/monitoring.md。当前线上七服务尚未应用监控修正。
+监控参考老师spring-fundamentals/4. SpringAOP，CPU采用1秒采集、2秒窗口和2秒规则计算；配置覆盖、镜像摘要及内网node-exporter设计见deploy/monitoring.md。当前8项服务定义：7项单副本和node-exporter全局4任务；7个Prometheus采集目标已实测UP，9090/9100不公开。
 
 文档描述现行职责，版本、环境、测试数量、源提交和未验证范围分别记于验收证据。历史成绩只对应当时版本，不算未来修改通过；业务测试、静态审核和老师验收不混称。旧阶段计划、重复说明和被替代图件已按用户要求清理，Git保留原版本；有用来源及验证记录见docs/history/README.md。

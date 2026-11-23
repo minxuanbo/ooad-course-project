@@ -348,9 +348,9 @@ Java新增或修改类/接口/记录及关键方法写中文Javadoc；明确局�
 
 产品RbacApplication、离线ImportCommand和首次BootstrapAuthorizationCommand相互分离。显式rbac_core、ddl-auto=validate、sql.init.mode=never、旧初始化关闭；错库/测试profile组合失败关闭，不在启动时恢复旧表或重授角色。口令/数据库秘密通过环境或configtree提供。
 
-本地构建、测试及初始化见[后端说明](../backend/README.md)，服务器执行见[部署指南](../deploy/README.md)。Swarm按节点职责运行两个Nginx、两个单副本DDD后端、MySQL、课程接入支撑及Prometheus；待统一发布的监控配置增加全局node-exporter，采集节点CPU等宿主机指标，见[监控设计](../deploy/monitoring.md)。公网仅C的80/8088，业务、Actuator、数据库及监控均留内网。
+本地构建、测试及初始化见[后端说明](../backend/README.md)，服务器执行见[部署指南](../deploy/README.md)。Swarm按节点职责运行两个Nginx、两个单副本DDD后端、MySQL、课程接入支撑、Prometheus及全局node-exporter；后者采集节点CPU等宿主机指标，见[监控设计](../deploy/monitoring.md)。公网仅C的80/8088，业务、Actuator、数据库及监控均留内网。
 
-独立课程接入支撑负责实时身份转接、配置短码核查和独立业务审计，不进入RBAC领域/应用。两个Java服务的层日志使用北京时间，存储/接口Instant及JWT继续UTC。会话索引在进程内，后端单副本、stop-first，重启须重新登录；两策略不创建第二套业务表。数据变更不能仅靠回滚镜像恢复。当前线上版本与待发布修改见[验收入口](testing-acceptance.md)。
+独立课程接入支撑负责实时身份转接、配置短码核查和独立业务审计，不进入RBAC领域/应用。两个Java服务的层日志使用北京时间，存储/接口Instant及JWT继续UTC。会话索引在进程内，后端单副本、stop-first，重启须重新登录；两策略不创建第二套业务表。数据变更不能仅靠回滚镜像恢复。当前线上版本与验证限制见[验收入口](testing-acceptance.md)。
 
 ## 17. 结构化与DDD UML
 

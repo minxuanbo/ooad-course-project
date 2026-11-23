@@ -1,79 +1,49 @@
-# 口试现场运行 JaCoCo（独立 MySQL 测试库）
+# JaCoCo回归与报告
 
-> 本页为旧服务器/容器测试流程；2026-11-13后端迁入backend后，根Dockerfile及deploy/test-backend.sh尚未适配，待新增服务器方案统一整理。本阶段不要按本页启动旧流程；当前本机测试见[backend说明](../backend/README.md#2-本地回归与隔离)。
+报告记录测试JVM实际执行的代码，不是线上进程的运行覆盖率。测试使用独立可丢弃MySQL，不能把测试URL指向正式业务库；不重新初始化线上、不重启产品服务。最近实测见[2026-11-23发布证据](../docs/history/verification/release-20261123.md)。
 
-本流程面向既有课程部署拓扑中的 A（course-build，120.46.134.42）Termius 终端；地址是环境记录，不表示本分支已发布或容器脚本已实测。
-报告来自 Maven 测试 JVM，包含真实 MySQL 集成测试与单元测试；不是公网线上实例的运行覆盖率。
-B/C/D 的业务服务不参与，不需要重启；已有业务库不会被清空或改动。
+## 本机执行
 
-## 预约前准备
+使用JDK21、Maven、真实CloneFactory0.0.2及MySQL8.4。按[后端回归与隔离](../backend/README.md#2-本地回归与隔离)配置六个专用数据库URL和测试账号，口令只放本机环境。保留三份原Excel；不要复制他人的.local或运行凭据。
 
-A 已安装 Docker。代码位于 ~/ooad-course-project，三份课程 Excel 位于该目录。
-依赖下载需要网络；建议提前构建一次，现场可复用测试工具镜像。
+分别设置APP_BACKEND_STRATEGY为ddd和structured，执行：
 
-```bash
-cd ~/ooad-course-project
-git pull --ff-only origin refactor/rbac-core-backend
-export RBAC_TEST_EXCEL_DIR=/root/ooad-course-project
-export RBAC_BUILD_IMAGE=rbac-build:exam-$(git rev-parse --short HEAD)
-docker build --target build --memory 1200m -t "$RBAC_BUILD_IMAGE" .
-export RBAC_TEST_MYSQL_IMAGE=swr.cn-north-4.myhuaweicloud.com/javaee_xmu/rbac-mysql@sha256:54ad54987c01f1d7af9e1343910fd0cf0d4c4526b552f13e712ddbeacf13dd02
+```powershell
+$env:APP_BACKEND_STRATEGY='ddd'
+mvn -B -ntp -f backend/pom.xml clean test jacoco:report
 ```
 
-构建阶段按固定源码提交安装老师的CloneFactory后编译，不运行测试；Excel 被 .dockerignore 排除，不进入镜像、不上传 SWR。首次构建须可访问老师的Gitee仓库和Maven镜像；固定源码与版本见[部署依赖安装](README.md#本机依赖安装)。
-若打开新终端，需重新设置以上三个 export；不必重复构建已经存在且工具版本匹配的镜像。
-脚本会从当前项目只读复制 pom.xml、src、deploy、frontend/src与frontend/tests，在容器新目录重新编译；不复制node_modules或dist，因此不会用工具镜像内的旧代码冒充当前代码。
+每次成功后先将backend/target/site/jacoco整个目录、backend/target/jacoco.exec、测试计数以及编译class摘要复制到不同的私有输出目录，再清理构建并运行另一策略。不要只复制index.html，也不要让第二次clean覆盖唯一一份报告。测试失败或被杀死时保留诊断日志，不能将部分exec算作完整回归。
 
-## 现场执行
+单策略报告包含整个生产代码分母，也就包含未启用的另一策略。因此可在确认两次源码、工具链及全部class文件逐一SHA-256一致后，使用官方同版JaCoCo CLI0.8.14合并；不同时期或不同字节码不能合并。
 
-同一终端运行：
-
-```bash
-sh deploy/test-backend.sh
+```powershell
+java -jar <jacoco-cli.jar> merge <ddd.exec> <structured.exec> --destfile <combined.exec>
+java -jar <jacoco-cli.jar> report <combined.exec> --classfiles backend/target/classes --sourcefiles backend/src/main/java --html <combined-html> --xml <combined.xml> --csv <combined.csv>
 ```
 
-脚本自动完成：
+占位路径须替换为自己的完整私有输出路径。原始两策略报告继续保留，合并不删除未覆盖的生产类，也不等于只测了已部署DDD。
 
-1. 创建唯一命名的 Docker 网络、临时 MySQL 容器和随机凭据，不发布数据库端口。
-2. 等待数据库可连接；创建T02/T03/T05/T07/T09/T11六个独立测试库（rbac_core_t02_test等），测试账号仅有这些库权限。临时实例关闭binlog，使有效的故障注入/事务回滚测试可创建短期触发器；产品不安装旧登录触发器，不修改业务实例设置。
-3. 将当前源码、部署及前端边界文件、三份 Excel 只读挂载并复制到测试容器临时目录。测试容器与本轮临时MySQL共用网络命名空间，各测试URL使用127.0.0.1及对应专库，符合隔离守卫；不发布端口。
-4. 执行 mvn clean verify：真实空库建表/初始化、接口集成测试、单元测试、JaCoCo 报告及覆盖率门槛检查。
-5. 已生成覆盖率文件时保存诊断报告；退出时删除本轮测试数据库容器及匿名卷、网络和临时凭据文件。不会删除现有业务卷。
+## 覆盖率门槛
 
-成功判断：Tests run 的 Failures/Errors/Skipped 均为 0，出现 BUILD SUCCESS、All coverage checks have been met，以及 JaCoCo report 路径。
-当前门槛要求全部生产类的指令、分支、行、复杂度、方法、类六项 MISSEDCOUNT=0；有任何遗漏时 verify 失败。用户已确认本轮整改不以JaCoCo为阻塞；配置保留，真实数据库功能回归另用mvn clean test核对。脚本的verify结果与功能回归结果分别记录，不把覆盖率未通过宣称全覆盖。失败时可能保留诊断报告，不得将其当成成功报告。
-不要使用 -DskipTests、覆盖 argLine 或排除生产类来通过检查。
+pom保留指令、分支、行、复杂度、方法、类六项MISSEDCOUNT=0门槛。`mvn clean test jacoco:report`验证测试及生成报告，不执行verify阶段门槛；需要门槛结论时另行执行check，并记录其退出码。
 
-每次生成新目录 reports/jacoco/<UTC时间>-<进程号>/，重复执行会从另一全新数据库开始，不复用上次测试业务数据。
-测试内部集成用例使用事务回滚；整个 MySQL 实例在测试结束后销毁。
+check实际默认读取backend/target/jacoco.exec。检查合并报告时，先备份原文件、核对合并exec摘要后临时复制到该位置，再执行以下命令，最后无论成功失败都恢复原文件：
 
-## 下载和展示
-
-终端打印例如：
-
-```text
-JaCoCo report: /root/ooad-course-project/reports/jacoco/<时间>-<编号>/index.html
+```powershell
+mvn -B -ntp -o -f backend/pom.xml org.jacoco:jacoco-maven-plugin:0.8.14:check@coverage-check
 ```
 
-使用 Termius SFTP 下载整个目录（不是单独一个 HTML），打开 index.html；点包名、类名可查看逐行与分支标色。
-目录含 HTML 资源、jacoco.xml、jacoco.csv、jacoco.exec、test-summary.txt、源码/字节码 SHA256 清单。
-可在本机把整个目录压缩为 ZIP 上传课程网站，并提交 Gitee 地址；脚本不会代替你提交课程网站。
-不要公开 target/surefire-reports/*.xml 或完整调试日志，它们可能含环境和测试连接凭据。
+不要假定`-Djacoco.dataFile`会改变check的读取位置，应以实际日志为准。功能测试通过和覆盖率门槛是否达到是两个独立结论，实际数值集中在发布证据。不得降低门槛、排除生产类、跳过测试或用无意义测试宣称全覆盖。
 
-## 如何向老师说明
+## 构建机隔离入口
 
-“在 A 用独立真实 MySQL 运行同一项目的后端自动化测试。集成测试验证组织账号初始化、五角色首次授权、有效权限、资源映射、人员角色与跨部门调动、事务回滚及并发维护者保护；读取器与边界测试补充异常文件和隔离检查。JaCoCo记录实际执行，是否达到覆盖率门槛以本轮报告为准。”
+现行脚本[deploy/test-backend.sh](test-backend.sh)从backend子目录准备源码，创建独立网络、临时MySQL及六个专库，不连接正式数据库。使用本项目已安装真实CloneFactory的构建镜像及明确固定的MySQL镜像运行；先检查脚本参数和资源上限，再在A工作副本记录实际main提交。原有未跟踪报告先保留，更新源码使用fetch及ff-only，不再使用旧refactor分支命令。
 
-数据库集成测试通过SpringBootTest启动整改上下文；T12另外以默认java -jar验证实际产品入口。
-异常注入、合成 Excel 和私有导入辅助逻辑验证不等同于在线上制造故障。
-100% 是当前源码的结构覆盖率，不是无缺陷、所有输入、性能或安全能力的证明。
+构建机复现前须安排足够内存，不能通过关闭线上服务挤出资源。容器被杀死或测试未完成不算通过；构建机运行与本机运行在证据中分别说明，最近一次资源失败及后续完整运行见发布记录。
 
-## 失败排查
+## 课程副本及展示
 
-- 缺 Excel：确认根目录三个文件齐全，权限清单支持带 (1) 的文件名；不要将文件打入镜像。
-- 构建下载失败：检查 A 到 Maven 镜像源的网络，不需要调整 B/C/D。
-- 数据库未就绪：查看本轮临时容器日志；脚本退出会清理本轮资源。
-- 测试/覆盖率失败：保留终端结果，修复当前代码或用例后重跑；不要混入旧 jacoco.exec。
-- 不要将任何RBAC_CORE_*_TEST_DB_URL指向业务库，也不要用线上演示账号替代测试数据。
+课程源码由prepare_course_source.py导出独立副本，保留已确认补丁，不改老师原目录和pom。使用独立course_test，通过Maven测试JVM的argLine附加官方JaCoCo代理，再显式执行report；不要覆盖已有其他代理配置，先核对最终argLine确实含代理。课程报告属于既有测试集执行范围，不能视为同数量的公网DDD验收；实际计数及覆盖率见发布证据。
 
-报告为本地生成产物，不随源码提交。现场每次执行产生新目录，按需清理；不要将不同构建的 exec 混合。
+报告完整目录可下载后打开index.html，按包、类查看红黄绿行及分支。只交付HTML资源、XML/CSV、exec、脱敏计数及源码/class摘要，不公开Surefire XML、数据库口令或完整debug日志。100%也只代表结构覆盖，不代表所有输入、无缺陷、安全或性能已获证明。
