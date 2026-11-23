@@ -12,7 +12,7 @@
 | 模型与实现 | [领域模型](docs/domain-model.md)、[数据库](docs/database-design.md)、[后端](docs/backend-design.md)、[前端](docs/frontend-design.md) |
 | HTTP 与页面 | [OpenAPI](api/README.md)、[业务契约](docs/api-contract.md)、[页面接口对照](docs/api-map.md) |
 | 数据与双系统接入 | [初始化](docs/initialization.md)、[课程接入](docs/course-integration.md) |
-| 运行与验证 | [本地复现](docs/reproduction.md)、[服务器部署](deploy/README.md)、[测试与验收](docs/testing-acceptance.md)、[JaCoCo报告](docs/reports/jacoco/20261124-rbac/README.md) |
+| 运行与验证 | [本地复现](docs/reproduction.md)、[服务器部署](deploy/README.md)、[测试与验收](docs/testing-acceptance.md)、[JaCoCo报告](docs/reports/jacoco/20261124-performance-rbac/README.md) |
 | 协作 | [贡献约定](CONTRIBUTING.md) |
 
 ## 运行与数据
@@ -21,4 +21,4 @@
 
 三份原 Excel 保留原件；111 个组织来源合并为 110 个目标部门，10000 员工加独立 admin 共 10001 账号。员工与管理员的初始口令分别由必填配置提供，各账号独立 BCrypt 盐，无公开默认口令。默认初始化只登记 RBAC，课程应用通过独立配置和脚本接入；18个业务系统按原表通过独立首次脚本登记为待接入目录，五基础角色矩阵同步导入，详见[初始化](docs/initialization.md)。待接入权限只用于规划，不提供业务通行能力。
 
-已发布入口：[课程系统](http://114.116.254.25/)、[RBAC](http://114.116.254.25:8088/)。18业务目录、部门角色、原型界面及日志来源IP已于2026-11-24发布；课程前端保持老师原样。实际镜像、保留数据、六项100%覆盖率及未验证范围统一从[测试与验收](docs/testing-acceptance.md)查阅。
+已发布入口：[课程系统](http://114.116.254.25/)、[RBAC](http://114.116.254.25:8088/)。18业务目录、部门角色、原型界面及日志来源IP已发布，现行RBAC通过批量装载授权关系和总览并行读取改善菜单加载；课程前端保持老师原样。实际镜像、保留数据、六项100%覆盖率、加载实测及未验证范围统一从[测试与验收](docs/testing-acceptance.md)查阅。
