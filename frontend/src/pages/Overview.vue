@@ -57,7 +57,7 @@ const shortcuts = computed(() =>
   [
     { path: '/departments', capability: '/departments', name: '部门管理', icon: 'building' },
     { path: '/users', capability: '/users', name: '人员管理', icon: 'users' },
-    { path: '/roles', capability: '/roles', name: '角色与权限', icon: 'shield', global: true },
+    { path: '/roles', capability: '/roles', name: '角色与权限', icon: 'shield' },
     {
       path: '/resources',
       resource: true,

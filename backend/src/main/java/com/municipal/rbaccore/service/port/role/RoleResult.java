@@ -12,4 +12,9 @@ public class RoleResult {
   private String name;
   private Integer managementLevel;
   private Boolean enabled;
+  private RoleType type;
+  private Long ownerDepartmentId;
+  private String ownerDepartmentName;
+  private Long applicationId;
+  private String applicationName;
 }

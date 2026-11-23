@@ -67,7 +67,7 @@ java '-Dloader.main=com.municipal.rbaccore.bootstrap.ImportCommand' -cp backend/
 java '-Dloader.main=com.municipal.rbaccore.bootstrap.BootstrapAuthorizationCommand' -cp backend/target/rbac0-0.1.0.jar org.springframework.boot.loader.launch.PropertiesLauncher --rbac.core.preview-file=.local/initial-role-preview.csv
 # 不带preview-file才执行首次批量授权。
 java '-Dloader.main=com.municipal.rbaccore.bootstrap.BootstrapAuthorizationCommand' -cp backend/target/rbac0-0.1.0.jar org.springframework.boot.loader.launch.PropertiesLauncher
-# 默认产品入口启动；再次启动不导入或重授角色。
+# 默认产品入口启动；再次启动不导入或重授角色。业务目录另按初始化设计显式运行initialize_business_catalog.py，课程仍用独立首次配置。
 java -jar backend/target/rbac0-0.1.0.jar
 ```
 

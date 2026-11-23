@@ -17,10 +17,16 @@ public class BootstrapReceiptEntity {
   private String seedKey;
 
   @Column(name = "manifest_sha256", nullable = false, length = 64)
+
   private String manifestSha256;
 
   @Column(name = "completed_at", nullable = false, columnDefinition = "datetime(3)")
+
   private Instant completedAt;
+
+  /** 独立应用预置可保存原表摘要与单元格事实；基础初始化不必附带载荷。 */
+  @Column(name = "source_json", columnDefinition = "longtext")
+  private String sourceJson;
 
   /** 回执与整批角色关联同一事务提交，失败不留下完成标记。 */
   public BootstrapReceiptEntity(String manifestSha256, Instant completedAt) {

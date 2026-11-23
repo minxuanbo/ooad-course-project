@@ -3,6 +3,7 @@ package com.municipal.rbaccore.service.ddd.application.support;
 import com.municipal.rbaccore.service.ddd.domain.model.Role;
 import com.municipal.rbaccore.service.ddd.domain.model.User;
 import com.municipal.rbaccore.service.port.role.RoleResult;
+import com.municipal.rbaccore.service.port.role.RoleType;
 import com.municipal.rbaccore.service.port.user.UserResult;
 import com.municipal.rbaccore.service.port.user.UserWithRolesResult;
 import java.util.Comparator;
@@ -19,6 +20,13 @@ public final class DddResults {
     result.setCode(value.code());
     result.setName(value.name());
     result.setManagementLevel(value.managementLevel());
+    result.setType(RoleType.valueOf(value.type().name()));
+    result.setOwnerDepartmentId(
+        value.ownerDepartment() == null ? null : value.ownerDepartment().id());
+    result.setOwnerDepartmentName(
+        value.ownerDepartment() == null ? null : value.ownerDepartment().name());
+    result.setApplicationId(value.application() == null ? null : value.application().id());
+    result.setApplicationName(value.application() == null ? null : value.application().name());
     result.setEnabled(value.enabled());
     return result;
   }

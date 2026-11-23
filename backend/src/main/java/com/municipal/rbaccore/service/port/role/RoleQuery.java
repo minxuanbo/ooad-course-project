@@ -9,6 +9,8 @@ import lombok.Setter;
 public class RoleQuery {
   private String q;
   private Boolean enabled;
+  private RoleType type;
+  private Long ownerDepartmentId;
   private int page;
   private int size;
 }

@@ -3,6 +3,9 @@ package com.municipal.rbaccore.service.port.role;
 /** 全局共享角色定义及直接选权用例。 */
 public interface RoleUseCase {
 
+  /** 参数解析前检查实际API、角色可见范围或全局写入资格。 */
+  void checkTarget(String header, Long id, boolean write);
+
   /** 按文字和状态数据库分页。 */
   RolePageResult list(String header, RoleQuery query);
 

@@ -3,10 +3,12 @@ package com.municipal.rbaccore.infrastructure.persistence.ddd;
 import com.municipal.rbaccore.infrastructure.persistence.entity.PermissionEntity;
 import com.municipal.rbaccore.infrastructure.persistence.entity.RoleEntity;
 import com.municipal.rbaccore.infrastructure.persistence.entity.UserEntity;
+import com.municipal.rbaccore.infrastructure.persistence.repository.DepartmentJpaRepository;
 import com.municipal.rbaccore.infrastructure.persistence.repository.RoleJpaRepository;
 import com.municipal.rbaccore.infrastructure.persistence.repository.UserJpaRepository;
 import com.municipal.rbaccore.service.ddd.domain.model.*;
 import com.municipal.rbaccore.service.ddd.domain.repository.AuthorizationRepository;
+import com.municipal.rbaccore.service.port.role.RoleType;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Subquery;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Repository;
 public class JpaAuthorizationRepositoryAdapter implements AuthorizationRepository {
   private final UserJpaRepository users;
   private final RoleJpaRepository roles;
+  private final DepartmentJpaRepository departments;
 
   /** 不调用结构化的有效权限查询，映射全部直接链。 */
   @Override
@@ -62,9 +65,20 @@ public class JpaAuthorizationRepositoryAdapter implements AuthorizationRepositor
           if (criteria.customPermitted()) {
             level = builder.or(level, builder.isNull(root.get("managementLevel")));
           }
+          Predicate departmental =
+              builder.and(
+                  builder.equal(root.get("type"), RoleType.DEPARTMENT_CUSTOM),
+                  root.get("ownerDepartment").get("id").in(criteria.manageableOwnerIds()),
+                  root.get("ownerDepartment").get("id").in(criteria.targetAncestorIds()));
+          if (criteria.level() >= Role.FIRST_MANAGER_LEVEL) level = builder.or(level, departmental);
+          Predicate applicable =
+              builder.or(
+                  builder.notEqual(root.get("type"), RoleType.DEPARTMENT_CUSTOM),
+                  root.get("ownerDepartment").get("id").in(criteria.targetAncestorIds()));
           return builder.and(
               builder.isTrue(root.get("enabled")),
               level,
+              applicable,
               builder.not(builder.exists(excluded)),
               builder.or(
                   builder.like(builder.lower(root.get("name")), pattern, '\\'),
@@ -85,6 +99,7 @@ public class JpaAuthorizationRepositoryAdapter implements AuthorizationRepositor
             row,
             row.getRoles().stream()
                 .map(JpaDomainMapper::role)
-                .collect(Collectors.toUnmodifiableSet())));
+                .collect(Collectors.toUnmodifiableSet())),
+        departments.ancestorIds(row.getDepartment().getId()));
   }
 }

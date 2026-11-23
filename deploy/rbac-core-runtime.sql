@@ -25,5 +25,6 @@ CREATE TABLE IF NOT EXISTS bootstrap_receipts (
   seed_key VARCHAR(64) NOT NULL,
   manifest_sha256 VARCHAR(64) NOT NULL,
   completed_at DATETIME(3) NOT NULL,
+  source_json LONGTEXT,
   PRIMARY KEY (seed_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;

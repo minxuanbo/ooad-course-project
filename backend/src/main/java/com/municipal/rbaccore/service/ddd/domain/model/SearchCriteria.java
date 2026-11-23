@@ -9,7 +9,19 @@ public final class SearchCriteria {
       OrganizationFacts.Scope scope, String q, Boolean enabled, Long roleId, int page, int size) {}
 
   /** 共享角色支持名称、编码与启停过滤。 */
-  public record Roles(String q, Boolean enabled, int page, int size) {}
+  public record Roles(
+      String q,
+      Boolean enabled,
+      int page,
+      int size,
+      Role.Type type,
+      Long ownerDepartmentId,
+      java.util.Set<Long> visibleOwners) {
+    /** 全局查询兼容入口。 */
+    public Roles(String q, Boolean enabled, int page, int size) {
+      this(q, enabled, page, size, null, null, null);
+    }
+  }
 
   /** API目录按系统、方法及模板分页。 */
   public record Apis(ApplicationSystem system, String q, int page, int size) {}

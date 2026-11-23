@@ -201,7 +201,7 @@ onUnmounted(() => {
             所属系统
             <select v-model="systemId" :disabled="saving || loading" @change="loadCandidates(0)">
               <option v-for="system in systems" :key="system.id" :value="String(system.id)">
-                {{ system.name }}
+                {{ system.name }}{{ system.connectionStatus === 'PENDING' ? '（待接入）' : '' }}
               </option>
             </select>
           </label>

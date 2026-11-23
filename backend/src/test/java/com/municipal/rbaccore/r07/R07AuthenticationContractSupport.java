@@ -4,11 +4,13 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.municipal.rbaccore.infrastructure.logging.AuditPageCursor;
 import com.municipal.rbaccore.infrastructure.logging.JpaAuditQueryGateway;
 import com.municipal.rbaccore.infrastructure.logging.JpaAuditWriter;
 import com.municipal.rbaccore.infrastructure.persistence.entity.AuthorizationLogEntity;
 import com.municipal.rbaccore.infrastructure.persistence.entity.RoleEntity;
 import com.municipal.rbaccore.infrastructure.persistence.entity.UserEntity;
+import com.municipal.rbaccore.infrastructure.persistence.repository.ApplicationSystemJpaRepository;
 import com.municipal.rbaccore.infrastructure.persistence.repository.AuthorizationLogJpaRepository;
 import com.municipal.rbaccore.infrastructure.persistence.repository.DepartmentJpaRepository;
 import com.municipal.rbaccore.infrastructure.persistence.repository.RoleJpaRepository;
@@ -105,8 +107,8 @@ abstract class R07AuthenticationContractSupport {
   AuthorizationLogJpaRepository auditRows;
 
   @Autowired
-  com.municipal.rbaccore.infrastructure.persistence.repository.ApplicationSystemJpaRepository
-      systems;
+
+  ApplicationSystemJpaRepository systems;
 
   private long rootId;
   private long departmentManagerId;
@@ -234,7 +236,7 @@ abstract class R07AuthenticationContractSupport {
     ResponseEntity<String> denied = request("GET", USERS, null, null);
     ResponseEntity<String> allowed = request("GET", USERS, admin, null);
     ResponseEntity<String> preflight =
-        request("GET", "/api/roles", token(departmentManager, PASSWORD), null);
+        request("POST", "/api/roles", token(departmentManager, PASSWORD), Map.of());
     assertEquals(403, preflight.getStatusCode().value());
     for (ResponseEntity<String> response : List.of(login, denied, allowed, preflight)) {
       String ip =
@@ -317,11 +319,7 @@ abstract class R07AuthenticationContractSupport {
     org.mockito.Mockito.when(broken.writeValueAsBytes(org.mockito.ArgumentMatchers.any()))
         .thenThrow(new com.fasterxml.jackson.core.JsonProcessingException("serializer failure") {});
     JpaAuditQueryGateway gateway =
-        new JpaAuditQueryGateway(
-            auditRows,
-            new com.municipal.rbaccore.infrastructure.logging.AuditPageCursor(),
-            broken,
-            systems);
+        new JpaAuditQueryGateway(auditRows, new AuditPageCursor(), broken, systems);
     assertEquals(
         "INTERNAL_ERROR",
         assertThrows(BusinessException.class, () -> gateway.list(new LogQuery())).getCode());

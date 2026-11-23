@@ -22,7 +22,6 @@ const navigation = [
     group: '权限管理',
     icon: 'shield',
     capability: '/roles',
-    global: true,
   },
   {
     path: '/resources',

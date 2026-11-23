@@ -28,8 +28,8 @@ def course_catalog():
 def rbac_sql():
     """复用RBAC最小可信根，追加课程目录及明确教师准入；所有员工均为虚构。"""
     base = fixture_sql().removesuffix('COMMIT;\n')
-    statements = [base, "INSERT INTO systems VALUES(2,'course-project-management','课程项目管理系统',1);",
-                  "INSERT INTO roles VALUES(50,'teacher','课程教师资格',1,NULL),(51,'course-admin','课程管理员',1,NULL),(52,'student','课程学生资格',1,NULL);",
+    statements = [base, "INSERT INTO systems(id,code,name,enabled) VALUES(2,'course-project-management','课程项目管理系统',1);",
+                  "INSERT INTO roles(id,code,name,enabled,management_level,role_type,application_id) VALUES(50,'teacher','课程教师资格',1,NULL,'APPLICATION_PRESET',2),(51,'course-admin','课程管理员',1,NULL,'APPLICATION_PRESET',2),(52,'student','课程学生资格',1,NULL,'APPLICATION_PRESET',2);",
                   'INSERT INTO user_roles VALUES(5,50),(6,50),(8,50),(8,51),(9,52),(10,52);']
     codes, routes = course_catalog()
     all_codes = codes + sorted(routes)

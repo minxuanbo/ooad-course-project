@@ -9,4 +9,6 @@ import lombok.Setter;
 public class CreateRoleCommand {
   private String code;
   private String name;
+  private RoleType type = RoleType.GLOBAL_CUSTOM;
+  private Long ownerDepartmentId;
 }

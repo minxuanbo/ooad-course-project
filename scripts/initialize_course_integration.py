@@ -188,8 +188,8 @@ def rbac_initialization_sql(plan, configuration, catalog):
                       + sql_text(plan['system']) + ',' + sql_text(configuration['systemName']) + ',1);')
     statements.append('SET @course_system=LAST_INSERT_ID();')
     for key, label in [('teacher', '课程教师资格'), ('student', '课程学生资格'), ('administrator', '课程管理员')]:
-        statements.append('INSERT INTO roles(code,name,enabled,management_level) VALUES('
-                          + sql_text(roles[key]) + ',' + sql_text(label) + ',1,NULL);')
+        statements.append('INSERT INTO roles(code,name,enabled,management_level,role_type,application_id) VALUES('
+                          + sql_text(roles[key]) + ',' + sql_text(label) + ",1,NULL,'APPLICATION_PRESET',@course_system);")
         statements.append('SET @course_' + key + '=LAST_INSERT_ID();')
     routes = catalog['routes']
     codes = catalog['display'] + sorted(routes)
@@ -222,7 +222,7 @@ def rbac_initialization_sql(plan, configuration, catalog):
                     'administrators': '@course_administrator'}[key]
         for ident in plan[key]:
             statements.append(f'INSERT INTO user_roles VALUES({ident},{variable});')
-    statements.append('INSERT INTO bootstrap_receipts VALUES('
+    statements.append('INSERT INTO bootstrap_receipts(seed_key,manifest_sha256,completed_at) VALUES('
                       + sql_text(configuration['seedKey']) + ',' + sql_text(plan['manifest']) + ',UTC_TIMESTAMP(3));')
     return '\n'.join(statements + ['COMMIT;'])
 

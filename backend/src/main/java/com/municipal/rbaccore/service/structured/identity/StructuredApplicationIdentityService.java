@@ -10,7 +10,11 @@ import com.municipal.rbaccore.service.port.auth.AuthenticationUseCase;
 import com.municipal.rbaccore.service.port.auth.LoginCommand;
 import com.municipal.rbaccore.service.port.error.BusinessException;
 import com.municipal.rbaccore.service.port.identity.*;
+import com.municipal.rbaccore.service.port.resource.ConnectionStatus;
+import com.municipal.rbaccore.service.port.resource.PermissionType;
 import com.municipal.rbaccore.service.port.security.*;
+import com.municipal.rbaccore.service.structured.security.StructuredDepartmentScopeService;
+import com.municipal.rbaccore.service.structured.security.StructuredEffectivePermissionService;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -27,13 +31,13 @@ public class StructuredApplicationIdentityService implements ApplicationIdentity
   private final AuthenticationUseCase authentication;
   private final IdentityTokenStore tokens;
   private final PermissionJpaRepository permissions;
+  private final StructuredEffectivePermissionService effective;
   private final ApplicationSystemJpaRepository systems;
   private final UserJpaRepository users;
   private final RequestContext requests;
   private final IdentityDirectoryGateway directory;
   private final ApiOperationCatalog operations;
-  private final com.municipal.rbaccore.service.structured.security.StructuredDepartmentScopeService
-      scope;
+  private final StructuredDepartmentScopeService scope;
 
   /** 凭据正确、应用启用且已有有效授权时签发独立受众令牌。 */
   @Override
@@ -126,11 +130,11 @@ public class StructuredApplicationIdentityService implements ApplicationIdentity
                 || identity.roles().stream().anyMatch(operation.permissionRoles()::contains));
     boolean allowed =
         !gated
-        || hasRoute(
-            tokens.requireForSystem(header, identity.system()),
-            identity.system(),
-            operation.method(),
-            operation.path());
+            || hasRoute(
+                tokens.requireForSystem(header, identity.system()),
+                identity.system(),
+                operation.method(),
+                operation.path());
     requests.permissionCheck(allowed);
     return allowed;
   }
@@ -147,7 +151,9 @@ public class StructuredApplicationIdentityService implements ApplicationIdentity
 
   /** API必须来自同应用、启用且完整有效的直接权限映射。 */
   private boolean hasRoute(Long actor, String system, String method, String path) {
-    return permissions.directPermissions(actor, Set.of(system)).stream()
+    return permissions
+        .directPermissions(actor, effective.applicableRoleIds(actor), Set.of(system))
+        .stream()
         .filter(this::exportable)
         .flatMap(permission -> permission.getApis().stream())
         .anyMatch(api -> method.equals(api.getHttpMethod()) && path.equals(api.getPathTemplate()));
@@ -170,7 +176,9 @@ public class StructuredApplicationIdentityService implements ApplicationIdentity
   /** 只有贡献当前应用有效直接权限的启用角色才导出其配置编码。 */
   private ApplicationIdentityResult view(Long id, String system) {
     UserEntity user = users.findById(id).orElseThrow(BusinessException::unauthorized);
-    List<PermissionEntity> direct = permissions.directPermissions(id, Set.of(system));
+    Set<Long> applicableRoles = effective.applicableRoleIds(id);
+    List<PermissionEntity> direct =
+        permissions.directPermissions(id, applicableRoles, Set.of(system));
     List<String> codes =
         direct.stream()
             .filter(this::exportable)
@@ -188,6 +196,7 @@ public class StructuredApplicationIdentityService implements ApplicationIdentity
     List<String> roles =
         user.getRoles().stream()
             .filter(RoleEntity::isEnabled)
+            .filter(role -> applicableRoles.contains(role.getId()))
             .filter(
                 role ->
                     role.getPermissions().stream()
@@ -217,8 +226,10 @@ public class StructuredApplicationIdentityService implements ApplicationIdentity
 
   /** 无API的菜单与资格权限直接生效；有映射的短码要求全部映射同系统且启用。 */
   private boolean exportable(PermissionEntity permission) {
-    return (permission.getType() != com.municipal.rbaccore.service.port.resource.PermissionType.API
-            || !permission.getApis().isEmpty())
+    return permission.getSystem().isEnabled()
+        && permission.getSystem().getConnectionStatus()
+            == com.municipal.rbaccore.service.port.resource.ConnectionStatus.CONNECTED
+        && (permission.getType() != PermissionType.API || !permission.getApis().isEmpty())
         && permission.getApis().stream()
             .allMatch(
                 api ->
@@ -231,7 +242,12 @@ public class StructuredApplicationIdentityService implements ApplicationIdentity
   private void requireSystem(String code) {
     if (RbacCatalog.SYSTEM_CODE.equals(code))
       throw BusinessException.bad("INVALID_ARGUMENT", "管理端请使用管理登录接口");
-    if (systems.findByCode(code).filter(system -> system.isEnabled()).isEmpty())
-      throw new BusinessException(403, "APPLICATION_ACCESS_DENIED", "应用未登记或已停用");
+    if (systems
+        .findByCode(code)
+        .filter(
+            system ->
+                system.isEnabled() && system.getConnectionStatus() == ConnectionStatus.CONNECTED)
+        .isEmpty())
+      throw new BusinessException(403, "APPLICATION_ACCESS_DENIED", "应用未登记、未启用或尚未完成接入");
   }
 }

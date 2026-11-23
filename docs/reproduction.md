@@ -73,7 +73,7 @@ java '-Dloader.main=com.municipal.rbaccore.bootstrap.BootstrapAuthorizationComma
 java '-Dloader.main=com.municipal.rbaccore.bootstrap.BootstrapAuthorizationCommand' -cp backend/target/rbac0-0.1.0.jar org.springframework.boot.loader.launch.PropertiesLauncher
 ```
 
-首次核对值：110有效组织、10000员工加独立admin、根直属11人；五角色人数1/64/106/72/9758，固定级别5/4/3/2/1；仅1个rbac系统及25个受控API。18业务系统仅在离线原型展示，不进入初始化。普通员工默认无RBAC管理权限，拒绝登录属于正确结果。
+首次核对值：110有效组织、10000员工加独立admin、根直属11人；五角色人数1/64/106/72/9758，固定级别5/4/3/2/1；仅1个rbac系统及25个受控API。上述为RBAC核心阶段；另运行scripts/initialize_business_catalog.py预览/显式apply，登记18个PENDING业务系统和原表五角色矩阵，课程独立配置后共20项。普通员工默认无RBAC管理权限，拒绝登录属于正确结果。
 
 ## 4. 分别启动前后端
 

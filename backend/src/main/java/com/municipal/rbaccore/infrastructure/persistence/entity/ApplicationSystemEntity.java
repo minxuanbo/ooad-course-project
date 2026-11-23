@@ -1,5 +1,7 @@
 package com.municipal.rbaccore.infrastructure.persistence.entity;
 
+import com.municipal.rbaccore.service.port.resource.ConnectionStatus;
+import com.municipal.rbaccore.service.port.resource.SystemResult;
 import jakarta.persistence.*;
 import org.springframework.util.Assert;
 
@@ -7,9 +9,8 @@ import org.springframework.util.Assert;
 @Entity
 @Table(
     name = "systems",
-    uniqueConstraints =
-        @UniqueConstraint(name = "uk_system_code", columnNames = "code"))
-@cn.edu.xmu.clonefactory.CopyTo({com.municipal.rbaccore.service.port.resource.SystemResult.class})
+    uniqueConstraints = @UniqueConstraint(name = "uk_system_code", columnNames = "code"))
+@cn.edu.xmu.clonefactory.CopyTo({SystemResult.class})
 @lombok.Getter
 @lombok.NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class ApplicationSystemEntity {
@@ -18,15 +19,20 @@ public class ApplicationSystemEntity {
   private Long id;
 
   @Column(nullable = false, length = 100)
+
   private String code;
 
   @Column(nullable = false, length = 191)
+
   private String name;
 
+  @Enumerated(EnumType.STRING)
+  @Column(name = "connection_status", nullable = false, length = 16)
+  @lombok.Setter
+  private ConnectionStatus connectionStatus = ConnectionStatus.CONNECTED;
+
   @Column(nullable = false)
-  @cn.edu.xmu.clonefactory.CopyTo.Exclude({
-    com.municipal.rbaccore.service.port.resource.SystemResult.class
-  })
+  @cn.edu.xmu.clonefactory.CopyTo.Exclude({SystemResult.class})
   @lombok.Setter
   private boolean enabled = true;
 

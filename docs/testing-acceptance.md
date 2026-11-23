@@ -6,10 +6,11 @@
 
 | 关注点 | 可追溯证据与边界 |
 | --- | --- |
-| 本轮源码，尚未发布 | [成员查询与来源IP](history/verification/member-queries-audit-ip-20261123.md)：双策略各311项、六项100%及必要前端/接入回归；18系统/部门角色仅完成待确认设计，未导入或启用 |
+| 本轮源码，尚未发布 | [18系统与部门角色](history/verification/access-extension-20261124.md)：两策略各317项真实MySQL回归无失败/错误/跳过，Vue53项及8组隔离浏览器通过，Apifox1.6.0回读差异0；合并行99.61%、分支97.64%，六项零遗漏门槛未通过，不沿用旧100%成绩 |
+| 前期成员查询与来源IP | [验证记录](history/verification/member-queries-audit-ip-20261123.md)：当时双策略各311项及六项100%，保留其独立验证边界，不替代后续业务扩展结果 |
 | 当前正式发布 | [JWT修复发布](history/verification/jwt-coverage-release-20261123.md)：13:05完成RBAC更新，其余七项服务定义不变；91次公网HTTP、即时撤权、健康/时间/监控及备份通过；浏览器导航超时，交互验收未取得结果 |
 | RBAC源码覆盖率（对应已发布源码） | [验证记录](history/verification/rbac-jacoco-complete.md)、[完整JaCoCo报告](reports/jacoco/20261123-rbac/README.md)：两策略各304项无失败/错误/跳过；测试产物中340份生产class摘要一致，合并六项100%，原六项零遗漏门槛通过；不冒充正式进程流量覆盖率 |
-| 已发布版本回归及覆盖率 | RBAC两策略各215项、课程499项均无失败/错误/跳过；当时合并RBAC行96.19%、分支82.94%，课程行90.60%、分支62.17%；仅代表发布记录对应版本，不用本轮源码100%替代 |
+| 已发布版本回归及覆盖率 | RBAC两策略各215项、课程499项均无失败/错误/跳过；当时合并RBAC行96.19%、分支82.94%，课程行90.60%、分支62.17%；仅代表发布记录对应版本，不以其他版本成绩替代 |
 | 首发历史 | [双DDD首发](history/verification/ddd-production-deployment.md)：首次导入、逐人身份、公网及重启结果；只代表该版本，不宣称高可用或压测通过 |
 | 前次集中发布 | [北京时间/监控发布](history/verification/release-20261123.md)：108次HTTP、两系统及UI来源、外部材料和当时测试成绩；独立于本次RBAC镜像更新 |
 | 时间及文档修正来源 | [北京时间与终态服务清理](history/verification/beijing-time-and-service-cleanup.md)、[文档与监控调整](history/verification/current-docs-and-monitoring.md)：保留本机及离线验证过程；其中待发布项已在11月23日发布 |
@@ -32,7 +33,7 @@
 | 外部协议/课程 | 8项直连及经支撑，目录最小字段/范围，operationId配置、204；短码完整映射、业务审计独立、课程对象权限及来源缺口响应 |
 | 前端 | 真实Vue、身份切换、窄屏/键盘、读失败禁保存、草稿/取消/晚响应、失权及两个本机Origin |
 | 架构与映射 | 双策略独立决策、DDD不依赖JPA/Entity/structured、仓储仅领域类型、真实CloneFactory赋值、record/final显式构造、中文Javadoc及注解独行 |
-| 文档与契约 | YAML/JSON一致，37操作/31路径/71模型/K17；全部操作及离线入口可追溯，顺序图只画差异，链接与源码锚点有效；Apifox仅在明确授权同步后回读 |
+| 文档与契约 | YAML/JSON一致，37操作/31路径/73模型/K17；全部操作及离线入口可追溯，顺序图只画差异，链接与源码锚点有效；Apifox仅在明确授权同步后回读 |
 | 部署与监控 | Stack配置可解析、Secrets不泄露、内部端口隔离；promtool校验真实配置/规则及CPU负载、重置、缺样本；线上健康与指标采集另行验证 |
 
 ## 3. 执行方法

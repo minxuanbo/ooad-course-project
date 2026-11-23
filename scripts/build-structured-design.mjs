@@ -58,7 +58,7 @@ const slices={
  identity:{repo:['findByUsernameOrPhone','findById'],model:[],support:['canEnter','permissions'],fields:['id','username','passwordHash','enabled','department']},
  personnel:{repo:['findById','saveAndFlush'],model:['assignRole','removeRole','moveTo'],support:['snapshot','canManage','requireManage'],fields:['id','department','enabled','roles']},
  query:{repo:['count','findAll','withRoles'],model:[],support:['filteredIds','allowedIds'],fields:['id','username','name','department']},
- role:{repo:['existsByCode','findById','saveAndFlush'],model:['grantPermission','revokePermission'],support:['require','write'],fields:['id','code','enabled','permissions']},
+ role:{repo:['existsByCode','findById','saveAndFlush'],model:['belongTo','grantPermission','revokePermission'],support:['require','write'],fields:['id','type','ownerDepartment','application','managementLevel','enabled','permissions']},
  resource:{repo:['findById','findAllById'],model:['changeType','moveTo','mapApi','unmapApi'],support:['require','write'],fields:['id','system','parent','type','enabled']},
  department:{repo:['siblingNameExists','existsByParentIdAndDeletedFalse','saveAndFlush'],model:['moveTo','setDeleted'],support:['allowedIds','trustedRootId','isGlobal'],fields:['id','parent','name','type','deleted']},
  overview:{repo:['countByDepartmentIdInAndEnabledTrue'],model:[],support:['list'],fields:['id','parentId','directUsers','totalUsers']},
@@ -67,7 +67,7 @@ const slices={
  bootstrap:{repo:['saveAndFlush'],model:['grantPermission'],support:['plan'],fields:['code','managementLevel','permissions']},
  maintenance:{repo:['findByDepartmentIdAndEnabledTrue'],model:[],support:['routes'],fields:['id','enabled','department','roles']},
  'api-resource':{repo:['findById','count','findAll','saveAndFlush'],model:['setEnabled'],support:['require','write'],fields:['id','system','httpMethod','pathTemplate','enabled']},
- systems:{repo:['findByCode'],model:[],support:['codes'],fields:['id','code','name','enabled']},
+ systems:{repo:['findByCode'],model:[],support:['codes'],fields:['id','code','name','enabled','connectionStatus']},
  authorization:{repo:['effectiveApis'],model:[],support:['codes'],fields:['system','type','enabled','apis']},
  'management-access':{repo:['allows'],model:[],support:['isGlobal'],fields:['id','departmentId']},
 }
@@ -89,7 +89,7 @@ for(const item of design.entries) {
     {id:'service',x:580,y:400,w:640,h:320,title:service,fields:[`- ${repoRole}: ${repository}`,`- ${supportRole}: ${support}`],methods:item.serviceMethods,center:true},
     {id:'port',x:580,y:105,w:640,h:190,title:'«interface» '+item.port,fields:[],methods:item.serviceMethods.slice(0,2)},
     {id:'repository',x:20,y:405,w:450,h:285,title:(/interface\s/.test(source(repository))?'«interface» ':'')+repository,fields:[],methods:methods(repository,selected.repo)},
-    {id:'model',x:1330,y:405,w:450,h:370,title:model,fields:fields(model,selected.fields),methods:methods(model,selected.model)},
+    {id:'model',x:1330,y:405,w:450,h:Math.max(370,110+(selected.fields.length+selected.model.length)*28),title:model,fields:fields(model,selected.fields),methods:methods(model,selected.model)},
     {id:'support',x:580,y:850,w:640,h:240,title:(/interface\s/.test(source(support))?'«interface» ':'')+support,fields:[],methods:methods(support,selected.support)},
   ]
   const edges=[

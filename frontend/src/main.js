@@ -25,7 +25,7 @@ const router = createRouter({
     {
       path: '/roles',
       component: Roles,
-      meta: { title: '角色与权限', capability: '/roles', global: true },
+      meta: { title: '角色与权限', capability: '/roles' },
     },
     {
       path: '/resources',

@@ -15,6 +15,7 @@ import com.municipal.rbaccore.service.port.resource.PermissionType;
 import com.municipal.rbaccore.service.port.security.*;
 import com.municipal.rbaccore.service.structured.identity.StructuredApplicationIdentityService;
 import com.municipal.rbaccore.service.structured.security.StructuredDepartmentScopeService;
+import com.municipal.rbaccore.service.structured.security.StructuredEffectivePermissionService;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -35,11 +36,19 @@ class R34IdentityReadBoundaryTest {
   void R29_directoryReadInconsistencyFailsClosed() {
     Fixture f = new Fixture();
     for (ApplicationIdentityUseCase service : List.of(f.structured, f.ddd)) {
-      assertEquals("IDENTITY_DEPARTMENT_NOT_FOUND", assertThrows(BusinessException.class,
-          () -> service.departmentUsers(HEADER, 1L, null, 1, 20)).getCode());
-      when(f.directory.department(9L)).thenReturn(Optional.of(new ApplicationDepartmentResult(9L, "foreign", "外部门", null, false)));
-      assertEquals("MANAGEMENT_SCOPE_DENIED", assertThrows(BusinessException.class,
-          () -> service.departmentUsers(HEADER, 9L, null, 1, 20)).getCode());
+      assertEquals(
+          "IDENTITY_DEPARTMENT_NOT_FOUND",
+          assertThrows(
+                  BusinessException.class, () -> service.departmentUsers(HEADER, 1L, null, 1, 20))
+              .getCode());
+      when(f.directory.department(9L))
+          .thenReturn(
+              Optional.of(new ApplicationDepartmentResult(9L, "foreign", "外部门", null, false)));
+      assertEquals(
+          "MANAGEMENT_SCOPE_DENIED",
+          assertThrows(
+                  BusinessException.class, () -> service.departmentUsers(HEADER, 9L, null, 1, 20))
+              .getCode());
     }
     verify(f.directory, never()).users(any(), any(), anyInt(), anyInt());
   }
@@ -54,12 +63,14 @@ class R34IdentityReadBoundaryTest {
       ReflectionTestUtils.setField(foreign, "id", 2L);
       foreign.setEnabled(!disabled);
       ApiResourceEntity invalid = new ApiResourceEntity(f.entitySystem, "GET", INVALID_API);
-      PermissionEntity broken = new PermissionEntity(f.entitySystem, "broken", "坏映射", PermissionType.API);
+      PermissionEntity broken =
+          new PermissionEntity(f.entitySystem, "broken", "坏映射", PermissionType.API);
       broken.mapApi(invalid);
       // 仓储可能读到历史坏关联；实体写入口本身已拒绝跨系统映射。
       ReflectionTestUtils.setField(invalid, "system", foreign);
       ReflectionTestUtils.setField(broken, "id", 2L);
-      when(f.permissionRows.directPermissions(1L, Set.of(SYSTEM))).thenReturn(List.of(f.entityPermission, broken));
+      when(f.permissionRows.directPermissions(1L, Set.of(1L), Set.of(SYSTEM)))
+          .thenReturn(List.of(f.entityPermission, broken));
       ApplicationIdentityResult result = f.structured.current(HEADER);
       assertEquals(List.of("directory"), result.permissions());
       assertFalse(result.permissionApis().containsKey("broken"));
@@ -73,8 +84,10 @@ class R34IdentityReadBoundaryTest {
     private final RequestContext requests = mock(RequestContext.class);
     private final IdentityDirectoryGateway directory = mock(IdentityDirectoryGateway.class);
     private final PermissionJpaRepository permissionRows = mock(PermissionJpaRepository.class);
-    private final ApplicationSystemEntity entitySystem = new ApplicationSystemEntity(SYSTEM, "外部应用");
-    private final PermissionEntity entityPermission = new PermissionEntity(entitySystem, "directory", "组织查询", PermissionType.API);
+    private final ApplicationSystemEntity entitySystem =
+        new ApplicationSystemEntity(SYSTEM, "外部应用");
+    private final PermissionEntity entityPermission =
+        new PermissionEntity(entitySystem, "directory", "组织查询", PermissionType.API);
     private final StructuredApplicationIdentityService structured;
     private final DddApplicationIdentityService ddd;
 
@@ -94,29 +107,65 @@ class R34IdentityReadBoundaryTest {
       ReflectionTestUtils.setField(entityRoot, "id", 1L);
       UserEntity entityUser = new UserEntity("sample", "encoded", "示例", entityRoot, true);
       when(userRows.findById(1L)).thenReturn(Optional.of(entityUser));
-      when(permissionRows.directPermissions(1L, Set.of(SYSTEM))).thenReturn(List.of(entityPermission));
+      when(permissionRows.directPermissions(1L, Set.of(1L), Set.of(SYSTEM)))
+          .thenReturn(List.of(entityPermission));
       ApplicationSystemJpaRepository systemRows = mock(ApplicationSystemJpaRepository.class);
       when(systemRows.findByCode(SYSTEM)).thenReturn(Optional.of(entitySystem));
       StructuredDepartmentScopeService scope = mock(StructuredDepartmentScopeService.class);
       when(scope.allowedIds(actor)).thenReturn(List.of(1L));
       when(scope.isGlobal(actor)).thenReturn(true);
-      structured = new StructuredApplicationIdentityService(auth, tokens, permissionRows, systemRows,
-          userRows, requests, directory, mock(ApiOperationCatalog.class), scope);
+      StructuredEffectivePermissionService effective =
+          mock(StructuredEffectivePermissionService.class);
+      when(effective.applicableRoleIds(1L)).thenReturn(Set.of(1L));
+      structured =
+          new StructuredApplicationIdentityService(
+              auth,
+              tokens,
+              permissionRows,
+              effective,
+              systemRows,
+              userRows,
+              requests,
+              directory,
+              mock(ApiOperationCatalog.class),
+              scope);
 
       ApplicationSystem system = new ApplicationSystem(1L, SYSTEM, "外部应用", true);
-      ApiResource domainApi = new ApiResource(1L, system, new ApiResource.Route("GET", DEPARTMENT_USERS), true);
-      Permission permission = new Permission(1L, system, null, "directory", "组织查询", Permission.Type.API, true, Set.of(domainApi));
+      ApiResource domainApi =
+          new ApiResource(1L, system, new ApiResource.Route("GET", DEPARTMENT_USERS), true);
+      Permission permission =
+          new Permission(
+              1L, system, null, "directory", "组织查询", Permission.Type.API, true, Set.of(domainApi));
       Department root = new Department(1L, "root", "根", null, Department.Type.HEADQUARTERS, false);
-      User user = new User(1L, "sample", "encoded", "示例", null, null, root, true,
-          Set.of(new Role(1L, "role", "外部角色", null, true, Set.of(permission))));
+      User user =
+          new User(
+              1L,
+              "sample",
+              "encoded",
+              "示例",
+              null,
+              null,
+              root,
+              true,
+              Set.of(new Role(1L, "role", "外部角色", null, true, Set.of(permission))));
       AuthorizationRepository authorization = mock(AuthorizationRepository.class);
-      when(authorization.facts(new User.Key(1L))).thenReturn(Optional.of(new AuthorizationFacts(user)));
+      when(authorization.facts(new User.Key(1L)))
+          .thenReturn(Optional.of(new AuthorizationFacts(user)));
       OrganizationRepository organizations = mock(OrganizationRepository.class);
       when(organizations.load()).thenReturn(new OrganizationFacts(1L, List.of(root)));
       ApplicationSystemRepository systems = mock(ApplicationSystemRepository.class);
       when(systems.catalog()).thenReturn(List.of(system));
-      ddd = new DddApplicationIdentityService(auth, tokens, authorization, mock(UserRepository.class),
-          systems, requests, organizations, directory, mock(ApiOperationCatalog.class));
+      ddd =
+          new DddApplicationIdentityService(
+              auth,
+              tokens,
+              authorization,
+              mock(UserRepository.class),
+              systems,
+              requests,
+              organizations,
+              directory,
+              mock(ApiOperationCatalog.class));
     }
   }
 }

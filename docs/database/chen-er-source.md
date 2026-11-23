@@ -1,6 +1,6 @@
 # 核心Chen ER关系源码
 
-六实体/八类联系的已评审源码，迁自T13基线，语义未改。静态[PNG](chen-er-overview.png)/[SVG](chen-er-overview.svg)用于标准Chen符号核对，Mermaid用于关系阅读。全局管理员不是单独实体；运行支撑不进入核心图。
+六实体/十类联系的现行源码；角色增加所属部门及应用预置来源两条可选联系。静态[PNG](chen-er-overview.png)/[SVG](chen-er-overview.svg)用于标准Chen符号核对，Mermaid用于关系阅读。全局管理员不是单独实体；运行支撑不进入核心图。
 
 ## 授权关系
 
@@ -85,3 +85,15 @@ flowchart LR
     class SID,PID,AID key;
     linkStyle default stroke:#000000,stroke-width:1.4px;
 ```
+
+## 角色归属与预置来源
+
+```mermaid
+flowchart LR
+ D[部门] ---|1| O{角色所属}
+ O ---|N| R[角色]
+ S[应用系统] ---|1| A{预置来源}
+ A ---|N| R
+```
+
+角色端两条联系均可选；DEPARTMENT_CUSTOM必须有且仅有一个所属部门，APPLICATION_PRESET必须有且仅有一个来源应用，SYSTEM_BUILTIN/GLOBAL_CUSTOM均不参与两条联系。部门角色仍须显式分配给人员，来源应用不限制角色跨应用选权。运行支撑回执不进入核心ER。

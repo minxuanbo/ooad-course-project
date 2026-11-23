@@ -6,6 +6,7 @@ import com.municipal.rbaccore.service.ddd.domain.model.policy.PermissionTreePoli
 import com.municipal.rbaccore.service.ddd.domain.repository.*;
 import com.municipal.rbaccore.service.port.error.BusinessException;
 import com.municipal.rbaccore.service.port.resource.*;
+import com.municipal.rbaccore.service.port.resource.ConnectionStatus;
 import com.municipal.rbaccore.service.port.security.ManagementAccessUseCase;
 import java.util.*;
 import java.util.function.Function;
@@ -39,6 +40,8 @@ public class DddResourceService implements ResourceUseCase {
               result.setCode(system.code());
               result.setName(system.name());
               result.setEnabled(system.enabled());
+              result.setConnectionStatus(
+                  ConnectionStatus.valueOf(system.connectionStatus().name()));
               return result;
             })
         .toList();

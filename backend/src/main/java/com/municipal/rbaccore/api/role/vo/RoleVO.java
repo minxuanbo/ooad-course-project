@@ -2,6 +2,7 @@ package com.municipal.rbaccore.api.role.vo;
 
 import cn.edu.xmu.clonefactory.CopyFrom;
 import com.municipal.rbaccore.service.port.role.RoleResult;
+import com.municipal.rbaccore.service.port.role.RoleType;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -15,4 +16,9 @@ public class RoleVO {
   private String name;
   private Integer managementLevel;
   private Boolean enabled;
+  private RoleType type;
+  private Long ownerDepartmentId;
+  private String ownerDepartmentName;
+  private Long applicationId;
+  private String applicationName;
 }

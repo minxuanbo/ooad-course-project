@@ -2,12 +2,14 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import vm from 'node:vm'
 import { readFileSync } from 'node:fs'
-import { RequestGeneration, errorText } from '../src/lib/presentation.js'
+import { RequestGeneration, errorText, organizationRows } from '../src/lib/presentation.js'
 
 /** 运行真实角色页，独立启停只修改状态且继续经过确认、拒绝和刷新处理。 */
 function workspace(api) {
   const context = vm.createContext({
     ref: (value) => ({ value }),
+    session: { me: { user: { globalScope: true, managementLevel: 5 } } },
+    organizationRows,
     onMounted() {},
     onUnmounted() {},
     api,
@@ -16,6 +18,8 @@ function workspace(api) {
     refreshSession: async () => {},
     RequestGeneration,
     errorText,
+    organizationRows,
+    session: { me: { user: { globalScope: true, managementLevel: 5 } } },
     URLSearchParams,
   })
   vm.runInContext(
@@ -26,6 +30,32 @@ function workspace(api) {
   )
   return (code) => vm.runInContext(code, context)
 }
+
+test('R13/R23 部门角色创建携带所属部门且筛选类型发给服务端', async () => {
+  const requests = []
+  const run = workspace(async (path, method, body) => {
+    requests.push({ path, method, body })
+    if (path === '/departments/tree') return [{ id: 1, name: '总公司', parentId: null }, { id: 2, name: '工程部', parentId: 1 }]
+    return { items: [], total: 0 }
+  })
+  await run('edit()')
+  run("form.value = { code: ' dept-read ', name: ' 工程查看 ', type: 'DEPARTMENT_CUSTOM', ownerDepartmentId: '2' }")
+  await run('save()')
+  assert.deepEqual(JSON.parse(JSON.stringify(requests.find(item => item.method === 'POST').body)), {
+    code: 'dept-read', name: '工程查看', type: 'DEPARTMENT_CUSTOM', ownerDepartmentId: 2,
+  })
+  run("roleType.value = 'APPLICATION_PRESET'")
+  await run('load()')
+  assert.ok(requests.at(-1).path.includes('type=APPLICATION_PRESET'))
+})
+
+test('R13 部门角色定义资格与受限读取能力分开，局部领导没有写入口', () => {
+  const run = workspace(async () => ({ items: [], total: 0 }))
+  run('session.me.user.managementLevel = 4')
+  assert.equal(run("canDefine({type: 'DEPARTMENT_CUSTOM'}, 'PATCH', '/roles/{id}')"), false)
+  run('session.me.user.managementLevel = 5')
+  assert.equal(run("canDefine({type: 'DEPARTMENT_CUSTOM'}, 'PATCH', '/roles/{id}')"), true)
+})
 
 test('R13/R17 单独启停前不写入，确认后仅提交状态字段', async () => {
   const writes = []

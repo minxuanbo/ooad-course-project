@@ -9,13 +9,44 @@ public record Role(
     String name,
     Integer managementLevel,
     boolean enabled,
-    Set<Permission> permissions) {
+    Set<Permission> permissions,
+    Type type,
+    Department ownerDepartment,
+    ApplicationSystem application) {
   public static final int DEFAULT_LEVEL = 1;
   public static final int PROJECT_MANAGER_LEVEL = 2;
   public static final int DEPARTMENT_MANAGER_LEVEL = 3;
   public static final int COMPANY_LEADER_LEVEL = 4;
   public static final int FIRST_MANAGER_LEVEL = PROJECT_MANAGER_LEVEL;
   public static final int ADMIN_LEVEL = 5;
+
+  /** 来源分类不参与管理级别推断，部门角色明确限定适用组织。 */
+  public enum Type {
+    SYSTEM_BUILTIN,
+    APPLICATION_PRESET,
+    DEPARTMENT_CUSTOM,
+    GLOBAL_CUSTOM
+  }
+
+  /** 原有构造入口只依据显式固定级别表达基础角色，不能按名称猜测类型。 */
+  public Role(
+      Long id,
+      String code,
+      String name,
+      Integer managementLevel,
+      boolean enabled,
+      Set<Permission> permissions) {
+    this(
+        id,
+        code,
+        name,
+        managementLevel,
+        enabled,
+        permissions,
+        managementLevel == null ? Type.GLOBAL_CUSTOM : Type.SYSTEM_BUILTIN,
+        null,
+        null);
+  }
 
   /** 明确的角色查找键。 */
   public record Key(Long value) {}
@@ -33,6 +64,12 @@ public record Role(
     return new Role(null, code.trim(), name.trim(), null, !Boolean.FALSE.equals(enabled), Set.of());
   }
 
+  /** 部门角色从空权限开始，所属组织只由管理员创建时显式指定。 */
+  public static Role departmental(String code, String name, Department owner) {
+    return new Role(
+        null, code.trim(), name.trim(), null, true, Set.of(), Type.DEPARTMENT_CUSTOM, owner, null);
+  }
+
   /** 修改可变元数据，身份、编码及固定级别沿用原值。 */
   public Role revise(String name, Boolean enabled) {
     return new Role(
@@ -41,11 +78,21 @@ public record Role(
         name == null ? this.name : name.trim(),
         managementLevel,
         enabled == null ? this.enabled : enabled,
-        permissions);
+        permissions,
+        type,
+        ownerDepartment,
+        application);
   }
 
   /** 一次整体替换已核实的直接权限。 */
   public Role replacePermissions(Set<Permission> selected) {
-    return new Role(id, code, name, managementLevel, enabled, selected);
+    return new Role(
+        id, code, name, managementLevel, enabled, selected, type, ownerDepartment, application);
+  }
+
+  /** 部门角色的运行期适用范围由当前部门祖先事实判断，不依赖旧分配时快照。 */
+  public boolean applicable(Set<Long> ancestors) {
+    return type != Type.DEPARTMENT_CUSTOM
+        || (ownerDepartment != null && ancestors.contains(ownerDepartment.id()));
   }
 }

@@ -2,7 +2,7 @@
 
 | 文件 | 职责 |
 | --- | --- |
-| [openapi.yaml](openapi.yaml) | OpenAPI3.1主文件；37个操作、31个路径、71个Schema |
+| [openapi.yaml](openapi.yaml) | OpenAPI3.1主文件；37个操作、31个路径、73个Schema |
 | [openapi.json](openapi.json) | 同一规范的JSON派生文件，不独立手改 |
 | [业务约束](../docs/api-contract.md) | 共享授权、范围、错误顺序、完整K、原子性及日志快照 |
 | [页面对照](../docs/api-map.md) | 29项管理操作及8项统一身份鉴权操作索引 |
@@ -17,7 +17,7 @@ python -c "import json,pathlib,yaml; p=pathlib.Path('api'); d=yaml.safe_load((p/
 
 导出后核对YAML/JSON语义相等、37项操作、17项K、所有引用可解析，使用OpenAPI3.1校验器检查。类型/长度静态约束不能替代跨字段、归一化、状态、数据库、授权或范围验证。
 
-Apifox目标为本项目9042431，写入必须在用户明确授权范围内，完成后回读。当前OpenAPI1.5.1新增日志响应systems目录及PERMISSION_CHECK语义，37操作/31路径/71模型/K17保持；代码字段待统一发布后生效，验证从[验收入口](../docs/testing-acceptance.md)查阅。
+Apifox目标为本项目9042431，写入必须在用户明确授权范围内，完成后回读。当前OpenAPI1.6.0增加角色来源分类、所属部门/来源应用及接入状态，角色查询支持类型/所属部门过滤；37操作/31路径/73模型/K17；代码字段待统一发布后生效，验证从[验收入口](../docs/testing-acceptance.md)查阅。
 
 ## Apifox真实服务器调试
 

@@ -25,9 +25,8 @@ public final class OrganizationPolicy {
 
   /** 已核实不存在人员和下级时才允许生成来源墓碑。 */
   public static void requireEmpty(OrganizationFacts.Usage usage) {
-    if (usage.hasUsers() || usage.hasChildren()) {
-      throw new DomainRuleViolation(
-          DomainRuleViolation.Rule.DEPARTMENT_NOT_EMPTY, "部门有人员或下级，不能删除");
+    if (usage.hasUsers() || usage.hasChildren() || usage.hasRoles()) {
+      throw new DomainRuleViolation(DomainRuleViolation.Rule.DEPARTMENT_NOT_EMPTY, "部门有人员或下级，不能删除");
     }
   }
 
@@ -35,8 +34,11 @@ public final class OrganizationPolicy {
   public static void requireUnique(
       OrganizationFacts facts, Long parent, String name, Long existing) {
     if (facts.departments().stream()
-        .anyMatch(node -> Objects.equals(parent, node.parentId())
-            && !node.id().equals(existing) && node.name().equals(name.trim()))) {
+        .anyMatch(
+            node ->
+                Objects.equals(parent, node.parentId())
+                    && !node.id().equals(existing)
+                    && node.name().equals(name.trim()))) {
       throw new DomainRuleViolation(
           DomainRuleViolation.Rule.DEPARTMENT_NAME_CONFLICT, "同一上级下部门名称不能重复");
     }
@@ -63,6 +65,17 @@ public final class OrganizationPolicy {
       }
     }
     return new OrganizationFacts.Scope(visited);
+  }
+
+  /** 读取当前有效节点祖先，不把部门角色适用判定下放到仓储。 */
+  public static Set<Long> ancestors(OrganizationFacts facts, Long id) {
+    java.util.Map<Long, Department> nodes =
+        facts.departments().stream()
+            .collect(java.util.stream.Collectors.toMap(Department::id, node -> node));
+    Set<Long> result = new java.util.HashSet<>();
+    Department node = nodes.get(id);
+    while (node != null && result.add(node.id())) node = nodes.get(node.parentId());
+    return Set.copyOf(result);
   }
 
   /** 只有可覆盖整棵有效树的来源根直属人员具备全局范围。 */

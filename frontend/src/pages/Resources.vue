@@ -236,7 +236,7 @@ onUnmounted(() => {
       >
         <option v-if="!canRoute('GET', '/systems', true)" value="">当前RBAC系统</option>
         <option v-for="system in systems" :key="system.id" :value="String(system.id)">
-          {{ system.name }}
+          {{ system.name }}{{ system.connectionStatus === 'PENDING' ? '（待接入）' : '' }}
         </option>
       </select>
     </form>

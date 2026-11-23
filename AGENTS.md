@@ -8,16 +8,16 @@ structured和DDD均已实现；服务器两系统使用DDD。2026-11-23已按用
 
 PR44的日志系统下拉、密码提示、实际权限查询留痕和Apifox服务器环境已完成，目标9042431；本轮已另获合入、双仓同步和重新部署授权。用户已要求按现行需求和设计职责整理全部docs，允许删除无当前价值的历史文件，保留有用来源及证据。外部详设及教师问答仅在用户指定桌面目录同步，原件已备份；原Excel、老师原目录、旧库/卷及原始日志仍保留。T14/T15不自动关闭；Apifox写入需明确授权，不由文档修改触发。新任务按[CONTRIBUTING](CONTRIBUTING.md)从main建立codex/分支、审核后推送草稿PR，单次合入和发布授权不延续至新任务。
 
-用户本轮仅授权成员查询与日志IP实现，以及18业务系统/部门角色的设计准备。部门与角色入口复用受限GET /api/users（departmentScope、roleId），日志来源clientIp采用显式可信代理。18系统导入、8预置角色分类落库、部门领导分配、集中验收与部署等待后续确认；方案见docs/requirements/access-extension-plan.md，不提前改变现行授权规则。
+用户2026-11-24已授权实施18业务系统及部门角色，并同步Apifox9042431；沿当前扩展分支和草稿PR49实现。成员查询与日志IP已完成，18业务系统按原表矩阵独立首次配置，另加RBAC和课程共20项；本轮不合main、不部署。范围及验证见docs/requirements/access-extension-plan.md。
 
 ## 业务与架构
 
-- 当前业务依据为[需求](docs/requirements.md)，字段主规范为api/openapi.yaml，JSON同源；业务语义见docs/api-contract.md。当前37操作、31路径、71 Schema，完整维护能力K17。
+- 当前业务依据为[需求](docs/requirements.md)，字段主规范为api/openapi.yaml，JSON同源；业务语义见docs/api-contract.md。当前37操作、31路径、73 Schema，完整维护能力K17。
 - 六核心实体、九核心表加三支撑表；管理员是普通User的有效基础级别/可信根/实际权限资格，不新增管理员字段。非管理员保护本人/同级/上级，管理员可相互管理，写后至少一名同一启用根用户具备有效五级及完整K。
-- 自定义角色不提升级别或冻结人员。锁后读取现有角色、校验实际增删；不可改项锁定保留，自定义项仅可信根直属有效五级管理员增删，不新增委托机制。
+- 自定义角色不提升级别或冻结人员。锁后读取现有角色、校验实际增删；不可改项锁定保留，全局自定义及应用预置项仅可信根直属有效五级管理员增删；部门角色另受所属部门子树、领导范围及完整权限子集约束，管理员定义，领导只分配/撤回。
 - 两策略独立实现业务，共享API/Vue/SQL。structured在service/structured；service/port只放接口、模型及协议值，不依赖具体实现或承担组织策略。DDD application依赖domain.model/repository及port，不能依赖JPA/Entity/structured；领域仓储仅领域模型和JDK容器，复杂读模型用Gateway。共享基础设施不能调用两套具体应用服务。
 - 管理端与外部应用统一HS256身份JWT，通过Bearer携带，aud隔离；无角色权限快照，逐请求读库、单会话即时撤销、RBAC重启失效。管理端仍拒绝无实际管理API的员工。
-- Application按数据库登记事实读取，不维护应用代码白名单、教师标记或课程实体。默认万人初始化仅RBAC，18系统仅离线原型。角色可跨应用选权，Permission—ApiResource必须同应用。
+- Application按数据库登记事实读取，不维护应用代码白名单、教师标记或课程实体。默认万人初始化仅RBAC；独立business-catalog-v1首次配置登记18项PENDING业务系统及原表五角色矩阵，课程独立登记CONNECTED。运行通行另查接入状态。角色可跨应用选权，Permission—ApiResource必须同应用。
 - 课程teacher/student/course-admin由独立接入配置表达，Teacher/Student及user_id绑定只在课程库。本部（含职能部门/项目，排除分公司子树）员工为教师，其余为学生；合格RBAC管理员同账号兼课程管理员并有教师绑定。独立首次脚本显式执行，重复回执不重置后续维护，不宣称两库分布式原子事务。
 
 ## 来源与实现规范

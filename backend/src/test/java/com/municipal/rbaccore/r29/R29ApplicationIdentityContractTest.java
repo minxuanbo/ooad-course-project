@@ -99,8 +99,8 @@ class R29ApplicationIdentityContractTest {
         "INSERT INTO systems(id,code,name,enabled)"
             + " VALUES(1,'rbac','RBAC',1),(2,'course-project-management','课程项目管理',1),(3,'unapproved','未接入系统',1)");
     jdbc.update(
-        "INSERT INTO roles(id,code,name,enabled,management_level)"
-            + " VALUES(1,'r29-admin','完整维护者',1,5),(2,'r29-course','课程教师',1,NULL),(3,'r29-ordinary','普通员工',1,1)");
+        "INSERT INTO roles(id,code,name,enabled,management_level,role_type)"
+            + " VALUES(1,'r29-admin','完整维护者',1,5,'SYSTEM_BUILTIN'),(2,'r29-course','课程教师',1,NULL,'GLOBAL_CUSTOM'),(3,'r29-ordinary','普通员工',1,1,'SYSTEM_BUILTIN')");
     for (int id = 1; id <= 3; id++) {
       String username = id == 1 ? "r29-admin" : id == 2 ? "r29-employee" : "r29-unassigned";
       jdbc.update(
@@ -410,8 +410,8 @@ class R29ApplicationIdentityContractTest {
   @DisplayName("R29 人员授予完整子集包含课程权限，未知系统污染仍整组拒绝")
   void R29_AssignmentSubsetIncludesCourseAndRejectsUnknownSystem() {
     jdbc.update(
-        "INSERT INTO roles(id,code,name,enabled,management_level)"
-            + " VALUES(4,'r29-course-project','课程操作项目经理',1,2),(5,'r29-poison','污染角色',1,2),(6,'r29-manager','部门经理',1,3)");
+        "INSERT INTO roles(id,code,name,enabled,management_level,role_type)"
+            + " VALUES(4,'r29-course-project','课程操作项目经理',1,2,'SYSTEM_BUILTIN'),(5,'r29-poison','污染角色',1,2,'SYSTEM_BUILTIN'),(6,'r29-manager','部门经理',1,3,'SYSTEM_BUILTIN')");
     jdbc.update(
         "INSERT INTO permissions(id,system_id,code,name,type,enabled)"
             + " VALUES(200,3,'foreign','未知系统权限','BUTTON',0)");
@@ -721,10 +721,14 @@ class R29ApplicationIdentityContractTest {
       for (boolean enabled : List.of(true, false)) {
         jdbc.update("UPDATE api_resources SET enabled=? WHERE id=100", enabled);
         long before = jdbc.queryForObject("SELECT COUNT(*) FROM authorization_logs", Long.class);
-        assertEquals(enabled, request(path, HttpMethod.GET, token, null, 200).path("allowed").asBoolean());
-        assertEquals(before + 1, jdbc.queryForObject("SELECT COUNT(*) FROM authorization_logs", Long.class));
-        Map<String, Object> log = jdbc.queryForMap(
-            "SELECT event_type,app_code,user_id,allowed,http_status,reason FROM authorization_logs ORDER BY id DESC LIMIT 1");
+        assertEquals(
+            enabled, request(path, HttpMethod.GET, token, null, 200).path("allowed").asBoolean());
+        assertEquals(
+            before + 1, jdbc.queryForObject("SELECT COUNT(*) FROM authorization_logs", Long.class));
+        Map<String, Object> log =
+            jdbc.queryForMap(
+                "SELECT event_type,app_code,user_id,allowed,http_status,reason FROM"
+                    + " authorization_logs ORDER BY id DESC LIMIT 1");
         assertEquals("PERMISSION_CHECK", log.get("event_type"));
         assertEquals("course-project-management", log.get("app_code"));
         assertEquals(2L, ((Number) log.get("user_id")).longValue());
@@ -740,14 +744,52 @@ class R29ApplicationIdentityContractTest {
   @DisplayName("R16 仅日志权限的根账号可选全部登记系统并查到课程登录记录")
   void R16_LogPageIncludesSystemsWithoutResourcePermission() {
     courseLogin();
-    jdbc.update("DELETE rp FROM role_permissions rp JOIN permissions p ON p.id=rp.permission_id WHERE rp.role_id=1 AND p.code<>'rbac.logs.read'");
+    jdbc.update(
+        "DELETE rp FROM role_permissions rp JOIN permissions p ON p.id=rp.permission_id WHERE"
+            + " rp.role_id=1 AND p.code<>'rbac.logs.read'");
     String token = adminLogin();
-    JsonNode page = request(LOGS + "?appCode=course-project-management&event=LOGIN_SUCCESS", HttpMethod.GET, token, null, 200).path("data");
+    JsonNode page =
+        request(
+                LOGS + "?appCode=course-project-management&event=LOGIN_SUCCESS",
+                HttpMethod.GET,
+                token,
+                null,
+                200)
+            .path("data");
     assertEquals(3, page.path("systems").size());
     assertTrue(page.path("systems").toString().contains("course-project-management"));
     assertEquals(1, page.path("total").asInt());
     assertEquals("LOGIN_SUCCESS", page.path("items").get(0).path("eventType").asText());
     request(SYSTEMS, HttpMethod.GET, token, null, 403);
+  }
+
+  /** 待接入不因已有角色、菜单或真实路由映射获得运行通行能力。 */
+  @Test
+  @DisplayName("R28 待接入目录可规划授权但立即拒绝旧会话、短码与新登录")
+  void R28_PendingApplicationFailsClosed() {
+    String token = courseLogin();
+    jdbc.update("UPDATE systems SET connection_status='PENDING' WHERE id=2");
+    request(ME, HttpMethod.GET, token, null, 403);
+    request(CHECK, HttpMethod.GET, token, null, 403);
+    request(
+        LOGIN,
+        HttpMethod.POST,
+        null,
+        Map.of(
+            "username",
+            "r29-employee",
+            "password",
+            PASSWORD,
+            "systems",
+            List.of("course-project-management")),
+        403);
+    String administrator = adminLogin();
+    request(ROLE_PERMISSIONS, HttpMethod.PUT, administrator, Map.of("ids", List.of(100, 101)), 200);
+    assertTrue(
+        request(SYSTEMS, HttpMethod.GET, administrator, null, 200)
+            .path("data")
+            .toString()
+            .contains("PENDING"));
   }
 
   /** 从老师既有登录协议取得课程应用受众JWT。 */

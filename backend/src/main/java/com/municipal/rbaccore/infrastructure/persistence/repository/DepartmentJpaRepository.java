@@ -11,6 +11,15 @@ import org.springframework.data.jpa.repository.Query;
 /** 组织树查询及跨授权写入共用的稳定根锁。 */
 public interface DepartmentJpaRepository extends JpaRepository<DepartmentEntity, Long> {
 
+  /** 读取有效部门的当前祖先编号，UNION去重避免损坏树形成无限递归。 */
+  @Query(
+      value =
+          "with recursive ancestors as (select id,parent_id from departments where id=:id and"
+              + " deleted=false union distinct select d.id,d.parent_id from departments d join"
+              + " ancestors a on d.id=a.parent_id where d.deleted=false) select id from ancestors",
+      nativeQuery = true)
+  java.util.Set<Long> ancestorIds(Long id);
+
   /** 仅计算当前有效组织，来源墓碑不进入范围。 */
   long countByDeletedFalse();
 

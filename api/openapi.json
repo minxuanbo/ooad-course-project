@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "市政公司统一权限管理系统 API",
-    "version": "1.5.1",
+    "version": "1.6.0",
     "description": "structured/ddd共享契约：29项RBAC管理操作及8项可选通用应用身份鉴权操作。两类登录统一使用HS256身份JWT，不包含角色或权限快照，管理端与外部应用受众隔离。应用目录来自登记数据及状态，APP_IDENTITY_ENABLED只控制外部8项入口。角色可跨应用拥有权限，Permission—API映射必须同系统。统一身份审计2项不在本契约，K仍为17项RBAC路由。"
   },
   "servers": [
@@ -482,7 +482,7 @@
           "人员授权"
         ],
         "summary": "整体替换人员角色",
-        "description": "锁后读取当前角色集合，只对新增与删除项检查授予级别及完整有效权限子集。无权改变的现有项可以原样保留，非法变化整次回滚。自定义角色仅可信根直属有效五级管理员可增删；人员停用/调动按原级别和部门范围判断。",
+        "description": "锁后读取当前角色集合，只对新增与删除项检查授予级别及完整有效权限子集。无权改变的现有项可以原样保留，非法变化整次回滚。全局自定义/应用预置角色仅可信根有效五级增删；部门自定义角色由所属或上级范围内领导按完整计划权限子集授撤；人员停用/调动按原级别和部门范围判断。",
         "responses": {
           "200": {
             "description": "成功",
@@ -582,7 +582,7 @@
           "人员授权"
         ],
         "summary": "受限候选角色分页",
-        "description": "q匹配角色名称/编码。只启用且全部有效Permission ID是本人集合子集的角色，外系统部分不得先过滤。先过滤再计数分页。 非管理员不能修改本人、同级或上级；可信根直属有效五级管理员有人员保护例外，仍需实际API、范围及完整K。自定义角色不冻结人员；仅其新增/删除关联受管理员资格限制。角色变更按锁后差集校验，原有不可改项可保留。",
+        "description": "q匹配角色名称/编码。只启用且全部有效Permission ID是本人集合子集的角色，外系统部分不得先过滤。先过滤再计数分页。 非管理员不能修改本人、同级或上级；可信根直属有效五级管理员有人员保护例外，仍需实际API、范围及完整K。自定义角色不冻结人员；全局/应用关联须管理员资格，部门关联按所属部门和领导范围授撤。角色变更按锁后差集校验，原有不可改项可保留。",
         "responses": {
           "200": {
             "description": "成功",
@@ -671,7 +671,7 @@
           "人员授权"
         ],
         "summary": "停用人员",
-        "description": "仅接受enabled:false；保留角色和部门。停用后旧身份401，再登录401 LOGIN_FAILED；共根锁及完整K保护。 非管理员不能修改本人、同级或上级；可信根直属有效五级管理员有人员保护例外，仍需实际API、范围及完整K。自定义角色不冻结人员；仅其新增/删除关联受管理员资格限制。角色变更按锁后差集校验，原有不可改项可保留。",
+        "description": "仅接受enabled:false；保留角色和部门。停用后旧身份401，再登录401 LOGIN_FAILED；共根锁及完整K保护。 非管理员不能修改本人、同级或上级；可信根直属有效五级管理员有人员保护例外，仍需实际API、范围及完整K。自定义角色不冻结人员；全局/应用关联须管理员资格，部门关联按所属部门和领导范围授撤。角色变更按锁后差集校验，原有不可改项可保留。",
         "responses": {
           "200": {
             "description": "成功",
@@ -771,7 +771,7 @@
           "人员授权"
         ],
         "summary": "跨部门调动",
-        "description": "原/目标部门都须在本人子树，保持同一用户/角色，后续范围随归属变化；非管理员本人/同级/上级保护及双范围校验，根锁后重验。 非管理员不能修改本人、同级或上级；可信根直属有效五级管理员有人员保护例外，仍需实际API、范围及完整K。自定义角色不冻结人员；仅其新增/删除关联受管理员资格限制。角色变更按锁后差集校验，原有不可改项可保留。",
+        "description": "原/目标部门都须在本人子树，保持同一用户，同事务撤下不再适用的部门角色，其余角色保留，调回不自动恢复，后续范围随归属变化；非管理员本人/同级/上级保护及双范围校验，根锁后重验。 非管理员不能修改本人、同级或上级；可信根直属有效五级管理员有人员保护例外，仍需实际API、范围及完整K。自定义角色不冻结人员；全局/应用关联须管理员资格，部门关联按所属部门和领导范围授撤。角色变更按锁后差集校验，原有不可改项可保留。",
         "responses": {
           "200": {
             "description": "成功",
@@ -871,7 +871,7 @@
           "角色与权限"
         ],
         "summary": "角色组合查询",
-        "description": "q匹配名称/编码，状态AND过滤；id升序、数据库分页/同条件total。",
+        "description": "共同根按条件查询全部角色；局部领导仅查询所属部门位于本人子树的部门角色。数据库先过滤再分页计数。",
         "responses": {
           "200": {
             "description": "成功",
@@ -936,9 +936,25 @@
           },
           {
             "$ref": "#/components/parameters/Size"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/RoleType"
+            }
+          },
+          {
+            "name": "ownerDepartmentId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
           }
         ],
-        "x-management-scope": "root",
+        "x-management-scope": "department",
         "x-initial-permission-code": "rbac.roles.read",
         "x-maintenance-member": true
       },
@@ -1133,7 +1149,7 @@
           "角色与权限"
         ],
         "summary": "完整直接权限集合",
-        "description": "已保存直接ids；不自动补祖先/后代；完整读取不受树候选分页影响。",
+        "description": "共同根可读取全部角色；局部领导仅可读取本人部门子树的部门角色。保存集合不补入祖先菜单。",
         "responses": {
           "200": {
             "description": "成功",
@@ -1201,7 +1217,7 @@
             "$ref": "#/components/parameters/Id"
           }
         ],
-        "x-management-scope": "root",
+        "x-management-scope": "department",
         "x-initial-permission-code": "rbac.roles.read",
         "x-maintenance-member": true
       },
@@ -1211,7 +1227,7 @@
           "角色与权限"
         ],
         "summary": "整体替换角色权限",
-        "description": "仅已接入系统的启用权限，[]清空；整组校验，不静默保留/去重；修改后完整K至少保留一人。",
+        "description": "仅已登记系统的启用权限（包含PENDING规划权限），[]清空；整组校验，不静默保留/去重；修改后完整K至少保留一人。",
         "responses": {
           "200": {
             "description": "成功",
@@ -2438,7 +2454,7 @@
           "统一身份鉴权"
         ],
         "summary": "外部应用身份登录",
-        "description": "按单个数据库已登记且启用的外部应用签发JWT。sub为用户身份，aud为应用受众；JWT不包含角色或权限。管理端沿用/api/auth/login，不由本入口放宽管理准入。",
+        "description": "单个数据库已登记、启用且CONNECTED的外部应用可签发身份JWT；PENDING只支持计划授权，拒绝登录及运行期短码/API通行。JWT不含角色权限快照。管理端使用/api/auth/login及原准入。",
         "x-maintenance-member": false,
         "x-management-scope": "application-identity",
         "responses": {
@@ -3696,13 +3712,17 @@
           },
           "enabled": {
             "type": "boolean"
+          },
+          "connectionStatus": {
+            "$ref": "#/components/schemas/ConnectionStatus"
           }
         },
         "required": [
           "id",
           "code",
           "name",
-          "enabled"
+          "enabled",
+          "connectionStatus"
         ]
       },
       "ApiVO": {
@@ -3767,6 +3787,37 @@
             "minimum": 1,
             "maximum": 5,
             "description": "固定基础角色级别5/4/3/2/1，自定义为null；不可由HTTP编辑"
+          },
+          "type": {
+            "$ref": "#/components/schemas/RoleType"
+          },
+          "ownerDepartmentId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "applicationId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "ownerDepartmentName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "applicationName": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -3774,7 +3825,12 @@
           "code",
           "name",
           "enabled",
-          "managementLevel"
+          "managementLevel",
+          "type",
+          "ownerDepartmentId",
+          "ownerDepartmentName",
+          "applicationId",
+          "applicationName"
         ]
       },
       "UserWithRolesVO": {
@@ -4224,11 +4280,58 @@
             "minLength": 1,
             "pattern": "\\S",
             "description": "先去首尾空白，再校验非空及1—100字符"
+          },
+          "type": {
+            "$ref": "#/components/schemas/RoleType",
+            "default": "GLOBAL_CUSTOM",
+            "enum": [
+              "GLOBAL_CUSTOM",
+              "DEPARTMENT_CUSTOM"
+            ]
+          },
+          "ownerDepartmentId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 9007199254740991
           }
         },
         "required": [
           "code",
           "name"
+        ],
+        "description": "只能创建GLOBAL_CUSTOM（不带所属部门）或DEPARTMENT_CUSTOM（必须提供有效ownerDepartmentId）；部门角色仅可信根有效五级管理员定义。所属部门创建后不变。",
+        "oneOf": [
+          {
+            "properties": {
+              "type": {
+                "const": "GLOBAL_CUSTOM"
+              },
+              "ownerDepartmentId": {
+                "type": "null"
+              }
+            },
+            "type": "object"
+          },
+          {
+            "properties": {
+              "type": {
+                "const": "DEPARTMENT_CUSTOM"
+              },
+              "ownerDepartmentId": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "type",
+              "ownerDepartmentId"
+            ],
+            "type": "object"
+          }
         ]
       },
       "RolePatchDTO": {
@@ -5505,6 +5608,24 @@
             "maximum": 100
           }
         }
+      },
+      "RoleType": {
+        "type": "string",
+        "enum": [
+          "SYSTEM_BUILTIN",
+          "APPLICATION_PRESET",
+          "DEPARTMENT_CUSTOM",
+          "GLOBAL_CUSTOM"
+        ],
+        "description": "角色来源分类；只有SYSTEM_BUILTIN带固定管理级别"
+      },
+      "ConnectionStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "CONNECTED"
+        ],
+        "description": "PENDING可规划授权但拒绝运行期通行；CONNECTED表示已完成真实接入"
       }
     }
   }

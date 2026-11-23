@@ -76,9 +76,11 @@ class R01JpaConstraintTest {
   }
 
   @Autowired
+
   DepartmentJpaRepository departments;
 
   @Autowired
+
   ApplicationSystemJpaRepository systems;
   @Autowired
   ApiResourceJpaRepository apis;
@@ -194,9 +196,9 @@ class R01JpaConstraintTest {
         apis.findById(sample.api().getId()).orElseThrow().getPathTemplate());
   }
 
-  /** 核对十二张精确表名、核心十一外键及关联联合主键，拒绝旧模型混入。 */
+  /** 核对十二张精确表名、核心十三外键及关联联合主键，拒绝旧模型混入。 */
   @Test
-  @org.junit.jupiter.api.DisplayName("R01/R02/R09/R14 核对十二张精确表名、核心十一外键及关联联合主键，拒绝旧模型混入。")
+  @org.junit.jupiter.api.DisplayName("R01/R02/R09/R14 核对十二张精确表名、核心十三外键及关联联合主键，拒绝旧模型混入。")
   void R01_mysqlHasNineCoreAndThreeSupportTablesWithConstraints() throws Exception {
     try (java.sql.Connection connection = dataSource.getConnection()) {
       assertEquals("MySQL", connection.getMetaData().getDatabaseProductName());
@@ -239,7 +241,7 @@ class R01JpaConstraintTest {
                       + "' AND constraint_name='PRIMARY'")));
     }
     assertEquals(
-        11,
+        13,
         ((Number)
                 em.createNativeQuery(
                         "SELECT count(*) FROM information_schema.table_constraints WHERE"

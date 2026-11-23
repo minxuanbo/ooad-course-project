@@ -15,16 +15,16 @@ def fixture_sql():
     names = dict(re.findall(r'Map.entry\(\s*"(rbac[^"]+)",\s*"([^"]+)"', source))
     entries = re.findall(r'definitions\.put\(\s*"([^"]+)",(.*?)\);', source, re.S)
     statements = ['START TRANSACTION;']
-    statements += ["INSERT INTO departments(id,code,name,parent_id,type) VALUES (1,'ui-root','验收总公司',NULL,'HEADQUARTERS'),(2,'ui-engineering','工程部',1,'DEPARTMENT'),(3,'ui-project','道路项目',2,'PROJECT'),(4,'ui-finance','财务部',1,'DEPARTMENT');", "INSERT INTO import_sources(source_type,source_key,source_json,department_id) VALUES('ORGANIZATION','总公司','[]',1);", "INSERT INTO systems VALUES(1,'rbac','权限管理系统',1);", "INSERT INTO roles VALUES(1,'system-admin','系统管理员',1,5),(2,'department-manager','部门经理',1,3),(3,'project-manager','项目经理',1,2),(4,'employee','普通员工',1,1);"]
+    statements += ["INSERT INTO departments(id,code,name,parent_id,type) VALUES (1,'ui-root','验收总公司',NULL,'HEADQUARTERS'),(2,'ui-engineering','工程部',1,'DEPARTMENT'),(3,'ui-project','道路项目',2,'PROJECT'),(4,'ui-finance','财务部',1,'DEPARTMENT');", "INSERT INTO import_sources(source_type,source_key,source_json,department_id) VALUES('ORGANIZATION','总公司','[]',1);", "INSERT INTO systems(id,code,name,enabled) VALUES(1,'rbac','权限管理系统',1);", "INSERT INTO roles(id,code,name,enabled,management_level,role_type) VALUES(1,'system-admin','系统管理员',1,5,'SYSTEM_BUILTIN'),(2,'department-manager','部门经理',1,3,'SYSTEM_BUILTIN'),(3,'project-manager','项目经理',1,2,'SYSTEM_BUILTIN'),(4,'employee','普通员工',1,1,'SYSTEM_BUILTIN');"]
     api_id = 0
     for permission_id,(code,definition) in enumerate(entries,1):
         statements += [f"INSERT INTO permissions VALUES({permission_id},1,NULL,'{code}','{names[code]}','BUTTON',1);", f"INSERT INTO role_permissions VALUES(1,{permission_id});"]
-        if code.startswith(('rbac.users.','rbac.departments.','rbac.overview.')):
+        if code.startswith(('rbac.users.','rbac.departments.','rbac.overview.')) or code in {'rbac.roles.read','rbac.roles.permissions.read'}:
             statements += [f"INSERT INTO role_permissions VALUES(2,{permission_id}),(3,{permission_id});"]
         for method,path in re.findall(r'route\("([^"]+)", "([^"]+)"\)',definition):
             api_id += 1
             statements += [f"INSERT INTO api_resources VALUES({api_id},1,'{method}','{path}',1);",f"INSERT INTO permission_apis VALUES({permission_id},{api_id});"]
-    assert len(entries)==13 and api_id==25
+    assert len(entries)==25 and api_id==25
     password = os.environ['UI_FIXTURE_PASSWORD'].encode('utf-8')
     if not 1 <= len(password) <= 72:
         raise ValueError('验收口令须为1至72字节')
@@ -36,7 +36,7 @@ def fixture_sql():
         role = 1 if ident==1 else 2 if ident in (2,3) else 3 if ident==4 else 4
         statements += [f"INSERT INTO users VALUES({ident},'{username}','{password_hash}','{name}',NULL,'虚构验收岗位',{department},1);",f"INSERT INTO user_roles VALUES({ident},{role});"]
     for ident in range(5,36):
-        statements += [f"INSERT INTO roles VALUES({ident},'ui-extra-{ident:02}','验收空角色{ident:02}',1,NULL);"]
+        statements += [f"INSERT INTO roles(id,code,name,enabled,management_level,role_type) VALUES({ident},'ui-extra-{ident:02}','验收空角色{ident:02}',1,NULL,'GLOBAL_CUSTOM');"]
     statements += ["INSERT INTO permissions VALUES(100,1,NULL,'ui.fixture.permission','验收独立权限','BUTTON',1);", "INSERT INTO api_resources VALUES(100,1,'GET','/api/ui-fixture',1);", "INSERT INTO permissions VALUES(101,1,NULL,'ui.fixture.parent','验收父菜单','MENU',1);", 'COMMIT;']
     return '\n'.join(statements) + '\n'
 

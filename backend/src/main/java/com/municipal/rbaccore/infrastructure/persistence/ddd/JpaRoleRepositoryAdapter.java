@@ -1,10 +1,13 @@
 package com.municipal.rbaccore.infrastructure.persistence.ddd;
 
 import com.municipal.rbaccore.infrastructure.persistence.entity.RoleEntity;
+import com.municipal.rbaccore.infrastructure.persistence.repository.ApplicationSystemJpaRepository;
+import com.municipal.rbaccore.infrastructure.persistence.repository.DepartmentJpaRepository;
 import com.municipal.rbaccore.infrastructure.persistence.repository.PermissionJpaRepository;
 import com.municipal.rbaccore.infrastructure.persistence.repository.RoleJpaRepository;
 import com.municipal.rbaccore.service.ddd.domain.model.*;
 import com.municipal.rbaccore.service.ddd.domain.repository.RoleRepository;
+import com.municipal.rbaccore.service.port.role.RoleType;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -19,6 +22,8 @@ import org.springframework.stereotype.Repository;
 public class JpaRoleRepositoryAdapter implements RoleRepository {
   private final RoleJpaRepository rows;
   private final PermissionJpaRepository permissions;
+  private final DepartmentJpaRepository departments;
+  private final ApplicationSystemJpaRepository systems;
 
   /** 按编号加载完整角色，包含停用与外系统关联。 */
   @Override
@@ -41,6 +46,18 @@ public class JpaRoleRepositoryAdapter implements RoleRepository {
     Specification<RoleEntity> specification =
         (root, query, builder) ->
             builder.and(
+                criteria.type() == null
+                    ? builder.conjunction()
+                    : builder.equal(root.get("type"), RoleType.valueOf(criteria.type().name())),
+                criteria.ownerDepartmentId() == null
+                    ? builder.conjunction()
+                    : builder.equal(
+                        root.get("ownerDepartment").get("id"), criteria.ownerDepartmentId()),
+                criteria.visibleOwners() == null
+                    ? builder.conjunction()
+                    : builder.and(
+                        builder.equal(root.get("type"), RoleType.DEPARTMENT_CUSTOM),
+                        root.get("ownerDepartment").get("id").in(criteria.visibleOwners())),
                 builder.or(
                     builder.like(builder.lower(root.get("name")), pattern, '\\'),
                     builder.like(builder.lower(root.get("code")), pattern, '\\')),
@@ -68,6 +85,11 @@ public class JpaRoleRepositoryAdapter implements RoleRepository {
                   : rows.findById(value.id()).orElseThrow();
           row.rename(value.name());
           row.setEnabled(value.enabled());
+          if (value.type() == Role.Type.DEPARTMENT_CUSTOM)
+            row.belongTo(departments.getReferenceById(value.ownerDepartment().id()));
+          else if (value.type() == Role.Type.APPLICATION_PRESET)
+            row.presetFor(systems.getReferenceById(value.application().id()));
+          else row.setManagementLevel(value.managementLevel());
           Set<Long> ids =
               value.permissions().stream().map(Permission::id).collect(Collectors.toSet());
           List.copyOf(row.getPermissions()).stream()

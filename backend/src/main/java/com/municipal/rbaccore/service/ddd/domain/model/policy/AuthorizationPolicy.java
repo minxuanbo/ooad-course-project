@@ -23,6 +23,7 @@ public final class AuthorizationPolicy {
     if (!facts.user().enabled()) return Set.of();
     return facts.user().roles().stream()
         .filter(Role::enabled)
+        .filter(role -> role.applicable(facts.ancestorIds()))
         .flatMap(role -> role.permissions().stream())
         .filter(permission -> active(permission, systems))
         .collect(Collectors.toUnmodifiableSet());
@@ -57,10 +58,12 @@ public final class AuthorizationPolicy {
 
   /** 跨系统污染映射和停用API不向当前权限提供路由。 */
   private static Stream<ApiResource> activeApis(Permission permission) {
+    if (!permission.system().connected()) return Stream.empty();
     return permission.apis().stream()
         .filter(
             api ->
-                api.enabled()
+                api.system().connected()
+                    && api.enabled()
                     && api.system().enabled()
                     && permission.system().id().equals(api.system().id()));
   }

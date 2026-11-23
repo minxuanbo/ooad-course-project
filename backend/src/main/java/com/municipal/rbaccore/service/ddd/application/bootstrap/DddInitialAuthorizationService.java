@@ -43,7 +43,7 @@ public class DddInitialAuthorizationService implements AuthorizationBootstrapUse
                               entry.getKey(),
                               entry.getValue(),
                               List.of(),
-                              Set.of("rbac.workspace", "rbac.departments.menu")
+                              Set.of("rbac.workspace", "rbac.departments.menu", "rbac.roles.menu")
                                   .contains(entry.getKey()),
                               null,
                               true)),

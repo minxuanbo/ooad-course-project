@@ -1,14 +1,17 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { api, canRoute, notify, refreshSession } from '../api.js'
-import { errorText, RequestGeneration } from '../lib/presentation.js'
+import { api, canRoute, notify, refreshSession, session } from '../api.js'
+import { errorText, RequestGeneration, organizationRows } from '../lib/presentation.js'
 import Modal from '../components/Modal.vue'
 import Pagination from '../components/Pagination.vue'
 import CollectionEditor from '../components/CollectionEditor.vue'
 import MemberList from '../components/MemberList.vue'
 import AppIcon from '../components/AppIcon.vue'
 import PageActions from '../components/PageActions.vue'
-const members = ref(null)
+const members = ref(null), departments = ref([]), roleType = ref('')
+const typeNames = { SYSTEM_BUILTIN: '系统内置', APPLICATION_PRESET: '应用预置', DEPARTMENT_CUSTOM: '部门自定义', GLOBAL_CUSTOM: '全局自定义' }
+const isAdministrator = () => session.me?.user.globalScope && session.me?.user.managementLevel === 5
+const canDefine = (role, method, path) => canRoute(method, path, true) && (role?.type !== 'DEPARTMENT_CUSTOM' || isAdministrator())
 const rows = ref([]),
   q = ref(''),
   enabled = ref(''),
@@ -35,6 +38,7 @@ async function load(next = 0) {
   try {
     const query = new URLSearchParams({ page: next, size: 20, q: q.value.trim() })
     if (enabled.value !== '') query.set('enabled', enabled.value)
+    if (roleType.value) query.set('type', roleType.value)
     const result = await api('/roles?' + query)
     if (generation.current(version)) {
       rows.value = result.items
@@ -47,9 +51,14 @@ async function load(next = 0) {
     if (generation.current(version)) busy.value = false
   }
 }
-function edit(role = null) {
+async function edit(role = null) {
   editing.value = role || { create: true }
   form.value = { code: role?.code || '', name: role?.name || '', enabled: role?.enabled ?? true }
+  form.value.type = role?.type || 'GLOBAL_CUSTOM'
+  form.value.ownerDepartmentId = role?.ownerDepartmentId || ''
+  if (!role && isAdministrator() && canRoute('GET', '/departments/tree')) {
+    try { departments.value = organizationRows(await api('/departments/tree')) } catch (e) { actionError.value = errorText(e); return }
+  }
   actionError.value = ''
   actionDenied.value = false
   confirmChange.value = false
@@ -68,7 +77,7 @@ async function save() {
       editing.value.create ? '/roles' : `/roles/${editing.value.id}`,
       editing.value.create ? 'POST' : 'PATCH',
       editing.value.create
-        ? { code: form.value.code.trim(), name: form.value.name.trim() }
+        ? { code: form.value.code.trim(), name: form.value.name.trim(), type: form.value.type, ...(form.value.type === 'DEPARTMENT_CUSTOM' ? { ownerDepartmentId: Number(form.value.ownerDepartmentId) } : {}) }
         : { name: form.value.name.trim(), enabled: form.value.enabled },
     )
     editing.value = null
@@ -92,7 +101,7 @@ async function saved() {
 }
 /** 独立启停入口先展示影响，确认后仅提交状态，不连带覆盖名称。 */
 function openToggle(role) {
-  if (saving.value || !canRoute('PATCH', '/roles/{id}', true)) return
+  if (saving.value || !canDefine(role, 'PATCH', '/roles/{id}')) return
   toggling.value = role
   actionError.value = ''
   actionDenied.value = false
@@ -120,6 +129,7 @@ async function toggleRole() {
 function resetFilters() {
   q.value = ''
   enabled.value = ''
+  roleType.value = ''
   load(0)
 }
 onMounted(() => load())
@@ -150,6 +160,7 @@ onUnmounted(() => generation.cancel())
           <option value="false">停用</option>
         </select>
       </label>
+      <label>角色类型<select v-model="roleType"><option value="">全部类型</option><option v-for="(name, type) in typeNames" :key="type" :value="type">{{ name }}</option></select></label>
       <button class="primary" :disabled="busy">查询</button
       ><button type="button" class="text-button" :disabled="busy" @click="resetFilters">
         重置
@@ -165,7 +176,7 @@ onUnmounted(() => generation.cancel())
           <tr>
             <th>角色名称</th>
             <th>角色编码</th>
-            <th>授予级别</th>
+            <th>来源 / 适用范围</th>
             <th>状态</th>
             <th>操作</th>
           </tr>
@@ -178,8 +189,8 @@ onUnmounted(() => generation.cancel())
             <td class="mono">{{ role.code }}</td>
             <td>
               <span class="badge" :class="{ blue: role.managementLevel }">{{
-                levels[role.managementLevel] || '自定义 · 仅管理员可授予'
-              }}</span>
+                levels[role.managementLevel] || typeNames[role.type] || '全局自定义'
+              }}</span><small v-if="role.ownerDepartmentName" class="role-owner">{{ role.ownerDepartmentName }}及下级</small><small v-else-if="role.applicationName" class="role-owner">{{ role.applicationName }}</small>
             </td>
             <td>
               <span class="role-status" :class="{ off: !role.enabled }">
@@ -191,21 +202,21 @@ onUnmounted(() => generation.cancel())
                 查看成员
               </button>
               <button
-                v-if="canRoute('GET', '/roles/{id}/permissions', true)"
+                v-if="canRoute('GET', '/roles/{id}/permissions')"
                 class="text-button"
                 @click="assigning = role"
               >
-                {{ canRoute('PUT', '/roles/{id}/permissions', true) ? '配置权限' : '查看权限' }}
+                {{ canDefine(role, 'PUT', '/roles/{id}/permissions') ? '配置权限' : '查看权限' }}
               </button>
               <button
-                v-if="canRoute('PATCH', '/roles/{id}', true)"
+                v-if="canDefine(role, 'PATCH', '/roles/{id}')"
                 class="text-button"
                 @click="edit(role)"
               >
                 编辑
               </button>
               <button
-                v-if="canRoute('PATCH', '/roles/{id}', true)"
+                v-if="canDefine(role, 'PATCH', '/roles/{id}')"
                 class="text-button"
                 :class="{ danger: role.enabled }"
                 @click="openToggle(role)"
@@ -226,7 +237,7 @@ onUnmounted(() => generation.cancel())
     <div class="role-footnote">
       <AppIcon
         name="info"
-      />授予级别按固定元数据判断，改名不会改变级别。新建自定义角色默认仅系统管理员可授予。
+      />授予级别按固定元数据判断，改名不会改变级别。全局及应用角色由管理员授予；部门角色由所属部门及上级获准领导在范围内分配，不改变人员级别。
     </div>
   </section>
   <Modal
@@ -244,6 +255,10 @@ onUnmounted(() => generation.cancel())
         角色名称
         <input v-model="form.name" required maxlength="100" />
       </label>
+      <template v-if="editing.create">
+        <label>角色类型<select v-model="form.type"><option value="GLOBAL_CUSTOM">全局自定义</option><option v-if="isAdministrator()" value="DEPARTMENT_CUSTOM">部门自定义</option></select></label>
+        <label v-if="form.type === 'DEPARTMENT_CUSTOM'">所属部门<select v-model="form.ownerDepartmentId" required><option value="" disabled>选择所属部门</option><option v-for="department in departments" :key="department.id" :value="department.id">{{ '　'.repeat(department.depth) + department.name }}</option></select></label>
+      </template>
       <label v-if="!editing.create" class="checkbox-label">
         <input v-model="form.enabled" type="checkbox" />
         启用角色
@@ -273,7 +288,7 @@ onUnmounted(() => generation.cancel())
     kind="permissions"
     :read-path="`/roles/${assigning.id}/permissions`"
     :save-path="`/roles/${assigning.id}/permissions`"
-    :readonly="!canRoute('PUT', '/roles/{id}/permissions', true)"
+    :readonly="!canDefine(assigning, 'PUT', '/roles/{id}/permissions')"
     @close="assigning = null"
     @saved="saved"
   />
@@ -296,6 +311,7 @@ onUnmounted(() => generation.cancel())
   >
 </template>
 <style scoped>
+.role-owner { display: block; margin-top: 5px; font-size: 11px; color: #8c9db7; }
 .panel {
   padding: 0;
 }

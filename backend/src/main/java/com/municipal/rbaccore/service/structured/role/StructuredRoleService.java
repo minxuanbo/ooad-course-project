@@ -3,6 +3,8 @@ package com.municipal.rbaccore.service.structured.role;
 import cn.edu.xmu.clonefactory.util.CloneFactory;
 import com.municipal.rbaccore.infrastructure.persistence.entity.PermissionEntity;
 import com.municipal.rbaccore.infrastructure.persistence.entity.RoleEntity;
+import com.municipal.rbaccore.infrastructure.persistence.mapping.RoleResultMapping;
+import com.municipal.rbaccore.infrastructure.persistence.repository.DepartmentJpaRepository;
 import com.municipal.rbaccore.infrastructure.persistence.repository.PermissionJpaRepository;
 import com.municipal.rbaccore.infrastructure.persistence.repository.RoleJpaRepository;
 import com.municipal.rbaccore.service.port.error.BusinessException;
@@ -12,9 +14,17 @@ import com.municipal.rbaccore.service.port.role.RolePageResult;
 import com.municipal.rbaccore.service.port.role.RolePermissionsResult;
 import com.municipal.rbaccore.service.port.role.RoleQuery;
 import com.municipal.rbaccore.service.port.role.RoleResult;
+import com.municipal.rbaccore.service.port.role.RoleType;
 import com.municipal.rbaccore.service.port.role.RoleUseCase;
 import com.municipal.rbaccore.service.port.role.UpdateRoleCommand;
+import com.municipal.rbaccore.service.port.security.CurrentIdentity;
+import com.municipal.rbaccore.service.port.security.ManagedApplications;
+import com.municipal.rbaccore.service.port.security.RequestContext;
+import com.municipal.rbaccore.service.structured.auth.StructuredAuthenticationService;
+import com.municipal.rbaccore.service.structured.security.StructuredDepartmentScopeService;
+import com.municipal.rbaccore.service.structured.security.StructuredEffectivePermissionService;
 import com.municipal.rbaccore.service.structured.security.StructuredGlobalManagementAccess;
+import com.municipal.rbaccore.service.structured.security.StructuredPersonnelAuthority;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -36,21 +46,68 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class StructuredRoleService implements RoleUseCase {
-  private final com.municipal.rbaccore.service.port.security.ManagedApplications applications;
+  private final ManagedApplications applications;
   private final RoleJpaRepository roles;
   private final PermissionJpaRepository permissions;
   private final StructuredGlobalManagementAccess access;
+  private final StructuredAuthenticationService auth;
+  private final StructuredEffectivePermissionService effective;
+  private final RequestContext requests;
+  private final StructuredDepartmentScopeService scope;
+  private final StructuredPersonnelAuthority authority;
+  private final DepartmentJpaRepository departments;
+
+  /** 局部领导仅可读本人子树的部门角色；写定义仍要求共同根。 */
+  public void checkTarget(String header, Long id, boolean write) {
+    if (write) {
+      access.require(header);
+      return;
+    }
+    CurrentIdentity actor = reader(header);
+    if (id != null && !scope.isGlobal(actor)) {
+      RoleEntity row = roles.findById(id).orElseThrow(BusinessException::scopeDenied);
+      if (row.getType() != RoleType.DEPARTMENT_CUSTOM
+          || row.getOwnerDepartment() == null
+          || !scope.allowedIds(actor).contains(row.getOwnerDepartment().getId()))
+        throw BusinessException.scopeDenied();
+    }
+  }
+
+  /** 当前请求实际API与有效领导级别分别检查，不把菜单当授权。 */
+  private CurrentIdentity reader(String header) {
+    CurrentIdentity actor = auth.require(header);
+    RequestContext.Operation operation = requests.operation();
+    if (operation == null) throw BusinessException.unauthorized();
+    if (!effective.allows(actor.id(), operation.method(), operation.template()))
+      throw BusinessException.forbidden();
+    if (!scope.isGlobal(actor) && authority.level(actor) < 2) throw BusinessException.scopeDenied();
+    return actor;
+  }
 
   /** 计数和取页共用快照，避免并发写入造成条目与总数不一致。 */
   @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
   public RolePageResult list(String header, RoleQuery query) {
-    access.require(header);
+    CurrentIdentity actor = reader(header);
+    boolean global = scope.isGlobal(actor);
+    Set<Long> visible = Set.copyOf(scope.allowedIds(actor));
     String search = query.getQ() == null ? "" : query.getQ().toLowerCase(Locale.ROOT);
     String pattern =
         "%" + search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
     Specification<RoleEntity> filter =
         (root, criteria, builder) ->
             builder.and(
+                global
+                    ? builder.conjunction()
+                    : builder.and(
+                        builder.equal(root.get("type"), RoleType.DEPARTMENT_CUSTOM),
+                        root.get("ownerDepartment").get("id").in(visible)),
+                query.getType() == null
+                    ? builder.conjunction()
+                    : builder.equal(root.get("type"), query.getType()),
+                query.getOwnerDepartmentId() == null
+                    ? builder.conjunction()
+                    : builder.equal(
+                        root.get("ownerDepartment").get("id"), query.getOwnerDepartmentId()),
                 builder.or(
                     builder.like(builder.lower(root.get("name")), pattern, '\\'),
                     builder.like(builder.lower(root.get("code")), pattern, '\\')),
@@ -73,7 +130,7 @@ public class StructuredRoleService implements RoleUseCase {
 
   /** 返回保存真值而非有效权限投影，停用项仍可识别和移除。 */
   public RolePermissionsResult selected(String header, Long id) {
-    access.require(header);
+    checkTarget(header, id, false);
     return selectedResult(role(id));
   }
 
@@ -86,7 +143,18 @@ public class StructuredRoleService implements RoleUseCase {
           if (roles.existsByCode(command.getCode())) {
             throw new BusinessException(409, "DATA_CONFLICT", "角色编码已存在");
           }
-          return result(roles.saveAndFlush(new RoleEntity(command.getCode(), command.getName())));
+          RoleEntity created = new RoleEntity(command.getCode(), command.getName());
+          if (command.getType() == RoleType.DEPARTMENT_CUSTOM) {
+            if (!authority.snapshot(auth.require(header)).administrator())
+              throw BusinessException.scopeDenied();
+            created.belongTo(
+                departments
+                    .findById(command.getOwnerDepartmentId())
+                    .filter(node -> !node.isDeleted())
+                    .orElseThrow(
+                        () -> new BusinessException(404, "RESOURCE_NOT_FOUND", "所属部门不存在")));
+          }
+          return result(roles.saveAndFlush(created));
         });
   }
 
@@ -97,6 +165,9 @@ public class StructuredRoleService implements RoleUseCase {
         header,
         () -> {
           RoleEntity role = role(id);
+          if (role.getType() == RoleType.DEPARTMENT_CUSTOM
+              && !authority.snapshot(auth.require(header)).administrator())
+            throw BusinessException.scopeDenied();
           CloneFactory.copyNotNull(role, command);
           return result(roles.saveAndFlush(role));
         });
@@ -110,6 +181,9 @@ public class StructuredRoleService implements RoleUseCase {
         header,
         () -> {
           RoleEntity role = role(id);
+          if (role.getType() == RoleType.DEPARTMENT_CUSTOM
+              && !authority.snapshot(auth.require(header)).administrator())
+            throw BusinessException.scopeDenied();
           if (role.getPermissions().stream()
               .anyMatch(
                   permission -> !applications.codes().contains(permission.getSystem().getCode()))) {
@@ -125,7 +199,7 @@ public class StructuredRoleService implements RoleUseCase {
                               || !applications
                                   .codes()
                                   .contains(permission.getSystem().getCode()))) {
-            throw BusinessException.bad("INVALID_ARGUMENT", "只能保存已接入系统的启用权限");
+            throw BusinessException.bad("INVALID_ARGUMENT", "只能保存已登记系统的启用权限");
           }
           Set<Long> wanted = new HashSet<>(command.getIds());
           for (PermissionEntity existing : List.copyOf(role.getPermissions())) {
@@ -157,9 +231,7 @@ public class StructuredRoleService implements RoleUseCase {
 
   /** 同名字段由课程CloneFactory映射，primitive状态显式转换。 */
   private RoleResult result(RoleEntity role) {
-    RoleResult result = CloneFactory.copy(new RoleResult(), role);
-    result.setEnabled(role.isEnabled());
-    return result;
+    return RoleResultMapping.result(role);
   }
 
   /** 固定ID顺序，不加入祖先菜单或衍生权限。 */

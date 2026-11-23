@@ -9,7 +9,7 @@
 | 业务概念                  | 责任、行为与不变量                                                                                                    |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | 用户User                  | 单一内部身份、一个所属部门、零到多个角色；分配角色、停用、调动保持同一id。工号/手机号定位同一账号，不按姓名唯一定位。 |
-| 角色Role                  | 全局共享的权限集合；可改名/启停/整体替换权限，编码稳定。停用不删除关联，恢复后按当前资源状态重算。                    |
+| 角色Role                  | 具有显式来源分类的权限集合；部门自定义须有所属部门，应用预置须有来源应用；可改名/启停/整体替换权限，编码稳定。停用不删除关联，恢复后按当前资源状态重算。                    |
 | 权限Permission            | 同一系统的菜单、按钮或通用API权限；维护父级、类型、有效状态及显式API映射。父菜单负责展示，不隐含子权限。                           |
 | API资源ApiResource        | 单一系统的方法+路径模板，表达后端操作入口。多个权限可覆盖同一API，以有效链OR判定。                                    |
 | 应用系统ApplicationSystem | 权限与API的归属和有效性边界；目录从数据库已登记应用及状态读取；默认初始化只登记rbac，课程等应用独立配置。                                         |
@@ -19,7 +19,7 @@
 
 ## 2. 核心业务判定
 
-有效API集合由用户所持启用角色的启用权限映射得到，且用户、API及其同一所属系统均启用。具体操作先检查该API，再检查人员范围或共同根范围。人员角色候选以有效Permission ID全集作子集比较，不能仅比较API路径，也不能丢弃外系统部分后继续授予。
+有效API集合由用户所持启用且部门适用的角色获得，用户、权限、API和所属系统均启用且CONNECTED；计划授权集合保留PENDING有效权限，用于完整子集检查。具体操作先检查该API，再检查人员范围或共同根范围。人员角色候选以有效Permission ID全集作子集比较，不能仅比较API路径，也不能丢弃外系统部分后继续授予。
 
 人员归属决定可管理子树：总公司领导归根后覆盖所有分公司，分公司领导仅覆盖该分公司及后代。组织位置只约束范围；领导/经理称谓不授予操作权限。
 
@@ -30,7 +30,7 @@
 | 类型              | 自身状态与行为                                                                                                   | 跨聚合所需事实                          |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
 | User              | 内部ID、工号/手机号、哈希、姓名、只读职位、Department快照、启用、Set<Role>；replaceRoles/disable/transfer              | 操作者/目标级别与范围、角色有效权限、K  |
-| Role              | code稳定、name、enabled、managementLevel、Set<Permission>；custom/revise/replacePermissions | 权限存在/启用/已登记应用、编码唯一、K       |
+| Role              | code稳定、name、enabled、managementLevel、type、ownerDepartment、application、Set<Permission>；custom/departmental/revise/replacePermissions | 权限存在/启用/已登记应用、编码唯一、K       |
 | Permission        | ApplicationSystem、parentId、type、enabled、Set<ApiResource>；revise/replaceApis                       | 同系统树无环、BUTTON无子、映射同系统、K |
 | ApiResource       | 系统、方法/模板只读、enabled；changeAvailability                                                                      | 系统状态和K                             |
 | Department        | 稳定code、parentId、type、name、deleted；child/rename/tombstone，变更前由OrganizationPolicy核验相关不变量       | 可信根与范围、同父名称、人员/下级存在性 |
@@ -42,7 +42,7 @@
 
 UserKey、RoleKey、PermissionKey、ApiKey、DepartmentKey等不可变标识只用于领域/仓储边界的类型安全；HTTP仍为正安全整数，工号仍为字符串。PageWindow、DepartmentScope、ApiOperation、UserCriteria、RoleCriteria、AuthorizationFacts、OrganizationFacts、DepartmentUsage、MaintenanceFacts等值/事实都归domain.model；不可变值和record使用显式构造，不交CloneFactory写final字段。
 
-跨聚合策略在model.policy：AuthorizationPolicy逐链计算有效Permission/API及OR，不把父菜单当继承；RoleAssignmentPolicy同时检查目标保护、授予上限及完整有效Permission子集，新增/删除逐项验权，现有不可改角色可锁定保留，自定义角色不冻结人员；OrganizationPolicy核实来源根并计算有效子树/合法父子，以requireNonRoot保护可信根、requireEmpty拒绝存在人员或下级的删除、requireUnique保证同父有效部门名称唯一；MaintenancePolicy判断一个启用、可信根、级别5的用户独自覆盖K，不把多人权限拼接。策略接受明确事实，不访问仓储、HTTP、Spring或全局缓存。
+跨聚合策略在model.policy：AuthorizationPolicy逐链计算有效Permission/API及OR，不把父菜单当继承；RoleAssignmentPolicy同时检查目标保护、授予上限及完整有效Permission子集，新增/删除逐项验权，现有不可改角色可锁定保留，自定义角色不冻结人员；OrganizationPolicy核实来源根并计算有效子树/合法父子，以requireNonRoot保护可信根、requireEmpty拒绝存在人员、下级或所属角色的删除、requireUnique保证同父有效部门名称唯一；MaintenancePolicy判断一个启用、可信根、级别5的用户独自覆盖K，不把多人权限拼接。策略接受明确事实，不访问仓储、HTTP、Spring或全局缓存。
 
 DDD仓储位于service.ddd.domain.repository，Infrastructure实现适配与装配；应用只依赖领域模型/仓储及公共用例抽象。事务、端口签名及复杂读模型见后端设计第4、6、9章。
 
@@ -67,16 +67,16 @@ DDD仓储位于service.ddd.domain.repository，Infrastructure实现适配与装�
 
 记D(u)为u部门的有效子树，P(u)为u在所有已登记启用应用、启用角色下的有效Permission ID集合（含无API映射菜单），A(u)为本RBAC同系统实际API集合。目标人员v的管理先具具体操作API，再检查department(v)∈D(u)。候选角色同时满足固定授予级别及P(r)⊆P(u)；不同登记应用的有效权限同样参与子集，不因只比较RBAC API而漏过。
 
-人员与部门保护规则：非系统管理员还须满足目标级别严格低于本人，本人、同级、上级只读；系统管理员例外仍受实际API、范围及完整维护者保护。自定义角色不提升操作者级别，仅启用、直属可信根且有效基础级别5的管理员可授，局部不能增删自定义关联，但可在原人员范围内维护较低级持有人，锁定原样保留项不算重新授予。部门新增父级∈D(u)，局部改名/删除须为严格下级；删除仅空且非根，类型固定，无层级调整。删除保留来源墓碑，不参与有效子树。两套实现均使用当前事务的角色与部门事实执行上述规则。
+人员与部门保护规则：非系统管理员还须满足目标级别严格低于本人，本人、同级、上级只读；系统管理员例外仍受实际API、范围及完整维护者保护。自定义角色不提升操作者级别，全局/应用关联仅可信根有效五级管理员可授，部门关联由所属或上级范围内领导按完整权限子集授撤，但可在原人员范围内维护较低级持有人，锁定原样保留项不算重新授予。部门新增父级∈D(u)，局部改名/删除须为严格下级；删除仅空且非根，类型固定，无层级调整。删除保留来源墓碑，不参与有效子树。两套实现均使用当前事务的角色与部门事实执行上述规则。
 
-18个业务系统及原表矩阵仅保留在离线原型演示，不进入正式目录或初始化。课程系统按R29显式接入老师已有身份协议和真实API，不自行设计课程业务接口；沿用同一六实体模型，课程数据仍只在老师数据库。
+18业务系统及原表矩阵由独立首次配置进入正式计划授权，默认PENDING；运行期登录、短码和API通行仍失败关闭。课程系统按R29显式接入老师已有身份协议和真实API，不自行设计课程业务接口；沿用同一六实体模型，课程数据仍只在老师数据库。
 
 ## 6. 命令、行为与一致性
 
 | 用例命令（目标语义名）                                 | 领域行为                                   | 应用服务额外协调                                             |
 | ------------------------------------------------------ | ------------------------------------------ | ------------------------------------------------------------ |
 | ReplaceUserRoles                                       | 替换明确roleIds集合                        | 人员范围、逐角色有效Permission子集、自身/管理员限制、根锁和K |
-| DisableUser / TransferUser                             | 停用；改变departmentId并保持身份与角色     | 原/目标双范围，最新操作者资格及K                             |
+| DisableUser / TransferUser                             | 停用；改变departmentId、保持身份并撤下不适用部门角色     | 原/目标双范围，最新操作者资格及K                             |
 | CreateRole / UpdateRole                                | 创建空角色、改名、启停                     | 编码唯一、共同根、实际API、共享影响与K                       |
 | CreateDepartment / RenameDepartment / DeleteDepartment | 新增合法下级、仅改名、删除空节点并保留墓碑 | 父/目标范围、类型、重名、无人无下级、根保护及共同锁          |
 | ReplaceRolePermissions                                 | 独立替换完整已登记应用permissionIds             | 已登记应用/启用/存在性、共同根、根锁与K；候选页不截断完整集合    |

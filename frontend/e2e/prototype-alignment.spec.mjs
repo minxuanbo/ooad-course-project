@@ -42,6 +42,7 @@ async function preview(page, allowed = null, eventOverride = null) {
             departmentId: 1,
             departmentName: '总公司',
             globalScope: true,
+            managementLevel: 5,
             routes: model
               .apis({ size: 100 })
               .items.filter((item) => !allowed || allowed.includes(item.method + ' ' + item.path))
@@ -301,4 +302,33 @@ test('R17 仅授API目录或权限树读取时有可用资源入口，无隐含�
     expect(requests.some((item) => item.path === '/systems')).toBe(false)
     await context.close()
   }
+})
+
+
+test('R28/R23 二十项目录标注待接入，管理员可建立有明确归属的部门角色', async ({ page }) => {
+  await preview(page)
+  const writes = []
+  const systems = [{id:1,code:'rbac',name:'权限管理系统',enabled:true,connectionStatus:'CONNECTED'},
+    {id:2,code:'course-project-management',name:'课程管理系统',enabled:true,connectionStatus:'CONNECTED'},
+    ...Array.from({length:18},(_,i)=>({id:i+3,code:'APP_'+String(i+1).padStart(2,'0'),name:'业务系统'+(i+1),enabled:true,connectionStatus:'PENDING'}))]
+  await page.route('**/api/systems', route => route.fulfill({contentType:'application/json',body:JSON.stringify({code:'OK',data:systems})}))
+  await page.route('**/api/roles', async route => {
+    const body = route.request().postDataJSON()
+    writes.push(body)
+    await route.fulfill({status:201,contentType:'application/json',body:JSON.stringify({code:'OK',data:{id:99,...body,enabled:true,managementLevel:null}})})
+  })
+  await page.route('**/api/departments/tree', route => route.fulfill({contentType:'application/json',body:JSON.stringify({code:'OK',data:[{id:1,parentId:null,name:'总公司'},{id:2,parentId:1,name:'工程部'}]})}))
+  await page.goto('/resources')
+  await expect(page.getByLabel('所属系统').locator('option')).toHaveCount(20)
+  await expect(page.getByLabel('所属系统').locator('option').filter({hasText:'待接入'})).toHaveCount(18)
+  await page.goto('/roles')
+  await page.getByRole('button',{name:'新建角色',exact:true}).click()
+  await page.getByRole('dialog').getByRole('combobox').first().selectOption('DEPARTMENT_CUSTOM')
+  await page.getByRole('dialog').getByRole('combobox').last().selectOption('2')
+  await page.getByLabel('角色编码',{exact:true}).fill('engineering-view')
+  await page.getByLabel('角色名称',{exact:true}).fill('工程资料查看')
+  await page.getByRole('button',{name:'保存',exact:true}).click()
+  await expect.poll(()=>writes.length).toBe(1)
+  expect(writes[0].type).toBe('DEPARTMENT_CUSTOM')
+  expect(writes[0].ownerDepartmentId).toBeGreaterThan(0)
 })

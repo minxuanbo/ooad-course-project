@@ -16,11 +16,13 @@
 | Department—User | 1:N，每人一个非空部门 |
 | Department—Department | 一个可空上级、多个下级；真实组织为单根无环连通树 |
 | ApplicationSystem—Permission/ApiResource | 各1:N，每项只属一个系统 |
+| Department—Role | 1:N；角色端0..1，DEPARTMENT_CUSTOM恰好一个所属部门 |
+| ApplicationSystem—Role | 1:N；角色端0..1，APPLICATION_PRESET恰好一个来源应用，不限制跨应用选权 |
 | Permission—Permission | 一个可空父节点；同系统、无环，只有MENU可有子节点；BUTTON/API均不可有子节点 |
 
 ## 2. 关系映射
 
-六实体表为users、roles、permissions、departments、systems、api_resources；三组M:N分别落user_roles、role_permissions、permission_apis，共九张核心表。实体表使用BIGINT代理主键，关联表使用双外键联合主键。角色全局共享，不按部门复制角色定义。
+六实体表为users、roles、permissions、departments、systems、api_resources；三组M:N分别落user_roles、role_permissions、permission_apis，共九张核心表。实体表使用BIGINT代理主键，关联表使用双外键联合主键。角色代码全局唯一；DEPARTMENT_CUSTOM关联一个所属部门，APPLICATION_PRESET关联一个来源应用，其余两类均无此归属。
 
 工号username、可空phone、password_hash及岗位position作为users的现有属性保存，不增加employee_no、login_identifiers、独立公司、会话、管理员资格或直接用户权限表。
 
@@ -40,7 +42,7 @@ structured与ddd共用同一逻辑表结构、首次初始化来源及协议；�
 
 ## 5. 设计取舍与扩展限制
 
-MENU/BUTTON树表达导航和显式选权，API类型权限表达通用API短码；ApiResource独立表达方法/路径；多对多映射允许一个动作由多个有效权限覆盖。部门树只表达范围，不绑定角色定义。五角色是首次清单，不在数据库设计中固化为管理员类型。
+MENU/BUTTON树表达导航和显式选权，API类型权限表达通用API短码；ApiResource独立表达方法/路径；多对多映射允许一个动作由多个有效权限覆盖。部门树表达人员范围和部门角色适用范围；所属角色不隐式给部门员工授权，仍需明确user_roles关联。五角色是首次清单，不在数据库设计中固化为管理员类型。
 
 启停仅改变有效性，不物理删除用户、角色及历史关联。部门提供删除空节点接口并保留内部来源墓碑，其他实体没有删除接口；外键不设置级联删除，避免共享授权及日志来源被误清理。完整K、真实根和子集校验由业务事务实现，不能伪称SQL单行约束已覆盖跨对象规则。
 

@@ -226,10 +226,10 @@ test('R17 导航按原型分组，撤权后同时移除入口和空分组，根�
   )
   assert.ok(groups.flatMap((group) => group.items).every((item) => item.icon))
   const restricted = navigation(['/departments', '/roles', '/authorization-logs'], false)
-  assert.deepEqual([...restricted.map((group) => group.label)], ['工作台', '组织管理'])
+  assert.deepEqual([...restricted.map((group) => group.label)], ['工作台', '组织管理', '权限管理'])
   assert.deepEqual(
     [...restricted.flatMap((group) => group.items).map((item) => item.path)],
-    ['/', '/departments'],
+    ['/', '/departments', '/roles'],
   )
   assert.deepEqual([...navigation([], false).map((group) => group.label)], ['工作台'])
 })

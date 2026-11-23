@@ -162,7 +162,7 @@ onUnmounted(() => {
         <select v-model="filters.appCode">
           <option value="">全部系统</option>
           <option v-for="system in systems" :key="system.id" :value="system.code">
-            {{ system.name }}{{ system.enabled ? '' : '（已停用）' }} · {{ system.code }}
+            {{ system.name }}{{ system.enabled ? '' : '（已停用）' }}{{ system.connectionStatus === 'PENDING' ? '（待接入）' : '' }} · {{ system.code }}
           </option>
           <option
             v-if="filters.appCode && !systems.some((item) => item.code === filters.appCode)"

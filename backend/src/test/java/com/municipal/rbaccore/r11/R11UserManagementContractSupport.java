@@ -233,7 +233,7 @@ abstract class R11UserManagementContractSupport {
     JsonNode assigned = success(request("GET", userRoles(employeeUserId), dept, null), 200);
     assertEquals(1, assigned.get("roles").size());
     assertEquals("t11-full", assigned.get("roles").get(0).get("code").asText());
-    assertEquals(5, assigned.get("roles").get(0).size());
+    assertEquals(10, assigned.get("roles").get(0).size());
     assertTrue(assigned.get("roles").get(0).get("enabled").asBoolean());
     long disabledRole =
         role("t11-current-disabled", List.of(permissionIds.get("rbac.users.read")), false);

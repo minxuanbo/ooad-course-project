@@ -12,6 +12,8 @@ public final class RbacCatalog {
   public static final Set<String> PERSONNEL =
       Set.of(
           "rbac.users.read",
+          "rbac.roles.read",
+          "rbac.roles.permissions.read",
           "rbac.departments.tree.read",
           "rbac.users.roles.read",
           "rbac.users.roles.candidates.read",

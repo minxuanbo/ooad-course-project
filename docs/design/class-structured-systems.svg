@@ -15,10 +15,10 @@
   <text x="245" y="437" font-size="16.949152542372882" text-anchor="middle" fill="#223046">«interface» ApplicationSystemJpaRepository</text>
   <text x="33" y="481" font-size="18" text-anchor="start" fill="#223046">—</text>
   <text x="33" y="527" font-size="18" text-anchor="start" fill="#223046">+ findByCode(...)</text><rect x="1330" y="405" width="450" height="370" rx="2" fill="white" stroke="#223046" stroke-width="1.5"/>
-  <path d="M1330,453H1780 M1330,585H1780" stroke="#223046"/>
+  <path d="M1330,453H1780 M1330,613H1780" stroke="#223046"/>
   <text x="1555" y="437" font-size="23" text-anchor="middle" fill="#223046">ApplicationSystemEntity</text>
-  <text x="1343" y="481" font-size="18" text-anchor="start" fill="#223046">- id: Long</text><text x="1343" y="509" font-size="18" text-anchor="start" fill="#223046">- code: String</text><text x="1343" y="537" font-size="18" text-anchor="start" fill="#223046">- name: String</text><text x="1343" y="565" font-size="18" text-anchor="start" fill="#223046">- enabled: boolean</text>
-  <text x="1343" y="611" font-size="18" text-anchor="start" fill="#223046">—</text><rect x="580" y="850" width="640" height="240" rx="2" fill="white" stroke="#223046" stroke-width="1.5"/>
+  <text x="1343" y="481" font-size="18" text-anchor="start" fill="#223046">- id: Long</text><text x="1343" y="509" font-size="18" text-anchor="start" fill="#223046">- code: String</text><text x="1343" y="537" font-size="18" text-anchor="start" fill="#223046">- name: String</text><text x="1343" y="565" font-size="18" text-anchor="start" fill="#223046">- enabled: boolean</text><text x="1343" y="593" font-size="18" text-anchor="start" fill="#223046">- connectionStatus: ConnectionStatus</text>
+  <text x="1343" y="639" font-size="18" text-anchor="start" fill="#223046">—</text><rect x="580" y="850" width="640" height="240" rx="2" fill="white" stroke="#223046" stroke-width="1.5"/>
   <path d="M580,898H1220 M580,946H1220" stroke="#223046"/>
   <text x="900" y="882" font-size="23" text-anchor="middle" fill="#223046">«interface» ManagedApplications</text>
   <text x="593" y="926" font-size="18" text-anchor="start" fill="#223046">—</text>

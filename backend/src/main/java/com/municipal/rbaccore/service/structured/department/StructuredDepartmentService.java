@@ -3,10 +3,12 @@ package com.municipal.rbaccore.service.structured.department;
 import cn.edu.xmu.clonefactory.util.CloneFactory;
 import com.municipal.rbaccore.infrastructure.persistence.entity.DepartmentEntity;
 import com.municipal.rbaccore.infrastructure.persistence.repository.DepartmentJpaRepository;
+import com.municipal.rbaccore.infrastructure.persistence.repository.RoleJpaRepository;
 import com.municipal.rbaccore.infrastructure.persistence.repository.UserJpaRepository;
 import com.municipal.rbaccore.service.port.department.*;
 import com.municipal.rbaccore.service.port.error.BusinessException;
 import com.municipal.rbaccore.service.port.security.CurrentIdentity;
+import com.municipal.rbaccore.service.port.security.RbacCatalog;
 import com.municipal.rbaccore.service.port.security.RequestContext;
 import com.municipal.rbaccore.service.port.user.DepartmentResult;
 import com.municipal.rbaccore.service.structured.auth.StructuredAuthenticationService;
@@ -25,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class StructuredDepartmentService implements DepartmentUseCase {
   private final DepartmentJpaRepository departments;
   private final UserJpaRepository users;
+  private final RoleJpaRepository roles;
   private final StructuredAuthenticationService auth;
   private final StructuredDepartmentScopeService scope;
   private final StructuredPersonnelAuthority authority;
@@ -135,7 +138,9 @@ public class StructuredDepartmentService implements DepartmentUseCase {
             throw new BusinessException(409, "DEPARTMENT_ROOT_REQUIRED", "总公司根节点不能删除");
           }
           requireEdit(actor, department);
-          if (users.existsByDepartmentId(id) || departments.existsByParentIdAndDeletedFalse(id)) {
+          if (users.existsByDepartmentId(id)
+              || departments.existsByParentIdAndDeletedFalse(id)
+              || roles.existsByOwnerDepartmentId(id)) {
             throw new BusinessException(409, "DEPARTMENT_NOT_EMPTY", "部门有人员或下级，不能删除");
           }
           department.setDeleted(true);
@@ -209,21 +214,15 @@ public class StructuredDepartmentService implements DepartmentUseCase {
   /** 目录查询只计算一次范围和实际路由，避免每个部门重复读取权限链。 */
   private NodeCapabilities capabilities(CurrentIdentity actor) {
     int level = authority.level(actor);
-    Set<com.municipal.rbaccore.service.port.security.RbacCatalog.Route> routes =
-        permissions.routes(actor.id());
+    Set<RbacCatalog.Route> routes = permissions.routes(actor.id());
     return new NodeCapabilities(
         level >= 2,
         level == 5 && scope.isGlobal(actor),
-        routes.contains(
-            new com.municipal.rbaccore.service.port.security.RbacCatalog.Route(
-                "POST", "/api/departments")),
-        routes.contains(
-            new com.municipal.rbaccore.service.port.security.RbacCatalog.Route(
-                "PATCH", "/api/departments/{id}")),
-        routes.contains(
-            new com.municipal.rbaccore.service.port.security.RbacCatalog.Route(
-                "DELETE", "/api/departments/{id}")),
-        scope.trustedRootId());
+        routes.contains(new RbacCatalog.Route("POST", "/api/departments")),
+        routes.contains(new RbacCatalog.Route("PATCH", "/api/departments/{id}")),
+        routes.contains(new RbacCatalog.Route("DELETE", "/api/departments/{id}")),
+        scope.trustedRootId(),
+        roles.ownerDepartmentIds());
   }
 
   /** 共同字段用CloneFactory，关系及权限派生属性显式补充。 */
@@ -243,7 +242,10 @@ public class StructuredDepartmentService implements DepartmentUseCase {
             && capabilities.create());
     result.setCanEdit(edit && capabilities.edit());
     result.setCanDelete(
-        edit && !department.getId().equals(capabilities.rootId()) && capabilities.delete());
+        edit
+            && !department.getId().equals(capabilities.rootId())
+            && capabilities.delete()
+            && !capabilities.roleOwners().contains(department.getId()));
     return result;
   }
 
@@ -254,7 +256,8 @@ public class StructuredDepartmentService implements DepartmentUseCase {
       boolean create,
       boolean edit,
       boolean delete,
-      Long rootId) {}
+      Long rootId,
+      Set<Long> roleOwners) {}
 
   /** 深度优先输出连续子树，总人数只加直属人数和直接子节点总数。 */
   private long append(

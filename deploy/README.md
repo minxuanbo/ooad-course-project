@@ -59,7 +59,7 @@ export COURSE_SOURCE="$PWD/.local/course-release-r34"
 bash deploy/build-images.sh
 ```
 
-构建脚本串行生成两个Java、两个前端、一个接入服务镜像；不会推送或发布。镜像打包显式跳过测试，必须另有当前源码的完整回归。A可用deploy/test-backend.sh配合ooad-java-build:clonefactory-0.0.2执行隔离MySQL测试，默认DDD；该脚本执行test及JaCoCo报告。RBAC双策略的完整六项零遗漏检查按[后端复现第7节](../backend/README.md#7-双策略jacoco复现)执行，本次源码已通过；不能将单策略报告或跳过测试的打包结果称为整个工程100%。不要同时构建和压测。
+构建脚本串行生成两个Java、两个前端、一个接入服务镜像；不会推送或发布。镜像打包显式跳过测试，必须另有当前源码的完整回归。A可用deploy/test-backend.sh配合ooad-java-build:clonefactory-0.0.2执行隔离MySQL测试，默认DDD；该脚本执行test及JaCoCo报告。RBAC双策略的完整六项零遗漏检查按[后端复现第7节](../backend/README.md#7-双策略jacoco复现)执行，各版本是否通过以[验收记录](../docs/testing-acceptance.md)为准；不能将单策略报告或跳过测试的打包结果称为整个工程100%。不要同时构建和压测。
 
 登录有写权限的SWR后分别推送五个镜像，将生产env改成回读得到的RepoDigest；将deploy、integrations/course/operations.json和非秘密env传到C同一发布根。数据库/监控镜像也记录实际摘要。每次变更使用新RELEASE_ID，保留上一版配置及镜像摘要用于回滚。
 
