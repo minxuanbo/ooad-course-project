@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import org.springframework.util.Assert;
 
 /** 应用系统持久化记录，只维护稳定标识和启用状态，不承担授权决策。 */
+@org.hibernate.annotations.BatchSize(size = 32)
 @Entity
 @Table(
     name = "systems",

@@ -86,6 +86,7 @@ async function load() {
   busy.value = true
   error.value = ''
   result.value = null
+  const recentActivity = loadActivity()
   try {
     const value = await api('/overview')
     if (!generation.current(version)) return
@@ -95,7 +96,7 @@ async function load() {
   } finally {
     if (generation.current(version)) busy.value = false
   }
-  if (generation.current(version) && result.value) await loadActivity()
+  await recentActivity
 }
 /** 活动单独重试和丢弃晚响应；每次仍检查实际路由及共同根范围。 */
 async function loadActivity() {

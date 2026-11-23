@@ -61,6 +61,8 @@ public class RoleEntity {
   @cn.edu.xmu.clonefactory.CopyTo.Exclude({RoleResult.class})
   private boolean enabled = true;
 
+  /** 同事务内批量装载角色权限，不保存跨请求授权快照。 */
+  @org.hibernate.annotations.BatchSize(size = 32)
   @ManyToMany
   @JoinTable(
       name = "role_permissions",

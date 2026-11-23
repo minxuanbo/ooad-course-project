@@ -175,6 +175,8 @@ DomainPage<T>定义page、size、total、items，T必须为领域模型，应用
 
 AuthorizationFacts应带完整相关链及每个对象的启用/同系统事实，再由AuthorizationPolicy计算；不能只返回SQL已判好的API列表、在领域层原样转发，冒称领域授权实现。事实查询可按当前用户和相关ID缩小数据，不全量读取万人授权图；字段仅供当前请求，禁止跨请求缓存有效结论。
 
+关联装载由JPA适配层按批读取：角色权限集合每批最多32个角色、权限API集合每批最多128个权限、应用代理每批最多32项，避免千项计划权限逐项触发SQL。批处理只改变同一持久化上下文内的取数方式，仍保留空集合、停用项及外系统关联供领域判定；不增加二级缓存或跨请求授权缓存，也不省略预检查、Service门禁及写入锁后重鉴权。回归以真实MySQL统计SQL数量，并核对完整事实和撤权重读，不能仅以功能成功证明性能。
+
 日志的技术查询由共享 AuditQueryGateway 和 JpaAuditQueryGateway 提供，封装游标、指纹、快照及 JPA 投影。两套应用独立执行实际 API 和共同根的门禁，每一批重新授权。
 
 Repository禁止导入service.port、infrastructure、jakarta.persistence、Spring Data Page/JpaRepository；返回Map<String,Object>、Entity或把应用Result改名为领域对象均不接受。映射和数据库异常翻译在基础设施适配器就地进行；领域决策在模型/策略，事务在application。
