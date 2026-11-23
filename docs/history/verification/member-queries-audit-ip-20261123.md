@@ -48,3 +48,15 @@ Apifox仍对应已发布契约，本轮仅修改仓库契约；写入需用户�
 ### Spec
 
 首轮2项：上述机器契约问题，以及Waitress默认清除来源头使正式网关链路退化为代理地址。已使运行器保留头且不改写REMOTE_ADDR，仍由Gateway独立进行CIDR/单值核查。新增测试先以实际Docker启动参数复现RED，再经过真实Waitress中间件验证可信、非可信及非法来源，修复后41项Python完整回归通过。
+
+## Standards
+
+规范轴首次发现1项P2：新增OpenAPI参数重复及required数组重复，严格校验拒绝。4b79028已去重并从YAML同源生成JSON，两份OpenAPI及LogEntryVO JSON Schema严格校验均通过。独立审核复核未解决项0；其余分层、真实CloneFactory、隐私及编码规范未发现阻断问题。
+
+## Spec
+
+需求轴首次发现2项P2：上述契约重复，以及正式Waitress默认提前清除来源头。后者已在Docker入口保留原始头、保持trusted_proxy=None，仍由Gateway唯一核查可信连接方与单值IP；新增实际中间件测试先RED（默认清头），修复后GREEN。Python最终41项无失败/错误/跳过。独立复核两项均消除，未解决项0；未发现人员范围扩张或提前实施待确认阶段。
+
+审核基线为9ff74be；Java完整回归与342份class对应9aa49db的源码，后续4b79028及记录提交没有修改Java。原pom合并门槛成功日志为.local/member-queries-20261123/coverage-gate-merged.log；原始HTML/exec、测试输出、映射扫描及图件目检资料留在本轮忽略目录，不覆盖此前已发布版本的归档报告。本轮未取得新的真实浏览器端到端证据，Vue脚本测试/构建不冒充浏览器交互验收。
+
+审核结论：Standards首次1项、Spec首次2项；修复复核后两轴未解决项均0。
