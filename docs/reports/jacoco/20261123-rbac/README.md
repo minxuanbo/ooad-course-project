@@ -23,4 +23,4 @@ be70f96471465d3274b6121ef1d26bc70d00b237b5cb12215f5643711b460e71
 
 在PowerShell中可用`Get-FileHash -Algorithm SHA256 ./rbac-jacoco-report.zip`核对下载完整性。完整环境、测试分类和发布边界见[验证记录](../../../history/verification/rbac-jacoco-complete.md)，重新生成的方法见[后端说明](../../../../backend/README.md#7-双策略jacoco复现)。
 
-本归档记录该次源码的合并覆盖率，不代表线上已更新，也不将100%等同于穷尽全部业务和性能场景。此次报告归档及双仓同步未修改生产代码，无需重复运行数据库回归。
+本归档记录该次源码的合并覆盖率，不将100%等同于穷尽全部业务和性能场景或正式流量覆盖率。对应生产修复随后已发布，实际版本见[JWT修复发布](../../../history/verification/jwt-coverage-release-20261123.md)。归档报告及ZIP摘要保持原样，文档同步未修改生产代码，无需重复运行数据库回归。

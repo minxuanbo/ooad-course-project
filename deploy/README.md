@@ -1,8 +1,10 @@
 # 双系统DDD部署与首次初始化
 
-本文说明节点职责、配置、首发、验收及恢复方法。当前镜像和运行结果见[11月23日发布记录](../docs/history/verification/release-20261123.md)；首次导入见[首发证据](../docs/history/verification/ddd-production-deployment.md)，部署前本机回归见[适配验证](../docs/history/verification/ddd-deployment-adaptation.md)。
+本文说明节点职责、配置、首发、验收及恢复方法。当前RBAC镜像和运行结果见[JWT修复发布](../docs/history/verification/jwt-coverage-release-20261123.md)，其余服务沿[11月23日集中发布](../docs/history/verification/release-20261123.md)；首次导入见[首发证据](../docs/history/verification/ddd-production-deployment.md)，部署前本机回归见[适配验证](../docs/history/verification/ddd-deployment-adaptation.md)。
 
 2026-11-23已按用户本轮授权重新发布。线上为8项服务定义：7项replicated服务各1/1，node-exporter为global服务4/4。两Java日志已核对+08:00，监控实际配置和7个采集目标均已核对。后续源码合入或文档整理不自动触发再次发布。
+
+同日13:05已按追加授权单独更新RBAC后端，部署JWT必填iat修复；其余七项服务定义、运行配置和Secrets保持原样。采用固定摘要的`docker service update`，没有再次运行全量Stack、初始化或重授角色；两系统旧JWT随RBAC重启失效，需重新登录。
 
 本轮已发布北京时间展示及Java日志格式、CPU新口径与内网node-exporter、日志响应systems和权限查询留痕、系统下拉及密码提示；RBAC后端/前端和接入支撑镜像已更新，课程前端保持老师原始源码。未重新执行万人导入、首次授权或重置回执。Apifox服务器环境已配置，接口回读与服务器HTTP验证分别记证；本轮公网浏览器被客户端拦截，未取得视觉交互通过结果。
 
@@ -57,7 +59,7 @@ export COURSE_SOURCE="$PWD/.local/course-release-r34"
 bash deploy/build-images.sh
 ```
 
-构建脚本串行生成两个Java、两个前端、一个接入服务镜像；不会推送或发布。镜像打包显式跳过测试，必须另有当前源码的完整回归。A可用deploy/test-backend.sh配合ooad-java-build:clonefactory-0.0.2执行隔离MySQL测试，默认DDD；该脚本执行test及JaCoCo报告，既有100%覆盖率门槛不是本次发布条件。不要同时构建和压测。
+构建脚本串行生成两个Java、两个前端、一个接入服务镜像；不会推送或发布。镜像打包显式跳过测试，必须另有当前源码的完整回归。A可用deploy/test-backend.sh配合ooad-java-build:clonefactory-0.0.2执行隔离MySQL测试，默认DDD；该脚本执行test及JaCoCo报告。RBAC双策略的完整六项零遗漏检查按[后端复现第7节](../backend/README.md#7-双策略jacoco复现)执行，本次源码已通过；不能将单策略报告或跳过测试的打包结果称为整个工程100%。不要同时构建和压测。
 
 登录有写权限的SWR后分别推送五个镜像，将生产env改成回读得到的RepoDigest；将deploy、integrations/course/operations.json和非秘密env传到C同一发布根。数据库/监控镜像也记录实际摘要。每次变更使用新RELEASE_ID，保留上一版配置及镜像摘要用于回滚。
 
@@ -115,7 +117,7 @@ Stack为两个Java服务显式设置LOGGING_PATTERN_DATEFORMAT，时间格式包
 
 在RBAC浏览器依次切换工作总览、部门管理、人员管理、角色与权限、资源与API、鉴权日志。核对每次实际/api请求成功，以及对应Controller/Service的开始、完成、耗时日志；不能以Nginx访问日志或数据库鉴权日志代替。无需在前端新增“日志控制台”，页面正常加载及后端日志同步出现即可。Stack明确配置三层DEBUG、根INFO；日志不含密码、JWT、Authorization、完整参数或响应。Docker每容器10MB×5轮转，退出/更新前将验收时间段导出到受控归档目录。
 
-本轮已通过108次真实公网HTTP检查，覆盖五类账号、八项身份协议、原JWT即时撤权与恢复、课程DDD业务链和上传下载；具体断言见发布证据。历史重启持久化结果只属于首发版本，本轮未追加整机重启或节点故障测试。Prometheus通过内网抓rbac-backend:8082和course-backend:8081；global node-exporter采集B/C/D/E宿主机指标，CPU为1秒采集、2秒窗口和计算间隔，实际7目标均UP，详见[监控](monitoring.md)。9090或9100不发布到宿主机或公网；访问须使用明确的内网诊断通道，不能把C的127.0.0.1:9090当成已发布端口。当前单manager方案不宣称高可用。
+首次集中发布通过108次真实公网HTTP检查；本次RBAC补发另通过91次，分别记录，不互相替代。两轮覆盖五类账号、八项身份协议、原JWT即时撤权与恢复等，完整课程业务链和上传下载属于前轮证据。历史重启持久化结果只属于首发版本，本轮未追加整机重启或节点故障测试。Prometheus通过内网抓rbac-backend:8082和course-backend:8081；global node-exporter采集B/C/D/E宿主机指标，CPU为1秒采集、2秒窗口和计算间隔，实际7目标均UP，详见[监控](monitoring.md)。9090或9100不发布到宿主机或公网；访问须使用明确的内网诊断通道，不能把C的127.0.0.1:9090当成已发布端口。当前单manager方案不宣称高可用。
 
 ## 7. 备份与回滚
 

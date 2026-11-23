@@ -6,10 +6,11 @@
 
 | 关注点 | 可追溯证据与边界 |
 | --- | --- |
-| 当前正式发布 | [2026-11-23发布](history/verification/release-20261123.md)：两系统DDD、108次公网HTTP、即时撤权、北京时间、监控及备份；公网浏览器被客户端拦截，未取得本轮浏览器通过结果 |
-| 当前源码RBAC覆盖率（未发布） | [验证记录](history/verification/rbac-jacoco-complete.md)、[完整JaCoCo报告](reports/jacoco/20261123-rbac/README.md)：两策略各304项无失败/错误/跳过；340份生产class摘要一致，合并六项100%，原六项零遗漏门槛通过；JWT必填iat修复尚未上线 |
+| 当前正式发布 | [JWT修复发布](history/verification/jwt-coverage-release-20261123.md)：13:05完成RBAC更新，其余七项服务定义不变；91次公网HTTP、即时撤权、健康/时间/监控及备份通过；浏览器导航超时，交互验收未取得结果 |
+| RBAC源码覆盖率（对应已发布源码） | [验证记录](history/verification/rbac-jacoco-complete.md)、[完整JaCoCo报告](reports/jacoco/20261123-rbac/README.md)：两策略各304项无失败/错误/跳过；测试产物中340份生产class摘要一致，合并六项100%，原六项零遗漏门槛通过；不冒充正式进程流量覆盖率 |
 | 已发布版本回归及覆盖率 | RBAC两策略各215项、课程499项均无失败/错误/跳过；当时合并RBAC行96.19%、分支82.94%，课程行90.60%、分支62.17%；仅代表发布记录对应版本，不用本轮源码100%替代 |
 | 首发历史 | [双DDD首发](history/verification/ddd-production-deployment.md)：首次导入、逐人身份、公网及重启结果；只代表该版本，不宣称高可用或压测通过 |
+| 前次集中发布 | [北京时间/监控发布](history/verification/release-20261123.md)：108次HTTP、两系统及UI来源、外部材料和当时测试成绩；独立于本次RBAC镜像更新 |
 | 时间及文档修正来源 | [北京时间与终态服务清理](history/verification/beijing-time-and-service-cleanup.md)、[文档与监控调整](history/verification/current-docs-and-monitoring.md)：保留本机及离线验证过程；其中待发布项已在11月23日发布 |
 | 两系统部署适配 | [适配回归](history/verification/ddd-deployment-adaptation.md)：两RBAC及老师副本真实MySQL、双DDD HTTP、前端构建与日志；独立于云端实测 |
 | JWT及UML | [全JWT与图件核对](history/verification/jwt-design-cleanup.md)：受众、单会话、即时撤权、82组图件及操作追溯 |
