@@ -63,6 +63,8 @@ public class PermissionEntity {
   @lombok.Setter
   private boolean enabled = true;
 
+  /** 按批读取直接API映射，空映射和停用事实仍交由原业务策略判断。 */
+  @org.hibernate.annotations.BatchSize(size = 128)
   @ManyToMany
   @JoinTable(
       name = "permission_apis",

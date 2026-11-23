@@ -43,6 +43,28 @@ function workspace(name, api) {
   }
 }
 
+test('R17/R25 总览统计与最近活动并行读取，日志等待不阻塞统计显示', async () => {
+  const calls = []
+  let finishOverview, finishActivity
+  const page = workspace('Overview', (path) => {
+    calls.push(path)
+    return new Promise((resolve) => {
+      if (path === '/overview') finishOverview = resolve
+      else finishActivity = resolve
+    })
+  })
+  const pending = page.run('load()')
+  assert.deepEqual([...calls].sort(), ['/authorization-logs?limit=5', '/overview'])
+  finishOverview({ totalUsers: 12, distribution: [] })
+  await new Promise((resolve) => setImmediate(resolve))
+  assert.equal(page.run('result.value.totalUsers'), 12)
+  assert.equal(page.run('busy.value'), false)
+  assert.equal(page.run('activityBusy.value'), true)
+  finishActivity({ items: [{ id: 3 }] })
+  await pending
+  assert.equal(page.run('activity.value[0].id'), 3)
+})
+
 test('R17/R25 最近活动失败只降级日志区域，统计保留并可独立重试', async () => {
   let logFailure = true
   const calls = []
