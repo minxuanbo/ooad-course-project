@@ -25,5 +25,5 @@
   <text x="593" y="972" font-size="18" text-anchor="start" fill="#223046">+ global(header, change): T</text><rect x="20" y="850" width="450" height="215" rx="2" fill="white" stroke="#223046" stroke-width="1.5"/>
   <path d="M20,898H470 M20,946H470" stroke="#223046"/>
   <text x="245" y="882" font-size="22.963367960634226" text-anchor="middle" fill="#223046">JpaApiResourceRepositoryAdapter</text>
-  <text x="33" y="926" font-size="18" text-anchor="start" fill="#223046">- jpa: ApiResourceJpaRepository</text>
+  <text x="33" y="926" font-size="18" text-anchor="start" fill="#223046">- rows: ApiResourceJpaRepository</text>
   <text x="33" y="972" font-size="14.09106015287471" text-anchor="start" fill="#223046">+ find(key: ApiResource.Key): Optional&lt;ApiResource&gt;</text><text x="33" y="1000" font-size="18" text-anchor="start" fill="#223046">+ save(api: ApiResource): ApiResource</text></g></svg>

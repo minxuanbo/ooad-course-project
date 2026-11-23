@@ -200,7 +200,6 @@ async function packageDiagram(ddd) {
         {
           from: 'app',
           to: 'port',
-          kind: 'realization',
           points: [
             [900, 470],
             [900, 280],
@@ -245,7 +244,6 @@ async function packageDiagram(ddd) {
         {
           from: 'adapter',
           to: 'repo',
-          kind: 'realization',
           points: [
             [1200, 940],
             [1290, 940],
@@ -300,7 +298,6 @@ async function packageDiagram(ddd) {
         {
           from: 'structured',
           to: 'port',
-          kind: 'realization',
           points: [
             [900, 820],
             [900, 600],
@@ -341,8 +338,13 @@ async function packageDiagram(ddd) {
       1840,
       1160,
       ddd ? 'DDD · 包图' : '结构化 · 包图',
-      '虚线空心箭头表示包依赖，蓝色虚线空心三角表示包中的类型实现接口。',
-      edges.map(edge).join('') + boxes.map(box).join(''),
+      '文件夹形框表示包，虚线空心箭头表示包依赖；具体类型的接口实现关系见类图。',
+      edges.map(edge).join('') + boxes.map((b) => {
+        const tabWidth = Math.min(b.w - 20, Math.max(250, b.title.length * 11))
+        return `<path d="M${b.x},${b.y + 42}V${b.y}h${tabWidth}v42h${b.w - tabWidth}v${b.h - 42}H${b.x}Z" fill="${b.center ? '#eef5ff' : 'white'}" stroke="#223046" stroke-width="1.5"/>` +
+          text(b.x + 12, b.y + 28, b.title, 21, 'start', tabWidth - 24) +
+          [...b.fields, ...b.methods].map((line, i) => text(b.x + 14, b.y + 80 + i * 30, line, 19, 'start', b.w - 28)).join('')
+      }).join(''),
     ),
   )
 }
@@ -354,7 +356,11 @@ for (const item of design.entries) {
   const repositorySource = requireJava(item.repository)
   const supportSource = requireJava(item.policy)
   requireJava(item.model)
-  requireJava(item.adapter)
+  const adapterSource = requireJava(item.adapter)
+  const adapterFields = [...adapterSource.matchAll(/private\s+final\s+([\w.<>?, ]+)\s+(\w+)\s*;/g)]
+    .map((match) => `- ${match[2]}: ${match[1]}`)
+  if (!adapterFields.length) throw Error(`适配器缺少真实字段：${item.adapter}`)
+  const adapterHeight = Math.max(215, 84 + (adapterFields.length + item.repoMethods.length) * 28)
   const portRoot = resolve(root, 'backend/src/main/java/com/municipal/rbaccore/service/port')
   const portFile = readdirSync(portRoot, { recursive: true }).find((value) =>
     value.endsWith(item.port + '.java'),
@@ -456,9 +462,9 @@ for (const item of design.entries) {
       x: 20,
       y: 850,
       w: 450,
-      h: 215,
+      h: adapterHeight,
       title: item.adapter,
-      fields: [`- jpa: ${jpa}`],
+      fields: adapterFields,
       methods: item.repoMethods,
     },
   ]
@@ -519,7 +525,7 @@ for (const item of design.entries) {
     'class-ddd-' + item.id,
     svg(
       1820,
-      Math.max(item.id === 'department' ? 1175 : 1120, 850 + 132 + item.policyMethods.length * 28),
+      Math.max(item.id === 'department' ? 1175 : 1120, 850 + 132 + item.policyMethods.length * 28, 890 + adapterHeight),
       'DDD · ' + item.title + '类图',
       'Service居中。只展示当前实现的关键成员；字段为关联，局部/返回类型为依赖。',
       edges.map(edge).join('') + boxes.map(box).join(''),

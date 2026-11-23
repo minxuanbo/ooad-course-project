@@ -136,6 +136,7 @@ services:
     image: ${INTEGRATION_IMAGE}
     environment:
       RBAC_BASE_URL: http://rbac-backend:8081
+      RBAC_HEALTH_BASE_URL: http://rbac-backend:8082
       DB_HOST: mysql
       ALLOWED_ORIGINS: ${COURSE_PUBLIC_ORIGIN}
     secrets: [audit_db_password, course_read_password]

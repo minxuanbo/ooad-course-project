@@ -22,8 +22,8 @@
   <path d="M580,898H1220 M580,946H1220" stroke="#223046"/>
   <text x="900" y="882" font-size="23" text-anchor="middle" fill="#223046">AuthenticationPolicy</text>
   <text x="593" y="926" font-size="18" text-anchor="start" fill="#223046">—</text>
-  <text x="593" y="972" font-size="18" text-anchor="start" fill="#223046">+ eligibleAccount(matches): Optional&lt;User&gt;</text><rect x="20" y="850" width="450" height="215" rx="2" fill="white" stroke="#223046" stroke-width="1.5"/>
-  <path d="M20,898H470 M20,946H470" stroke="#223046"/>
+  <text x="593" y="972" font-size="18" text-anchor="start" fill="#223046">+ eligibleAccount(matches): Optional&lt;User&gt;</text><rect x="20" y="850" width="450" height="224" rx="2" fill="white" stroke="#223046" stroke-width="1.5"/>
+  <path d="M20,898H470 M20,1002H470" stroke="#223046"/>
   <text x="245" y="882" font-size="23" text-anchor="middle" fill="#223046">JpaUserRepositoryAdapter</text>
-  <text x="33" y="926" font-size="18" text-anchor="start" fill="#223046">- jpa: UserJpaRepository</text>
-  <text x="33" y="972" font-size="14.666205465236944" text-anchor="start" fill="#223046">+ match(identity: User.LoginIdentity): List&lt;User&gt;</text><text x="33" y="1000" font-size="18" text-anchor="start" fill="#223046">+ find(key: User.Key): Optional&lt;User&gt;</text></g></svg>
+  <text x="33" y="926" font-size="18" text-anchor="start" fill="#223046">- rows: UserJpaRepository</text><text x="33" y="954" font-size="18" text-anchor="start" fill="#223046">- roles: RoleJpaRepository</text><text x="33" y="982" font-size="18" text-anchor="start" fill="#223046">- departments: DepartmentJpaRepository</text>
+  <text x="33" y="1028" font-size="14.666205465236944" text-anchor="start" fill="#223046">+ match(identity: User.LoginIdentity): List&lt;User&gt;</text><text x="33" y="1056" font-size="18" text-anchor="start" fill="#223046">+ find(key: User.Key): Optional&lt;User&gt;</text></g></svg>

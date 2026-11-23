@@ -67,6 +67,8 @@ LogPageVO.systems提供日志筛选所需全部已登记应用（id/code/name/en
 
 LOGIN_SUCCESS/LOGIN_FAILED表示RBAC凭据及应用准入结果，不证明课程Teacher/Student绑定或业务登录已成功。实际调用的短码与operationId权限查询以PERMISSION_CHECK留痕，每个查询一次，allowed为真实真假结果；false仍可HTTP200，reason=PERMISSION_NOT_GRANTED，不是一次课程业务HTTP403。AUTHORIZATION继续表示RBAC实际执行的门禁。课程使用/auth/me取权限后自行执行的对象判定和业务结果留在课程日志，RBAC不伪造自己未收到的功能执行记录。
 
+未携带或无法核实令牌的真实身份请求保留UNAUTHENTICATED记录，主体可空。运维健康检查使用内网Actuator，不使用匿名身份请求；已有探测噪声作为原始历史保留，不能通过批量删除日志或屏蔽全部401解决。
+
 首次snapshotId为当前最大日志ID，选id≤snapshotId，后续按id<上页末条降序；total为同一快照筛选总数，不随翻页缩小或读取产生的新技术记录增长。筛选/limit绑定游标，改变后清cursor；损坏/伪造/不一致400 INVALID_CURSOR。from含、to不含，必须UTC Z格式且from<to；到底nextCursor=null、hasMore=false。
 
 页面显示和筛选输入按北京时间处理，前端转换后仍提交上述UTC边界；接口occurredAt继续返回UTC ISO-8601，不因展示时区修改数据库时间、Instant时钟或JWT时效。展示修正的本机结果及待发布状态见[验证记录](history/verification/beijing-time-and-service-cleanup.md)。

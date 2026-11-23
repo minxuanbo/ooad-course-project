@@ -25,5 +25,5 @@
   <text x="593" y="972" font-size="18" text-anchor="start" fill="#223046">+ require(header: String): void</text><rect x="20" y="850" width="450" height="215" rx="2" fill="white" stroke="#223046" stroke-width="1.5"/>
   <path d="M20,898H470 M20,946H470" stroke="#223046"/>
   <text x="245" y="882" font-size="19.23957856161246" text-anchor="middle" fill="#223046">JpaApplicationSystemRepositoryAdapter</text>
-  <text x="33" y="926" font-size="18" text-anchor="start" fill="#223046">- jpa: ApplicationSystemJpaRepository</text>
+  <text x="33" y="926" font-size="18" text-anchor="start" fill="#223046">- rows: ApplicationSystemJpaRepository</text>
   <text x="33" y="972" font-size="17.52790409260025" text-anchor="start" fill="#223046">+ findRbac(): Optional&lt;ApplicationSystem&gt;</text><text x="33" y="1000" font-size="18" text-anchor="start" fill="#223046">+ catalog(): List&lt;ApplicationSystem&gt;</text></g></svg>

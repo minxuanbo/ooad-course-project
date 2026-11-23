@@ -28,6 +28,8 @@
 
 [deployment_gateway.py](../integrations/course/deployment_gateway.py)由Waitress运行，身份八项实时访问真实RBAC、校验配置短码所需路由全集、不缓存授权。业务审计两项独立写course_audit；course_context账号只读课程归属。审计不是RBAC八项身份协议的一部分，也不写RBAC鉴权日志。读取仍要求AV全局权限，未扩展普通教师的对象日志范围。PyMySQL包含RSA依赖以支持MySQL8.4首次caching_sha2_password认证；不依赖认证缓存。
 
+接入服务`/healthz`检查审计数据库连通性及`RBAC_HEALTH_BASE_URL`指定的内网`/actuator/health`。运维探测不调用身份接口，避免无令牌的健康检查反复产生匿名401鉴权日志；未配置探针、依赖异常或健康状态非UP均返回503。业务身份和权限请求仍逐次访问RBAC并正常留痕。
+
 课程文件实际存于file_object.content的MySQL LONGBLOB中，随数据库备份，不虚设未被代码使用的上传目录。默认不新建MongoDB、Redis或Elasticsearch。
 
 ## 3. 准备发布材料（本机）
@@ -137,4 +139,4 @@ Pop-Location
 确认安装BUILD SUCCESS且提交完全一致，再构建本工程。完整功能回归需先准备对应隔离MySQL专库，见[后端回归配置](../backend/README.md#2-本地回归与隔离)；只打包时可以显式跳过测试，但不得把该构建结果表述为回归通过。首次依赖下载需要Gitee/Maven网络。密码、token、生成报告和老师源码留在忽略目录，不提交Git。
 
 
-本机组织账号导入、五角色预检/首次授权及默认JAR仍按[后端说明](../backend/README.md#3-新项目本地初始化与运行)和[复现指南](../docs/reproduction.md)执行。默认初始化仅登记RBAC；课程配置独立显式接入，不由产品启动自动触发。详设Word/PDF/PPT及老师原目录保持原版。
+本机组织账号导入、五角色预检/首次授权及默认JAR仍按[后端说明](../backend/README.md#3-新项目本地初始化与运行)和[复现指南](../docs/reproduction.md)执行。默认初始化仅登记RBAC；课程配置独立显式接入，不由产品启动自动触发。用户桌面设计交付与实际发布资料按明确修订任务同步；老师原目录保持不变。

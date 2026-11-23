@@ -1,18 +1,18 @@
 # 市政公司统一权限管理系统 · 后端设计方案
 
-业务依据为[需求说明](requirements.md)，领域语义见[领域模型](domain-model.md)，存储见[数据库设计](database-design.md)，HTTP契约见[OpenAPI](../api/openapi.yaml)。文档按老师[后端设计](https://gitee.com/mingqcn/course-project-mgt/blob/ca90f1cb7faa7d73b71b93a125460513f46b730e/docs/backend-design.md)的章节职责组织，全部设计对象均为本RBAC项目。
+业务依据为[需求说明](requirements.md)，领域语义见[领域模型](domain-model.md)，存储见[数据库设计](database-design.md)，HTTP契约见[OpenAPI](../api/openapi.yaml)。本文按模块职责、依赖方向、业务不变量和交互差异说明现行后端设计。
 
 同一后端工程提供 structured 和 DDD 两套实现，共用 HTTP 契约、Vue 和 MySQL。实际验证范围见[测试与验收](testing-acceptance.md)。
 
 ## 1. 设计目标
 
-单仓库、单后端应用，提供structured/ddd两种业务实现，共用HTTP/数据库契约、前端与初始化来源。两种实现应在身份、授权、范围、错误、持久化状态、回滚和并发下保持一致。Java21、Boot3.5.6、JPA、MySQL8.4、AOP及老师真实CloneFactory沿当前技术基线，不因参考老师新版本而升级框架。
+单仓库、单后端应用，提供structured/ddd两种业务实现，共用HTTP/数据库契约、前端与初始化来源。两种实现应在身份、授权、范围、错误、持久化状态、回滚和并发下保持一致。技术基线为Java21、Boot3.5.6、JPA、MySQL8.4、AOP及真实CloneFactory0.0.2。
 
 本RBAC自己保存口令并认证，不照搬课程项目的外部统一身份。课程按通用身份协议显式接入；Redis、语音、存储和其他示例集成不纳入RBAC范围。
 
 默认首次授权管理RBAC自身权限，通用应用目录按登记事实读取，课程独立配置接入，共用Vue、29项管理HTTP操作与8项可选通用应用身份操作、22项HTTP错误、12表首次SQL、固定五级角色及17项完整维护能力集合K。18个外系统仅保留离线原型演示，不进入正式目录、授权或初始化。课程身份适配职责见[课程接入](course-integration.md)，两策略各自计算权限，不将业务实现放入共享port。
 
-参考老师项目的共享用例、领域仓储、互斥装配与按模块绘图方式；本项目保留本地账号认证，不移植课程业务、外部统一身份、Boot4或Redis。
+共享用例端口隔离HTTP与业务实现，领域仓储隔离领域与持久化，配置互斥装配两种策略。RBAC负责本地账号认证与通用应用授权；课程业务及Teacher/Student绑定属于独立课程系统。
 
 ## 2. 总体结构
 
@@ -181,7 +181,7 @@ DddImportService负责一次整批导入事务；DddInitialAuthorizationService�
 
 原件转换、110部门/10001账号、五角色人数与恢复规则统一见[首次初始化设计](initialization.md)，命令统一见[后端说明](../backend/README.md)。
 
-## 7. 第一个纵向切片：人员角色分配
+## 7. 端到端用例设计：人员角色分配
 
 ### 7.1 范围
 
@@ -267,14 +267,14 @@ OpenAPI定义37个操作（29项管理操作，含部门及总览5项扩展；�
 
 ### 11.1 测试命名与目录
 
-| 需求组/目录    | 测试类/契约                                                                                                                                      | 旧任务来源                                      |
+| 需求组/目录    | 测试类/契约                                                                                                                                      | 覆盖目标                                      |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
-| r01            | R01ModelRulesTest、R01JpaConstraintTest                                                                                                          | T02核心模型/真实约束                            |
-| r03、r04、r06  | R03ImportJpaContractTest、R03WorkbookImportPlannerTest、R03ExcelSourceTest、R03ExcelImportTest、R04UserIdentifierTest、R06InitialRoleRulesTest | T03/T05原件、账号与首次分类                     |
-| r07            | R07AuthenticationContractSupport + R07AuthenticationContractTest                                                                       | T05双入口/准入/查询/日志，覆盖R04/R07—R10/R16等 |
-| r11            | R11UserManagementContractSupport + R11UserManagementContractTest                                                                       | T11人员管理、子集/调动/并发保护                 |
-| r13            | R13RoleContractSupport + R13RoleContractTest                                                                                           | T09角色、选权/共享维护者                        |
-| r14            | R14ResourceContractSupport + R14ResourceContractTest                                                                                   | T07资源树/API映射/并发                          |
+| r01            | R01ModelRulesTest、R01JpaConstraintTest                                                                                                          | 六核心模型及真实数据库约束                            |
+| r03、r04、r06  | R03ImportJpaContractTest、R03WorkbookImportPlannerTest、R03ExcelSourceTest、R03ExcelImportTest、R04UserIdentifierTest、R06InitialRoleRulesTest | 原件导入、账号与首次分类                     |
+| r07            | R07AuthenticationContractSupport + R07AuthenticationContractTest                                                                       | 双入口/准入/查询/日志，覆盖R02/R04/R07—R10/R16等 |
+| r11            | R11UserManagementContractSupport + R11UserManagementContractTest                                                                       | 人员管理、子集/调动/并发保护                 |
+| r13            | R13RoleContractSupport + R13RoleContractTest                                                                                           | 角色、选权/共享维护者                        |
+| r14            | R14ResourceContractSupport + R14ResourceContractTest                                                                                   | 资源树/API映射/并发                          |
 | r23            | R23PrototypeContractTest、R24DepartmentPolicyTest                                                                                                  | 共享HTTP级别/目标/部门契约；纯领域根保护、空节点及同父唯一规则 |
 | r18            | R18UserQueryValidationTest                                                                                                                       | DTO清洗顺序及安全ID回归                         |
 | r22            | R22Import/Resource/Role/UserDatabaseBoundaryTest                                                                                                 | 各专库/profile守卫                              |
