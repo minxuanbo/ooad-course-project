@@ -75,7 +75,8 @@ class R23PrototypeContractTest {
   DepartmentJpaRepository departmentRows;
   @Autowired
   IdentityDirectoryGateway directory;
-  @Autowired org.springframework.transaction.PlatformTransactionManager transactions;
+  @Autowired
+  org.springframework.transaction.PlatformTransactionManager transactions;
 
   /** 本人权限投影保留真实父ID，不凭导航祖先补发授权。 */
   @Test

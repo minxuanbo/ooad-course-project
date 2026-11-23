@@ -60,6 +60,9 @@ class R24StructuredReadBoundaryTest {
     Fixture detached = new Fixture();
     detached.child.moveTo(null);
     assertNull(detached.departmentService.list(HEADER).get(1).getParentId());
+    Fixture owned = new Fixture();
+    when(owned.roles.ownerDepartmentIds()).thenReturn(Set.of(3L));
+    assertFalse(owned.departmentService.list(HEADER).get(2).getCanDelete());
   }
 
   /** 查询预检可以只读；权限已撤销、墓碑或非可信总公司类型一律拒绝。 */

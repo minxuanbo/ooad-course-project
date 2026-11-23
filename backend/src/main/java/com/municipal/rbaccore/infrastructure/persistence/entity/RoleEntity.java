@@ -17,7 +17,8 @@ import org.springframework.util.Assert;
 @Entity
 @Table(
     name = "roles",
-    uniqueConstraints = @UniqueConstraint(name = "uk_role_code", columnNames = "code"))
+    uniqueConstraints =
+        @UniqueConstraint(name = "uk_role_code", columnNames = "code"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @cn.edu.xmu.clonefactory.CopyTo({RoleResult.class})
@@ -46,11 +47,13 @@ public class RoleEntity {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(
       name = "owner_department_id",
-      foreignKey = @ForeignKey(name = "fk_role_owner_department"))
+      foreignKey =
+          @ForeignKey(name = "fk_role_owner_department"))
   private DepartmentEntity ownerDepartment;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "application_id", foreignKey = @ForeignKey(name = "fk_role_application"))
+  @JoinColumn(name = "application_id", foreignKey =
+      @ForeignKey(name = "fk_role_application"))
   private ApplicationSystemEntity application;
 
   @Column(nullable = false)
@@ -62,11 +65,13 @@ public class RoleEntity {
   @JoinTable(
       name = "role_permissions",
       joinColumns =
-          @JoinColumn(name = "role_id", foreignKey = @ForeignKey(name = "fk_role_permission_role")),
+          @JoinColumn(name = "role_id", foreignKey =
+                  @ForeignKey(name = "fk_role_permission_role")),
       inverseJoinColumns =
           @JoinColumn(
               name = "permission_id",
-              foreignKey = @ForeignKey(name = "fk_role_permission_permission")))
+              foreignKey =
+                      @ForeignKey(name = "fk_role_permission_permission")))
   @Getter(AccessLevel.NONE)
   private Set<PermissionEntity> permissions = new LinkedHashSet<>();
 

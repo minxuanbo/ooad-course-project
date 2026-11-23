@@ -84,6 +84,91 @@ abstract class R13RoleContractSupport {
   private long adminRoleId;
   private final Map<String, Long> permissionIds = new LinkedHashMap<>();
 
+  /** 所属筛选在数据库分页前生效，应用预置通过领域仓储保存后完整往返。 */
+  @Test
+  @DisplayName("R28 角色所属筛选及应用预置来源真实MySQL往返")
+  void R28_RoleOwnershipAndPresetRoundTrip() throws Exception {
+    String admin = token("t09-admin");
+    long departmentRole =
+        success(
+                request(
+                    "POST",
+                    ROLES,
+                    admin,
+                    Map.of(
+                        "code",
+                        "r28-dept",
+                        "name",
+                        "部门角色",
+                        "type",
+                        "DEPARTMENT_CUSTOM",
+                        "ownerDepartmentId",
+                        childId)),
+                201)
+            .path("id")
+            .asLong();
+    JsonNode page =
+        success(request("GET", ROLES + "?ownerDepartmentId=" + childId, admin, null), 200);
+    assertEquals(1, page.path("total").asLong());
+    assertEquals(departmentRole, page.path("items").get(0).path("id").asLong());
+    assertEquals(
+        "已维护部门角色",
+        success(request("PATCH", role(departmentRole), admin, Map.of("name", "已维护部门角色")), 200)
+            .path("name")
+            .asText());
+    assertEquals(
+        0,
+        success(request("GET", ROLES + "?ownerDepartmentId=" + rootId, admin, null), 200)
+            .path("total")
+            .asLong());
+    long preset =
+        new TransactionTemplate(transactions)
+            .execute(
+                status -> {
+                  com.municipal.rbaccore.infrastructure.persistence.ddd.JpaRoleRepositoryAdapter
+                      repository =
+                          new com.municipal.rbaccore.infrastructure.persistence.ddd
+                              .JpaRoleRepositoryAdapter(roles, permissions, departments, systems);
+                  com.municipal.rbaccore.service.ddd.domain.model.ApplicationSystem source =
+                      new com.municipal.rbaccore.service.ddd.domain.model.ApplicationSystem(
+                          systemId, "rbac", "权限系统", true);
+                  com.municipal.rbaccore.service.ddd.domain.model.Role role =
+                      new com.municipal.rbaccore.service.ddd.domain.model.Role(
+                          null,
+                          "r28-preset",
+                          "应用预置",
+                          null,
+                          true,
+                          Set.of(),
+                          com.municipal.rbaccore.service.ddd.domain.model.Role.Type
+                              .APPLICATION_PRESET,
+                          null,
+                          source);
+                  com.municipal.rbaccore.service.ddd.domain.model.Role saved =
+                      repository.save(role);
+                  assertEquals(source.id(), saved.application().id());
+                  assertNull(saved.managementLevel());
+                  com.municipal.rbaccore.infrastructure.persistence.ddd
+                          .JpaAuthorizationRepositoryAdapter
+                      authorization =
+                          new com.municipal.rbaccore.infrastructure.persistence.ddd
+                              .JpaAuthorizationRepositoryAdapter(users, roles, departments);
+                  assertTrue(
+                      authorization
+                          .candidates(
+                              new com.municipal.rbaccore.service.ddd.domain.model.AuthorizationFacts
+                                  .AssignableRoleCriteria(1, false, Set.of(), "r28-preset", 0, 20))
+                          .items()
+                          .isEmpty());
+                  return saved.id();
+                });
+    JsonNode presets =
+        success(request("GET", ROLES + "?type=APPLICATION_PRESET", admin, null), 200);
+    assertEquals(preset, presets.path("items").get(0).path("id").asLong());
+    assertEquals(systemId, presets.path("items").get(0).path("applicationId").asLong());
+    assertFalse(presets.path("items").get(0).path("applicationName").asText().isBlank());
+  }
+
   /** 部门角色的定义、范围读取、差集分配和实时失效共同验证。 */
   @Test
   @DisplayName("R35 部门领导只能分配适用且权限为本人子集的部门角色，调动原子撤权")

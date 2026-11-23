@@ -9,7 +9,8 @@ import org.springframework.util.Assert;
 @Entity
 @Table(
     name = "systems",
-    uniqueConstraints = @UniqueConstraint(name = "uk_system_code", columnNames = "code"))
+    uniqueConstraints =
+        @UniqueConstraint(name = "uk_system_code", columnNames = "code"))
 @cn.edu.xmu.clonefactory.CopyTo({SystemResult.class})
 @lombok.Getter
 @lombok.NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)

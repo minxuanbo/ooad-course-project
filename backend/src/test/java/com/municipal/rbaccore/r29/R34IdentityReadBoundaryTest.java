@@ -30,6 +30,26 @@ class R34IdentityReadBoundaryTest {
   private static final String HEADER = "Bearer identity-boundary";
   private static final String SYSTEM = "external";
 
+  /** 目录快照与权限快照不一致时，停用或待接入权限所属应用均不能导出。 */
+  @Test
+  @DisplayName("R28/R29 structured权限所属应用停用或待接入不能贡献短码")
+  void R28_inconsistentPermissionApplicationIsNotExported() {
+    for (boolean pending : List.of(true, false)) {
+      Fixture f = new Fixture();
+      ApplicationSystemEntity stale = new ApplicationSystemEntity(SYSTEM, "陈旧应用快照");
+      ReflectionTestUtils.setField(stale, "id", 1L);
+      if (pending)
+        stale.setConnectionStatus(
+            com.municipal.rbaccore.service.port.resource.ConnectionStatus.PENDING);
+      else stale.setEnabled(false);
+      PermissionEntity broken = new PermissionEntity(stale, "stale", "不应导出", PermissionType.MENU);
+      ReflectionTestUtils.setField(broken, "id", 2L);
+      when(f.permissionRows.directPermissions(1L, Set.of(1L), Set.of(SYSTEM)))
+          .thenReturn(List.of(f.entityPermission, broken));
+      assertEquals(List.of("directory"), f.structured.current(HEADER).permissions());
+    }
+  }
+
   /** 两策略都必须区分越界已存在与范围内却读取不到的目录。 */
   @Test
   @DisplayName("R29 两策略范围内目录缺失返回404，越界已存在返回403")
@@ -74,6 +94,28 @@ class R34IdentityReadBoundaryTest {
       ApplicationIdentityResult result = f.structured.current(HEADER);
       assertEquals(List.of("directory"), result.permissions());
       assertFalse(result.permissionApis().containsKey("broken"));
+    }
+  }
+
+  /** 两策略使用各自事实模型，统一外部端口只提供目录和令牌输入。 */
+  @Test
+  @DisplayName("R28 结构化身份读取过滤仓储返回的停用及待接入权限事实")
+  void R28_stalePermissionSystemsDoNotExport() {
+    for (boolean pending : List.of(true, false)) {
+      Fixture f = new Fixture();
+      ApplicationSystemEntity unavailable = new ApplicationSystemEntity("stale", "陈旧系统");
+      ReflectionTestUtils.setField(unavailable, "id", 2L);
+      unavailable.setEnabled(pending);
+      unavailable.setConnectionStatus(
+          pending
+              ? com.municipal.rbaccore.service.port.resource.ConnectionStatus.PENDING
+              : com.municipal.rbaccore.service.port.resource.ConnectionStatus.CONNECTED);
+      PermissionEntity stale =
+          new PermissionEntity(unavailable, "stale", "陈旧权限", PermissionType.BUTTON);
+      ReflectionTestUtils.setField(stale, "id", 2L);
+      when(f.permissionRows.directPermissions(1L, Set.of(1L), Set.of(SYSTEM)))
+          .thenReturn(List.of(f.entityPermission, stale));
+      assertEquals(List.of("directory"), f.structured.current(HEADER).permissions());
     }
   }
 
