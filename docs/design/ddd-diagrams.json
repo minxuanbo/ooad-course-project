@@ -250,7 +250,8 @@
       "model": "LogPageResult",
       "fields": [
         "- items: List<LogEntryResult>",
-        "- total, snapshotId: Long",
+        "- systems: List<SystemResult>",
+        "- total, snapshotId: long",
         "- nextCursor: String",
         "- hasMore: Boolean"
       ],

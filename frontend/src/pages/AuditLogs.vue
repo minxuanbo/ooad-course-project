@@ -13,6 +13,7 @@ const filters = ref({
   to: '',
 })
 const rows = ref([]),
+  systems = ref([]),
   cursor = ref(null),
   more = ref(false),
   busy = ref(false),
@@ -24,11 +25,23 @@ let alive = true,
   activeQuery = '',
   generation = 0
 const eventLabels = {
-  LOGIN_SUCCESS: '登录成功',
-  LOGIN_FAILED: '登录失败',
+  LOGIN_SUCCESS: '身份认证成功',
+  LOGIN_FAILED: '身份认证失败',
   UNAUTHENTICATED: '未认证访问',
   AUTHORIZATION: '鉴权判定',
+  PERMISSION_CHECK: '权限查询',
   REQUEST_DENIED: '请求拒绝',
+}
+/** 应用名称来自日志查询返回的登记目录；旧记录仍保留稳定编码用于定位。 */
+function systemName(code) {
+  return systems.value.find(item => item.code === code)?.name || code
+}
+/** 权限查询返回false仍是HTTP200，不能显示为课程业务执行失败。 */
+function resultLabel(row) {
+  if (row.eventType === 'PERMISSION_CHECK') return row.allowed ? '有权限' : '无权限'
+  if (row.eventType === 'LOGIN_SUCCESS' || row.eventType === 'LOGIN_FAILED')
+    return row.allowed ? '认证成功' : '认证失败'
+  return row.allowed ? '允许' : '拒绝'
 }
 /** 查询指纹包含每批条数，输入按北京时间解释后转换UTC提交。 */
 function query() {
@@ -75,6 +88,7 @@ async function load(append = false) {
       cursor.value = page.nextCursor
       more.value = page.hasMore
       total.value = page.total
+      systems.value = page.systems || []
     }
   } catch (e) {
     if (alive && version === generation)
@@ -109,7 +123,8 @@ onUnmounted(() => {
   <section class="card panel">
     <h2>鉴权与认证日志</h2>
     <p class="muted">
-      鉴权允许与业务处理结果分别记录。查询不读取部门树；匹配总数固定于本次查询快照。
+      记录 RBAC 身份认证、鉴权与权限查询。课程业务是否执行成功请查看课程业务日志。
+      匹配总数固定于本次查询快照；点击“查询”可获取新记录。
     </p>
     <form class="audit-filters" @submit.prevent="load()">
       <label>
@@ -121,15 +136,23 @@ onUnmounted(() => {
         <input v-model="filters.username" maxlength="100" />
       </label>
       <label>
-        系统编码
-        <input v-model="filters.appCode" maxlength="191" />
+        系统
+        <select v-model="filters.appCode">
+          <option value="">全部系统</option>
+          <option v-for="system in systems" :key="system.id" :value="system.code">
+            {{ system.name }}{{ system.enabled ? '' : '（已停用）' }} · {{ system.code }}
+          </option>
+          <option v-if="filters.appCode && !systems.some(item => item.code === filters.appCode)" :value="filters.appCode">
+            {{ filters.appCode }}（历史记录）
+          </option>
+        </select>
       </label>
       <label>
         判定
         <select v-model="filters.allowed">
           <option value="">全部</option>
-          <option value="true">允许 / 成功</option>
-          <option value="false">拒绝 / 失败</option>
+          <option value="true">允许 / 有权限 / 认证成功</option>
+          <option value="false">拒绝 / 无权限 / 认证失败</option>
         </select>
       </label>
       <label>
@@ -193,7 +216,7 @@ onUnmounted(() => {
           </td>
           <td>
             {{ eventLabels[row.eventType] || row.eventType }}
-            <small>{{ row.appCode || row.permissionCode }}</small>
+            <small>{{ systemName(row.appCode) }} · {{ row.appCode || row.permissionCode }}</small>
           </td>
           <td>
             {{ row.httpMethod }}
@@ -201,7 +224,7 @@ onUnmounted(() => {
           </td>
           <td>
             <span class="badge" :class="row.allowed ? 'green' : 'red'">
-              {{ row.allowed ? '允许 / 成功' : '拒绝 / 失败' }}
+              {{ resultLabel(row) }}
             </span>
             <small>HTTP {{ row.httpStatus }}</small>
           </td>

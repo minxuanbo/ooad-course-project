@@ -59,6 +59,8 @@ class R29ApplicationIdentityContractTest {
   private static final String DIRECTORY = "/auth/departments";
   private static final String DEPARTMENT_USERS = "/auth/departments/1/users";
   private static final String API_AUTHORITY = "/auth/api-permissions/createTerm";
+  private static final String PERMISSION_QUERY = "/auth/permissions/TC";
+  private static final String LOGS = "/api/authorization-logs";
   @Autowired
   TestRestTemplate http;
   @Autowired
@@ -708,6 +710,44 @@ class R29ApplicationIdentityContractTest {
         "INSERT INTO users(id,username,password_hash,name,department_id,enabled)"
             + " VALUES(4,'r32-child',?,'子部门员工',2,1)",
         passwords.encode(PASSWORD));
+  }
+
+  /** 权限查询的真假结果都须留痕，HTTP成功不能被当成有权或业务已成功。 */
+  @Test
+  @DisplayName("R16 R32 短码及operationId查询各记录一次真实权限结果且保持HTTP200")
+  void R16_PermissionQueriesRecordTheirDecision() {
+    String token = courseLogin();
+    for (String path : List.of(PERMISSION_QUERY, API_AUTHORITY)) {
+      for (boolean enabled : List.of(true, false)) {
+        jdbc.update("UPDATE api_resources SET enabled=? WHERE id=100", enabled);
+        long before = jdbc.queryForObject("SELECT COUNT(*) FROM authorization_logs", Long.class);
+        assertEquals(enabled, request(path, HttpMethod.GET, token, null, 200).path("allowed").asBoolean());
+        assertEquals(before + 1, jdbc.queryForObject("SELECT COUNT(*) FROM authorization_logs", Long.class));
+        Map<String, Object> log = jdbc.queryForMap(
+            "SELECT event_type,app_code,user_id,allowed,http_status,reason FROM authorization_logs ORDER BY id DESC LIMIT 1");
+        assertEquals("PERMISSION_CHECK", log.get("event_type"));
+        assertEquals("course-project-management", log.get("app_code"));
+        assertEquals(2L, ((Number) log.get("user_id")).longValue());
+        assertEquals(enabled, log.get("allowed"));
+        assertEquals(200, log.get("http_status"));
+        assertEquals(enabled ? "OK" : "PERMISSION_NOT_GRANTED", log.get("reason"));
+      }
+    }
+  }
+
+  /** 日志筛选目录沿日志读取权限提供，不能要求用户另有资源配置权限。 */
+  @Test
+  @DisplayName("R16 仅日志权限的根账号可选全部登记系统并查到课程登录记录")
+  void R16_LogPageIncludesSystemsWithoutResourcePermission() {
+    courseLogin();
+    jdbc.update("DELETE rp FROM role_permissions rp JOIN permissions p ON p.id=rp.permission_id WHERE rp.role_id=1 AND p.code<>'rbac.logs.read'");
+    String token = adminLogin();
+    JsonNode page = request(LOGS + "?appCode=course-project-management&event=LOGIN_SUCCESS", HttpMethod.GET, token, null, 200).path("data");
+    assertEquals(3, page.path("systems").size());
+    assertTrue(page.path("systems").toString().contains("course-project-management"));
+    assertEquals(1, page.path("total").asInt());
+    assertEquals("LOGIN_SUCCESS", page.path("items").get(0).path("eventType").asText());
+    request(SYSTEMS, HttpMethod.GET, token, null, 403);
   }
 
   /** 从老师既有登录协议取得课程应用受众JWT。 */

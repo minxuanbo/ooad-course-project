@@ -20,19 +20,21 @@ LOGGER = logging.getLogger('course.integration')
 class Gateway:
     """WSGI处理器由Waitress提供有界HTTP运行器，不启动本地实验HTTPServer。"""
 
-    def __init__(self, upstream, store, catalog, origins=()):
+    def __init__(self, upstream, store, catalog, origins=(), health_probe=None):
         self.upstream = upstream
         self.store = store
         self.catalog = catalog
         self.system = catalog['system']
         self.origins = set(origins)
+        self.health_probe = health_probe
 
     def dispatch(self, method, path, query, token, body):
         """逐次读取真实RBAC授权，拒绝跨应用及未声明路由；不使用mock或授权缓存。"""
         if method == 'GET' and path == '/healthz':
             self.store.ping()
-            status, _ = self.upstream('/auth/me')
-            return (200, {'status': 'UP'}) if status == 401 else (503, {'status': 'DOWN'})
+            status, result = self.health_probe() if self.health_probe else (503, {})
+            healthy = status == 200 and isinstance(result, dict) and result.get('status') == 'UP'
+            return (200, {'status': 'UP'}) if healthy else (503, {'status': 'DOWN'})
         audit = path == '/auth/audit-logs'
         allowed = ((method == 'POST' and path in ('/auth/login', '/auth/logout'))
                    or (method == 'GET' and (path in ('/auth/me', '/auth/departments')
@@ -139,4 +141,8 @@ def create_app():
     def upstream(path, method='GET', token=None, body=None):
         """请求真实RBAC，不记录请求或响应内容。"""
         return exchange(base, path, method, token, body)
-    return Gateway(upstream, store, catalog, os.environ['ALLOWED_ORIGINS'].split(','))
+    health_base = os.environ['RBAC_HEALTH_BASE_URL'].rstrip('/')
+    def health_probe():
+        """内部运维端口的健康检查不进入登录或鉴权事件采集。"""
+        return exchange(health_base, '/actuator/health')
+    return Gateway(upstream, store, catalog, os.environ['ALLOWED_ORIGINS'].split(','), health_probe)

@@ -25,7 +25,7 @@
 | 角色与权限 | `PATCH /api/roles/{id}` | 改名或启停角色 | RolePatchDTO | RoleVO |
 | 角色与权限 | `GET /api/roles/{id}/permissions` | 完整直接权限集合 | 路径/query/无body，见规范 | RolePermissionsVO |
 | 角色与权限 | `PUT /api/roles/{id}/permissions` | 整体替换角色权限 | IdsDTO | RolePermissionsVO |
-| 资源与映射 | `GET /api/systems` | 本轮系统目录 | 路径/query/无body，见规范 | 数组 |
+| 资源与映射 | `GET /api/systems` | 已登记系统目录 | 路径/query/无body，见规范 | 数组 |
 | 资源与映射 | `GET /api/permissions/tree` | 权限树目录 | 路径/query/无body，见规范 | 数组 |
 | 资源与映射 | `GET /api/api-resources` | API候选分页 | 路径/query/无body，见规范 | ApiPageVO |
 | 资源与映射 | `PATCH /api/permissions/{id}` | 维护权限父级类型状态 | PermissionPatchDTO | ResourcePermissionVO |

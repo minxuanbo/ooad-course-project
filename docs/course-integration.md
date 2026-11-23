@@ -1,142 +1,105 @@
-# 课程系统本地联调
+# 课程系统接入设计
 
-当前为37项API及全JWT的本地双系统接入；运行副本源自老师`course-project-mgt`提交`19fbd1a`，仅保留3个已记录structured生产补丁。老师原目录后来独立更新，保持不动，不自动覆盖运行副本。机器契约见[OpenAPI](../api/openapi.yaml)，当前安全/实现见[后端设计](backend-design.md#18-通用应用身份与课程本地接入)，各轮执行成绩见[验收入口](testing-acceptance.md)。
+RBAC与老师课程工程是两个独立业务系统。RBAC提供通用授权目录和身份协议；课程系统保留教师/学生业务身份、user_id绑定、课程对象规则及生产Vue。本文说明接入职责与执行边界；实测版本和成绩见[测试与验收](testing-acceptance.md)。
 
-## 1. 系统职责
+## 1. 系统与配置边界
 
-RBAC负责User—Role—Permission—ApiResource及Application目录。角色全局共享，可以组合多个应用权限；每项Permission与其ApiResource映射必须同系统。Application从数据库登记数据读取，不维护`rbac/course`代码白名单。原型的18个演示系统仍不自动导入。
-
-教师、学生与课程管理员均为角色配置。配置`teacher`、`student`供老师原协议识别；另建`course-admin`组合管理菜单、按钮和后台权限，同时授teacher资格。LOGIN是本地课程目录中的资格权限配置，不是RBAC内置的教师/学生标记。RBAC只返回当前有效角色编码与权限，不识别课程对象。万人首次授权仍只配置本RBAC自身，课程角色通过独立步骤明确授予；2026-11-21的本部教师、分公司学生与同一管理员规则见第8节，不给全体员工统一加教师。
-
-RBAC管理端仍要求本系统实际管理API，普通员工即使有课程角色也不能登录管理端。课程沿老师`POST /login`：先确认其本地Teacher/Student，再校验外部身份、角色及user_id绑定。课程、选课、教学班、组长、提交、评分等业务和对象权限均由老师工程维护，不增加RBAC的Student/Teacher实体、岗位猜权、课程准入策略或课程业务API。
-
-## 2. 人员与角色的最小规则
-
-自定义角色不提升管理级别，也不使持有人整个人被冻结。人员的停用、调动和角色变更仍受有效级别、本人/同级/上级保护和部门范围限制。
-
-角色整体替换在共同根锁后重读数据库当前集合，对新增、删除分别验权；不可改变的现有项可以原样保留。自定义角色只由可信根直属有效五级管理员增删，不增加委托授权或“可授角色清单”机制。前端根据lockedRoleIds显示锁定项，客户端不能借此伪造保留，非法变化整次回滚。
-
-## 3. 通用身份协议
-
-设置`APP_IDENTITY_ENABLED=true`开放八项通用协议。成功响应保持老师既有原始JSON，错误沿RBAC稳定code/message/requestId。`IDENTITY_ALLOWED_ORIGINS`只配置实际前端来源。
-
-| 端点 | 行为 |
+| 归属 | 责任 |
 | --- | --- |
-| POST /auth/login | username/password/systems；systems为单个登记外部应用；当前有效授权非空才签发独立受众JWT |
-| GET /auth/me | subject、实际roles、当前permissions、服务端system；每次查最新账号/角色/权限/系统状态 |
-| GET /auth/permissions/{permission} | 仅检查当前受众的有效权限；未知或撤回返回allowed=false |
-| GET /auth/users/{userId} | 先检查本应用对此真实API的有效映射，再返回userId/no/name最小投影，不写死UL或TEC |
-| POST /auth/logout | 204，立即撤当前外部JWT，不影响其他会话；业务撤权后仍可退出 |
-| GET /auth/departments | 实际API映射及组织范围门禁；逐层展开、关键词、page/pageSize和hasChildren |
-| GET /auth/departments/{departmentId}/users | 实际API映射及组织范围门禁；只查直属人员，不返联系方式 |
-| GET /auth/api-permissions/{operationId} | 按当前应用元数据定位方法/模板；只返回operationId和allowed，未知操作404 |
+| RBAC | 用户凭据、数据库登记的Application/Role/Permission/ApiResource、JWT、实时授权与自身鉴权日志 |
+| 课程系统 | Teacher/Student、课程/教学班/里程碑/作业等业务对象及权限、文件内容、生产页面 |
+| 独立接入支撑 | 实时身份转接、课程短码完整路由投影、独立业务审计及必要的只读对象上下文 |
+| 接入初始化 | 核对员工来源与组织事实，创建课程绑定，再发布通用角色目录及授权回执 |
 
-Permission.type为MENU/BUTTON/API。菜单、按钮可无API独立控制展示或资格；API权限必须具有非空映射且全部映射同系统启用，否则不导出短码。这避免清空映射后仍凭短码放行。老师粗粒度短码覆盖多路由时全部一并登记；API映射、角色授撤权及启停提交后，旧令牌下一请求重算。系统受众隔离不依赖前端隐藏菜单，K保持原17项RBAC维护路由。
+课程身份不加入RBAC领域。`teacher`、`student`、`course-admin`是配置角色编码，不是RBAC内置身份；角色可跨应用拥有权限，但Permission—ApiResource必须同应用。默认万人初始化只登记RBAC，身份开关不自动授课程角色。
 
-## 4. 本地外部审计依赖
-
-老师实际调用统一身份的`/auth/audit-logs`追加和查询。该依赖原本不存在；不能把课程业务快照写成RBAC鉴权日志，也不能让mock返回虚假成功。本轮用独立[本地支撑工具](../integrations/course/local_identity_gateway.py)转接身份并将真实审计事件持久保存到忽略目录SQLite。此工具为本地测试基础设施，不属于RBAC核心业务，也不是服务器部署方案。
-
-课程后端的IDENTITY_BASE_URL和课程前端的VITE_IDENTITY_BASE_URL指向本地支撑8085；它实时转发RBAC8081，核实system受众，不缓存权限。读日志要求配置的AV全局权限，写日志要求LOGIN配置权限；匿名、其他受众、撤权及上游故障都拒绝。requestId按应用分区幂等；主体由已认证身份确定，时间由服务端生成。日志是调用者上报的业务事件，不冒充对课程事务的独立证明。
-
-本地支撑只读课程数据库补充termId/courseId/classId，业务写入仍全部经老师接口。普通教师不能绕过课程服务直接读取全局日志；本轮验证的是课程管理员日志工作区。教师受对象范围限制的外部日志读取能力未另行实现，不用全局放行替代。持久文件、数据库配置、账号口令、生成SQL和浏览器截图均不得提交。
-
-## 5. 场景与账号
-
-本节为2026-11-20以前的32人历史回归夹具，不是R31万人首次接入的身份分配结果。原夹具保留以便复现既有授撤权和拒绝场景。账号口令从本地私有配置或环境传入，不在文档保存。
-
-| 账号 | 用途 |
+| 文件 | 设计用途 |
 | --- | --- |
-| ui-admin | RBAC系统管理员；管理角色定义及课程授权；不因该称谓自动成为课程本地教师 |
-| ui-manager | 部门经理；可管理范围内较低级人员，课程自定义角色显示锁定 |
-| ui-user-05 | teacher；课程组长/任课教师，可按课程自身对象关系维护教学 |
-| ui-user-06 | teacher；没有全局课程管理权限的对照账号 |
-| ui-user-08 | teacher + course-admin；从教师入口登录，可用学期、课程、教师和日志管理工作区 |
-| ui-user-09 / ui-user-10 | student；已选个人制与分组制两门开放课程，可组队、提交、预约、查看成绩 |
-| ui-user-07 / ui-user-11 | 本地有教师/学生记录但未授RBAC应用资格，用于拒绝验证 |
+| [catalog.json](../integrations/course/catalog.json) | 应用、角色、中文权限名、短码与全部必要路由 |
+| [operations.json](../integrations/course/operations.json) | operationId、方法/模板及全局门禁适用角色；由IDENTITY_OPERATIONS_FILE显式装配 |
+| [initialization.json](../integrations/course/initialization.json) | 本部教师、其他学生及同账号管理员的首次分配规则 |
 
-夹具含32个RBAC账号、4名本地教师、3名本地学生、基准学期、个人/分组两门开放课程、两教学班及4个里程碑。学生可以组队；教师建组可明确负责班级。老师的学生建组自动负责班级归属尚未完成，口试完整链使用老师既有教师建组入口，不通过SQL伪造接口成功。真实探针保留虚构作业、文件、成绩及审计供人工体验，临时学期和申请课程尽量清理；中断后的虚构资料保留并说明，不重置真实资料。
+## 2. 身份与授权链
 
-## 6. 复现与验证
+RBAC实现8项统一身份鉴权，清单和字段见[OpenAPI](../api/openapi.yaml)及[业务契约](api-contract.md)。管理`/api/auth/login`与外部`/auth/login`均签发HS256身份JWT，仅含sub/aud/iss/iat/exp/jti。Bearer是HTTP携带方式；管理aud=rbac，课程aud为登记的课程应用编码，不能交叉使用。签名秘密外置，无固定默认值。
 
-1. 准备独立MySQL实例及空rbac_core/course_project，记录端口；原有库全部保留。RBAC执行当前两份首次SQL；课程按原Flyway建表。只对空库生成并导入`scripts/course_integration_fixture.py --output-dir .local/your-run/fixtures`的两份SQL，先通过UI_FIXTURE_PASSWORD提供虚构口令。
-2. 老师工程从原提交复制到忽略目录，按[integrations/course](../integrations/course/README.md)应用必要修复补丁，保留原目录。Java21、Boot4.1.2、Lombok1.18.48、CloneFactory0.0.2沿老师pom；历史课程构建使用真实38fd817源码。2026-11-21本RBAC依用户提供源码更新为真实40583ff提交的0.0.2，构建指引见[依赖安装](../deploy/README.md#本机依赖安装)，不是改名旧jar；不因此替换已验课程副本。
-3. RBAC设置数据库凭据、APP_BACKEND_STRATEGY=structured或ddd、APP_IDENTITY_ENABLED=true、IDENTITY_ALLOWED_ORIGINS=http://127.0.0.1:5174,http://localhost:5174，并将IDENTITY_OPERATIONS_FILE设为仓库operations.json的file:///绝对URI，启动8081。不要并行用两策略修改同一测试库。
-4. 启动本地支撑：`python integrations/course/local_identity_gateway.py --database .local/your-run/audit.sqlite3 --port 8085 --origin http://127.0.0.1:5174 --origin http://localhost:5174 --mysql-config <本地只读客户端配置绝对路径>`。客户端配置指向课程实例，数据库名称仍为course_project，文件不入Git。
-5. 课程设置APP_BACKEND_STRATEGY=structured、DB_HOST/PORT/NAME/USER/PASSWORD及IDENTITY_BASE_URL=http://127.0.0.1:8085；原JAR8080，Flyway启用、ddl-auto=validate。老师DDD另有当前学期切换冲突，本轮不将其全部功能宣称通过；RBAC两种策略分别联调老师structured。
-6. RBAC Vue5173沿原代理8081；老师Vue5174设置VITE_API_BASE_URL=http://127.0.0.1:8080、VITE_IDENTITY_BASE_URL=http://127.0.0.1:8085、VITE_MOCK_ENABLED=false。使用两个正式前端，不使用离线原型或mock替代真实RBAC。
-7. 通过环境提供口令后执行`python scripts/verify_course_integration.py --fixture --report .local/your-run/http.json`与`node scripts/verify_course_browser.mjs`；执行Python辅助测试、前端测试/构建及两RBAC完整回归。脚本有真实写入，仅在明确的虚构夹具环境使用。
+每次请求按当前User→Role→Permission→ApiResource及应用状态重算，JWT不缓存角色权限。原JWT在授撤权提交后的下一请求立即体现变化；退出只撤当前会话，RBAC重启须重新登录。普通员工即便有课程角色，也须实际RBAC管理API才能进入管理端。
 
-本机当前实例及实际成绩以本轮验证记录为准。首次SQL不承担已有未知库升级，不交付升级脚本。服务端口8082被Windows保留，因此本轮支撑使用8085，不修改系统保留端口。
+`/auth/me`返回subject、roles、permissions、system、permissionApis。API类型权限必须有非空且全部同应用启用的映射才导出短码；菜单/按钮可表达无API的展示资格。接入层再按catalog核查老师同一粗粒度短码所需的路由全集，任一必要映射缺失即关闭整个短码，防止部分撤权后借其他路由继续放行。
 
-### 本机浏览器入口与跨域配置
+目录接口遵循page从1、pageSize默认20最多100；部门逐层展开、人员仅直属，实际API和本人子树同时受限。operationId由文件配置定位；未知操作404，配置损坏/重复阻止启动。全局门禁通过后，课程Service仍检查授课、选课、分组、课程状态等对象条件。
 
-浏览器把`http://localhost:5174`与`http://127.0.0.1:5174`视为不同Origin。课程Vue直接调用8080；只允许后者时，前者会被浏览器跨域检查阻止，登录页可能只显示“请求失败，请稍后重试”，不能据此判断口令或身份出错。
+### 身份日志与课程业务日志
 
-启动课程JAR前设置`CORS_ALLOWED_ORIGINS=http://127.0.0.1:5174,http://localhost:5174`。独立本地支撑使用上面两个`--origin`；需要浏览器直接访问RBAC通用身份入口时，相应将`IDENTITY_ALLOWED_ORIGINS`设为这两个Origin。继续显式允许本机入口，不使用通配放行。已运行进程需读取新配置后重启对应服务，不必重新导入或授权。
+RBAC记录/auth/login的凭据及应用准入结果，使用course-project-management归属；课程随后检查教师/学生绑定，因此RBAC认证成功不保证课程业务登录成功。日志列表按快照倒序分页，需选择课程系统及身份认证事件重新查询，不能只看最新一页RBAC管理记录。
 
-## 7. 老师项目的实际限制
+老师后端主要通过/auth/me读取当前短码后自行执行课程对象规则，并不为每次功能调用都请求/auth/api-permissions。RBAC能记录实际收到的权限查询和门禁，无法从一次身份投影推断未上报的业务操作或最终结果。PERMISSION_CHECK为查询真假结果，课程业务审计仍由独立支撑持久化，课程日志页展示；不把两类日志混入同一数据表。
 
-老师OpenAPI包含但生产Controller没有对应方法的业务路径：课程重置申请、单独修改课程description、小组GET详情、个人口试成绩写入、录音转写摘要，共5项。只在常量中出现的CRS不登记为已实现能力，不为其编造RBAC业务端点。
+## 3. 为什么需要course-integration服务
 
-个人制提交的学生上传/读取存在，教师批改列表原实现明确返回COURSE_NOT_GROUP_BASED，个人教师详情/批改链也未完成。不能把它们的不可用解释成RBAC没授够权限，更不能通过提高RBAC级别绕过。学生建组尚缺负责教学班归属，课程管理员与普通教师的对象范围由原工程判断。本轮保留并报告这些来源缺口，不扩写老师尚未完成的业务模块。
+Swarm中的`ooad_course-integration`运行[deployment_gateway.py](../integrations/course/deployment_gateway.py)，由Waitress承载。它不是第三套业务系统，也不是mock；当前课程配置依赖它完成以下工作：
 
-T14为Issue #15：真实场景、身份、原型/API契约；T15为Issue #16：两系统授撤权、隔离与证据。本轮不自动关票、不合main、不部署服务器。
+1. 实时转接真实RBAC的8项身份接口，保持204空退出和上游错误状态，不缓存授权。
+2. 将通用权限事实按课程配置收敛为完整短码，限制当前应用受众。
+3. 提供课程依赖的`/auth/audit-logs`追加/查询，持久存储于独立course_audit库，不混入RBAC鉴权日志。
 
+业务审计主体来自真实身份，服务端决定时间；同应用requestId由唯一键保证幂等，不同内容重放拒绝。查询在数据库计数/分页，仍要求AV全局权限；course_context账号只读课程归属，不扩展普通教师对象日志范围。
 
-权限展示名称采用完整中文（如“查看总览”“分配人员角色”“查询鉴权日志”），稳定编码仍保留供关联、排错和接口使用，不按中文名称鉴权。两套首次授权与本地夹具读取同一RBAC中文目录；课程显示名称也来自独立接入配置，不在Vue按英文编码硬翻译。
+课程浏览器经RBAC Nginx的`/course-identity/`挂载访问支撑；课程后端用`http://course-integration:8085`。公共`/auth/*`直接到RBAC，继续服务其他登记应用。挂载前缀是部署路由，不是新增RBAC业务Controller。当前直接删除此服务会破坏课程身份投影和业务审计链；未来替换须同时调整外部依赖及地址。
 
-通用/auth/me还返回permissionApis，即每个有效权限当前实际映射的方法/模板事实。RBAC不内置接入系统的预期路由；本地课程适配器依据catalog.json核实老师同一粗粒度短码的全部必要路由，缺少一条即保守关闭整个短码，菜单检查也采用相同投影。这样删除多路由权限的部分映射不能借另一条映射继续调用已撤路由，映射变更仍即时生效。
+本机[local_identity_gateway.py](../integrations/course/local_identity_gateway.py)使用SQLite审计及本地HTTP服务，仅用于隔离联调；不能当作服务器方案。两种支撑实现均不把课程对象投影加入RBAC业务服务。
 
-虚构口试里程碑显式设置预约次数上限100，便于重复联调和人工体验；这只是课程已有配置，不修改老师默认值或业务规则。重复探针保留取消/已完成预约历史，不用清库恢复次数。
+## 4. 首次身份分配与恢复
 
-## 8. 本部教师与分公司学生首次接入（R31）
+总公司本部含根直属领导、本部职能部门和项目，排除分公司及其全部下属。本部员工不论职位均为teacher，其余员工为student；启用、可信根直属、有效基础级别5的RBAC管理员同时为course-admin并建立教师绑定。
 
-依据用户2026-11-21转达的老师要求及范围确认，总公司本部包括本部职能部门和项目，排除分公司及其下属。本部领导、普通员工均为teacher；分公司领导和员工均为student。当前启用、可信根直属、有效基础级别5的RBAC管理员兼course-admin；独立admin有teacher及course-admin两角色，用同一账号管理两系统。
+当前原件首次核对为191教师（190员工+admin）、9810学生、1名同账号课程管理员。老师dump另有1教师和1学生演示对象，保留但不自动授RBAC角色，物理表可为192/9811。人数是首次核对值，不能作为运行期强制恢复目标。
 
-显式配置在[integrations/course/initialization.json](../integrations/course/initialization.json)，目录与路由仍在catalog.json；执行入口为[scripts/initialize_course_integration.py](../scripts/initialize_course_integration.py)。它读取已完成RBAC导入的来源和组织事实，交叉核员工原“分公司”列与父链，识别本部而不按岗位猜测。Teacher/Student只写入课程数据库，RBAC仅写通用Application、Role、Permission、ApiResource和关联数据。RBAC固定管理员角色获得课程完整权限子集，以便后续合法授撤课程角色；其他基础角色级别与原RBAC权限保持。
+先完成RBAC导入与五角色授权，再显式预览/执行：
 
-在新本地实例完成RBAC资料导入、五角色授权，以及老师原Flyway建表后，先执行只读预览。客户端ini必须显式指向loopback及端口，密码只存忽略目录；报告必须为.local下的新文件。
+| 场景 | 工具与限制 |
+| --- | --- |
+| 独立全新本机库 | [initialize_course_integration.py](../scripts/initialize_course_integration.py)，客户端必须显式指向loopback及端口；默认预览，--apply才写入 |
+| 新服务器首发 | [initialize_deployment.py](../deploy/initialize_deployment.py)，离线维护窗口执行；新空库导入老师dump后首次校正工号user_id为数字subject，保留课程业务主键 |
+
+本机示例（凭据ini与新报告放.local）：
 
 ```powershell
 python scripts/initialize_course_integration.py --mysql <mysql.exe绝对路径> --rbac-client <RBAC客户端ini> --course-client <课程客户端ini> --report .local/your-run/course-preview.json
-# 核对人数与范围后，在同一组明确的新库执行。
 python scripts/initialize_course_integration.py --mysql <mysql.exe绝对路径> --rbac-client <RBAC客户端ini> --course-client <课程客户端ini> --apply --report .local/your-run/course-applied.json
 ```
 
-默认不写库。实际执行先在课程库事务建立唯一user_id绑定，匹配的既有绑定只保留，身份冲突或已删除教师拒绝覆盖；成功后在RBAC根行锁内一次发布目录、角色、权限、全部人员角色和完成回执。两系统分别提交，不宣称分布式原子事务：若课程提交后RBAC失败，尚无应用角色授权，中断后可重跑，匹配的课程绑定不重复插入。
+工具同时核对原员工“分公司”列及组织父链，不把所有根子树算教师、不按岗位推权。课程库先事务建立唯一user_id绑定；匹配的既有绑定保留，冲突或已删除教师拒绝覆盖。随后RBAC在根锁事务发布目录、角色、权限、人员关联及独立seed_key回执；固定管理员角色得到课程完整权限子集以便合法授撤。
 
-回执使用通用bootstrap_receipts表的独立seed_key，不新增业务表或老师Flyway迁移。匹配回执重复执行直接跳过，不恢复被手动撤回的角色和权限；原件来源、账号全集或初始化配置变化会拒绝自动覆盖。此入口不是已有课程库升级或动态组织调动同步，后续身份修改仍由管理端明确授撤，并维护课程本地业务身份。
+两库分别提交。课程已成功而RBAC失败时尚无相应新应用授权，可在核对后重试，匹配绑定不重复插入；不宣称分布式原子事务。完成回执匹配时重跑跳过，不恢复后来撤回的角色/权限或改动的身份资料。来源、账号全集或配置变化拒绝自动覆盖；此流程不是旧库升级，也不做运行期组织调动自动同步。
 
-R31原始职责及维护窗口约束见[历史初始化设计](history/design-decisions/course-initialization-r31.md)，当时真实人数、两策略HTTP与界面结果见[独立验证记录](history/verification/course-initialization-r31.md)；不能把历史32人夹具成绩当作新规则通过。当前双DDD服务器配置见第11节，R35正式发布及逐人核对另见[云端记录](history/verification/ddd-production-deployment.md)，原本机环境保留。
+## 5. 来源、补丁与运行
 
+正式来源固定老师提交990cea2cc3686599ef5068945706a13e7e0afc5b。使用[prepare_course_source.py](../scripts/prepare_course_source.py)导出独立新副本，原目录保持不动。副本依次应用：
 
-## 9. 完整八项鉴权接入（R32）
+| 补丁 | 内容 |
+| --- | --- |
+| [course-local-fixes.patch](../integrations/course/course-local-fixes.patch) | structured组长关联差集保存、有效已选课学生读取开放里程碑、已有CV/CTM管理员读取教学班 |
+| [course-deployment-fixes.patch](../integrations/course/course-deployment-fixes.patch) | DDD对等修复、当前学期唯一标记释放顺序、两策略安全日志及回归；不改pom、Flyway或Vue业务源码 |
 
-老师共享文档“统一身份鉴权”8项均由RBAC两策略实现；另分组“统一身份审计”2项按用户确认排除，现有独立支撑仅保留本地依赖。JWT、目录范围、操作元数据设计见[完整身份契约](backend-design.md#18-通用应用身份与课程本地接入)。操作配置在[operations.json](../integrations/course/operations.json)，同时登记老师接口operationId及本RBAC身份操作的兼容标识，不按应用代码白名单决定准入。未配文件时已知操作也会404，不能漏配。
+服务器两个后端均DDD，课程公开80、RBAC公开8088，支撑8085及数据库/Actuator/Prometheus留内网。容器DNS、业务端口与内部管理端口不同，精确路由以[Stack](../deploy/stack.yml)和[部署步骤](../deploy/README.md)为准。CloneFactory固定真实0.0.2来源，见[依赖安装](../deploy/README.md#本机依赖安装)。
 
-```powershell
-$env:APP_IDENTITY_ENABLED='true'
-$env:IDENTITY_OPERATIONS_FILE=([System.Uri](Join-Path (Get-Location) 'integrations/course/operations.json')).AbsoluteUri
-$env:IDENTITY_JWT_ISSUER='http://127.0.0.1:8081'
-$env:IDENTITY_ALLOWED_ORIGINS='http://127.0.0.1:5174,http://localhost:5174'
-```
+本机可以分别选择两策略，但不得同时写同一验收库；课程来源与补丁使用上述准备脚本，初始化命令见第4节。RBAC开启APP_IDENTITY_ENABLED、配置operations文件绝对URI；课程Vue关闭mock，分别设置课程API和身份支撑地址。运行配置和检查见[本地复现](reproduction.md#6-课程系统本地联调)。
 
-可通过IDENTITY_JWT_SECRET提供至少256位Base64秘密；未配置时使用本进程随机秘密，无固定默认值。当前会话索引仍为进程内存，重启需重新登录。两个目录权限IDR/IDU通过catalog.json显式登记，只初授课程管理员及有效RBAC管理员角色。已有R31库保留原完成回执和当时目录，不用新目录强行重跑覆盖；历史回执重放验收可通过verify_course_initialization.py的--initialization-catalog显式指定当时快照。新库按最新目录首次执行。操作文件是接入元数据，不增加RBAC业务表或升级SQL。
+### 本机浏览器入口与跨域配置
 
-本轮原库、万人账号、教师/学生绑定及已有课程保持；新增两项目录登记属于本机明确的接入配置。实测记录见[八项契约验证](history/verification/identity-eight-contract.md)。
+`http://localhost:5174`与`http://127.0.0.1:5174`是不同Origin。课程后端CORS_ALLOWED_ORIGINS、RBAC的IDENTITY_ALLOWED_ORIGINS及本机支撑--origin须显式允许实际入口；不要用通配掩盖配置错误。更改后需相应进程重新读取配置，不必重导身份。原19fbd1a/32人夹具只供历史隔离回归，不能混入万人正式初始化，旧库与日志保留。
 
-## 10. R33管理端与外部应用全JWT
+## 6. 老师业务的已知限制
 
-两类登录现在共用JwtIdentityStore/JwtIdentityCodec及HS256签名验证；管理受众rbac，课程受众仍是登记应用编码。管理token与外部accessToken字段及原角色/对象权限不变，权限不进入JWT。两组本机后端切换后旧会话均需重新登录；当前JAR及原始验证报告位于忽略目录.local/jwt-design-20261121，课程、网关及3351/3352数据保留。完整差异图统一在后端设计第17章，旧R31/R32说明按历史版本归档。
+文档声明但生产Controller缺失的5项：
 
+- `POST /courses/{courseId}/reset-to-application`
+- `PATCH /courses/{courseId}/description`
+- `GET /groups/{groupId}`
+- `POST /milestones/{milestoneId}/students/{studentId}/oral-records`
+- `POST /oral-records/{oralRecordId}/memo-summary`
 
-## 11. R34双DDD部署适配
+个人制教师批改链不完整，列表明确409 COURSE_NOT_GROUP_BASED；学生建组未形成完整负责班级归属，完整口试演示使用老师已有教师建组入口。独立支撑业务日志读取只演示课程管理员AV，未扩写普通教师对象范围。这些缺口不能通过追加RBAC权限修复，也不宣称全部课程功能实现。
 
-用户于2026-11-22要求RBAC和课程系统均采用DDD。当前[七服务Stack及步骤](../deploy/README.md)已适配，老师新来源990cea2的独立副本在原structured三补丁外增加DDD对等修复、学期当前标记释放及安全日志；老师原目录、旧副本、原库保留。通过prepare_course_source.py从固定干净提交复现，不直接复用旧JAR。
-
-服务器版使用Waitress运行独立deployment_gateway.py，MySQL持久保存外部业务审计、数据库内分页、唯一键保证同应用requestId幂等。身份八项仍实时调用RBAC并保留204及错误状态；多路由权限短码按catalog全集核查，未加课程实体或白名单到RBAC。原local_identity_gateway.py继续只用于本机联调。
-
-老师dump中的工号user_id须在新部署库首次校正为数字subject，保留业务ID。独立initialize_deployment.py默认预览，显式离线首发apply才执行；有效191教师/9810学生/1同账号管理员，另两条演示对象保留无自动授权，物理表192/9811。重复回执不恢复后来撤回的角色；不是升级旧库的脚本。
-
-两个前端及后端均在Swarm配置中，C公开80（课程）和8088（RBAC），后端内部DNS与浏览器公网身份地址分开配置。公开/auth保持RBAC通用八项协议；课程浏览器使用8088/course-identity挂载独立接入层，以免课程单应用投影限制其他登记应用。挂载是Nginx部署路径，不新增RBAC业务Controller。真实Chrome已验证六个RBAC菜单均有对应HTTP和DDD Logback日志，未改前端源码；现场以浏览器配合docker service logs展示，无需前端增加日志页。R34本机结果见[部署前验收](history/verification/ddd-deployment-adaptation.md)，R35已按授权正式发布，两系统入口、实际公网/运行证据及限制见[云端验收](history/verification/ddd-production-deployment.md)。
+老师DDD当前学期切换的唯一标记冲突已在部署副本修复，不再列为现行未解决项；原目录保持原版。实际部署、两策略回归、浏览器及来源缺口响应分别保留于[验收入口](testing-acceptance.md)。

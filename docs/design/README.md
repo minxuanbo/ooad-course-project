@@ -19,4 +19,4 @@ python scripts/build-identity-design.py --java <java.exe绝对路径> --plantuml
 
 生成器检查实际类型、字段和接收方法、类框重叠、连线穿框、共同流程禁入、两套消息是否只有改名、执行条与循环边界。清单见[主清单](ddd-generated-manifest.json)和[structured清单](structured-generated-manifest.json)。生成后仍须打开PNG视觉核对，自动通过不等于布局或语义已验证。
 
-共同JWT/HTTP/日志/锁和提交不绘制两份顺序图；相同分页或集合读取模式在覆盖矩阵明确复用。旧局部身份类图、单侧应用投影/异常和重复目录图移入[历史图件](../history/design-assets/through-r32/)，退出当前设计。历史R31/R32说明在history/design-decisions保留，只作为来源追溯。
+共同JWT/HTTP/日志/锁和提交不绘制两份顺序图；相同分页或集合读取模式在覆盖矩阵明确复用。被现行图集替代的旧局部图及重复图已清理，原版本从Git历史恢复；不再维护另一套历史图集或重复设计说明。

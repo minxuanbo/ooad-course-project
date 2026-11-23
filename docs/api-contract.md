@@ -2,7 +2,7 @@
 
 版本1.5。接口字段、方法、路径、必填、分页和响应模型的唯一机器规范为[api/openapi.yaml](../api/openapi.yaml)，[JSON](../api/openapi.json)由同一内容派生。29项RBAC操作及8项可选通用应用身份操作；默认首次授权仅RBAC，应用目录从数据库登记事实读取，原型演示系统不接入。本文解释Schema不能独立表达的授权、范围、原子性和交互语义；[页面对照](api-map.md)只作索引。
 
-阶段4同步授予级别、人员目标保护、部门增删改名、范围总览及只读职位/角色摘要。GET /me增加最新实际routes、managementLevel、globalScope和departmentName，前端按路由能力与范围显示入口，不额外查询日志来探测权限。
+管理协议包含授予级别、人员目标保护、部门增删改名、范围总览及只读职位/角色摘要。GET /me增加最新实际routes、managementLevel、globalScope和departmentName，前端按路由能力与范围显示入口，不额外查询日志来探测权限。
 
 ## 1. 共用HTTP约定
 
@@ -63,9 +63,15 @@ account/password是一个入口，工号或手机号定位唯一用户，共用�
 
 日志记录的信息类别、隐私及查询统计要求见[日志需求](requirements.md#32-鉴权日志记录与查询统计r16r20)；LogEntryVO沿OpenAPI返回事件时间、用户ID/工号、系统/权限、允许结果/原因、requestId、事件类型、HTTP方法/安全路径/状态。未知主体及未定位权限允许相应字段为空，鉴权允许与后续业务成功分别理解，不增加汇总统计接口。
 
+LogPageVO.systems提供日志筛选所需全部已登记应用（id/code/name/enabled），包含停用项；目录不随本次日志筛选缩小，读取沿日志API及可信根资格，不要求资源目录API。页面使用名称下拉并提交稳定appCode，旧日志仍可按编码定位。
+
+LOGIN_SUCCESS/LOGIN_FAILED表示RBAC凭据及应用准入结果，不证明课程Teacher/Student绑定或业务登录已成功。实际调用的短码与operationId权限查询以PERMISSION_CHECK留痕，每个查询一次，allowed为真实真假结果；false仍可HTTP200，reason=PERMISSION_NOT_GRANTED，不是一次课程业务HTTP403。AUTHORIZATION继续表示RBAC实际执行的门禁。课程使用/auth/me取权限后自行执行的对象判定和业务结果留在课程日志，RBAC不伪造自己未收到的功能执行记录。
+
+未携带或无法核实令牌的真实身份请求保留UNAUTHENTICATED记录，主体可空。运维健康检查使用内网Actuator，不使用匿名身份请求；已有探测噪声作为原始历史保留，不能通过批量删除日志或屏蔽全部401解决。
+
 首次snapshotId为当前最大日志ID，选id≤snapshotId，后续按id<上页末条降序；total为同一快照筛选总数，不随翻页缩小或读取产生的新技术记录增长。筛选/limit绑定游标，改变后清cursor；损坏/伪造/不一致400 INVALID_CURSOR。from含、to不含，必须UTC Z格式且from<to；到底nextCursor=null、hasMore=false。
 
-页面显示和筛选输入按北京时间处理，前端转换后仍提交上述UTC边界；接口occurredAt继续返回UTC ISO-8601，不因展示时区修改数据库时间、Instant时钟或JWT时效。R36展示修正的本机结果及暂未发布状态见[验证记录](history/verification/beijing-time-and-service-cleanup.md)。
+页面显示和筛选输入按北京时间处理，前端转换后仍提交上述UTC边界；接口occurredAt继续返回UTC ISO-8601，不因展示时区修改数据库时间、Instant时钟或JWT时效。展示修正的本机结果及待发布状态见[验证记录](history/verification/beijing-time-and-service-cleanup.md)。
 
 上述最大 ID 表示已提交日志的稳定前缀。生产写入统一经 `JpaAuditWriter`：在独立事务中先锁定稳定 RBAC 系统目录行，再分配日志 ID 并提交，防止较大 ID 抢先提交、较小 ID 随后污染旧快照。新增日志写入入口也必须沿用该追加协议，不能直接调用日志仓储绕过协调。接口字段、筛选和游标形式保持不变。
 
@@ -84,15 +90,15 @@ account/password是一个入口，工号或手机号定位唯一用户，共用�
 | 409 DATA_CONFLICT / LAST_ADMIN_REQUIRED | 唯一性/并发冲突或写后无完整维护者，全回滚 |
 | 500 INTERNAL_ERROR | 安全内部错误，带requestId，不泄露SQL/栈/请求体/秘密 |
 
-设计顺序是身份/账号→实际API→部门/根/系统范围→输入及关联→写后完整K。直接外系统目标/目录403；已获本系统目标但提交跨系统关联400；未知关联ID400，已获范围直接目标未知404。自定义角色的候选及提交均要求操作者直属可信根且当前有效基础级别为5，并继续检查目标范围和权限子集。前端隐藏按钮不构成安全边界。现有入口的参数解析/预检覆盖仍须在代码整理阶段按契约逐项复核，不以本文代替实现检查。
+设计顺序是身份/账号→实际API→部门/根/系统范围→输入及关联→写后完整K。直接外系统目标/目录403；已获本系统目标但提交跨系统关联400；未知关联ID400，已获范围直接目标未知404。自定义角色的候选及提交均要求操作者直属可信根且当前有效基础级别为5，并继续检查目标范围和权限子集。前端隐藏按钮不构成安全边界。输入预检不代替Service实际门禁；实现变化须按契约复验。
 
 ## 5. 评审及变更
 
-本次从既有契约整理成OpenAPI和业务说明，保持已确认语义，不运行Apifox同步。后续新原型审核时，接口如需变更，先确认需求/Schema/范围/错误，再同步用例与测试，不先写新页面假设后端存在未评审接口。
+契约变更先确认需求、Schema、范围与错误语义，再同步用例、实现和测试；前端只依赖已评审接口。OpenAPI字段与业务说明分别维护职责，Apifox只在明确授权的范围同步并回读核对。
 
-OpenAPI不能单独证明事务、范围、K、脱敏或并发成立；验证方法见[测试说明](testing-acceptance.md)。当前T13是结构化后端历史基线，不代表DDD或新前端通过。
+OpenAPI不能单独证明事务、范围、K、脱敏或并发成立；验证方法见[测试说明](testing-acceptance.md)。各记录只证明对应版本及执行范围，不跨版本或策略继承成绩。
 
-## 6. 部门与总览增量契约
+## 6. 部门与总览规则
 
 GET /api/departments为完整范围导航，返回type、directUsers、totalUsers及canCreate/canEdit/canDelete；沿父节点和子树连续排列。GET /api/departments/tree保留人员筛选入口，复用同一范围/人数口径。POST /api/departments仅接parentId/name/type；PATCH /api/departments/{id}仅接name；DELETE只处理空且非根节点，没有层级调整、恢复或级联删除接口。名称先trim再验证1—100字符，同父重名409；所有写与人员调动共用根锁，锁后重验。
 
@@ -118,4 +124,4 @@ GET /users/{id}/roles增加lockedRoleIds，表示当前不可删除的已授项�
 通用身份查人是实际受控操作，其API映射判定由用例登记到请求上下文，再由统一过滤器记录一次AUTHORIZATION事件；通过门禁后的目标404仍是鉴权允许，HTTP状态独立记录。普通/auth/me和/permissions元数据查询不冒充课程业务执行或把allowed=false的数据值写为查询HTTP被拒。查人路径使用字符串标识；本RBAC签发正安全整数字符串，超界数字400，其他不存在字符串在鉴权后返回404 IDENTITY_USER_NOT_FOUND。
 
 
-R32外部身份使用HS256 JWT，只有sub、aud、iss、iat、exp、jti，权限仍逐请求重算。退出204只撤当前外部令牌，撤权后也允许本人退出；管理端退出协议保持原有200。目录接口使用page从1开始/pageSize默认20最大100，各自需实际API映射且按人员部门子树限制，用户目录只查直属人员五字段。operationId通过IDENTITY_OPERATIONS_FILE显式配置，同应用内匹配；全局门禁不代替课程对象权限。详细设计见[完整身份契约](backend-design.md#18-通用应用身份与课程本地接入)。统一身份审计另2项不属于这8项，不加入RBAC业务接口。
+外部身份使用HS256 JWT，只有sub、aud、iss、iat、exp、jti，权限仍逐请求重算。退出204只撤当前外部令牌，撤权后也允许本人退出；管理端退出协议保持原有200。目录接口使用page从1开始/pageSize默认20最大100，各自需实际API映射且按人员部门子树限制，用户目录只查直属人员五字段。operationId通过IDENTITY_OPERATIONS_FILE显式配置，同应用内匹配；全局门禁不代替课程对象权限。详细设计见[完整身份契约](backend-design.md#18-通用应用身份与课程本地接入)。统一身份审计另2项不属于这8项，不加入RBAC业务接口。

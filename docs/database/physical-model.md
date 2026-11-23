@@ -1,6 +1,6 @@
 # MySQL物理模型与约束字典
 
-版本1.2；字段依据[核心/来源SQL](../../deploy/rbac-core-schema.sql)与[运行SQL](../../deploy/rbac-core-runtime.sql)，按用户要求直接维护全新部署的首次初始化DDL，不提供旧库升级脚本。概念模型见[数据库设计](../database-design.md)。
+字段依据[核心/来源SQL](../../deploy/rbac-core-schema.sql)与[运行SQL](../../deploy/rbac-core-runtime.sql)，按用户要求直接维护全新部署的首次初始化DDL，不提供旧库升级脚本。概念模型见[数据库设计](../database-design.md)。
 
 ## 1. 通用约定
 
@@ -231,4 +231,4 @@ MySQL8.4、InnoDB、utf8mb4/utf8mb4_0900_bin。实体BIGINT主键自增，对外
 
 structured与ddd共享逻辑表，不建ddd_users等镜像表；领域对象与JPA Entity通过适配器映射。两策略测试使用相同结构的隔离库。应用validate/never且关闭旧初始化，CREATE TABLE IF NOT EXISTS不代表旧库自动升级。后续结构变化须新增明确版本迁移并评审备份/回滚，不修改已执行迁移或复用旧ID/日志外键。
 
-source_json、password_hash、手机号与原始日志只供必要运行/部署访问，不在公共VO和审核报告中泄露。本轮不改SQL、不初始化数据库。
+source_json、password_hash、手机号与原始日志只供必要运行/部署访问，不在公共VO和审核报告中泄露。数据库及报告访问采用最小必要范围。

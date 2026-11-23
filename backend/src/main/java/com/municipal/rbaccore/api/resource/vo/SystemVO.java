@@ -5,7 +5,7 @@ import com.municipal.rbaccore.service.port.resource.SystemResult;
 import lombok.Getter;
 import lombok.Setter;
 
-/** 仅当前RBAC系统，不暴露未评审的其他系统目录。 */
+/** 数据库已登记应用的安全目录，不枚举离线原型的演示系统。 */
 @Getter
 @Setter
 @CopyFrom(SystemResult.class)

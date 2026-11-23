@@ -95,6 +95,27 @@ class GatewayTest(unittest.TestCase):
         self.assertEqual(400, self.request('/auth/login', 'POST', raw=b'{broken')['status'])
         self.assertEqual(404, self.request('/api/users')['status'])
 
+    def test_R16_health_uses_operational_probe_without_anonymous_identity_requests(self):
+        """存活探测只读运维健康状态，不制造未识别主体的鉴权失败。"""
+        class Store:
+            """只记录健康调用，业务审计接口不参与本测试。"""
+            def ping(self):
+                return None
+        self.app.store = Store()
+        probes = []
+        def health():
+            probes.append(True)
+            return 200, {'status': 'UP'}
+        self.app.health_probe = health
+        for _ in range(3):
+            self.assertEqual(200, self.request('/healthz', token=None)['status'])
+        self.assertEqual(3, len(probes))
+        self.assertEqual([], self.calls)
+        self.app.health_probe = lambda: (503, {'status': 'DOWN'})
+        self.assertEqual(503, self.request('/healthz', token=None)['status'])
+        self.app.health_probe = lambda: (200, {'status': 'DOWN'})
+        self.assertEqual(503, self.request('/healthz', token=None)['status'])
+
 
 @unittest.skipUnless(os.environ.get('DEPLOY_TEST_DB_FILE'), '需要本轮隔离MySQL配置')
 class MysqlAuditTest(unittest.TestCase):

@@ -1,36 +1,41 @@
 # 测试与验收
 
-本页维护当前验证规则与最近执行入口。历史阶段成绩和旧需求矩阵保存在[截至R32的验收快照](history/verification/testing-acceptance-through-r32.md)及[历史索引](history/README.md)，不替代后续修改后的实测。
+本页按验证目标组织执行入口与证据。设计文字、打包、静态审核、运行测试及老师验收分别记录；旧版本成绩不替代新修改后的实测。
 
-## 1. 当前验证入口
+## 1. 运行状态与证据
 
-| 范围 | 证据 |
+| 关注点 | 可追溯证据与边界 |
 | --- | --- |
-| R36北京时间与临时服务清理 | [本轮记录](history/verification/beijing-time-and-service-cleanup.md)，清理已执行；时间修正仅本机验证，待用户统一发布 |
-| R35双DDD正式部署 | [本轮记录](history/verification/ddd-production-deployment.md)，实际首发、身份核对、公网与运行结果 |
-| R34双DDD部署前适配 | [当时记录](history/verification/ddd-deployment-adaptation.md)，仅为部署前本机证据 |
-| R33全JWT、双策略图件及文档整理 | [本轮记录](history/verification/jwt-design-cleanup.md)，只记录实际完成的检查 |
-| R32八项身份协议、目录及operationId | [独立记录](history/verification/identity-eight-contract.md) |
-| R31万人首次课程身份 | [独立记录](history/verification/course-initialization-r31.md) |
-| 早期双策略UI及业务验收 | history/verification按日期及提交追溯 |
+| 本轮发布核对 | [2026-11-23核对](history/verification/release-20261123.md)：Apifox回读、线上单人即时撤权、CloneFactory、健康探测TDD及图件修正；发布与覆盖率结果执行后补充 |
+| 当前正式发布 | [双DDD首发](history/verification/ddd-production-deployment.md)：实际镜像、离线导入、逐人身份、公网及重启结果；不宣称高可用或压测通过 |
+| 待统一发布 | [北京时间与终态服务清理](history/verification/beijing-time-and-service-cleanup.md)：时间修正仅本机验证，临时服务已归档清理，线上七项正式服务保留 |
+| 文档与监控调整 | [本次核对](history/verification/current-docs-and-monitoring.md)：现行文档归并、历史清理、监控及日志体验修正；代码待统一上线，Apifox环境单独配置 |
+| 两系统部署适配 | [适配回归](history/verification/ddd-deployment-adaptation.md)：两RBAC及老师副本真实MySQL、双DDD HTTP、前端构建与日志；独立于云端实测 |
+| JWT及UML | [全JWT与图件核对](history/verification/jwt-design-cleanup.md)：受众、单会话、即时撤权、82组图件及操作追溯 |
+| 完整外部协议 | [八项身份契约](history/verification/identity-eight-contract.md)：目录、operationId、退出及Apifox回读 |
+| 万人首次身份 | [课程初始化](history/verification/course-initialization-r31.md)：191教师/9810学生/1管理员、回执与原库边界 |
+| 跨系统授权与UI | [通用接入](history/verification/course-integration-generic.md)、[structured UI](history/verification/structured-ui-acceptance.md)、[DDD UI](history/verification/stage6-ddd.md) |
 
-## 2. 必须验证的行为
+## 2. 验证矩阵
 
-| 对象 | 验收要求 |
+| 对象 | 必须检查的行为 |
 | --- | --- |
-| 初始化 | 原件摘要、110组织、10000员工加admin、独立BCrypt盐、预览只读、重复执行保留维护、失败整批回滚 |
-| 登录/JWT | 工号手机号唯一定位、停用/歧义/错口令拒绝；两入口签名/issuer/严格到期、无权限快照、受众隔离、单会话退出、重启失效；普通员工不能因外部角色进入管理端 |
-| 即时授权 | 原JWT在角色/权限/API/账号状态修改后按当前数据库重判；角色并集仍有效时不误撤全部能力 |
-| 人员/范围 | 部门子树、本人/同级/上级保护、角色差集锁后校验、lockedRoleIds及不可改项原样保留、自定义项资格、调动双范围 |
-| 角色/资源/并发 | 完整集合替换、同应用映射、树不变量、共享根锁、锁后重鉴权、同一人完整K17、并发/故障全回滚 |
-| 查询/日志 | 先筛后计数分页、只读投影同快照、最小脱敏、游标绑定、稳定total、追加提交顺序及每批重新鉴权 |
-| 外部八项协议 | 直连/经本地支撑、目录page从1/pageSize、直属用户5字段、operationId配置、204空退出；统一身份审计另2项不在本轮契约 |
-| 前端/课程 | 真实Vue登录与管理页、选人目录、失权/失败/取消、两个本机Origin；课程对象权限与老师既有缺口分别记录 |
-| 架构/映射 | 两策略独立业务，DDD不依赖JPA/Entity/structured；真实CloneFactory生成赋值、final/record显式构造、中文注释及注解独行 |
-| 文档/UML/Apifox | YAML=JSON且OpenAPI合法、37操作/31路径/71模型/K17；37项加离线入口完整追溯、无重复共同顺序图、图源匹配实际方法、PNG目检、Apifox导出回读 |
+| 初始化 | 原件摘要、110组织/10001账号、独立BCrypt盐、只读预览、重复保留维护、来源完整及整批回滚；课程绑定与有效身份数分开 |
+| 登录/JWT | 工号手机号唯一定位；歧义/停用/错口令拒绝；签名/issuer/受众/严格到期，无权限快照，单会话退出，重启失效，普通员工不能凭课程角色进入管理端 |
+| 实时授权 | 原JWT在角色、权限、API、应用或人员状态提交后重判；有效链OR不误撤；等待写锁者锁后重鉴权 |
+| 人员与组织 | 子树范围、本人/同级/上级保护与管理员例外、角色差集、lockedRoleIds、自定义项资格、调动双范围、类型/空节点/人数 |
+| 共享定义与并发 | 直接权限集合替换、同应用映射、树不变量、共享根锁、同一人完整K17、并发与故障全回滚 |
+| 查询与日志 | 先范围/筛选/计数再分页，最小脱敏、稳定快照total、游标绑定及每批重验；北京时间展示/筛选与UTC存储边界 |
+| 外部协议/课程 | 8项直连及经支撑，目录最小字段/范围，operationId配置、204；短码完整映射、业务审计独立、课程对象权限及来源缺口响应 |
+| 前端 | 真实Vue、身份切换、窄屏/键盘、读失败禁保存、草稿/取消/晚响应、失权及两个本机Origin |
+| 架构与映射 | 双策略独立决策、DDD不依赖JPA/Entity/structured、仓储仅领域类型、真实CloneFactory赋值、record/final显式构造、中文Javadoc及注解独行 |
+| 文档与契约 | YAML/JSON一致，37操作/31路径/71模型/K17；全部操作及离线入口可追溯，顺序图只画差异，链接与源码锚点有效；Apifox仅在明确授权同步后回读 |
+| 部署与监控 | Stack配置可解析、Secrets不泄露、内部端口隔离；promtool校验真实配置/规则及CPU负载、重置、缺样本；线上健康与指标采集另行验证 |
 
-## 3. 复现与证据
+## 3. 执行方法
 
-后端使用JDK21、真实MySQL8.4及CloneFactory0.0.2。按[后端回归配置](../backend/README.md#2-本地回归与隔离)准备每策略的6个专用测试库，执行`mvn -f backend/pom.xml clean package`；产品万人库与测试专库隔离。不以mock数据库、skipTests或旧产物代替通过。JaCoCo verify及服务器容器部署另有边界，见后端/部署说明。
+后端使用JDK21、真实MySQL8.4及固定CloneFactory0.0.2。按[回归专库配置](../backend/README.md#2-本地回归与隔离)为每策略准备6个可丢弃专库，运行`mvn -f backend/pom.xml clean package`，产品万人库与测试库隔离。独立JAR探针见[运行验收器](../backend/scripts/accept-runtime.py)，不以mock数据库、skipTests或旧JAR替代通过。
 
-每轮记录源码起点/最终提交、环境、RED/GREEN、完整回归、独立JAR HTTP、浏览器覆盖、审核结论与未验证范围。测试、代理静态审核、用户/老师验收是三类证据。日志、截图、凭据、CSV、JAR及数据库保存在忽略目录；只提交脱敏结论，不覆盖旧日志或删除原库。
+前端执行`npm test`、`npm run build`，浏览器夹具及显式启用方法见[UI复现](history/verification/structured-ui-acceptance.md)。两系统HTTP/浏览器验证脚本见scripts目录帮助，含写入的探针只指向明确验收环境。服务器验收和离线监控命令见[部署](../deploy/README.md)及[监控](../deploy/monitoring.md)。纯文档改动无需重跑全部MySQL，配置改动使用实际工具验证。
+
+每份记录注明提交/来源、环境、执行命令、结果及未验证范围；涉及业务代码时记录RED/GREEN。原始日志、截图、凭据、CSV、JAR和数据库保存在忽略目录，只提交脱敏结论。[保留证据索引](history/README.md)说明用途；Git保存已清理旧版本，不保留另一套过期现行规范。

@@ -136,6 +136,7 @@ services:
     image: ${INTEGRATION_IMAGE}
     environment:
       RBAC_BASE_URL: http://rbac-backend:8081
+      RBAC_HEALTH_BASE_URL: http://rbac-backend:8082
       DB_HOST: mysql
       ALLOWED_ORIGINS: ${COURSE_PUBLIC_ORIGIN}
     secrets: [audit_db_password, course_read_password]
@@ -212,6 +213,8 @@ services:
     configs:
       - source: prometheus
         target: /etc/prometheus/prometheus.yml
+      - source: prometheus_rules
+        target: /etc/prometheus/rules/recording.yml
     volumes: [prometheus_data:/prometheus]
     networks: [javaee-proxy]
     logging: *logging
@@ -222,6 +225,45 @@ services:
       resources:
         limits: {memory: 320M}
         reservations: {memory: 128M}
+      update_config: {order: stop-first, failure_action: rollback}
+      rollback_config: {order: stop-first}
+
+  node-exporter:
+    image: ${NODE_EXPORTER_IMAGE}
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/rootfs
+      - --collector.disable-defaults
+      - --collector.cpu
+      - --collector.meminfo
+      - --collector.filesystem
+      - --collector.diskstats
+      - --collector.uname
+      - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+)($$|/)
+    read_only: true
+    volumes:
+      - type: bind
+        source: /proc
+        target: /host/proc
+        read_only: true
+      - type: bind
+        source: /sys
+        target: /host/sys
+        read_only: true
+      - type: bind
+        source: /
+        target: /rootfs
+        read_only: true
+        bind:
+          propagation: rslave
+    networks: [javaee-proxy]
+    logging: *logging
+    deploy:
+      mode: global
+      resources:
+        limits: {memory: 96M}
+        reservations: {memory: 24M}
       update_config: {order: stop-first, failure_action: rollback}
       rollback_config: {order: stop-first}
 
@@ -260,6 +302,9 @@ configs:
   prometheus:
     name: ooad_prometheus_${RELEASE_ID}
     file: ./prometheus.yml
+  prometheus_rules:
+    name: ooad_prometheus_rules_${RELEASE_ID}
+    file: ./prometheus-rules.yml
 
 secrets:
   mysql_root_password:

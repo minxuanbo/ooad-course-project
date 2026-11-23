@@ -15,15 +15,15 @@
   <text x="245" y="437" font-size="23" text-anchor="middle" fill="#223046">«interface» AuditQueryGateway</text>
   <text x="33" y="481" font-size="18" text-anchor="start" fill="#223046">—</text>
   <text x="33" y="527" font-size="18" text-anchor="start" fill="#223046">+ list(query: LogQuery): LogPageResult</text><rect x="1330" y="405" width="450" height="345" rx="2" fill="white" stroke="#223046" stroke-width="1.5"/>
-  <path d="M1330,453H1780 M1330,585H1780" stroke="#223046"/>
+  <path d="M1330,453H1780 M1330,613H1780" stroke="#223046"/>
   <text x="1555" y="437" font-size="23" text-anchor="middle" fill="#223046">LogPageResult</text>
-  <text x="1343" y="481" font-size="18" text-anchor="start" fill="#223046">- items: List&lt;LogEntryResult&gt;</text><text x="1343" y="509" font-size="18" text-anchor="start" fill="#223046">- total, snapshotId: Long</text><text x="1343" y="537" font-size="18" text-anchor="start" fill="#223046">- nextCursor: String</text><text x="1343" y="565" font-size="18" text-anchor="start" fill="#223046">- hasMore: Boolean</text>
-  <text x="1343" y="611" font-size="18" text-anchor="start" fill="#223046">—</text><rect x="580" y="850" width="640" height="195" rx="2" fill="white" stroke="#223046" stroke-width="1.5"/>
+  <text x="1343" y="481" font-size="18" text-anchor="start" fill="#223046">- items: List&lt;LogEntryResult&gt;</text><text x="1343" y="509" font-size="18" text-anchor="start" fill="#223046">- systems: List&lt;SystemResult&gt;</text><text x="1343" y="537" font-size="18" text-anchor="start" fill="#223046">- total, snapshotId: long</text><text x="1343" y="565" font-size="18" text-anchor="start" fill="#223046">- nextCursor: String</text><text x="1343" y="593" font-size="18" text-anchor="start" fill="#223046">- hasMore: Boolean</text>
+  <text x="1343" y="639" font-size="18" text-anchor="start" fill="#223046">—</text><rect x="580" y="850" width="640" height="195" rx="2" fill="white" stroke="#223046" stroke-width="1.5"/>
   <path d="M580,898H1220 M580,946H1220" stroke="#223046"/>
   <text x="900" y="882" font-size="23" text-anchor="middle" fill="#223046">«interface» ManagementAccessUseCase</text>
   <text x="593" y="926" font-size="18" text-anchor="start" fill="#223046">—</text>
-  <text x="593" y="972" font-size="18" text-anchor="start" fill="#223046">+ require(header: String): void</text><rect x="20" y="850" width="450" height="215" rx="2" fill="white" stroke="#223046" stroke-width="1.5"/>
-  <path d="M20,898H470 M20,946H470" stroke="#223046"/>
+  <text x="593" y="972" font-size="18" text-anchor="start" fill="#223046">+ require(header: String): void</text><rect x="20" y="850" width="450" height="224" rx="2" fill="white" stroke="#223046" stroke-width="1.5"/>
+  <path d="M20,898H470 M20,1030H470" stroke="#223046"/>
   <text x="245" y="882" font-size="23" text-anchor="middle" fill="#223046">JpaAuditQueryGateway</text>
-  <text x="33" y="926" font-size="18" text-anchor="start" fill="#223046">- jpa: AuthorizationLogJpaRepository</text>
-  <text x="33" y="972" font-size="18" text-anchor="start" fill="#223046">+ list(query: LogQuery): LogPageResult</text></g></svg>
+  <text x="33" y="926" font-size="18" text-anchor="start" fill="#223046">- logs: AuthorizationLogJpaRepository</text><text x="33" y="954" font-size="18" text-anchor="start" fill="#223046">- cursors: AuditPageCursor</text><text x="33" y="982" font-size="18" text-anchor="start" fill="#223046">- mapper: ObjectMapper</text><text x="33" y="1010" font-size="17.52790409260025" text-anchor="start" fill="#223046">- systems: ApplicationSystemJpaRepository</text>
+  <text x="33" y="1056" font-size="18" text-anchor="start" fill="#223046">+ list(query: LogQuery): LogPageResult</text></g></svg>

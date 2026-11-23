@@ -23,7 +23,7 @@
   <text x="900" y="882" font-size="23" text-anchor="middle" fill="#223046">DddDepartmentView</text>
   <text x="593" y="926" font-size="18" text-anchor="start" fill="#223046">—</text>
   <text x="593" y="972" font-size="18" text-anchor="start" fill="#223046">+ build(actor, facts): View</text><rect x="20" y="850" width="450" height="215" rx="2" fill="white" stroke="#223046" stroke-width="1.5"/>
-  <path d="M20,898H470 M20,946H470" stroke="#223046"/>
+  <path d="M20,898H470 M20,1002H470" stroke="#223046"/>
   <text x="245" y="882" font-size="23" text-anchor="middle" fill="#223046">JpaUserRepositoryAdapter</text>
-  <text x="33" y="926" font-size="18" text-anchor="start" fill="#223046">- jpa: UserJpaRepository</text>
-  <text x="33" y="972" font-size="18" text-anchor="start" fill="#223046">+ statistics(scope: Scope): Statistics</text></g></svg>
+  <text x="33" y="926" font-size="18" text-anchor="start" fill="#223046">- rows: UserJpaRepository</text><text x="33" y="954" font-size="18" text-anchor="start" fill="#223046">- roles: RoleJpaRepository</text><text x="33" y="982" font-size="18" text-anchor="start" fill="#223046">- departments: DepartmentJpaRepository</text>
+  <text x="33" y="1028" font-size="18" text-anchor="start" fill="#223046">+ statistics(scope: Scope): Statistics</text></g></svg>

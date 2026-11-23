@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: 市政公司统一权限管理系统 API
-  version: 1.5.0
+  version: 1.5.1
   description: structured/ddd共享契约：29项RBAC管理操作及8项可选通用应用身份鉴权操作。两类登录统一使用HS256身份JWT，不包含角色或权限快照，管理端与外部应用受众隔离。应用目录来自登记数据及状态，APP_IDENTITY_ENABLED只控制外部8项入口。角色可跨应用拥有权限，Permission—API映射必须同系统。统一身份审计2项不在本契约，K仍为17项RBAC路由。
 servers:
 - url: /
@@ -2596,6 +2596,7 @@ components:
           type: string
           maxLength: 64
         eventType:
+          description: LOGIN_SUCCESS/LOGIN_FAILED为RBAC身份认证及应用准入；AUTHORIZATION为实际门禁；PERMISSION_CHECK为权限查询真假结果（HTTP可为200），均不表示课程业务执行结果。
           type: string
           maxLength: 32
         httpMethod:
@@ -2630,6 +2631,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LogEntryVO'
+        systems:
+          type: array
+          description: 日志筛选可用的全部已登记应用，包含停用项；随日志读取权限提供，不要求资源目录权限。此目录不受本次日志筛选条件限制。
+          items:
+            $ref: '#/components/schemas/SystemVO'
         nextCursor:
           type:
           - string
@@ -2649,6 +2655,7 @@ components:
       - hasMore
       - snapshotId
       - total
+      - systems
     LoginDTO:
       type: object
       additionalProperties: false
