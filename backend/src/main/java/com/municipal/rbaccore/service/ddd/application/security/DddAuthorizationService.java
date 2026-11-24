@@ -33,9 +33,9 @@ public class DddAuthorizationService implements ManagementAuthorization {
     return routes(userId).contains(new RbacCatalog.Route(method, template));
   }
 
-  /** 仅有效的已评审管理路由构成登录准入。 */
+  /** 登录入口需要独立有效映射，不从业务菜单反推登录资格。 */
   @Override
   public boolean canEnter(Long userId) {
-    return routes(userId).stream().anyMatch(RbacCatalog.managementRoutes()::contains);
+    return routes(userId).contains(RbacCatalog.LOGIN_ROUTE);
   }
 }

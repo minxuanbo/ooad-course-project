@@ -2,6 +2,7 @@ package com.municipal.rbaccore.infrastructure.web;
 
 import com.municipal.rbaccore.api.department.DepartmentController;
 import com.municipal.rbaccore.api.resource.ResourceController;
+import com.municipal.rbaccore.api.resource.ApplicationController;
 import com.municipal.rbaccore.api.role.RoleController;
 import com.municipal.rbaccore.api.shared.ApiLimits;
 import com.municipal.rbaccore.api.user.UserController;
@@ -40,6 +41,7 @@ public class ManagementPreflight implements HandlerInterceptor {
       HttpServletRequest request, HttpServletResponse response, Object handler) {
     if (!(handler instanceof HandlerMethod method)
         || (!ResourceController.class.isAssignableFrom(method.getBeanType())
+            && !ApplicationController.class.isAssignableFrom(method.getBeanType())
             && !RoleController.class.isAssignableFrom(method.getBeanType())
             && !UserController.class.isAssignableFrom(method.getBeanType())
             && !DepartmentController.class.isAssignableFrom(method.getBeanType()))) {
@@ -66,7 +68,9 @@ public class ManagementPreflight implements HandlerInterceptor {
         return true;
       }
       access.require(header);
-      if (id != null
+      if (id != null && template.equals("/api/systems/{id}")) {
+        resources.checkSystemTarget(header, id);
+      } else if (id != null
           && (template.equals("/api/permissions/{id}")
               || template.equals("/api/permissions/{id}/apis"))) {
         resources.checkPermissionTarget(header, id);

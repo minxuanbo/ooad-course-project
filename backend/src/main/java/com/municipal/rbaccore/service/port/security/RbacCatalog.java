@@ -9,8 +9,10 @@ import java.util.stream.Collectors;
 /** 已评审的RBAC自身目录，与Excel中系统管理后台等业务系统分开。 */
 public final class RbacCatalog {
   public static final String SYSTEM_CODE = "rbac";
+  public static final Route LOGIN_ROUTE = new Route("POST", "/api/auth/login");
   public static final Set<String> PERSONNEL =
       Set.of(
+          "rbac.login",
           "rbac.users.read",
           "rbac.roles.read",
           "rbac.roles.permissions.read",
@@ -63,12 +65,22 @@ public final class RbacCatalog {
     definitions.put(
         "rbac.roles.permissions.write", List.of(route("PUT", "/api/roles/{id}/permissions")));
     definitions.put("rbac.logs.read", List.of(route("GET", "/api/authorization-logs")));
+    definitions.put("rbac.login", List.of(LOGIN_ROUTE));
+    definitions.put("rbac.systems.create", List.of(route("POST", "/api/systems")));
+    definitions.put("rbac.systems.page.read", List.of(route("GET", "/api/systems/page")));
+    definitions.put("rbac.systems.write", List.of(route("PATCH", "/api/systems/{id}")));
+    definitions.put("rbac.systems.remove", List.of(route("DELETE", "/api/systems/{id}")));
     return java.util.Collections.unmodifiableMap(definitions);
   }
 
   /** 提供通俗的中文展示名称；编码用于稳定关联，不按展示名称鉴权。 */
   public static Map<String, String> displayNames() {
     return Map.ofEntries(
+        Map.entry("rbac.login", "登录RBAC"),
+        Map.entry("rbac.systems.create", "新增受管应用"),
+        Map.entry("rbac.systems.page.read", "查询受管应用"),
+        Map.entry("rbac.systems.write", "维护应用资料与接入"),
+        Map.entry("rbac.systems.remove", "移除受管应用"),
         Map.entry("rbac.overview.read", "查看总览"),
         Map.entry("rbac.departments.read", "查看部门目录"),
         Map.entry("rbac.departments.write", "修改部门名称"),
@@ -96,9 +108,11 @@ public final class RbacCatalog {
         Map.entry("rbac.logs.read", "查询鉴权日志"));
   }
 
-  /** 五个展示目录不映射API，勾选菜单不会取得其子操作。 */
+  /** 七个页面菜单显式映射自己的读取API，不取得子按钮的写入能力。 */
   public static Map<String, String> menus() {
     Map<String, String> menus = new LinkedHashMap<>();
+    menus.put("rbac.overview.menu", "总览");
+    menus.put("rbac.systems.menu", "应用管理");
     menus.put("rbac.workspace", "人员管理");
     menus.put("rbac.roles.menu", "角色与权限");
     menus.put("rbac.resources.menu", "资源与API");
@@ -107,22 +121,31 @@ public final class RbacCatalog {
     return java.util.Collections.unmodifiableMap(menus);
   }
 
+  /** 菜单显式映射页面的读取API，不包含该页写按钮，关联不是父子继承。 */
+  public static Map<String, List<Route>> menuRoutes() {
+    return Map.of(
+        "rbac.overview.menu", List.of(route("GET", "/api/overview")),
+        "rbac.workspace", List.of(route("GET", "/api/users")),
+        "rbac.departments.menu", List.of(route("GET", "/api/departments")),
+        "rbac.roles.menu", List.of(route("GET", "/api/roles")),
+        "rbac.resources.menu",
+            List.of(route("GET", "/api/permissions/tree"), route("GET", "/api/api-resources")),
+        "rbac.systems.menu",
+            List.of(route("GET", "/api/systems"), route("GET", "/api/systems/page")),
+        "rbac.logs.menu", List.of(route("GET", "/api/authorization-logs")));
+  }
+
   /** 目录父级只组织展示，不参与权限继承或组织管理范围判定。 */
   public static String parentCode(String code) {
+    if (code.equals("rbac.login")) return null;
+    if (code.equals("rbac.overview.read")) return "rbac.overview.menu";
+    if (code.startsWith("rbac.systems.")) return "rbac.systems.menu";
     if (code.startsWith("rbac.users.")
-        || code.equals("rbac.departments.tree.read")
-        || code.equals("rbac.overview.read")) return "rbac.workspace";
+        || code.equals("rbac.departments.tree.read")) return "rbac.workspace";
     if (code.startsWith("rbac.departments.")) return "rbac.departments.menu";
     if (code.startsWith("rbac.roles.")) return "rbac.roles.menu";
     if (code.startsWith("rbac.logs.")) return "rbac.logs.menu";
     return "rbac.resources.menu";
-  }
-
-  /** 登录准入与实际请求都使用同一方法及模板键，不以角色或岗位名称判断。 */
-  public static Set<Route> managementRoutes() {
-    return definitions().values().stream()
-        .flatMap(List::stream)
-        .collect(Collectors.toUnmodifiableSet());
   }
 
   /** K保留原17项恢复维护模板，不包含日志、停用、调动及新增部门/总览操作。 */
@@ -131,6 +154,11 @@ public final class RbacCatalog {
         .filter(
             entry ->
                 !Set.of(
+                        "rbac.login",
+                        "rbac.systems.create",
+                        "rbac.systems.page.read",
+                        "rbac.systems.write",
+                        "rbac.systems.remove",
                         "rbac.logs.read",
                         "rbac.users.disable",
                         "rbac.users.department.write",

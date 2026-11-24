@@ -746,7 +746,7 @@ class R29ApplicationIdentityContractTest {
     courseLogin();
     jdbc.update(
         "DELETE rp FROM role_permissions rp JOIN permissions p ON p.id=rp.permission_id WHERE"
-            + " rp.role_id=1 AND p.code<>'rbac.logs.read'");
+            + " rp.role_id=1 AND p.code NOT IN ('rbac.logs.read','rbac.login')");
     String token = adminLogin();
     JsonNode page =
         request(

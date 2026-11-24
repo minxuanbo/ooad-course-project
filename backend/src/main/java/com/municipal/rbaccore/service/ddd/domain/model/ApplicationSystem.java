@@ -25,4 +25,14 @@ public record ApplicationSystem(
   public boolean isRbac() {
     return CODE_RBAC.equals(code);
   }
+
+  /** 应用资料和可用性保持同一身份；空字段不覆盖既有事实。 */
+  public ApplicationSystem revise(String changedName, Boolean available, Connection connection) {
+    return new ApplicationSystem(
+        id,
+        code,
+        changedName == null ? name : changedName.trim(),
+        available == null ? enabled : available,
+        connection == null ? connectionStatus : connection);
+  }
 }

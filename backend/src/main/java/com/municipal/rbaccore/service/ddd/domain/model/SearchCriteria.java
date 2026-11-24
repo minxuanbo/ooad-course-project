@@ -2,6 +2,9 @@ package com.municipal.rbaccore.service.ddd.domain.model;
 
 /** 搜索约束包含当前页窗口，所有可扩张列表都在数据库计算总数。 */
 public final class SearchCriteria {
+  /** 应用管理目录按名称、编码及启停状态筛选。 */
+  public record Systems(String q, Boolean enabled, int page, int size) {}
+
   private SearchCriteria() {}
 
   /** 按已核实的组织范围搜索人员。 */

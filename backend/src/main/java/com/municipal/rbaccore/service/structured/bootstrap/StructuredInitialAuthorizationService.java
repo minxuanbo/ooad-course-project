@@ -216,6 +216,10 @@ public class StructuredInitialAuthorizationService implements AuthorizationBoots
       }
       resourcePermissions.put(definition.getKey(), permissions.save(permission));
     }
+    RbacCatalog.menuRoutes()
+        .forEach(
+            (code, routes) ->
+                routes.forEach(route -> menus.get(code).mapApi(resourceApis.get(route))));
     Map<InitialRole, RoleEntity> initialRoles = new EnumMap<>(InitialRole.class);
     for (InitialRole initial : InitialRole.values()) {
       RoleEntity role = new RoleEntity(initial.getCode(), initial.getName());
@@ -226,7 +230,8 @@ public class StructuredInitialAuthorizationService implements AuthorizationBoots
             (code, permission) -> {
               if (initial == InitialRole.SYSTEM_ADMIN || RbacCatalog.PERSONNEL.contains(code)) {
                 role.grantPermission(permission);
-                role.grantPermission(menus.get(RbacCatalog.parentCode(code)));
+                PermissionEntity parent = menus.get(RbacCatalog.parentCode(code));
+                if (parent != null) role.grantPermission(parent);
               }
             });
       }

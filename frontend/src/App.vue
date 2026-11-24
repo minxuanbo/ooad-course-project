@@ -7,7 +7,8 @@ import { resourcePageAvailable } from './lib/presentation.js'
 const route = useRoute(),
   router = useRouter()
 const navigation = [
-  { path: '/', label: '总览', group: '工作台', icon: 'overview' },
+  { path: '/', label: '总览', group: '工作台', icon: 'overview', capability: '/overview' },
+  { path: '/applications', label: '应用管理', group: '权限管理', icon: 'resource', capability: '/systems/page', global: true },
   {
     path: '/departments',
     label: '部门管理',
@@ -47,15 +48,20 @@ const navGroups = computed(() => {
       ? resourcePageAvailable(canRoute)
       : !item.capability || canRoute('GET', item.capability, item.global),
   )
+  if (!visible.some((item) => item.path === '/'))
+    visible.unshift({ path: '/', label: '工作台', group: '工作台', icon: 'overview' })
   return ['工作台', '组织管理', '权限管理', '安全审计']
     .map((label) => ({ label, items: visible.filter((item) => item.group === label) }))
     .filter((group) => group.items.length)
 })
-const currentNavigation = computed(() => navigation.find((item) => item.path === route.path))
+const currentNavigation = computed(() => route.path === '/' && !canRoute('GET', '/overview')
+  ? { label: '工作台', group: '工作台' }
+  : navigation.find((item) => item.path === route.path))
 const descriptions = {
   '/': '查看组织概况，从当前管理范围开始。',
   '/departments': '新增下级、修改名称、删除空部门，按组织范围维护。',
   '/users': '查看人员职位与已授角色，按组织范围调整授权。',
+  '/applications': '登记和维护受管应用，明确接入状态与访问边界。',
   '/roles': '维护共享角色，明确每一项可执行能力。',
   '/resources': '连接菜单、按钮与实际受控接口。',
   '/logs': '检索登录与鉴权事件，追踪每一次访问判断。',

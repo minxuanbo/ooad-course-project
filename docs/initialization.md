@@ -68,25 +68,44 @@ name用于人员理解，code保持稳定，不能按中文名称鉴权。两套
 
 | 稳定编码 | 中文名称 |
 | --- | --- |
+| rbac.login | 登录RBAC |
+| rbac.systems.create | 新增受管应用 |
+| rbac.systems.page.read | 查询受管应用 |
+| rbac.systems.write | 维护应用资料与接入 |
+| rbac.systems.remove | 移除受管应用 |
 | rbac.overview.read | 查看总览 |
-| rbac.departments.read | 查询部门 |
-| rbac.departments.write | 维护部门 |
+| rbac.departments.read | 查看部门目录 |
+| rbac.departments.write | 修改部门名称 |
+| rbac.departments.create | 新增下级部门 |
+| rbac.departments.delete | 删除空部门 |
+| rbac.departments.tree.read | 查看部门树 |
 | rbac.users.read | 查询人员 |
+| rbac.users.roles.read | 查看人员角色 |
+| rbac.users.roles.candidates.read | 查询可授予角色 |
 | rbac.users.roles.write | 分配人员角色 |
-| rbac.users.disable | 停用人员账号 |
-| rbac.users.department.write | 调整人员部门 |
-| rbac.resources.read | 查询权限与API资源 |
-| rbac.resources.write | 配置权限与API映射 |
+| rbac.users.disable | 停用人员 |
+| rbac.users.department.write | 调动部门归属 |
+| rbac.systems.read | 查看系统目录 |
+| rbac.resources.read | 查看权限树 |
+| rbac.apis.read | 查询API资源 |
+| rbac.resources.apis.read | 查看API映射 |
+| rbac.resources.write | 维护权限属性 |
+| rbac.apis.write | 启停API资源 |
+| rbac.resources.apis.write | 配置API映射 |
 | rbac.roles.read | 查询角色 |
-| rbac.roles.write | 维护角色定义 |
+| rbac.roles.permissions.read | 查看角色权限 |
+| rbac.roles.create | 新建角色 |
+| rbac.roles.write | 修改角色 |
 | rbac.roles.permissions.write | 配置角色权限 |
 | rbac.logs.read | 查询鉴权日志 |
+
+默认30个BUTTON分别映射实际API，7个MENU显式映射本页读取API；rbac.login独立无父项。管理员初始化具备全部项，三种人员管理角色增加登录资格，普通员工仍无RBAC登录权限。已有来源回执不会因重跑自动补授新目录；既有环境的兼容处理须在另行授权发布时备份并核对，不由产品启动偷偷重授。
 
 ## 8. 业务目录与角色来源
 
 `scripts/initialize_business_catalog.py`默认只读预览，`--apply`显式发布。它复用只读Excel提取器，登记APP_01—APP_18，保留原表摘要、原单元格、五列原始矩阵及规范化记录到bootstrap_receipts.source_json。115个模块MENU、359个功能MENU及各显式动作BUTTON按原表展开；有动作的角色显式授予相应展示菜单，运行期不继承父权限。“全部”不成为通配符，“查看本人/编辑本人”保留，不凭文字编造对象级接口。
 
-脚本复用现存五基础角色，只追加该目录关系，初始级别及已有RBAC/课程权不变。相同manifest回执直接跳过，不恢复人工撤权、改名或停用；来源变化、缺失基础角色、已有目录而无回执均拒绝。回执与目录同事务提交。18项默认PENDING，接入真实接口、操作目录及对象规则并独立验收后才可配置CONNECTED；现有HTTP不提供切换状态入口。
+脚本复用现存五基础角色，只追加该目录关系，初始级别及已有RBAC/课程权不变。相同manifest回执直接跳过，不恢复人工撤权、改名或停用；来源变化、缺失基础角色、已有目录而无回执均拒绝。回执与目录同事务提交。18项默认PENDING，接入真实接口、操作目录及对象规则并独立验收后才可配置CONNECTED；应用管理PATCH可维护接入状态，标记CONNECTED前仍须完成接口和对象规则接入验证。
 
 课程首次配置将3角色标为APPLICATION_PRESET并关联来源ApplicationSystem，无管理级别；五基础角色SYSTEM_BUILTIN无所属部门/应用。新建DEPARTMENT_CUSTOM必须有效ownerDepartmentId，GLOBAL_CUSTOM保留旧全局角色语义，不能根据名称猜分类。定义、选权与启停由管理员维护；领导只分配/撤回，不在初始化时任意认领既有角色。
 

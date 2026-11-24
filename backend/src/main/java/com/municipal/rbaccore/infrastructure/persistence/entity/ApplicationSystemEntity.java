@@ -2,6 +2,7 @@ package com.municipal.rbaccore.infrastructure.persistence.entity;
 
 import com.municipal.rbaccore.service.port.resource.ConnectionStatus;
 import com.municipal.rbaccore.service.port.resource.SystemResult;
+import com.municipal.rbaccore.service.port.resource.UpdateSystemCommand;
 import jakarta.persistence.*;
 import org.springframework.util.Assert;
 
@@ -11,8 +12,10 @@ import org.springframework.util.Assert;
 @Table(
     name = "systems",
     uniqueConstraints =
-        @UniqueConstraint(name = "uk_system_code", columnNames = "code"))
+        @UniqueConstraint(name = "uk_system_code", columnNames = "code")
+    )
 @cn.edu.xmu.clonefactory.CopyTo({SystemResult.class})
+@cn.edu.xmu.clonefactory.CopyNotNullFrom(UpdateSystemCommand.class)
 @lombok.Getter
 @lombok.NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class ApplicationSystemEntity {
@@ -21,11 +24,10 @@ public class ApplicationSystemEntity {
   private Long id;
 
   @Column(nullable = false, length = 100)
-
   private String code;
 
   @Column(nullable = false, length = 191)
-
+  @lombok.Setter
   private String name;
 
   @Enumerated(EnumType.STRING)

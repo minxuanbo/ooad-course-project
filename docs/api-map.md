@@ -1,6 +1,6 @@
 # 页面与API对照
 
-> 接口字段与响应的唯一机器规范为[OpenAPI](../api/openapi.yaml)，JSON为同源派生；[业务约束](api-contract.md)解释鉴权、范围与原子性。此表索引29项RBAC管理操作；下文补充8项完整通用身份操作。
+> 接口字段与响应的唯一机器规范为[OpenAPI](../api/openapi.yaml)，JSON为同源派生；[业务约束](api-contract.md)解释鉴权、范围与原子性。此表索引33项RBAC管理操作；下文补充8项完整通用身份操作。
 
 | 页面/操作组 | 操作 | 用途 | 请求模型 | 成功data |
 | --- | --- | --- | --- | --- |
@@ -25,6 +25,10 @@
 | 角色与权限 | `PATCH /api/roles/{id}` | 改名或启停角色 | RolePatchDTO | RoleVO |
 | 角色与权限 | `GET /api/roles/{id}/permissions` | 完整直接权限集合 | 路径/query/无body，见规范 | RolePermissionsVO |
 | 角色与权限 | `PUT /api/roles/{id}/permissions` | 整体替换角色权限 | IdsDTO | RolePermissionsVO |
+| 应用管理 | `GET /api/systems/page` | 维护列表分页搜索和状态筛选 | SystemQueryDTO | SystemPageVO |
+| 应用管理 | `POST /api/systems` | 登记待接入系统 | SystemCreateDTO | SystemVO |
+| 应用管理 | `PATCH /api/systems/{id}` | 名称、接入与启停状态 | SystemPatchDTO | SystemVO |
+| 应用管理 | `DELETE /api/systems/{id}` | 逻辑移除，保留历史 | 无body | SystemVO |
 | 资源与映射 | `GET /api/systems` | 已登记系统目录 | 路径/query/无body，见规范 | 数组 |
 | 资源与映射 | `GET /api/permissions/tree` | 权限树目录 | 路径/query/无body，见规范 | 数组 |
 | 资源与映射 | `GET /api/api-resources` | API候选分页 | 路径/query/无body，见规范 | ApiPageVO |
@@ -34,7 +38,7 @@
 | 资源与映射 | `PUT /api/permissions/{id}/apis` | 整体替换权限API映射 | IdsDTO | PermissionApisVO |
 | 鉴权日志 | `GET /api/authorization-logs` | 最小鉴权日志快照查询 | 路径/query/无body，见规范 | LogPageVO |
 
-前端目标页面与状态见[前端设计](frontend-design.md)。获批离线原型见[prototype](../prototype/index.html)，正式Vue展示数据库登记的20项应用，包含RBAC、课程及18项待接入业务目录；待接入项不提供真实业务通行。课程业务界面继续使用老师原始前端。原型不作为真实HTTP或完整界面验收。
+前端目标页面与状态见[前端设计](frontend-design.md)。获批离线原型见[prototype](../prototype/index.html)，正式Vue初始展示数据库登记的20项应用，后续可通过应用管理扩展，包含RBAC、课程及18项待接入业务目录；待接入项不提供真实业务通行。课程业务界面继续使用老师原始前端。原型不作为真实HTTP或完整界面验收。
 
 初始化走离线命令，不新增HTTP初始化入口。课程接入见[专门记录](course-integration.md)，RBAC不承载老师的课程业务路径、模拟外系统路径或旧归档接口。
 

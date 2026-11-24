@@ -1,6 +1,6 @@
 {
   "status": "IMPLEMENTED",
-  "baseline": "62907464ba76d035c758f4867ed22219a3484271",
+  "baseline": "当前源码：应用管理、独立LOGIN及显式菜单读取映射，尚未发布。",
   "entries": [
     {
       "id": "identity",
@@ -393,13 +393,15 @@
     },
     {
       "id": "systems",
-      "title": "已登记应用目录",
+      "title": "应用目录与生命周期",
       "service": "DddResourceService",
       "port": "ResourceUseCase",
       "repository": "ApplicationSystemRepository",
       "repoMethods": [
         "+ findRbac(): Optional<ApplicationSystem>",
-        "+ catalog(): List<ApplicationSystem>"
+        "+ catalog(): List<ApplicationSystem>",
+        "+ search(Systems): DomainPage<ApplicationSystem>",
+        "+ save(system: ApplicationSystem): ApplicationSystem"
       ],
       "model": "ApplicationSystem",
       "fields": [
@@ -410,14 +412,19 @@
       ],
       "methods": [
         "+ isRbac(): boolean",
-        "+ connected(): boolean"
+        "+ connected(): boolean",
+        "+ revise(name, enabled, connection): ApplicationSystem"
       ],
       "policy": "ManagementAccessUseCase",
       "policyMethods": [
         "+ require(header: String): void"
       ],
       "serviceMethods": [
-        "+ systems(header): List<SystemResult>"
+        "+ systems(header): List<SystemResult>",
+        "+ searchSystems(header, query): SystemPageResult",
+        "+ createSystem(header, command): SystemResult",
+        "+ patchSystem(header, id, command): SystemResult",
+        "+ removeSystem(header, id): SystemResult"
       ],
       "adapter": "JpaApplicationSystemRepositoryAdapter",
       "repoRole": "systems",
@@ -1719,6 +1726,7 @@
           "service: StructuredDepartmentService",
           "users: UserJpaRepository",
           "departments: DepartmentJpaRepository",
+          "roles: RoleJpaRepository",
           "node: DepartmentEntity"
         ],
         "calls": [
@@ -1740,6 +1748,11 @@
           [
             1,
             4,
+            "ownedRoles = existsByOwnerDepartmentId(id)"
+          ],
+          [
+            1,
+            5,
             "setDeleted(true)"
           ]
         ],
@@ -1747,7 +1760,7 @@
           {
             "who": 1,
             "lines": [
-              "可信根检查及占用判断由Service直接完成。"
+              "Service核实可信根，分别检查人员、下级和所属角色占用。"
             ]
           }
         ]
@@ -2252,6 +2265,61 @@
           3
         ]
       }
+    },
+    {
+      "id": "application-lifecycle",
+      "title": "应用资料与生命周期",
+      "source": "service/structured/resource/StructuredResourceService.java",
+      "anchor": "patchSystem(",
+      "dddSource": "DddResourceService",
+      "dddAnchor": "patchSystem",
+      "structured": {
+        "lifelines": [
+          "service: StructuredResourceService"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "patchSystem 的差异片段"
+          ]
+        ],
+        "notes": [
+          {
+            "who": 1,
+            "lines": [
+              "CloneFactory.copyNotNull更新Entity的资料与状态。",
+              "code及关系保留；根锁、鉴权、维护者保护为共同编排。"
+            ]
+          }
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddResourceService",
+          "system: ApplicationSystem"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "patchSystem 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "changed = revise(name, enabled, connection)"
+          ]
+        ],
+        "notes": [
+          {
+            "who": 1,
+            "lines": [
+              "新领域值保持稳定id/code和原有关系。"
+            ]
+          }
+        ]
+      }
     }
   ],
   "sharedSequenceExcluded": [
@@ -2564,13 +2632,45 @@
         "useCase": "ApplicationIdentityUseCase.apiAllowed",
         "fragments": "application-projection",
         "reason": "ApiOperationCatalog定位、permissionRoles和路由匹配算法相同，仅current投影依两套实现。"
+      },
+      {
+        "operationId": "createApplication",
+        "method": "POST",
+        "path": "/api/systems",
+        "useCase": "ResourceUseCase.createSystem",
+        "fragments": "application-lifecycle",
+        "reason": "Entity字段修改与不可变ApplicationSystem.revise；新增构造和逻辑移除使用同一生命周期边界，公共事务不重复画。"
+      },
+      {
+        "operationId": "updateApplication",
+        "method": "PATCH",
+        "path": "/api/systems/{id}",
+        "useCase": "ResourceUseCase.patchSystem",
+        "fragments": "application-lifecycle",
+        "reason": "Entity字段修改与不可变ApplicationSystem.revise；新增构造和逻辑移除使用同一生命周期边界，公共事务不重复画。"
+      },
+      {
+        "operationId": "removeApplication",
+        "method": "DELETE",
+        "path": "/api/systems/{id}",
+        "useCase": "ResourceUseCase.removeSystem",
+        "fragments": "application-lifecycle",
+        "reason": "Entity字段修改与不可变ApplicationSystem.revise；新增构造和逻辑移除使用同一生命周期边界，公共事务不重复画。"
+      },
+      {
+        "operationId": "searchApplications",
+        "method": "GET",
+        "path": "/api/systems/page",
+        "useCase": "ResourceUseCase.searchSystems",
+        "fragments": "user-query（分页模式复用）",
+        "reason": "同快照筛选分页的技术/领域边界，复用分页模式。"
       }
     ],
     "offline": [
       "ImportUseCase.importDirectory",
       "AuthorizationBootstrapUseCase.preview/initialize"
     ],
-    "scenarioCount": 24,
+    "scenarioCount": 25,
     "classDiagramPairs": 16
   }
 }

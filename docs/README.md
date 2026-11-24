@@ -11,8 +11,10 @@
 | 数据与外部应用 | [初始化](initialization.md)、[课程接入](course-integration.md) |
 | 执行与验证 | [本地复现](reproduction.md)、[服务器部署](../deploy/README.md)、[监控设计](../deploy/monitoring.md)、[测试与验收](testing-acceptance.md)、[JaCoCo报告](reports/jacoco/final-rbac/README.md) |
 
-当前契约共37项操作（29管理、8身份），structured 与 DDD 共用一套前端和数据库。OpenAPI YAML 是 HTTP 字段主规范，JSON 同源派生；业务契约补充范围、事务与错误语义。[图件入口](design/README.md)说明有效图集及生成方式。
+当前契约共41项操作（33管理、8身份），structured 与 DDD 共用一套前端和数据库。OpenAPI YAML 是 HTTP 字段主规范，JSON 同源派生；业务契约补充范围、事务与错误语义。[图件入口](design/README.md)说明有效图集及生成方式。
 
 有追溯价值的来源、原型确认和实测证据保留在[证据索引](history/README.md)；过期计划、重复说明及被现行图集替代的旧图已清理，原版本仍可从 Git 历史恢复。原 Excel、用户外部文件、旧库及原始日志不属于清理范围。
 
 [18系统目录与部门角色设计](requirements/access-extension-plan.md)为现行设计，完整18系统首次配置及部门角色授撤已发布；具体版本、数据保留和通过范围见验收入口。
+
+本轮入口：[课堂检查与待发布应用管理](history/verification/teacher-check-applications-20261124.md)、[自定义角色操作方案](role-verification-guide.md)。

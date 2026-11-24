@@ -65,6 +65,8 @@
     "sequence-bootstrap-structured",
     "sequence-bootstrap-ddd",
     "sequence-application-projection-structured",
-    "sequence-application-projection-ddd"
+    "sequence-application-projection-ddd",
+    "sequence-application-lifecycle-structured",
+    "sequence-application-lifecycle-ddd"
   ]
 }

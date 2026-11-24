@@ -6,11 +6,12 @@
 
 | 关注点 | 可追溯证据与边界 |
 | --- | --- |
+| 本轮课堂自查及应用管理，未部署 | [源码、契约与材料验证](history/verification/teacher-check-applications-20261124.md)：两策略各344项、360份class一致、合并六项100%及原门槛通过；54单元、17构建渲染；Apifox41操作/77模型差异0。新增应用维护和独立LOGIN待发布，正式仍为PR56 |
 | 按钮统一置灰，未部署 | [本轮验证](history/verification/disabled-permission-actions-20261124.md)：RBAC获准页面内无权操作保留并禁用，只读/锁定及保护目标不放宽；左侧菜单与课程前端不变。仅前端和文档修改，54项单元、14项构建渲染通过；可控HTTP夹具不算正式后端验收。用户要求留待晚上统一发布，线上仍为下列PR56版本 |
 | 当前原型登录及构造器映射发布 | [本轮核对与发布](history/verification/login-prototype-constructor-mapping-20261124.md)：PR56已合main并同步双仓，13:39:53完成两个RBAC镜像更新，其余六项服务Spec/任务不变。真实0.0.2五种不可变VO构造映射；双策略各331项、六项100%原门槛通过，54单元/5渲染通过，Apifox37操作/73模型差异0；正式97项业务HTTP、7项退出清理复核和9组浏览器通过，30次API均200、渲染异常0，七监控目标UP。发布前JWT已失效 |
 | 前轮首次登录修复与匿名记录 | [白屏与匿名记录核对](history/verification/login-render-and-anonymous-audit-20261124.md)：PR54当时仅更新RBAC前端；54项单元、4项构建渲染及线上9组/30次200/渲染异常0。该次旧JWT继续有效、其余七服务不变；镜像现已替代，截图401来源分析仍保留 |
 | 前轮性能发布与实测 | [授权装载优化](history/verification/authorization-loading-performance-20261124.md)：PR52当时仅两个RBAC镜像更新，其余六项服务定义相同；97项公网HTTP、三轮18次RBAC菜单读取及目录检查通过。资源页中位数2.15秒，其余0.69—1.18秒；两个镜像现已由PR56替代，原计时不冒充本次重测、压测或延迟保证 |
-| 当前RBAC源码覆盖率 | [本轮证据](history/verification/login-prototype-constructor-mapping-20261124.md)、[完整报告](reports/jacoco/final-rbac/README.md)：两策略各331项回归无失败/错误/跳过，347份生产class一致，合并六项100%且原门槛通过；不以测试覆盖率代替正式流量或性能实测 |
+| 前轮PR56源码覆盖率 | [当时证据](history/verification/login-prototype-constructor-mapping-20261124.md)、[当时报告](https://github.com/minxuanbo/ooad-course-project/blob/3b0ec0a6db4aca591918a8c3b6b4185f537ebc23/docs/reports/jacoco/final-rbac/README.md)：两策略各331项回归无失败/错误/跳过，347份生产class一致，合并六项100%且原门槛通过；不以测试覆盖率代替正式流量或性能实测 |
 | 18系统目录与部门角色发布 | [PR49/50发布](history/verification/access-extension-release-20261124.md)：三项服务更新和原库保留；当时97项HTTP、8组RBAC浏览器及来源IP防伪造通过，课程浏览器受客户端阻断。其328项覆盖率报告只代表当时源码 |
 | 前期成员查询与来源IP | [验证记录](history/verification/member-queries-audit-ip-20261123.md)：当时双策略各311项及六项100%，保留其独立验证边界，不替代后续业务扩展结果 |
 | 11月23日JWT发布 | [历史发布](history/verification/jwt-coverage-release-20261123.md)：13:05完成当时RBAC更新，其余七项服务定义不变；91次公网HTTP通过；浏览器导航超时，交互验收未取得结果 |
@@ -38,7 +39,7 @@
 | 外部协议/课程 | 8项直连及经支撑，目录最小字段/范围，operationId配置、204；短码完整映射、业务审计独立、课程对象权限及来源缺口响应 |
 | 前端 | 真实Vue、身份切换、窄屏/键盘、读失败禁保存、草稿/取消/晚响应、失权及两个本机Origin |
 | 架构与映射 | 双策略独立决策、DDD不依赖JPA/Entity/structured、仓储仅领域类型、真实CloneFactory赋值、record/final构造器映射完整性与返回值、业务组装例外、中文Javadoc及注解独行 |
-| 文档与契约 | YAML/JSON一致，37操作/31路径/73模型/K17；全部操作及离线入口可追溯，顺序图只画差异，链接与源码锚点有效；Apifox仅在明确授权同步后回读 |
+| 文档与契约 | YAML/JSON一致，41操作/33路径/77模型/K17及独立LOGIN；全部操作及离线入口可追溯，顺序图只画差异，链接与源码锚点有效；Apifox仅在明确授权同步后回读 |
 | 部署与监控 | Stack配置可解析、Secrets不泄露、内部端口隔离；promtool校验真实配置/规则及CPU负载、重置、缺样本；线上健康与指标采集另行验证 |
 
 ## 3. 执行方法

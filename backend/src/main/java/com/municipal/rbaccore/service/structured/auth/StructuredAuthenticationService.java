@@ -13,8 +13,11 @@ import com.municipal.rbaccore.service.port.error.BusinessException;
 import com.municipal.rbaccore.service.port.security.CurrentIdentity;
 import com.municipal.rbaccore.service.port.security.IdentityTokenStore;
 import com.municipal.rbaccore.service.port.security.PasswordHashing;
+import com.municipal.rbaccore.service.port.security.RbacCatalog;
 import com.municipal.rbaccore.service.port.security.RequestContext;
+import com.municipal.rbaccore.service.structured.security.StructuredDepartmentScopeService;
 import com.municipal.rbaccore.service.structured.security.StructuredEffectivePermissionService;
+import com.municipal.rbaccore.service.structured.security.StructuredPersonnelAuthority;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,10 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class StructuredAuthenticationService implements AuthenticationUseCase {
   private final UserJpaRepository users;
-  private final com.municipal.rbaccore.service.structured.security.StructuredPersonnelAuthority
-      authority;
-  private final com.municipal.rbaccore.service.structured.security.StructuredDepartmentScopeService
-      scope;
+  private final StructuredPersonnelAuthority authority;
+  private final StructuredDepartmentScopeService scope;
   private final StructuredEffectivePermissionService permissions;
   private final PasswordHashing encoder;
   private final IdentityTokenStore identities;
@@ -62,8 +63,11 @@ public class StructuredAuthenticationService implements AuthenticationUseCase {
 
   /** 每次请求重新读取账号有效性，角色撤回不能借旧身份继续管理。 */
   public CurrentIdentity require(String header) {
-    return requireForSystem(
-        header, com.municipal.rbaccore.service.port.security.RbacCatalog.SYSTEM_CODE);
+    CurrentIdentity current = requireForSystem(header, RbacCatalog.SYSTEM_CODE);
+    if (!permissions.canEnter(current.id())) {
+      throw new BusinessException(403, "MANAGEMENT_ACCESS_DENIED", "该账号没有有效的RBAC登录权限");
+    }
+    return current;
   }
 
   /** 应用受众和最新启用状态均须成立，不沿用其他系统的会话。 */
@@ -104,10 +108,8 @@ public class StructuredAuthenticationService implements AuthenticationUseCase {
     result.setRoutes(
         permissions.routes(user.getId()).stream()
             .sorted(
-                java.util.Comparator.comparing(
-                        com.municipal.rbaccore.service.port.security.RbacCatalog.Route::path)
-                    .thenComparing(
-                        com.municipal.rbaccore.service.port.security.RbacCatalog.Route::method))
+                java.util.Comparator.comparing(RbacCatalog.Route::path)
+                    .thenComparing(RbacCatalog.Route::method))
             .toList());
     result.setGlobalScope(
         scope.isGlobal(

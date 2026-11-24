@@ -1,16 +1,16 @@
 # API业务约束与接口阅读说明
 
-版本1.6.0。接口字段、方法、路径、必填、分页和响应模型的唯一机器规范为[api/openapi.yaml](../api/openapi.yaml)，[JSON](../api/openapi.json)由同一内容派生。29项RBAC操作及8项可选通用应用身份操作；核心首次授权仅RBAC，独立首次配置登记18个待接入业务系统，课程另行接入。应用目录从数据库登记事实读取，计划授权不等于实际通行。本文解释Schema不能独立表达的授权、范围、原子性和交互语义；[页面对照](api-map.md)只作索引。
+版本1.7.0。接口字段、方法、路径、必填、分页和响应模型的唯一机器规范为[api/openapi.yaml](../api/openapi.yaml)，[JSON](../api/openapi.json)由同一内容派生。33项RBAC操作及8项可选通用应用身份操作；核心首次授权仅RBAC，独立首次配置登记18个待接入业务系统，课程另行接入。应用目录从数据库登记事实读取，计划授权不等于实际通行。本文解释Schema不能独立表达的授权、范围、原子性和交互语义；[页面对照](api-map.md)只作索引。
 
 管理协议包含授予级别、人员目标保护、部门增删改名、范围总览及只读职位/角色摘要。GET /me增加最新实际routes、managementLevel、globalScope和departmentName，前端按路由能力与范围显示入口，不额外查询日志来探测权限。
 
 ## 1. 共用HTTP约定
 
-RBAC管理端成功/失败包含code、message、data、requestId；成功code=OK，失败data=null。POST创建角色201，其余成功200；退出200/data=null。可信用户ID、权限、范围由服务端读取，不接受客户端actor/admin/scope字段。请求JSON类型严格，未知字段拒绝；DTO与VO分开，不返回JPA关系、哈希、手机号或完整原始导入资料；职位以只读字段返回。
+RBAC管理端成功/失败包含code、message、data、requestId；成功code=OK，失败data=null。POST创建角色或应用201，其余成功200；退出200/data=null。可信用户ID、权限、范围由服务端读取，不接受客户端actor/admin/scope字段。请求JSON类型严格，未知字段拒绝；DTO与VO分开，不返回JPA关系、哈希、手机号或完整原始导入资料；职位以只读字段返回。
 
 不存在的端点返回404 ENDPOINT_NOT_FOUND；路径存在但HTTP方法不支持返回405 METHOD_NOT_ALLOWED，与业务对象不存在的404 RESOURCE_NOT_FOUND区分。部门父子类型错误为400 DEPARTMENT_TYPE_INVALID；删除根、删除非空节点及同级重名分别为409 DEPARTMENT_ROOT_REQUIRED、DEPARTMENT_NOT_EMPTY、DEPARTMENT_NAME_CONFLICT。以上均属于OpenAPI的Error.code枚举并保留requestId；离线导入/首次授权命令的错误不冒充HTTP接口契约。
 
-人员、角色、API候选及可分配角色使用items/total/page/size；第0页、默认20、最多100，id升序，数据库先范围/过滤/计数再分页。日志单独使用cursor/limit快照，不改成offset。有限系统目录、部门树及完整已选集合按规范返回，不受当前候选页截断。
+人员、角色、应用管理列表、API候选及可分配角色使用items/total/page/size；第0页、默认20、最多100，id升序，数据库先范围/过滤/计数再分页。日志单独使用cursor/limit快照，不改成offset。有限系统目录、部门树及完整已选集合按规范返回，不受当前候选页截断。
 
 列表q先去首尾空白，处理后最多100字符；按各接口指定字段作不区分大小写的包含搜索。人员查姓名/工号，角色及可分配角色查name/code，API资源查method/path；不把登录标识的精确匹配或角色code唯一性规则混同为搜索规则。
 
@@ -22,11 +22,11 @@ IDs为正安全整数，保留内部主键/工号职责差异；工号不转数�
 
 ### 2.1 登录与身份
 
-account/password是一个入口，工号或手机号定位唯一用户，共用口令/状态/授权；同用户两字段同值算一人，跨用户歧义不选择第一条。未知/错口令/停用/歧义统一401 LOGIN_FAILED；账号口令正确但无本系统有效管理API为403 MANAGEMENT_ACCESS_DENIED。普通员工、空角色、仅父菜单/外系统权限均不准入。不新增刷新令牌、注册或找回流程。
+account/password是一个入口，工号或手机号定位唯一用户，共用口令/状态/授权；同用户两字段同值算一人，跨用户歧义不选择第一条。未知/错口令/停用/歧义统一401 LOGIN_FAILED；账号口令正确但无显式映射POST /api/auth/login的有效RBAC登录权限为403 MANAGEMENT_ACCESS_DENIED。只授登录可进入空工作台；业务菜单、按钮分别依显式读取/操作API授权。普通员工初始化无此资格，课程角色不自动取得RBAC登录资格。不新增刷新令牌、注册或找回流程。
 
 管理登录与外部应用登录统一签发HS256身份JWT，通过Authorization: Bearer携带。仅含sub/aud/iss/iat/exp/jti，无角色权限快照；管理aud为rbac，外部aud为单个登记应用。两类登录沿原token/accessToken字段及响应包装，受众不能混用。签名、issuer、严格到期及当前会话索引均须通过，所有业务授权继续逐请求读库。进程内会话支持单令牌退出，重启后旧JWT失效；共享签名秘密不等于多实例共享会话。
 
-本人及本人权限只要求有效身份；管理权撤回后旧身份本人查询沿现有支撑处理，管理操作立即拒绝，再次登录拒绝。退出沿现有幂等行为，缺失/未知/重复/非Bearer头成功空操作，携带有效Bearer则撤销；不创建新身份。
+本人及本人权限每次还检查有效RBAC登录资格；撤回登录权限后旧JWT的管理请求、本人查询及再次登录均403 MANAGEMENT_ACCESS_DENIED，幂等退出仍允许。只撤业务API但保留登录资格，仍可读取本人并进入空工作台。退出沿现有幂等行为，缺失/未知/重复/非Bearer头成功空操作，携带有效Bearer则撤销；不创建新身份。
 
 实时鉴权以授权变更事务提交为边界：提交后的新受控请求使用原身份即须按最新授权/范围判断，无需重新登录或等待令牌过期。仅撤销一条链而其他有效链仍覆盖该API时继续按OR判定；无剩余授权时拒绝。已进入执行阶段的在途操作不追溯取消，等待根锁的管理写仍按2.3执行锁后重验；完整需求见[实时鉴权](requirements.md#31-实时鉴权与撤权生效r08r09r12r15)。
 
@@ -34,7 +34,7 @@ account/password是一个入口，工号或手机号定位唯一用户，共用�
 
 GET /api/users同时支持departmentId、departmentScope、roleId、q和enabled，采用AND组合。departmentScope默认SUBTREE；DIRECT必须同时指定departmentId，先核实其可见范围再仅查询该节点直属人员。roleId按保存的人员—角色关系过滤，角色停用仍保留成员，未知角色返回200空页；不以筛选角色获得角色定义维护权或范围外人数。数据库使用同一谓词计数、分页，单一角色关联不重复返回多角色人员；page/size约定不变。
 
-沿启用用户→启用角色→启用权限→同系统启用API/系统，按服务端方法和路径模板判定。多角色/多权限OR，同一API可由多个权限覆盖；初始权限编码仅用于追溯，不是强制的授权入口。父菜单或为导航补祖先不授予子API；父停用不级联撤销直接授予子项。
+沿启用用户→启用角色→启用权限→同系统启用API/系统，按服务端方法和路径模板判定。多角色/多权限OR，同一API可由多个权限覆盖；初始权限编码仅用于追溯，不是强制的授权入口。七个菜单显式映射各自读取API；父菜单或为导航补祖先不授予子按钮写API；父停用不级联撤销直接授予子项。
 
 人员范围是本人部门及后代；共同根必须来自核实的来源映射和完整组织覆盖，不根据名称或任意null父节点认定。部门树可见根parentId投影null只用于不泄露范围外父节点，不能让前端据此推断全局资格。
 
@@ -42,9 +42,9 @@ GET /api/users同时支持departmentId、departmentScope、roleId、q和enabled�
 
 ### 2.3 精确目录与管理员保护 K
 
-本系统25项受控API中，日志GET、人员停用PATCH、调动PUT不属于K，排除新增总览及部门四项操作后，原17项仍为维护恢复集合；四个登录/本人基础操作不在K。精确方法/路径以OpenAPI的x-maintenance-member标记核对。
+RBAC目录包含30个独立操作权限/API资源及7个菜单。原17项K仍为维护恢复集合；独立登录、应用新增/分页/维护/移除、日志、停人、调动、总览及部门四项操作不在K。K不是登录或每个操作的准入条件。精确方法/路径以OpenAPI的x-maintenance-member标记核对。
 
-每名计入的用户必须启用、直属可信共同根、有效基础管理级别为5，并独自覆盖全部K；本人多角色可汇总，不同用户不能拼接成一名完整维护者。改名/角色名/admin用户名均不能替代此判断。至少保留一人是系统不变量，完整K不是每位操作者登录/执行单操作或查询日志的前置。
+每名计入的用户必须启用、直属可信共同根、有效基础管理级别为5、有有效RBAC登录权限，并独自覆盖全部K；本人多角色可汇总，不同用户不能拼接成一名完整维护者。改名/角色名/admin用户名均不能替代此判断。至少保留一人是系统不变量，完整K不是每位操作者登录/执行单操作或查询日志的前置。
 
 资源、映射、角色权限、人员角色/状态/部门等相关写共用同一稳定根锁；取锁后重新核对身份、具体API和范围，再写并重算K，在同一事务提交。等待锁期间撤权/调出范围的旧请求必须拒绝。并发不得各自把另一人当保底管理员而同时提交；失败恢复原状态及关联。
 
@@ -60,6 +60,14 @@ GET /api/users同时支持departmentId、departmentScope、roleId、q和enabled�
 | 资源树 | 父子同系统、无环，仅MENU可有子；仅parentId/type/enabled，系统/code/name只读 |
 | API与映射 | method/path/system只读，只启停；映射完整读/整体替换，同系统可保留停用API但不贡献有效能力；影响全部引用 |
 | 最小日志 | 同时日志API+共同根；每批重新校验，username为工号，不复制手机号输入或查询串；无归档/导出/完整变更历史 |
+
+### 应用目录维护
+
+GET /api/systems继续为选择器返回完整数组；GET /api/systems/page为维护列表按code/name、enabled筛选并以同一快照计数分页。POST /api/systems接受code/name并返回201，新增默认启用、PENDING；code仅允许小写字母数字及下划线连字符，首字符为字母或数字，最多100，创建后不修改。name非空且最多191字符。PATCH /api/systems/{id}至少提供name、enabled、connectionStatus之一；接入状态仅PENDING/CONNECTED。字段边界以OpenAPI为准。
+
+DELETE /api/systems/{id}逻辑移除并返回SystemVO，不物理删除关系。恢复使用PATCH enabled=true；不会恢复人工撤回的角色权限。目录未知ID沿既有资源边界403 MANAGEMENT_SCOPE_DENIED，不泄漏未获准系统；重复code返回409 APPLICATION_CODE_CONFLICT，并发/存储冲突409 DATA_CONFLICT。所有写同根锁后复核当前身份、实际API、可信根，并检查同一启用根用户仍有五级、LOGIN及完整K。尝试移除RBAC破坏该资格时409 LAST_ADMIN_REQUIRED并回滚。
+
+登记仅新增受管目录；接口、operationId、权限及业务对象规则仍须由接入配置完成，不能仅把PENDING改为CONNECTED就宣称第三方业务已接通。无应用代码白名单，不自动给任何角色授予新应用权限。
 
 ### 日志快照
 

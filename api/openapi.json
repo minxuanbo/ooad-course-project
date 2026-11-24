@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "市政公司统一权限管理系统 API",
-    "version": "1.6.0",
-    "description": "structured/ddd共享契约：29项RBAC管理操作及8项可选通用应用身份鉴权操作。两类登录统一使用HS256身份JWT，不包含角色或权限快照，管理端与外部应用受众隔离。应用目录来自登记数据及状态，APP_IDENTITY_ENABLED只控制外部8项入口。角色可跨应用拥有权限，Permission—API映射必须同系统。统一身份审计2项不在本契约，K仍为17项RBAC路由。"
+    "version": "1.7.0",
+    "description": "structured/ddd共享契约：33项RBAC管理操作及8项可选通用应用身份鉴权操作。两类登录统一使用HS256身份JWT，不包含角色或权限快照，管理端与外部应用受众隔离。应用目录来自登记数据及状态，APP_IDENTITY_ENABLED只控制外部8项入口。角色可跨应用拥有权限，Permission—API映射必须同系统。统一身份审计2项不在本契约，K仍为17项RBAC路由。"
   },
   "servers": [
     {
@@ -28,6 +28,9 @@
       "name": "资源与映射"
     },
     {
+      "name": "应用管理"
+    },
+    {
       "name": "鉴权日志"
     },
     {
@@ -48,7 +51,7 @@
           "认证与本人"
         ],
         "summary": "工号或手机号登录",
-        "description": "工号或手机号加口令定位同一账号，核实启用状态和实际管理API准入后签发aud=rbac的身份JWT；普通员工仅有外部应用角色仍不能进入管理端。",
+        "description": "工号或手机号定位同一启用账号，验证口令后必须拥有本RBAC登录API的当前有效映射；无登录资格403 MANAGEMENT_ACCESS_DENIED。仅登录资格可以进入空工作台，不取得总览、菜单或写入能力；每项业务仍独立授权。HS256身份JWT通过Bearer携带，无角色权限快照。",
         "responses": {
           "200": {
             "description": "成功",
@@ -81,7 +84,7 @@
             }
           },
           "403": {
-            "description": "实际API权限/部门范围/管理准入拒绝",
+            "description": "缺少实际操作权限、登录资格或可信根范围",
             "content": {
               "application/json": {
                 "schema": {
@@ -113,7 +116,8 @@
         },
         "security": [],
         "x-management-scope": "anonymous",
-        "x-maintenance-member": false
+        "x-maintenance-member": false,
+        "x-initial-permission-code": "rbac.login"
       }
     },
     "/api/auth/logout": {
@@ -163,7 +167,7 @@
           "认证与本人"
         ],
         "summary": "本人身份",
-        "description": "只要求有效身份，不以users.read作为前置；不能指定他人id。",
+        "description": "只要求有效身份，不以users.read作为前置；不能指定他人id。 当前RBAC登录权限被撤销时返回403；仅返回实际有效权限，不自动补授菜单祖先。",
         "responses": {
           "200": {
             "description": "成功",
@@ -194,6 +198,16 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "缺少实际操作权限、登录资格或可信根范围",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         },
         "x-management-scope": "self",
@@ -207,7 +221,7 @@
           "认证与本人"
         ],
         "summary": "本人本系统有效权限",
-        "description": "只返回实际有效权限；不补导航祖先，不直接推断具体API可调用性。",
+        "description": "只返回实际有效权限；不补导航祖先，不直接推断具体API可调用性。 当前RBAC登录权限被撤销时返回403；仅返回实际有效权限，不自动补授菜单祖先。",
         "responses": {
           "200": {
             "description": "成功",
@@ -231,6 +245,16 @@
           },
           "500": {
             "description": "安全内部错误，requestId可追踪",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "缺少实际操作权限、登录资格或可信根范围",
             "content": {
               "application/json": {
                 "schema": {
@@ -295,7 +319,7 @@
           }
         },
         "x-management-scope": "subtree",
-        "x-initial-permission-code": "rbac.users.read",
+        "x-initial-permission-code": "rbac.departments.tree.read",
         "x-maintenance-member": true
       }
     },
@@ -473,7 +497,7 @@
           }
         ],
         "x-management-scope": "subtree",
-        "x-initial-permission-code": "rbac.users.read",
+        "x-initial-permission-code": "rbac.users.roles.read",
         "x-maintenance-member": true
       },
       "put": {
@@ -660,7 +684,7 @@
           }
         ],
         "x-management-scope": "subtree",
-        "x-initial-permission-code": "rbac.users.roles.write",
+        "x-initial-permission-code": "rbac.users.roles.candidates.read",
         "x-maintenance-member": true
       }
     },
@@ -1038,7 +1062,7 @@
           }
         },
         "x-management-scope": "root",
-        "x-initial-permission-code": "rbac.roles.write",
+        "x-initial-permission-code": "rbac.roles.create",
         "x-maintenance-member": true
       }
     },
@@ -1218,7 +1242,7 @@
           }
         ],
         "x-management-scope": "department",
-        "x-initial-permission-code": "rbac.roles.read",
+        "x-initial-permission-code": "rbac.roles.permissions.read",
         "x-maintenance-member": true
       },
       "put": {
@@ -1327,7 +1351,7 @@
           "资源与映射"
         ],
         "summary": "本轮系统目录",
-        "description": "返回全部已登记应用（含停用项供维护），真实ID不固定；系统/权限/API的新增登记通过经过核对的首次SQL完成，本轮不开放系统CRUD。",
+        "description": "返回全部已登记应用及稳定ID，含停用项供资源选择器维护；应用管理表格使用独立分页接口。目录来自数据库，无应用代码白名单。",
         "responses": {
           "200": {
             "description": "成功",
@@ -1371,8 +1395,91 @@
           }
         },
         "x-management-scope": "root",
-        "x-initial-permission-code": "rbac.resources.read",
+        "x-initial-permission-code": "rbac.systems.read",
         "x-maintenance-member": true
+      },
+      "post": {
+        "operationId": "createApplication",
+        "tags": [
+          "应用管理"
+        ],
+        "summary": "新增受管应用",
+        "description": "逐请求读取当前有效授权；维护须可信根及对应实际API，写入先锁共同根再重新鉴权。应用编号与编码稳定，不以角色名或应用代码白名单授权。 新应用默认enabled=true、PENDING，不创建业务权限或自动授予角色；code唯一，重复登记409 APPLICATION_CODE_CONFLICT。",
+        "x-management-scope": "root",
+        "x-initial-permission-code": "rbac.systems.create",
+        "x-maintenance-member": false,
+        "responses": {
+          "201": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemVOResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求字段、枚举、分页或ID越界",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "缺少或失效身份",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "缺少实际操作权限、登录资格或可信根范围",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "编码冲突或最后维护者保护，整次事务回滚",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "安全内部错误，保留requestId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SystemCreateDTO"
+              }
+            }
+          }
+        }
       }
     },
     "/api/permissions/tree": {
@@ -1520,7 +1627,7 @@
           }
         ],
         "x-management-scope": "root",
-        "x-initial-permission-code": "rbac.resources.read",
+        "x-initial-permission-code": "rbac.apis.read",
         "x-maintenance-member": true
       }
     },
@@ -1720,7 +1827,7 @@
           }
         },
         "x-management-scope": "root",
-        "x-initial-permission-code": "rbac.resources.write",
+        "x-initial-permission-code": "rbac.apis.write",
         "x-maintenance-member": true
       }
     },
@@ -1800,7 +1907,7 @@
           }
         ],
         "x-management-scope": "root",
-        "x-initial-permission-code": "rbac.resources.read",
+        "x-initial-permission-code": "rbac.resources.apis.read",
         "x-maintenance-member": true
       },
       "put": {
@@ -1898,7 +2005,7 @@
           }
         },
         "x-management-scope": "root",
-        "x-initial-permission-code": "rbac.resources.write",
+        "x-initial-permission-code": "rbac.resources.apis.write",
         "x-maintenance-member": true
       }
     },
@@ -2160,7 +2267,7 @@
           }
         },
         "x-management-scope": "subtree",
-        "x-initial-permission-code": "rbac.departments.write",
+        "x-initial-permission-code": "rbac.departments.create",
         "x-maintenance-member": false,
         "requestBody": {
           "required": true,
@@ -2353,7 +2460,7 @@
           }
         },
         "x-management-scope": "subtree",
-        "x-initial-permission-code": "rbac.departments.write",
+        "x-initial-permission-code": "rbac.departments.delete",
         "x-maintenance-member": false,
         "parameters": [
           {
@@ -3113,6 +3220,277 @@
           }
         }
       }
+    },
+    "/api/systems/{id}": {
+      "patch": {
+        "operationId": "updateApplication",
+        "tags": [
+          "应用管理"
+        ],
+        "summary": "维护应用资料与接入状态",
+        "description": "逐请求读取当前有效授权；维护须可信根及对应实际API，写入先锁共同根再重新鉴权。应用编号与编码稳定，不以角色名或应用代码白名单授权。 仅支持name、enabled、connectionStatus，至少一项；省略保持原值，稳定code不可修改。恢复不会恢复人工撤销的授权。",
+        "x-management-scope": "root",
+        "x-initial-permission-code": "rbac.systems.write",
+        "x-maintenance-member": false,
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemVOResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求字段、枚举、分页或ID越界",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "缺少或失效身份",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "缺少实际操作权限、登录资格或可信根范围",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "编码冲突或最后维护者保护，整次事务回滚",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "安全内部错误，保留requestId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SystemPatchDTO"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "removeApplication",
+        "tags": [
+          "应用管理"
+        ],
+        "summary": "移除受管应用",
+        "description": "逐请求读取当前有效授权；维护须可信根及对应实际API，写入先锁共同根再重新鉴权。应用编号与编码稳定，不以角色名或应用代码白名单授权。 采用逻辑移除：enabled=false，保留编号、目录、权限映射和历史日志。提交后原应用身份的下一请求立即拒绝；可经PATCH enabled=true恢复。未知目录403，移除RBAC导致无完整维护者则409 LAST_ADMIN_REQUIRED并回滚。",
+        "x-management-scope": "root",
+        "x-initial-permission-code": "rbac.systems.remove",
+        "x-maintenance-member": false,
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemVOResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求字段、枚举、分页或ID越界",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "缺少或失效身份",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "缺少实际操作权限、登录资格或可信根范围",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "编码冲突或最后维护者保护，整次事务回滚",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "安全内部错误，保留requestId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          }
+        ]
+      }
+    },
+    "/api/systems/page": {
+      "get": {
+        "operationId": "searchApplications",
+        "tags": [
+          "应用管理"
+        ],
+        "summary": "分页查询受管应用",
+        "description": "逐请求读取当前有效授权；维护须可信根及对应实际API，写入先锁共同根再重新鉴权。应用编号与编码稳定，不以角色名或应用代码白名单授权。 q按名称/编码包含匹配，百分号和下划线为普通文本；enabled省略为全部。数据库同谓词计数分页，越末页items为空但total保留。",
+        "x-management-scope": "root",
+        "x-initial-permission-code": "rbac.systems.page.read",
+        "x-maintenance-member": false,
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemPageVOResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求字段、枚举、分页或ID越界",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "缺少或失效身份",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "缺少实际操作权限、登录资格或可信根范围",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "编码冲突或最后维护者保护，整次事务回滚",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "安全内部错误，保留requestId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/Size"
+          },
+          {
+            "$ref": "#/components/parameters/Q"
+          },
+          {
+            "$ref": "#/components/parameters/Enabled"
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -3317,6 +3695,105 @@
       }
     },
     "schemas": {
+      "SystemCreateDTO": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "name"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 191,
+            "pattern": "\\S"
+          }
+        }
+      },
+      "SystemPatchDTO": {
+        "type": "object",
+        "additionalProperties": false,
+        "minProperties": 1,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 191,
+            "pattern": "\\S"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "connectionStatus": {
+            "$ref": "#/components/schemas/ConnectionStatus"
+          }
+        }
+      },
+      "SystemPageVO": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "total",
+          "page",
+          "size"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SystemVO"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      },
+      "SystemPageVOResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "OK"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/SystemPageVO"
+          },
+          "requestId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "data",
+          "requestId"
+        ]
+      },
       "IdentityVO": {
         "type": "object",
         "additionalProperties": false,
@@ -4468,6 +4945,7 @@
               "DEPARTMENT_ROOT_REQUIRED",
               "DEPARTMENT_NOT_EMPTY",
               "DEPARTMENT_NAME_CONFLICT",
+              "APPLICATION_CODE_CONFLICT",
               "DATA_CONFLICT",
               "LAST_ADMIN_REQUIRED",
               "INTERNAL_ERROR",

@@ -58,7 +58,11 @@ public class DddAuthenticationService implements AuthenticationUseCase {
   /** 令牌定位主体，不携带启停、部门或权限快照。 */
   @Override
   public CurrentIdentity require(String header) {
-    return requireForSystem(header, RbacCatalog.SYSTEM_CODE);
+    CurrentIdentity current = requireForSystem(header, RbacCatalog.SYSTEM_CODE);
+    if (!authorization.canEnter(current.id())) {
+      throw new BusinessException(403, "MANAGEMENT_ACCESS_DENIED", "该账号没有有效的RBAC登录权限");
+    }
+    return current;
   }
 
   /** 领域账号状态与令牌受众分别校验，外部应用会话不能进入管理身份接口。 */

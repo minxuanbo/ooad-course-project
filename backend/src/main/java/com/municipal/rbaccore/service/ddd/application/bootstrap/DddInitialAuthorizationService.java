@@ -42,8 +42,14 @@ public class DddInitialAuthorizationService implements AuthorizationBootstrapUse
                           new BootstrapPlan.PermissionSeed(
                               entry.getKey(),
                               entry.getValue(),
-                              List.of(),
-                              Set.of("rbac.workspace", "rbac.departments.menu", "rbac.roles.menu")
+                              RbacCatalog.menuRoutes().get(entry.getKey()).stream()
+                                  .map(route -> new ApiResource.Route(route.method(), route.path()))
+                                  .toList(),
+                              Set.of(
+                                      "rbac.workspace",
+                                      "rbac.departments.menu",
+                                      "rbac.roles.menu",
+                                      "rbac.overview.menu")
                                   .contains(entry.getKey()),
                               null,
                               true)),
