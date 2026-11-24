@@ -6,9 +6,9 @@
 
 | 关注点 | 可追溯证据与边界 |
 | --- | --- |
-| 本轮原型登录及构造器映射，待发布 | [本轮核对](history/verification/login-prototype-constructor-mapping-20261124.md)：真实0.0.2五种不可变VO构造映射；双策略各331项、六项100%原门槛通过，54单元/5渲染通过，Apifox37操作/73模型差异0。正式部署结果另记，不沿用旧版浏览器成绩 |
-| 当前前端发布与首次登录 | [白屏与匿名记录核对](history/verification/login-render-and-anonymous-audit-20261124.md)：PR54已合main，10:11:53仅更新RBAC前端。54项单元、4项正式构建渲染及本机真实API联调通过；线上表单登录等9组、30次200、渲染异常0。其余七项服务Spec及任务相同，旧JWT继续有效，七监控目标UP；截图401按真实失效或缺失身份保留 |
-| 前轮性能发布与实测 | [授权装载优化](history/verification/authorization-loading-performance-20261124.md)：PR52已合main并同步两仓，当时仅两个RBAC镜像更新，其余六项服务定义相同；97项公网HTTP、三轮18次RBAC菜单读取及目录检查通过。资源页中位数2.15秒，其余0.69—1.18秒；该次前端镜像现已由PR54替代，后端镜像保留，原计时不冒充本次重测、压测或延迟保证 |
+| 当前原型登录及构造器映射发布 | [本轮核对与发布](history/verification/login-prototype-constructor-mapping-20261124.md)：PR56已合main并同步双仓，13:39:53完成两个RBAC镜像更新，其余六项服务Spec/任务不变。真实0.0.2五种不可变VO构造映射；双策略各331项、六项100%原门槛通过，54单元/5渲染通过，Apifox37操作/73模型差异0；正式97项业务HTTP、7项退出清理复核和9组浏览器通过，30次API均200、渲染异常0，七监控目标UP。发布前JWT已失效 |
+| 前轮首次登录修复与匿名记录 | [白屏与匿名记录核对](history/verification/login-render-and-anonymous-audit-20261124.md)：PR54当时仅更新RBAC前端；54项单元、4项构建渲染及线上9组/30次200/渲染异常0。该次旧JWT继续有效、其余七服务不变；镜像现已替代，截图401来源分析仍保留 |
+| 前轮性能发布与实测 | [授权装载优化](history/verification/authorization-loading-performance-20261124.md)：PR52当时仅两个RBAC镜像更新，其余六项服务定义相同；97项公网HTTP、三轮18次RBAC菜单读取及目录检查通过。资源页中位数2.15秒，其余0.69—1.18秒；两个镜像现已由PR56替代，原计时不冒充本次重测、压测或延迟保证 |
 | 当前RBAC源码覆盖率 | [本轮证据](history/verification/login-prototype-constructor-mapping-20261124.md)、[完整报告](reports/jacoco/final-rbac/README.md)：两策略各331项回归无失败/错误/跳过，347份生产class一致，合并六项100%且原门槛通过；不以测试覆盖率代替正式流量或性能实测 |
 | 18系统目录与部门角色发布 | [PR49/50发布](history/verification/access-extension-release-20261124.md)：三项服务更新和原库保留；当时97项HTTP、8组RBAC浏览器及来源IP防伪造通过，课程浏览器受客户端阻断。其328项覆盖率报告只代表当时源码 |
 | 前期成员查询与来源IP | [验证记录](history/verification/member-queries-audit-ip-20261123.md)：当时双策略各311项及六项100%，保留其独立验证边界，不替代后续业务扩展结果 |
