@@ -16,6 +16,16 @@ class OnboardingInitializationTest(unittest.TestCase):
                           'path': '/examples/{id}', 'requiresPermission': True,
                           'permissionRoles': ['teacher', 'course-admin']}
 
+    def test_R35_course_controlled_operations_have_real_api_mappings(self):
+        """首次配置的每个全局受控操作均须具备同应用真实API及短码映射。"""
+        root = Path(__file__).resolve().parents[2]
+        catalog = json.loads((root / 'integrations/course/catalog.json').read_text(encoding='utf-8'))
+        operations = json.loads((root / 'integrations/course/operations.json').read_text(encoding='utf-8'))['operations']
+        mapped = {tuple(route) for routes in catalog['routes'].values() for route in routes}
+        missing = [operation['operationId'] for operation in operations
+                   if operation['requiresPermission'] and (operation['method'], operation['path']) not in mapped]
+        self.assertEqual([], missing)
+
     def test_R35_explicit_metadata_retains_conditions(self):
         """真实配置以安全字面值写入支撑表，角色条件及门禁均保留。"""
         sql = '\n'.join(operation_catalog_sql('@system', 'example', [self.operation], 'LOGIN'))

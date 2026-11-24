@@ -88,6 +88,10 @@
     ],
     "CTM": [
       [
+        "POST",
+        "/courses/{courseId}/classes"
+      ],
+      [
         "PUT",
         "/courses/{courseId}/leaders"
       ],
