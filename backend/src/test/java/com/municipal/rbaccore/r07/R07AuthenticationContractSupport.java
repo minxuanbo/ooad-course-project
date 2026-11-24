@@ -28,6 +28,7 @@ import com.municipal.rbaccore.service.port.importing.BootstrapCredentials;
 import com.municipal.rbaccore.service.port.importing.ImportUseCase;
 import com.municipal.rbaccore.service.port.security.MaintenanceProtection;
 import com.municipal.rbaccore.service.port.security.Managed;
+import com.municipal.rbaccore.service.port.security.RbacCatalog;
 import com.municipal.rbaccore.shared.TestProjectPaths;
 import java.net.URI;
 import java.util.*;
@@ -84,7 +85,7 @@ abstract class R07AuthenticationContractSupport {
   void R30_ChineseCatalogNamesAndImmutableMetadata() throws Exception {
     String admin = token("admin", ADMIN_PASSWORD);
     JsonNode data = body(request("GET", PERMISSIONS, admin, null)).get("data");
-    Map<String, String> expected = com.municipal.rbaccore.service.port.security.RbacCatalog.displayNames();
+    Map<String, String> expected = RbacCatalog.displayNames();
     int found = 0;
     for (JsonNode permission : data) {
       String name = expected.get(permission.path("code").asText());
@@ -95,9 +96,15 @@ abstract class R07AuthenticationContractSupport {
     }
     assertEquals(expected.size(), found);
     long id = jdbc.queryForObject("SELECT id FROM permissions WHERE code='rbac.login'", Long.class);
-    assertEquals(400, request("PATCH", PERMISSION_ITEM + id, admin, Map.of("name", "不允许改名")).getStatusCode().value());
-    assertEquals("登录RBAC", jdbc.queryForObject("SELECT name FROM permissions WHERE id=?", String.class, id));
+    assertEquals(
+        400,
+        request("PATCH", PERMISSION_ITEM + id, admin, Map.of("name", "不允许改名"))
+            .getStatusCode()
+            .value());
+    assertEquals(
+        "登录RBAC", jdbc.queryForObject("SELECT name FROM permissions WHERE id=?", String.class, id));
   }
+
   @Autowired
   TestRestTemplate http;
   @Autowired
@@ -485,6 +492,8 @@ abstract class R07AuthenticationContractSupport {
     jdbc.update("UPDATE permissions SET parent_id=NULL");
     for (String table :
         List.of(
+            "api_operations",
+            "application_profiles",
             "authorization_logs",
             "bootstrap_receipts",
             "import_sources",
@@ -534,12 +543,12 @@ abstract class R07AuthenticationContractSupport {
     assertEquals(10001, bootstrap.initialize(TestProjectPaths.sources()).createdAssignments());
     assertEquals(5, roles.count());
     assertEquals(10001, jdbc.queryForObject("SELECT count(*) FROM user_roles", Integer.class));
-    assertEquals(30, jdbc.queryForObject("SELECT count(*) FROM api_resources", Integer.class));
+    assertEquals(34, jdbc.queryForObject("SELECT count(*) FROM api_resources", Integer.class));
     assertEquals(
         7,
         jdbc.queryForObject("SELECT count(*) FROM permissions WHERE type='MENU'", Integer.class));
     assertEquals(
-        30,
+        34,
         jdbc.queryForObject("SELECT count(*) FROM permissions WHERE type='BUTTON'", Integer.class));
     assertEquals(
         0,
@@ -562,7 +571,7 @@ abstract class R07AuthenticationContractSupport {
             "SELECT username FROM users WHERE position='部长' ORDER BY id LIMIT 1", String.class);
     departmentManagerId = id(departmentManager);
     assertEquals(
-        12,
+        14,
         jdbc.queryForObject(
             "SELECT count(*) FROM information_schema.tables WHERE table_schema=DATABASE()",
             Integer.class));

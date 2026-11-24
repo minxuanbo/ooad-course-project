@@ -473,7 +473,7 @@ class R23PrototypeContractTest {
     JsonNode identity = call(HttpMethod.GET, ME, admin, null).getBody().path("data").path("user");
     assertEquals(5, identity.path("managementLevel").asInt());
     assertTrue(identity.path("globalScope").asBoolean());
-    assertEquals(30, identity.path("routes").size());
+    assertEquals(34, identity.path("routes").size());
   }
 
   /** 级别与权限子集叠加；自定义角色不冻结人员，但仍只能由管理员增删。 */

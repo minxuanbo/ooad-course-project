@@ -9,6 +9,7 @@ import com.municipal.rbaccore.api.role.RoleController;
 import com.municipal.rbaccore.api.role.dto.RoleQueryDTO;
 import com.municipal.rbaccore.service.port.audit.AuditWriter;
 import com.municipal.rbaccore.service.port.department.DepartmentUseCase;
+import com.municipal.rbaccore.service.port.onboarding.OnboardingUseCase;
 import com.municipal.rbaccore.service.port.resource.ResourceUseCase;
 import com.municipal.rbaccore.service.port.role.RoleUseCase;
 import com.municipal.rbaccore.service.port.security.ManagementAccessUseCase;
@@ -35,6 +36,7 @@ class R18PreflightBoundaryTest {
     ManagementPreflight preflight =
         new ManagementPreflight(
             access,
+            mock(OnboardingUseCase.class),
             resources,
             mock(UserManagementUseCase.class),
             mock(DepartmentUseCase.class),
@@ -70,7 +72,13 @@ class R18PreflightBoundaryTest {
     AuditWriter audit = mock(AuditWriter.class);
     ManagementPreflight preflight =
         new ManagementPreflight(
-            access, resources, users, departments, mock(RoleUseCase.class), audit);
+            access,
+            mock(OnboardingUseCase.class),
+            resources,
+            users,
+            departments,
+            mock(RoleUseCase.class),
+            audit);
     MockHttpServletRequest request = new MockHttpServletRequest("GET", ICON);
     MockHttpServletResponse response = new MockHttpServletResponse();
     assertTrue(preflight.preHandle(request, response, new Object()));
@@ -92,6 +100,7 @@ class R18PreflightBoundaryTest {
     ManagementPreflight preflight =
         new ManagementPreflight(
             access,
+            mock(OnboardingUseCase.class),
             resources,
             mock(UserManagementUseCase.class),
             mock(DepartmentUseCase.class),

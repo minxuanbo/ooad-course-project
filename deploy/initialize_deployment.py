@@ -8,7 +8,6 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from initialize_business_catalog import build_plan, load_source, initialize as initialize_business
 from initialize_course_integration import (course_bindings_sql, manifest, plan_initialization,
                                            read_snapshot, rbac_initialization_sql, sql_text)
 
@@ -72,10 +71,10 @@ class Database:
             connection.commit()
 
 
-def initialize(rbac, course, configuration, catalog, apply=False):
+def initialize(rbac, course, configuration, catalog, apply=False, operations=None):
     """先核对所有来源及冲突，再提交课程绑定，最后发布RBAC角色；中断可重试。"""
     snapshot = read_snapshot(rbac)
-    fingerprint = manifest(snapshot, configuration, catalog)
+    fingerprint = manifest(snapshot, configuration, catalog if operations is None else {**catalog, 'operations': operations})
     receipts = rbac.rows("SELECT JSON_OBJECT('hash',manifest_sha256) FROM bootstrap_receipts WHERE seed_key="
                          + sql_text(configuration['seedKey']) + ';')
     if receipts:
@@ -83,6 +82,7 @@ def initialize(rbac, course, configuration, catalog, apply=False):
             raise ValueError('INITIALIZATION_MANIFEST_CHANGED')
         return {'skipped': True, 'reason': 'matching-receipt-preserves-runtime-changes'}
     plan = plan_initialization(snapshot, configuration, catalog)
+    plan['manifest'] = fingerprint
     conflicts = rbac.rows("SELECT JSON_OBJECT('count',COUNT(*)) FROM systems WHERE code="
                          + sql_text(plan['system']) + ';')[0]['count']
     conflicts += rbac.rows("SELECT JSON_OBJECT('count',COUNT(*)) FROM roles WHERE code IN ("
@@ -92,7 +92,7 @@ def initialize(rbac, course, configuration, catalog, apply=False):
     teachers = course.rows("SELECT JSON_OBJECT('id',id,'user_id',user_id,'no',employee_no,'deleted',deleted_at IS NOT NULL) FROM teacher;")
     students = course.rows("SELECT JSON_OBJECT('id',id,'user_id',user_id,'no',student_no,'status',status) FROM student;")
     course_sql, report = reconcile_bindings(plan, teachers, students)
-    rbac_sql = rbac_initialization_sql(plan, configuration, catalog)
+    rbac_sql = rbac_initialization_sql(plan, configuration, catalog, operations)
     if apply:
         course.execute(course_sql)
         rbac.execute(rbac_sql)
@@ -113,9 +113,8 @@ def main():
     catalog = json.loads((ROOT / 'integrations/course/catalog.json').read_text(encoding='utf-8'))
     rbac = Database('rbac_core', 'rbac', '/run/secrets/rbac_db_password')
     course = Database('course_project', 'course_app', '/run/secrets/course_db_password')
-    business = initialize_business(rbac, build_plan(load_source(ROOT / '市政公司应用软件功能权限清单.xlsx')), args.apply)
-    course_report = initialize(rbac, course, configuration, catalog, args.apply)
-    print(json.dumps({'business': business, 'course': course_report}, ensure_ascii=False))
+    course_report = initialize(rbac, course, configuration, catalog, args.apply, json.loads((ROOT / 'integrations/course/operations.json').read_text(encoding='utf-8'))['operations'])
+    print(json.dumps({'course': course_report}, ensure_ascii=False))
 
 
 if __name__ == '__main__':

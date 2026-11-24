@@ -1,6 +1,6 @@
 # 离线交互原型 · 第六轮
 
-原型评审版本为2026-11-13的codex/interactive-prototype。原型已随PR #31获批合入；截至2026-11-18，正式Vue及structured/ddd双实现均已合入main。该目录保留独立离线演示，实际运行从[本地复现](../docs/reproduction.md)开始。
+原型评审版本为2026-11-13的codex/interactive-prototype。原型已随PR #31获批合入；截至2026-11-18，正式Vue及structured/ddd双实现均已合入main。该目录保留独立离线演示，实际运行从[本地复现](../docs/initialization.md#reproduction)开始。
 
 ## 直接打开
 

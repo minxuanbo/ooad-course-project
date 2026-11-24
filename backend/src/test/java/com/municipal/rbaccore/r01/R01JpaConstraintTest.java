@@ -76,11 +76,9 @@ class R01JpaConstraintTest {
   }
 
   @Autowired
-
   DepartmentJpaRepository departments;
 
   @Autowired
-
   ApplicationSystemJpaRepository systems;
   @Autowired
   ApiResourceJpaRepository apis;
@@ -199,7 +197,7 @@ class R01JpaConstraintTest {
   /** 核对十二张精确表名、核心十三外键及关联联合主键，拒绝旧模型混入。 */
   @Test
   @org.junit.jupiter.api.DisplayName("R01/R02/R09/R14 核对十二张精确表名、核心十三外键及关联联合主键，拒绝旧模型混入。")
-  void R01_mysqlHasNineCoreAndThreeSupportTablesWithConstraints() throws Exception {
+  void R01_mysqlHasNineCoreAndFiveSupportTablesWithConstraints() throws Exception {
     try (java.sql.Connection connection = dataSource.getConnection()) {
       assertEquals("MySQL", connection.getMetaData().getDatabaseProductName());
       assertTrue(connection.getMetaData().getDatabaseMajorVersion() >= 8);
@@ -207,7 +205,9 @@ class R01JpaConstraintTest {
     }
     assertEquals(
         List.of(
+            "api_operations",
             "api_resources",
+            "application_profiles",
             "authorization_logs",
             "bootstrap_receipts",
             "departments",

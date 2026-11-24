@@ -14,6 +14,7 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 /** 通用身份用例仅编排领域仓储与纯领域投影，不依赖JPA或任何课程模型。 */
@@ -85,9 +86,7 @@ public class DddApplicationIdentityService implements ApplicationIdentityUseCase
 
   /** 领域组织事实确定范围，复杂目录投影通过只读Gateway执行。 */
   @Override
-  @Transactional(
-      readOnly = true,
-      isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
+  @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
   public ApplicationDirectoryPage<ApplicationDepartmentResult> departments(
       String header, Long parentId, String keyword, int page, int pageSize) {
     User actor = requireRoute(header, "/auth/departments");
@@ -101,9 +100,7 @@ public class DddApplicationIdentityService implements ApplicationIdentityUseCase
 
   /** 用户目录只查目标部门直属人员，不把领域仓储改成外部协议返回类型。 */
   @Override
-  @Transactional(
-      readOnly = true,
-      isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
+  @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
   public ApplicationDirectoryPage<ApplicationDepartmentUserResult> departmentUsers(
       String header, Long departmentId, String keyword, int page, int pageSize) {
     User actor = requireRoute(header, "/auth/departments/{departmentId}/users");
@@ -176,7 +173,11 @@ public class DddApplicationIdentityService implements ApplicationIdentityUseCase
   private ApplicationIdentityResult view(Long id, String system) {
     AuthorizationFacts facts = facts(id);
     Set<Permission> direct = ApplicationAuthorizationPolicy.exported(facts, system);
-    if (direct.isEmpty())
+    if (direct.isEmpty()
+        || operations
+            .loginPermission(system)
+            .filter(code -> direct.stream().noneMatch(permission -> permission.code().equals(code)))
+            .isPresent())
       throw new BusinessException(403, "APPLICATION_ACCESS_DENIED", "该账号没有此应用的有效授权");
     Set<Long> ids =
         direct.stream().map(Permission::id).collect(java.util.stream.Collectors.toSet());

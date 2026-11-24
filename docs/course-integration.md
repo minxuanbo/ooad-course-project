@@ -18,7 +18,7 @@ RBAC与老师课程工程是两个独立业务系统。RBAC提供通用授权目
 | 文件 | 设计用途 |
 | --- | --- |
 | [catalog.json](../integrations/course/catalog.json) | 应用、角色、中文权限名、短码与全部必要路由 |
-| [operations.json](../integrations/course/operations.json) | operationId、方法/模板及全局门禁适用角色；由IDENTITY_OPERATIONS_FILE显式装配 |
+| [operations.json](../integrations/course/operations.json) | operationId、方法/模板及全局门禁适用角色；由独立首次脚本导入api_operations，后续通过向导维护 |
 | [initialization.json](../integrations/course/initialization.json) | 本部教师、其他学生及同账号管理员的首次分配规则 |
 
 ## 2. 身份与授权链
@@ -86,7 +86,7 @@ python scripts/initialize_course_integration.py --mysql <mysql.exe绝对路径> 
 
 服务器两个后端均DDD，课程公开80、RBAC公开8088，支撑8085及数据库/Actuator/Prometheus留内网。容器DNS、业务端口与内部管理端口不同，精确路由以[Stack](../deploy/stack.yml)和[部署步骤](../deploy/README.md)为准。CloneFactory固定真实0.0.2来源，见[依赖安装](../deploy/README.md#本机依赖安装)。
 
-本机可以分别选择两策略，但不得同时写同一验收库；课程来源与补丁使用上述准备脚本，初始化命令见第4节。RBAC开启APP_IDENTITY_ENABLED、配置operations文件绝对URI；课程Vue关闭mock，分别设置课程API和身份支撑地址。运行配置和检查见[本地复现](reproduction.md#6-课程系统本地联调)。
+本机可以分别选择两策略，但不得同时写同一验收库；课程来源与补丁使用上述准备脚本，初始化命令见第4节。RBAC开启APP_IDENTITY_ENABLED、配置operations文件绝对URI；课程Vue关闭mock，分别设置课程API和身份支撑地址。运行配置和检查见[本地复现](initialization.md#reproduction-6-课程系统本地联调)。
 
 ### 本机浏览器入口与跨域配置
 

@@ -180,7 +180,34 @@ def course_bindings_sql(plan, teachers, students):
     return '\n'.join(statements + ['COMMIT;'])
 
 
-def rbac_initialization_sql(plan, configuration, catalog):
+def operation_catalog_sql(system_variable, system, operations, login_code):
+    """显式首次安装接入元数据，不在产品启动或回执重跑时覆盖运行配置。"""
+    if not isinstance(operations, list) or any(not isinstance(op, dict) for op in operations):
+        raise ValueError('OPERATION_CATALOG_INVALID')
+    statements = ['INSERT INTO application_profiles(system_id,login_permission_code) VALUES('
+                  + system_variable + ',' + sql_text(login_code) + ');']
+    seen = set()
+    for operation in operations:
+        ident = operation.get('operationId', '')
+        method, path = operation.get('method', ''), operation.get('path', '')
+        roles = operation.get('permissionRoles', [])
+        if (operation.get('system') != system or not isinstance(ident, str) or not re.fullmatch(r'[A-Za-z0-9_.-]{1,128}', ident)
+                or ident in seen or not isinstance(method, str) or method not in {'GET','POST','PUT','PATCH','DELETE','HEAD','OPTIONS'}
+                or not isinstance(path, str) or not path.startswith('/') or len(path) > 512 or re.search(r'[?#\s]', path)
+                or not isinstance(operation.get('requiresPermission'), bool)
+                or not isinstance(roles, list)
+                or any(not isinstance(role, str) or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]{0,99}', role) for role in roles)
+                or len(set(roles)) != len(roles)):
+            raise ValueError('OPERATION_CATALOG_INVALID')
+        seen.add(ident)
+        values = [sql_text(ident), sql_text(method), sql_text(path),
+                  '1' if operation['requiresPermission'] else '0', sql_text(json.dumps(sorted(roles)))]
+        statements.append('INSERT INTO api_operations(system_id,operation_id,http_method,path_template,requires_permission,permission_roles) VALUES('
+                          + system_variable + ',' + ','.join(values) + ');')
+    return statements
+
+
+def rbac_initialization_sql(plan, configuration, catalog, operations=None):
     """根锁内一次发布接入目录、角色、权限、人员关系与回执，不改变五角色级别。"""
     roles = plan['role_codes']
     statements = ['START TRANSACTION;', f"SELECT id FROM departments WHERE id={plan['root_id']} FOR UPDATE;"]
@@ -222,22 +249,25 @@ def rbac_initialization_sql(plan, configuration, catalog):
                     'administrators': '@course_administrator'}[key]
         for ident in plan[key]:
             statements.append(f'INSERT INTO user_roles VALUES({ident},{variable});')
+    if operations is not None:
+        statements.extend(operation_catalog_sql('@course_system', plan['system'], operations, configuration['admissionPermission']))
     statements.append('INSERT INTO bootstrap_receipts(seed_key,manifest_sha256,completed_at) VALUES('
                       + sql_text(configuration['seedKey']) + ',' + sql_text(plan['manifest']) + ',UTC_TIMESTAMP(3));')
     return '\n'.join(statements + ['COMMIT;'])
 
 
-def initialize(rbac, course, configuration, catalog, apply=False):
+def initialize(rbac, course, configuration, catalog, apply=False, operations=None):
     """先建立课程本地绑定，再原子授RBAC角色；中断重跑不重复创建或重置。"""
     snapshot = read_snapshot(rbac)
     receipts = rbac.rows('SELECT JSON_OBJECT(\'hash\',manifest_sha256) FROM bootstrap_receipts WHERE seed_key='
                          + sql_text(configuration['seedKey']) + ';')
-    fingerprint = manifest(snapshot, configuration, catalog)
+    fingerprint = manifest(snapshot, configuration, catalog if operations is None else {**catalog, 'operations': operations})
     if receipts:
         if receipts[0]['hash'] != fingerprint:
             raise ValueError('INITIALIZATION_MANIFEST_CHANGED')
         return {'skipped': True, 'applied': False, 'reason': 'matching-receipt-preserves-runtime-changes'}
     plan = plan_initialization(snapshot, configuration, catalog)
+    plan['manifest'] = fingerprint
     existing_catalog = rbac.rows('SELECT JSON_OBJECT(\'count\',COUNT(*)) FROM systems WHERE code='
                                  + sql_text(plan['system']) + ';')[0]['count']
     existing_roles = rbac.rows('SELECT JSON_OBJECT(\'count\',COUNT(*)) FROM roles WHERE code IN ('
@@ -247,7 +277,7 @@ def initialize(rbac, course, configuration, catalog, apply=False):
     teachers = course.rows("SELECT JSON_OBJECT('user_id',user_id,'no',employee_no,'deleted',deleted_at IS NOT NULL) FROM teacher;")
     students = course.rows("SELECT JSON_OBJECT('user_id',user_id,'no',student_no) FROM student;")
     course_sql = course_bindings_sql(plan, teachers, students)
-    rbac_sql = rbac_initialization_sql(plan, configuration, catalog)
+    rbac_sql = rbac_initialization_sql(plan, configuration, catalog, operations)
     if apply:
         course.execute(course_sql)
         rbac.execute(rbac_sql)
@@ -264,6 +294,7 @@ def main():
     parser.add_argument('--course-client', required=True, type=Path)
     parser.add_argument('--configuration', type=Path, default=ROOT / 'integrations/course/initialization.json')
     parser.add_argument('--catalog', type=Path, default=ROOT / 'integrations/course/catalog.json')
+    parser.add_argument('--operations', type=Path, default=ROOT / 'integrations/course/operations.json')
     parser.add_argument('--report', required=True, type=Path)
     parser.add_argument('--apply', action='store_true')
     args = parser.parse_args()
@@ -273,7 +304,7 @@ def main():
     configuration = json.loads(args.configuration.read_text(encoding='utf-8-sig'))
     catalog = json.loads(args.catalog.read_text(encoding='utf-8-sig'))
     result = initialize(Mysql(args.mysql, args.rbac_client, 'rbac_core'),
-                        Mysql(args.mysql, args.course_client, 'course_project'), configuration, catalog, args.apply)
+                        Mysql(args.mysql, args.course_client, 'course_project'), configuration, catalog, args.apply, json.loads(args.operations.read_text(encoding='utf-8-sig'))['operations'])
     report.parent.mkdir(parents=True, exist_ok=True)
     report.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
     print(json.dumps(result, ensure_ascii=False))

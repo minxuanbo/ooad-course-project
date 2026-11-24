@@ -1,6 +1,6 @@
 {
   "status": "IMPLEMENTED",
-  "baseline": "当前源码：应用管理、独立LOGIN及显式菜单读取映射，尚未发布。",
+  "baseline": "当前双策略源码：应用管理、独立LOGIN、菜单读取映射与可视化接入配置；运行状态另见验收。",
   "entries": [
     {
       "id": "identity",
@@ -484,6 +484,39 @@
       "adapter": "JpaOrganizationRepositoryAdapter",
       "repoRole": "scope",
       "repositoryInterface": false
+    },
+    {
+      "id": "onboarding",
+      "title": "应用接入配置",
+      "service": "DddOnboardingService",
+      "port": "OnboardingUseCase",
+      "repository": "OnboardingRepository",
+      "repoMethods": [
+        "+ find(key: ApplicationOnboarding.Key): Optional<ApplicationOnboarding>",
+        "+ save(value: ApplicationOnboarding): void"
+      ],
+      "model": "ApplicationOnboarding",
+      "fields": [
+        "- application: ApplicationSystem",
+        "- configuration: Configuration",
+        "- roles: List<RoleOption>"
+      ],
+      "methods": [
+        "+ problems(desired): List<String>",
+        "+ connect(desired): ApplicationOnboarding"
+      ],
+      "policy": "OnboardingCodec",
+      "policyMethods": [
+        "+ fingerprint(plan, facts): String"
+      ],
+      "serviceMethods": [
+        "+ snapshot(header, id): OnboardingSnapshot",
+        "+ check(header, id, plan, account, password): OnboardingReport",
+        "+ complete(header, id, plan, business, revocation): OnboardingSnapshot"
+      ],
+      "adapter": "JpaOnboardingRepositoryAdapter",
+      "repoRole": "repository",
+      "supportRole": "codec"
     }
   ],
   "scenarios": [
@@ -2320,6 +2353,89 @@
           }
         ]
       }
+    },
+    {
+      "id": "onboarding-publication",
+      "title": "接入配置校验与发布",
+      "source": "service/structured/onboarding/StructuredOnboardingService.java",
+      "anchor": "complete(",
+      "dddSource": "DddOnboardingService",
+      "dddAnchor": "complete",
+      "structured": {
+        "lifelines": [
+          "service: StructuredOnboardingService",
+          "systems: ApplicationSystemJpaRepository"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "complete 的差异片段"
+          ],
+          [
+            1,
+            1,
+            "errors = problems(before, desired, roles)"
+          ],
+          [
+            1,
+            1,
+            "persist(system, desired)"
+          ],
+          [
+            1,
+            2,
+            "saveAndFlush(system)"
+          ]
+        ],
+        "notes": [
+          {
+            "who": 1,
+            "lines": [
+              "事务脚本独立校验树、映射、角色子集与目录保留。",
+              "persist差量保存多表实体，保留人员与跨应用授权。"
+            ]
+          }
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddOnboardingService",
+          "current: ApplicationOnboarding",
+          "repository: OnboardingRepository"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "complete 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "errors = problems(desired)"
+          ],
+          [
+            1,
+            2,
+            "connected = connect(desired)"
+          ],
+          [
+            1,
+            3,
+            "save(connected)"
+          ]
+        ],
+        "notes": [
+          {
+            "who": 1,
+            "lines": [
+              "聚合表达配置不变量并返回连接后的新领域值。",
+              "仓储适配器承担差量持久化；应用不依赖JPA。"
+            ]
+          }
+        ]
+      }
     }
   ],
   "sharedSequenceExcluded": [
@@ -2664,13 +2780,45 @@
         "useCase": "ResourceUseCase.searchSystems",
         "fragments": "user-query（分页模式复用）",
         "reason": "同快照筛选分页的技术/领域边界，复用分页模式。"
+      },
+      {
+        "operationId": "getOnboarding",
+        "method": "GET",
+        "path": "/api/systems/{id}/onboarding",
+        "useCase": "OnboardingUseCase.snapshot",
+        "fragments": "onboarding-publication（同一接入配置边界）",
+        "reason": "结构化独立事务脚本校验和JPA读写；DDD聚合problems/connect与领域仓储。解析、指纹和真实HTTP协议探测为共用技术，不绘制重复流程。"
+      },
+      {
+        "operationId": "previewOnboardingOpenApi",
+        "method": "POST",
+        "path": "/api/systems/{id}/onboarding/import",
+        "useCase": "OnboardingUseCase.preview",
+        "fragments": "onboarding-publication（同一接入配置边界）",
+        "reason": "结构化独立事务脚本校验和JPA读写；DDD聚合problems/connect与领域仓储。解析、指纹和真实HTTP协议探测为共用技术，不绘制重复流程。"
+      },
+      {
+        "operationId": "checkOnboarding",
+        "method": "POST",
+        "path": "/api/systems/{id}/onboarding/check",
+        "useCase": "OnboardingUseCase.check",
+        "fragments": "onboarding-publication",
+        "reason": "结构化独立事务脚本校验和JPA读写；DDD聚合problems/connect与领域仓储。解析、指纹和真实HTTP协议探测为共用技术，不绘制重复流程。"
+      },
+      {
+        "operationId": "completeOnboarding",
+        "method": "POST",
+        "path": "/api/systems/{id}/onboarding/complete",
+        "useCase": "OnboardingUseCase.complete",
+        "fragments": "onboarding-publication",
+        "reason": "结构化独立事务脚本校验和JPA读写；DDD聚合problems/connect与领域仓储。解析、指纹和真实HTTP协议探测为共用技术，不绘制重复流程。"
       }
     ],
     "offline": [
       "ImportUseCase.importDirectory",
       "AuthorizationBootstrapUseCase.preview/initialize"
     ],
-    "scenarioCount": 25,
-    "classDiagramPairs": 16
+    "scenarioCount": 26,
+    "classDiagramPairs": 17
   }
 }

@@ -70,6 +70,17 @@ public final class RbacCatalog {
     definitions.put("rbac.systems.page.read", List.of(route("GET", "/api/systems/page")));
     definitions.put("rbac.systems.write", List.of(route("PATCH", "/api/systems/{id}")));
     definitions.put("rbac.systems.remove", List.of(route("DELETE", "/api/systems/{id}")));
+    definitions.put(
+        "rbac.systems.onboarding.read", List.of(route("GET", "/api/systems/{id}/onboarding")));
+    definitions.put(
+        "rbac.systems.onboarding.import",
+        List.of(route("POST", "/api/systems/{id}/onboarding/import")));
+    definitions.put(
+        "rbac.systems.onboarding.check",
+        List.of(route("POST", "/api/systems/{id}/onboarding/check")));
+    definitions.put(
+        "rbac.systems.onboarding.complete",
+        List.of(route("POST", "/api/systems/{id}/onboarding/complete")));
     return java.util.Collections.unmodifiableMap(definitions);
   }
 
@@ -77,6 +88,10 @@ public final class RbacCatalog {
   public static Map<String, String> displayNames() {
     return Map.ofEntries(
         Map.entry("rbac.login", "登录RBAC"),
+        Map.entry("rbac.systems.onboarding.read", "查看接入向导"),
+        Map.entry("rbac.systems.onboarding.import", "导入接入接口"),
+        Map.entry("rbac.systems.onboarding.check", "检查接入配置"),
+        Map.entry("rbac.systems.onboarding.complete", "完成应用接入"),
         Map.entry("rbac.systems.create", "新增受管应用"),
         Map.entry("rbac.systems.page.read", "查询受管应用"),
         Map.entry("rbac.systems.write", "维护应用资料与接入"),
@@ -140,8 +155,8 @@ public final class RbacCatalog {
     if (code.equals("rbac.login")) return null;
     if (code.equals("rbac.overview.read")) return "rbac.overview.menu";
     if (code.startsWith("rbac.systems.")) return "rbac.systems.menu";
-    if (code.startsWith("rbac.users.")
-        || code.equals("rbac.departments.tree.read")) return "rbac.workspace";
+    if (code.startsWith("rbac.users.") || code.equals("rbac.departments.tree.read"))
+      return "rbac.workspace";
     if (code.startsWith("rbac.departments.")) return "rbac.departments.menu";
     if (code.startsWith("rbac.roles.")) return "rbac.roles.menu";
     if (code.startsWith("rbac.logs.")) return "rbac.logs.menu";
@@ -155,6 +170,10 @@ public final class RbacCatalog {
             entry ->
                 !Set.of(
                         "rbac.login",
+                        "rbac.systems.onboarding.read",
+                        "rbac.systems.onboarding.import",
+                        "rbac.systems.onboarding.check",
+                        "rbac.systems.onboarding.complete",
                         "rbac.systems.create",
                         "rbac.systems.page.read",
                         "rbac.systems.write",

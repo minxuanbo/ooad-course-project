@@ -128,6 +128,8 @@ abstract class R11UserManagementContractSupport {
     jdbc.execute("DROP TRIGGER IF EXISTS t11_fail_move");
     for (String table :
         List.of(
+            "api_operations",
+            "application_profiles",
             "authorization_logs",
             "bootstrap_receipts",
             "import_sources",

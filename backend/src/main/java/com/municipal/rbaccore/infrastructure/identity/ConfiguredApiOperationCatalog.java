@@ -8,12 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.stereotype.Component;
 
-/** 从显式接入文件读取操作元数据，不维护业务系统代码白名单或课程权限逻辑。 */
-@Component
+/** 离线兼容文件校验器；运行时改读数据库，不注册为产品Bean。 */
 public class ConfiguredApiOperationCatalog implements ApiOperationCatalog {
   private final Map<Key, Operation> operations;
 
@@ -21,7 +18,6 @@ public class ConfiguredApiOperationCatalog implements ApiOperationCatalog {
   public ConfiguredApiOperationCatalog(
       ResourceLoader resources,
       ObjectMapper mapper,
-      @Value("${app.identity.operations-file:}")
       String location) {
     Map<Key, Operation> indexed = new HashMap<>();
     if (!location.isBlank()) {

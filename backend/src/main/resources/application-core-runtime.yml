@@ -21,7 +21,6 @@ app.audit.trusted-proxies: ${AUDIT_TRUSTED_PROXIES:}
 app.backend-strategy: ${APP_BACKEND_STRATEGY:structured}
 app.identity.enabled: ${APP_IDENTITY_ENABLED:false}
 app.identity.allowed-origins: ${IDENTITY_ALLOWED_ORIGINS:}
-app.identity.operations-file: ${IDENTITY_OPERATIONS_FILE:}
 app.identity.issuer: ${IDENTITY_JWT_ISSUER:http://127.0.0.1:8081}
 app.identity.jwt-secret: ${IDENTITY_JWT_SECRET:}
 rbac:

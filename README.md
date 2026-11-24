@@ -10,15 +10,15 @@
 | --- | --- |
 | 范围与业务规则 | [文档导航](docs/README.md)、[需求](docs/requirements.md) |
 | 模型与实现 | [领域模型](docs/domain-model.md)、[数据库](docs/database-design.md)、[后端](docs/backend-design.md)、[前端](docs/frontend-design.md) |
-| HTTP 与页面 | [OpenAPI](api/README.md)、[业务契约](docs/api-contract.md)、[页面接口对照](docs/api-map.md) |
+| HTTP 与页面 | [OpenAPI](api/README.md)、[业务契约](docs/api-contract.md)、[页面接口对照](docs/api-contract.md#api-map) |
 | 数据与双系统接入 | [初始化](docs/initialization.md)、[课程接入](docs/course-integration.md) |
-| 运行与验证 | [本地复现](docs/reproduction.md)、[服务器部署](deploy/README.md)、[测试与验收](docs/testing-acceptance.md)、[JaCoCo报告](docs/reports/jacoco/final-rbac/README.md) |
+| 运行与验证 | [本地复现](docs/initialization.md#reproduction)、[服务器部署](deploy/README.md)、[测试与验收](docs/testing-acceptance.md)、[JaCoCo报告](docs/reports/jacoco/final-rbac/README.md) |
 | 协作 | [贡献约定](CONTRIBUTING.md) |
 
 ## 运行与数据
 
 本地先按[后端说明](backend/README.md)安装固定来源的真实 CloneFactory 0.0.2，在独立新库执行首次 SQL、资料导入、授权预览和首次授权，再启动后端。Vue 在 `frontend` 下执行 `npm ci`、`npm run dev`，默认 5173 代理后端 8081。产品启动只校验结构，不导入或重授角色。
 
-三份原 Excel 保留原件；111 个组织来源合并为 110 个目标部门，10000 员工加独立 admin 共 10001 账号。员工与管理员的初始口令分别由必填配置提供，各账号独立 BCrypt 盐，无公开默认口令。默认初始化只登记 RBAC，课程应用通过独立配置和脚本接入；18个业务系统按原表通过独立首次脚本登记为待接入目录，五基础角色矩阵同步导入，详见[初始化](docs/initialization.md)。待接入权限只用于规划，不提供业务通行能力。
+三份原 Excel 保留原件；111 个组织来源合并为 110 个目标部门，10000 员工加独立 admin 共 10001 账号。员工与管理员的初始口令分别由必填配置提供，各账号独立 BCrypt 盐，无公开默认口令。核心初始化只登记RBAC，课程由独立配置接入，初始共两应用；原表其余18项不导入正式目录。未来通过应用管理和六步向导新增系统，PENDING配置完成前不提供实际通行，详见[初始化与复现](docs/initialization.md)。
 
-已发布入口：[课程系统](http://114.116.254.25/)、[RBAC](http://114.116.254.25:8088/)。18业务目录、部门角色、原型界面及日志来源IP已发布，RBAC通过批量装载授权关系和总览并行读取改善菜单加载；当前原型登录页与新版CloneFactory构造器映射已发布并完成正式表单验证，后端更新后需重新登录。课程前端保持老师原样。实际镜像、保留数据、六项100%覆盖率、加载实测及未验证范围统一从[测试与验收](docs/testing-acceptance.md)查阅。
+服务入口：[课程系统](http://114.116.254.25/)、[RBAC](http://114.116.254.25:8088/)。课程前端保持原样。当前源码提供应用接入向导、部门角色、逐请求授权、独立登录及无权按钮置灰；精确发布版本、数据保留和验证范围从[测试与验收](docs/testing-acceptance.md)查阅。

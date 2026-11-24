@@ -18,6 +18,7 @@
     "class-ddd-systems",
     "class-ddd-authorization",
     "class-ddd-management-access",
+    "class-ddd-onboarding",
     "sequence-authorization-structured",
     "sequence-authorization-ddd",
     "sequence-personnel-structured",
@@ -67,6 +68,8 @@
     "sequence-application-projection-structured",
     "sequence-application-projection-ddd",
     "sequence-application-lifecycle-structured",
-    "sequence-application-lifecycle-ddd"
+    "sequence-application-lifecycle-ddd",
+    "sequence-onboarding-publication-structured",
+    "sequence-onboarding-publication-ddd"
   ]
 }

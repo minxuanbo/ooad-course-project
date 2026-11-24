@@ -404,5 +404,32 @@
         "departmentId"
       ]
     }
+  },
+  {
+    "id": "onboarding",
+    "name": "class-structured-onboarding",
+    "service": "StructuredOnboardingService",
+    "repository": "ApplicationSystemJpaRepository",
+    "support": "OnboardingCodec",
+    "model": "ApplicationSystemEntity",
+    "port": "OnboardingUseCase",
+    "selected": {
+      "repo": [
+        "findById",
+        "saveAndFlush"
+      ],
+      "model": [
+        "setConnectionStatus"
+      ],
+      "support": [
+        "fingerprint"
+      ],
+      "fields": [
+        "id",
+        "code",
+        "enabled",
+        "connectionStatus"
+      ]
+    }
   }
 ]

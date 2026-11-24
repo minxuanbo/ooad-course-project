@@ -28,3 +28,24 @@ CREATE TABLE IF NOT EXISTS bootstrap_receipts (
   source_json LONGTEXT,
   PRIMARY KEY (seed_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
+
+-- 显式接入元数据；只在首次安装建立，产品启动不导入或重授。
+CREATE TABLE IF NOT EXISTS application_profiles (
+ system_id BIGINT NOT NULL,
+ entry_url VARCHAR(512),
+ login_permission_code VARCHAR(100),
+ PRIMARY KEY(system_id),
+ CONSTRAINT fk_profile_system FOREIGN KEY(system_id) REFERENCES systems(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
+CREATE TABLE IF NOT EXISTS api_operations (
+ system_id BIGINT NOT NULL,
+ operation_id VARCHAR(128) NOT NULL,
+ http_method VARCHAR(16) NOT NULL,
+ path_template VARCHAR(512) NOT NULL,
+ requires_permission BIT NOT NULL,
+ permission_roles LONGTEXT NOT NULL,
+ PRIMARY KEY(system_id,operation_id),
+ CONSTRAINT fk_operation_system FOREIGN KEY(system_id) REFERENCES systems(id),
+ CONSTRAINT ck_operation_method CHECK(http_method IN ('GET','POST','PUT','PATCH','DELETE','HEAD','OPTIONS')),
+ CONSTRAINT ck_operation_roles_json CHECK(JSON_VALID(permission_roles))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;

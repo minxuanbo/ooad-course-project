@@ -19,12 +19,13 @@ def fixture_sql():
     api_id = 0
     for permission_id,(code,definition) in enumerate(entries,1):
         statements += [f"INSERT INTO permissions VALUES({permission_id},1,NULL,'{code}','{names[code]}','BUTTON',1);", f"INSERT INTO role_permissions VALUES(1,{permission_id});"]
-        if code.startswith(('rbac.users.','rbac.departments.','rbac.overview.')) or code in {'rbac.roles.read','rbac.roles.permissions.read'}:
+        if code.startswith(('rbac.users.','rbac.departments.','rbac.overview.')) or code in {'rbac.login','rbac.roles.read','rbac.roles.permissions.read'}:
             statements += [f"INSERT INTO role_permissions VALUES(2,{permission_id}),(3,{permission_id});"]
+        definition = definition.replace('LOGIN_ROUTE', 'route("POST", "/api/auth/login")')
         for method,path in re.findall(r'route\("([^"]+)", "([^"]+)"\)',definition):
             api_id += 1
             statements += [f"INSERT INTO api_resources VALUES({api_id},1,'{method}','{path}',1);",f"INSERT INTO permission_apis VALUES({permission_id},{api_id});"]
-    assert len(entries)==25 and api_id==25
+    assert len(entries)==34 and api_id==34
     password = os.environ['UI_FIXTURE_PASSWORD'].encode('utf-8')
     if not 1 <= len(password) <= 72:
         raise ValueError('验收口令须为1至72字节')

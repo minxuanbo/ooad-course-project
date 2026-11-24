@@ -1,6 +1,8 @@
 package com.municipal.rbaccore.infrastructure.persistence.entity;
 
+import com.municipal.rbaccore.service.port.auth.EffectivePermissionResult;
 import com.municipal.rbaccore.service.port.resource.PermissionType;
+import com.municipal.rbaccore.service.port.resource.ResourcePermissionResult;
 import jakarta.persistence.*;
 import java.util.Collections;
 import java.util.HashSet;
@@ -16,10 +18,7 @@ import org.springframework.util.Assert;
         @UniqueConstraint(
             name = "uk_permission_system_code",
             columnNames = {"system_id", "code"}))
-@cn.edu.xmu.clonefactory.CopyTo({
-  com.municipal.rbaccore.service.port.auth.EffectivePermissionResult.class,
-  com.municipal.rbaccore.service.port.resource.ResourcePermissionResult.class
-})
+@cn.edu.xmu.clonefactory.CopyTo({EffectivePermissionResult.class, ResourcePermissionResult.class})
 @lombok.Getter
 @lombok.NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class PermissionEntity {
@@ -41,8 +40,7 @@ public class PermissionEntity {
   private PermissionEntity parent;
 
   @OneToMany(mappedBy = "parent")
-  @cn.edu.xmu.clonefactory.CopyTo.Exclude(
-      com.municipal.rbaccore.service.port.resource.ResourcePermissionResult.class)
+  @cn.edu.xmu.clonefactory.CopyTo.Exclude(ResourcePermissionResult.class)
   private Set<PermissionEntity> children = new LinkedHashSet<>();
 
   @Column(nullable = false, length = 100)
@@ -57,8 +55,8 @@ public class PermissionEntity {
 
   @Column(nullable = false)
   @cn.edu.xmu.clonefactory.CopyTo.Exclude({
-    com.municipal.rbaccore.service.port.auth.EffectivePermissionResult.class,
-    com.municipal.rbaccore.service.port.resource.ResourcePermissionResult.class
+    EffectivePermissionResult.class,
+    ResourcePermissionResult.class
   })
   @lombok.Setter
   private boolean enabled = true;
@@ -89,6 +87,12 @@ public class PermissionEntity {
     this.code = code.trim();
     this.name = name.trim();
     this.type = type;
+  }
+
+  /** 向导按实际业务菜单维护中文名称，稳定编码及主键不变。 */
+  public void rename(String name) {
+    Assert.hasText(name, "权限名称不能为空");
+    this.name = name.trim();
   }
 
   /** 变更直接上级前检查自指和循环，失败时保留原有树关系。 */

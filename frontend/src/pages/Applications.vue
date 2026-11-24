@@ -1,12 +1,14 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { api, canRoute, notify, refreshSession } from '../api.js'
+import { useRouter } from 'vue-router'
+import { api, canRoute, notify, refreshSession, session } from '../api.js'
 import { errorText, RequestGeneration } from '../lib/presentation.js'
 import PageActions from '../components/PageActions.vue'
 import Pagination from '../components/Pagination.vue'
 import Modal from '../components/Modal.vue'
 import AppIcon from '../components/AppIcon.vue'
 
+const router = useRouter()
 const rows = ref([]), page = ref(0), total = ref(0), q = ref(''), enabled = ref('')
 const busy = ref(false), saving = ref(false), error = ref(''), actionError = ref('')
 const editing = ref(null), changing = ref(null), actionDenied = ref(false)
@@ -118,7 +120,7 @@ onUnmounted(() => generation.cancel())
         <td>{{ system.name }}</td><td class="mono">{{ system.code }}</td>
         <td><span class="badge" :class="system.connectionStatus === 'CONNECTED' ? 'green' : 'blue'">{{ system.connectionStatus === 'CONNECTED' ? '已接入' : '待接入' }}</span></td>
         <td>{{ system.enabled ? '受管中' : '已移除' }}</td>
-        <td class="row-actions"><button class="text-button" :disabled="saving || !may('PATCH', '/systems/{id}')" title="需具备应用资料维护权限" @click="edit(system)">编辑</button>
+        <td class="row-actions"><button class="text-button" :disabled="busy || saving || system.code === 'rbac' || session.me?.user.managementLevel !== 5 || !may('GET', '/systems/{id}/onboarding')" :title="system.code === 'rbac' ? 'RBAC自身通过资源与API维护' : '查看或配置该应用接入'" @click="router.push('/applications/' + system.id + '/onboarding')">配置接入</button><button class="text-button" :disabled="saving || !may('PATCH', '/systems/{id}')" title="需具备应用资料维护权限" @click="edit(system)">编辑</button>
           <button class="text-button" :class="{ danger: system.enabled }" :disabled="saving || !may(system.enabled ? 'DELETE' : 'PATCH', '/systems/{id}')" title="需具备对应移除或恢复权限" @click="change(system)">{{ system.enabled ? '移除' : '恢复' }}</button></td>
       </tr><tr v-if="!rows.length"><td colspan="5" class="empty">{{ busy ? '正在读取应用…' : error ? '应用读取失败' : '暂无匹配应用' }}</td></tr></tbody>
     </table></div>

@@ -115,6 +115,8 @@ abstract class R14ResourceContractSupport {
     jdbc.update("UPDATE permissions SET parent_id=NULL");
     for (String table :
         List.of(
+            "api_operations",
+            "application_profiles",
             "authorization_logs",
             "bootstrap_receipts",
             "import_sources",
@@ -189,7 +191,7 @@ abstract class R14ResourceContractSupport {
     assertEquals(systemId, data.get(0).get("id").asLong());
     assertEquals("rbac", data.get(0).get("code").asText());
     JsonNode first = data(request("GET", APIS + "?size=1", token, null));
-    assertEquals(30, first.get("total").asLong());
+    assertEquals(34, first.get("total").asLong());
     assertEquals(1, first.get("items").size());
     assertTrue(first.get("items").get(0).has("method"));
     assertTrue(first.get("items").get(0).has("path"));
@@ -202,17 +204,17 @@ abstract class R14ResourceContractSupport {
     String token = token("t07-admin");
     JsonNode roots = data(request("GET", TREE, token, null));
     assertEquals(1, roots.size());
-    assertEquals(30, roots.get(0).get("children").size());
+    assertEquals(34, roots.get(0).get("children").size());
     assertTrue(roots.get(0).get("parentId").isNull());
     JsonNode second = data(request("GET", APIS + "?size=1&page=1", token, null));
     JsonNode first = data(request("GET", APIS + "?size=1", token, null));
     assertTrue(
         first.get("items").get(0).get("id").asLong()
             < second.get("items").get(0).get("id").asLong());
-    assertEquals(30, second.get("total").asLong());
+    assertEquals(34, second.get("total").asLong());
     JsonNode beyond = data(request("GET", APIS + "?page=2147483647&size=100", token, null));
     assertEquals(0, beyond.get("items").size());
-    assertEquals(30, beyond.get("total").asLong());
+    assertEquals(34, beyond.get("total").asLong());
     assertEquals(
         apiIds.keySet().stream().filter(route -> route.method().equals("GET")).count(),
         data(request("GET", APIS + "?q=gEt", token, null)).get("total").asLong());
@@ -616,7 +618,7 @@ abstract class R14ResourceContractSupport {
                         apis.saveAndFlush(
                             new ApiResourceEntity(
                                 systems.findById(systemId).orElseThrow(), "GET", USERS))));
-    assertEquals(30, apis.count());
+    assertEquals(34, apis.count());
   }
 
   /** 两名维护者同时失去各自关键能力时，共同根锁只允许一次不会清零的提交。 */

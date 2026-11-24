@@ -53,4 +53,4 @@ promtool test rules /work/prometheus-rules.test.yml
 
 前两项要求按Stack目标路径挂载配置；测试文件在工作目录引用prometheus-rules.yml。可用`docker run --rm --network none --read-only`挂载文件执行；规则测试还须提供`--tmpfs /tmp:rw,noexec,nosuid,size=64m`存放临时时序数据库，既不启动Prometheus，也不连接线上服务。Stack另用`docker stack config`验证Compose展开。
 
-2026-11-23已按用户授权发布：8项服务定义、7项replicated服务各1/1及global exporter 4/4；Prometheus自身、两个Java和四节点共7个目标均UP。线上回读节点1秒、Java2秒、两组规则2秒和CPU2秒窗口；节点名为实际Swarm主机名。发布目录、配置提交、镜像摘要及原始证据边界见[发布记录](../docs/history/verification/release-20261123.md)。后续更新仍需相应发布授权，不由文档提交自动重启服务。
+2026-11-23已按用户授权发布：8项服务定义、7项replicated服务各1/1及global exporter 4/4；Prometheus自身、两个Java和四节点共7个目标均UP。线上回读节点1秒、Java2秒、两组规则2秒和CPU2秒窗口；节点名为实际Swarm主机名。发布目录、配置提交、镜像摘要及原始证据边界见[发布记录](../docs/history/verification/release-evidence.md#release-20261123)。后续更新仍需相应发布授权，不由文档提交自动重启服务。

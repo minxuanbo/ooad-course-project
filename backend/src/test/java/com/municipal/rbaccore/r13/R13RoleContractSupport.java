@@ -325,6 +325,8 @@ abstract class R13RoleContractSupport {
     jdbc.update("UPDATE permissions SET parent_id=NULL");
     for (String table :
         List.of(
+            "api_operations",
+            "application_profiles",
             "authorization_logs",
             "bootstrap_receipts",
             "import_sources",
@@ -627,7 +629,9 @@ abstract class R13RoleContractSupport {
         rawRequest("PATCH", role(target), admin, "{\"enabled\":false} trailing"),
         400,
         "INVALID_ARGUMENT");
-    assertEquals(List.of(permissionId, permissionIds.get("rbac.login")).stream().sorted().toList(), savedIds(target));
+    assertEquals(
+        List.of(permissionId, permissionIds.get("rbac.login")).stream().sorted().toList(),
+        savedIds(target));
     assertTrue(jdbc.queryForObject("SELECT enabled FROM roles WHERE id=?", Boolean.class, target));
   }
 
@@ -655,7 +659,9 @@ abstract class R13RoleContractSupport {
             Map.of("ids", List.of(retired)),
             Map.of("ids", List.of(), "uniqueIds", true))) {
       assertError(request("PUT", selected(target), admin, body), 400, "INVALID_ARGUMENT");
-      assertEquals(List.of(userRead, retired, permissionIds.get("rbac.login")).stream().sorted().toList(), savedIds(target));
+      assertEquals(
+          List.of(userRead, retired, permissionIds.get("rbac.login")).stream().sorted().toList(),
+          savedIds(target));
     }
 
     success(request("PUT", selected(target), admin, Map.of("ids", List.of(userRead))), 200);
@@ -695,7 +701,13 @@ abstract class R13RoleContractSupport {
     assertError(login("t09-employee"), 403, "MANAGEMENT_ACCESS_DENIED");
     long userRead = permissionIds.get("rbac.users.read");
 
-    success(request("PUT", selected(target), admin, Map.of("ids", List.of(userRead, permissionIds.get("rbac.login")))), 200);
+    success(
+        request(
+            "PUT",
+            selected(target),
+            admin,
+            Map.of("ids", List.of(userRead, permissionIds.get("rbac.login")))),
+        200);
     String employee = token("t09-employee");
     assertEquals(200, request("GET", USERS, employee, null).getStatusCode().value());
     assertError(request("GET", LOGS, employee, null), 403, "PERMISSION_DENIED");
@@ -705,7 +717,12 @@ abstract class R13RoleContractSupport {
             "PUT",
             selected(target),
             admin,
-            Map.of("ids", List.of(userRead, permissionIds.get("rbac.logs.read"), permissionIds.get("rbac.login")))),
+            Map.of(
+                "ids",
+                List.of(
+                    userRead,
+                    permissionIds.get("rbac.logs.read"),
+                    permissionIds.get("rbac.login")))),
         200);
     assertError(request("GET", LOGS, employee, null), 403, "MANAGEMENT_SCOPE_DENIED");
 
@@ -741,7 +758,9 @@ abstract class R13RoleContractSupport {
             "PUT",
             selected(target),
             admin,
-            Map.of("ids", List.of(permissionIds.get("rbac.logs.read"), permissionIds.get("rbac.login")))),
+            Map.of(
+                "ids",
+                List.of(permissionIds.get("rbac.logs.read"), permissionIds.get("rbac.login")))),
         200);
     assertError(login("t09-switch"), 403, "MANAGEMENT_ACCESS_DENIED");
 
@@ -992,7 +1011,8 @@ abstract class R13RoleContractSupport {
                 status -> {
                   RoleEntity role = roles.save(new RoleEntity("t09-second", "另一个角色"));
                   role.grantPermission(permissions.findById(read).orElseThrow());
-                  role.grantPermission(permissions.findById(permissionIds.get("rbac.login")).orElseThrow());
+                  role.grantPermission(
+                      permissions.findById(permissionIds.get("rbac.login")).orElseThrow());
                   Long userId =
                       jdbc.queryForObject(
                           "SELECT id FROM users WHERE username='t09-multi'", Long.class);
@@ -1053,7 +1073,9 @@ abstract class R13RoleContractSupport {
             request("PUT", selected(target), admin, Map.of("ids", List.of(nextPermission))),
             state.equals("23000") ? 409 : 500,
             state.equals("23000") ? "DATA_CONFLICT" : "INTERNAL_ERROR");
-        assertEquals(List.of(oldPermission, permissionIds.get("rbac.login")).stream().sorted().toList(), savedIds(target));
+        assertEquals(
+            List.of(oldPermission, permissionIds.get("rbac.login")).stream().sorted().toList(),
+            savedIds(target));
       } finally {
         jdbc.execute("DROP TRIGGER t09_fail_permission");
       }

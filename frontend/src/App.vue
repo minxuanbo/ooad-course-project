@@ -54,7 +54,9 @@ const navGroups = computed(() => {
     .map((label) => ({ label, items: visible.filter((item) => item.group === label) }))
     .filter((group) => group.items.length)
 })
-const currentNavigation = computed(() => route.path === '/' && !canRoute('GET', '/overview')
+const currentNavigation = computed(() => /^\/applications\/\d+\/onboarding$/.test(route.path)
+  ? { label: '应用接入向导', group: '权限管理' }
+  : route.path === '/' && !canRoute('GET', '/overview')
   ? { label: '工作台', group: '工作台' }
   : navigation.find((item) => item.path === route.path))
 const descriptions = {

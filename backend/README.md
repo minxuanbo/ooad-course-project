@@ -4,7 +4,7 @@ Java21、Spring Boot3.5.6、Spring Data JPA、MySQL8.4及老师真实CloneFactor
 
 CloneFactory当前固定0.0.2，源码提交40583ff94764d2e758bcb13be17f5c05ea4d6352；按[本机依赖安装](../deploy/README.md#本机依赖安装)构建老师真实源码，依赖及处理器版本由同一个Maven属性维护。
 
-组员从[完整本地复现](../docs/reproduction.md)开始，记录实际检出分支及提交。共享/结构化边界见[DDD隔离说明](../docs/backend-design.md#4-双实现选择方式)。
+组员从[完整本地复现](../docs/initialization.md#reproduction)开始，记录实际检出分支及提交。共享/结构化边界见[DDD隔离说明](../docs/backend-design.md#4-双实现选择方式)。
 
 ## 1. 目录与构建
 
@@ -67,11 +67,11 @@ java '-Dloader.main=com.municipal.rbaccore.bootstrap.ImportCommand' -cp backend/
 java '-Dloader.main=com.municipal.rbaccore.bootstrap.BootstrapAuthorizationCommand' -cp backend/target/rbac0-0.1.0.jar org.springframework.boot.loader.launch.PropertiesLauncher --rbac.core.preview-file=.local/initial-role-preview.csv
 # 不带preview-file才执行首次批量授权。
 java '-Dloader.main=com.municipal.rbaccore.bootstrap.BootstrapAuthorizationCommand' -cp backend/target/rbac0-0.1.0.jar org.springframework.boot.loader.launch.PropertiesLauncher
-# 默认产品入口启动；再次启动不导入或重授角色。业务目录另按初始化设计显式运行initialize_business_catalog.py，课程仍用独立首次配置。
+# 默认产品入口启动；再次启动不导入或重授角色。课程按独立首次配置接入，初始共两应用，不导入其他业务目录。
 java -jar backend/target/rbac0-0.1.0.jar
 ```
 
-HTTP默认8081，前端代理/api不变。后端33项管理操作与8项可选通用应用身份操作的机器契约见[OpenAPI](../api/openapi.yaml)。需要新空库端到端复现时，使用[accept-runtime.py](scripts/accept-runtime.py)并按[验收说明](../docs/testing-acceptance.md)提供实际私有datadir、MySQL客户端及JDK21。每次为所选 `APP_BACKEND_STRATEGY` 提供独立空库，报告会记录策略。探针拒绝非空库和额外Spring/JVM覆盖，不提供清库开关。若 Windows 上 JDK 报本机套接字 `Invalid argument: connect`，可在当前终端将 `TEMP` 和 `TMP` 指向实际存在、可写的短路径目录，再启动验收。
+HTTP默认8081，前端代理/api不变。后端37项管理操作与8项可选通用应用身份操作的机器契约见[OpenAPI](../api/openapi.yaml)。需要新空库端到端复现时，使用[accept-runtime.py](scripts/accept-runtime.py)并按[验收说明](../docs/testing-acceptance.md)提供实际私有datadir、MySQL客户端及JDK21。每次为所选 `APP_BACKEND_STRATEGY` 提供独立空库，报告会记录策略。探针拒绝非空库和额外Spring/JVM覆盖，不提供清库开关。若 Windows 上 JDK 报本机套接字 `Invalid argument: connect`，可在当前终端将 `TEMP` 和 `TMP` 指向实际存在、可写的短路径目录，再启动验收。
 
 ## 4. 当前部署边界
 
@@ -83,7 +83,7 @@ HTTP默认8081，前端代理/api不变。后端33项管理操作与8项可选�
 
 课程接入需在原万人导入、五角色授权后，使用独立`scripts/initialize_course_integration.py`预览及apply，为本部员工授teacher、其余授student、合格管理员兼course-admin，并建立课程本地绑定。此工具不进入后端业务装配，不由身份开关自动执行；课程角色与RBAC管理准入仍独立。
 
-操作查询须配置IDENTITY_OPERATIONS_FILE=file:///绝对路径/integrations/course/operations.json；JWT秘密/签发者、两种本机Origin及分页差异见[完整身份设计](../docs/backend-design.md#18-通用应用身份与课程本地接入)。身份协议由RBAC实现，课程业务仍在老师工程。
+操作查询读取数据库api_operations；首次接入脚本显式导入integrations/course/operations.json，后续由向导维护；JWT秘密/签发者、两种本机Origin及分页差异见[完整身份设计](../docs/backend-design.md#18-通用应用身份与课程本地接入)。身份协议由RBAC实现，课程业务仍在老师工程。
 
 ## 6. 管理与外部应用统一JWT
 
@@ -91,7 +91,7 @@ HTTP默认8081，前端代理/api不变。后端33项管理操作与8项可选�
 
 ## 7. 双策略JaCoCo复现
 
-已完成的[完整HTML/XML报告包](../docs/reports/jacoco/final-rbac/README.md)可直接下载查看；其来源及边界见[本轮验证记录](../docs/history/verification/authorization-loading-performance-20261124.md)。下面的方法用于重新测试和生成新的报告。
+已完成的[完整HTML/XML报告包](../docs/reports/jacoco/final-rbac/README.md)可直接下载查看；其来源及边界见[本轮验证记录](../docs/history/verification/ui-performance-evidence.md#authorization-loading-performance-20261124)。下面的方法用于重新测试和生成新的报告。
 
 使用独立的真实MySQL测试实例及第2节六个专库，测试会建立和清理夹具、注入故障，不能使用业务库。纯领域、端口边界、文件和密码学测试与真实MySQL契约测试互补，不能将全部测试称为数据库测试。两套策略串行运行，避免覆盖同一个target或同时清理测试库。
 

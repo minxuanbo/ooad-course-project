@@ -29,7 +29,6 @@ import org.springframework.test.context.ActiveProfiles;
     properties = {
       "spring.config.name=application-core-resource-test",
       "app.identity.enabled=true",
-      "app.identity.operations-file=classpath:identity-test-operations.json",
       "app.identity.allowed-origins=http://127.0.0.1:5174"
     })
 @ActiveProfiles("core-resource-test")
@@ -70,11 +69,13 @@ class R29ApplicationIdentityContractTest {
 
   /** 每项只清理明确的本机专用测试库，重建最小可信根及完整维护者。 */
   @BeforeEach
-  void R29_PrepareIsolatedFixture() {
+  void R29_PrepareIsolatedFixture() throws Exception {
     assertEquals("rbac_core_t07_test", jdbc.queryForObject("SELECT DATABASE()", String.class));
     jdbc.update("UPDATE permissions SET parent_id=NULL");
     for (String table :
         List.of(
+            "api_operations",
+            "application_profiles",
             "authorization_logs",
             "bootstrap_receipts",
             "import_sources",
@@ -178,6 +179,23 @@ class R29ApplicationIdentityContractTest {
             + " VALUES(106,2,'POST','/teachers',1)");
     jdbc.update("INSERT INTO permission_apis VALUES(108,106),(108,105)");
     jdbc.update("INSERT INTO role_permissions VALUES(1,108),(2,108)");
+    // 显式安装测试操作目录；产品启动不会读取文件或重授角色。
+    try (java.io.InputStream input =
+        getClass().getResourceAsStream("/identity-test-operations.json")) {
+      for (JsonNode operation :
+          new com.fasterxml.jackson.databind.ObjectMapper().readTree(input).path("operations")) {
+        jdbc.update(
+            "INSERT INTO"
+                + " api_operations(system_id,operation_id,http_method,path_template,requires_permission,permission_roles)"
+                + " SELECT id,?,?,?,?,? FROM systems WHERE code=?",
+            operation.path("operationId").asText(),
+            operation.path("method").asText(),
+            operation.path("path").asText(),
+            operation.path("requiresPermission").asBoolean(),
+            operation.has("permissionRoles") ? operation.path("permissionRoles").toString() : "[]",
+            operation.path("system").asText());
+      }
+    }
   }
 
   /** 工号认证与教师准入独立于RBAC管理准入，两个令牌受众不能混用。 */
