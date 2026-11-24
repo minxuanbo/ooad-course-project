@@ -74,4 +74,4 @@ ER图应使用标准符号并只表达核心对象。User、Role、Permission及
 
 课程工程固定990cea2cc3686599ef5068945706a13e7e0afc5b；[准备脚本](../../scripts/prepare_course_source.py)导出独立副本并应用两份补丁，原目录保持不动。老师项目的文档职责、框架分层可参考，课程状态和对象范围不移入RBAC。
 
-CloneFactory使用用户提供的spring-fundamentals干净提交40583ff94764d2e758bcb13be17f5c05ea4d6352，真实版本0.0.2；本次监控参考不改变这一依赖基线。新版能映射record/final，但本项目领域不可变对象仍依约显式构造。来源安装与摘要见[依赖安装](../../deploy/README.md#本机依赖安装)。
+CloneFactory使用用户提供的spring-fundamentals干净提交40583ff94764d2e758bcb13be17f5c05ea4d6352，真实版本0.0.2；本次监控参考不改变这一依赖基线。新版record/final构造器映射用于直接同字段转换，业务组装与分层边界例外按AGENTS执行。来源安装与摘要见[依赖安装](../../deploy/README.md#本机依赖安装)。

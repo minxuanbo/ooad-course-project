@@ -5,7 +5,7 @@ import java.util.Map;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
 
-/** 同一工程的整改HTTP入口，产品默认启动的最终切换由T12完成。 */
+/** 产品HTTP入口，按配置互斥装配structured或DDD业务实现。 */
 public final class RbacApplication {
   private RbacApplication() {}
 

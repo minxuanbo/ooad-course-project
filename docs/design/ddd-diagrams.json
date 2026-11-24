@@ -590,12 +590,12 @@
           [
             1,
             1,
-            "canRemove(added, operator, ownIds)"
+            "canRemove(added, operator, ownIds, owners, ancestors, systems)"
           ],
           [
             1,
             1,
-            "canRemove(removed, operator, ownIds)"
+            "canRemove(removed, operator, ownIds, owners, ancestors, systems)"
           ],
           [
             1,
@@ -666,12 +666,12 @@
           [
             1,
             4,
-            "canAssign(added, level, custom, ids, systems)"
+            "canAssign(added, level, custom, ids, systems, owners, ancestors)"
           ],
           [
             1,
             4,
-            "canRemove(removed, level, custom, ids, systems)"
+            "canRemove(removed, level, custom, ids, systems, owners, ancestors)"
           ],
           [
             1,
@@ -2201,7 +2201,7 @@
           [
             1,
             2,
-            "direct = directPermissions(id, systems)"
+            "direct = directPermissions(id, roleIds, systems)"
           ],
           [
             1,

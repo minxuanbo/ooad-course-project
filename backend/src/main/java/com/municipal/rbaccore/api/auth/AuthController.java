@@ -14,7 +14,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-/** 认证和本人查询沿既有路径，只做格式校验及课程DTO映射。 */
+/** 认证和本人查询沿共享契约，只做格式校验及DTO与用例模型映射。 */
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor

@@ -6,7 +6,7 @@ import com.municipal.rbaccore.service.port.role.RoleType;
 import lombok.Getter;
 import lombok.Setter;
 
-/** 必要角色定义，不增加部门、继承或管理员标记。 */
+/** 角色定义与来源归属摘要，不增加角色继承或管理员标记。 */
 @Getter
 @Setter
 @CopyFrom(RoleResult.class)

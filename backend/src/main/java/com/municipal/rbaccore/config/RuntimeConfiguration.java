@@ -20,7 +20,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-/** T05实际HTTP上下文，仅扫描整改链路，不加载旧初始化、会话表及产品Controller。 */
+/** 产品HTTP上下文，扫描共享API及选定策略，不加载旧初始化或数据库会话模型。 */
 @Configuration(proxyBeanMethods = false)
 @EnableAutoConfiguration
 @EntityScan(basePackages = "com.municipal.rbaccore.infrastructure.persistence.entity")

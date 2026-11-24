@@ -6,13 +6,14 @@
 
 | 关注点 | 可追溯证据与边界 |
 | --- | --- |
+| 本轮原型登录及构造器映射，待发布 | [本轮核对](history/verification/login-prototype-constructor-mapping-20261124.md)：真实0.0.2五种不可变VO构造映射；双策略各331项、六项100%原门槛通过，54单元/5渲染通过，Apifox37操作/73模型差异0。正式部署结果另记，不沿用旧版浏览器成绩 |
 | 当前前端发布与首次登录 | [白屏与匿名记录核对](history/verification/login-render-and-anonymous-audit-20261124.md)：PR54已合main，10:11:53仅更新RBAC前端。54项单元、4项正式构建渲染及本机真实API联调通过；线上表单登录等9组、30次200、渲染异常0。其余七项服务Spec及任务相同，旧JWT继续有效，七监控目标UP；截图401按真实失效或缺失身份保留 |
 | 前轮性能发布与实测 | [授权装载优化](history/verification/authorization-loading-performance-20261124.md)：PR52已合main并同步两仓，当时仅两个RBAC镜像更新，其余六项服务定义相同；97项公网HTTP、三轮18次RBAC菜单读取及目录检查通过。资源页中位数2.15秒，其余0.69—1.18秒；该次前端镜像现已由PR54替代，后端镜像保留，原计时不冒充本次重测、压测或延迟保证 |
-| 当前RBAC源码覆盖率 | [本轮证据](history/verification/authorization-loading-performance-20261124.md)、[完整报告](reports/jacoco/20261124-performance-rbac/README.md)：两策略各330项回归无失败/错误/跳过，347份生产class一致，合并六项100%且原门槛通过；Vue54项及构建通过，Apifox1.6.0差异0，不以功能覆盖率代替性能实测 |
+| 当前RBAC源码覆盖率 | [本轮证据](history/verification/login-prototype-constructor-mapping-20261124.md)、[完整报告](reports/jacoco/final-rbac/README.md)：两策略各331项回归无失败/错误/跳过，347份生产class一致，合并六项100%且原门槛通过；不以测试覆盖率代替正式流量或性能实测 |
 | 18系统目录与部门角色发布 | [PR49/50发布](history/verification/access-extension-release-20261124.md)：三项服务更新和原库保留；当时97项HTTP、8组RBAC浏览器及来源IP防伪造通过，课程浏览器受客户端阻断。其328项覆盖率报告只代表当时源码 |
 | 前期成员查询与来源IP | [验证记录](history/verification/member-queries-audit-ip-20261123.md)：当时双策略各311项及六项100%，保留其独立验证边界，不替代后续业务扩展结果 |
 | 11月23日JWT发布 | [历史发布](history/verification/jwt-coverage-release-20261123.md)：13:05完成当时RBAC更新，其余七项服务定义不变；91次公网HTTP通过；浏览器导航超时，交互验收未取得结果 |
-| 11月23日源码覆盖率 | [历史记录](history/verification/rbac-jacoco-complete.md)、[当时报告](reports/jacoco/20261123-rbac/README.md)：两策略各304项无失败/错误/跳过；340份生产class一致，合并六项100%且原门槛通过；不代表后续源码 |
+| 11月23日源码覆盖率 | [历史记录](history/verification/rbac-jacoco-complete.md)、[当时报告](https://github.com/minxuanbo/ooad-course-project/blob/65748fdf00b733221358d8012cf439de2f99e833/docs/reports/jacoco/20261123-rbac/README.md)：两策略各304项无失败/错误/跳过；340份生产class一致，合并六项100%且原门槛通过；不代表后续源码 |
 | 已发布版本回归及覆盖率 | RBAC两策略各215项、课程499项均无失败/错误/跳过；当时合并RBAC行96.19%、分支82.94%，课程行90.60%、分支62.17%；仅代表发布记录对应版本，不以其他版本成绩替代 |
 | 首发历史 | [双DDD首发](history/verification/ddd-production-deployment.md)：首次导入、逐人身份、公网及重启结果；只代表该版本，不宣称高可用或压测通过 |
 | 前次集中发布 | [北京时间/监控发布](history/verification/release-20261123.md)：108次HTTP、两系统及UI来源、外部材料和当时测试成绩；独立于本次RBAC镜像更新 |
@@ -35,7 +36,7 @@
 | 查询与日志 | 先范围/筛选/计数再分页，最小脱敏、稳定快照total、游标绑定及每批重验；北京时间展示/筛选与UTC存储边界 |
 | 外部协议/课程 | 8项直连及经支撑，目录最小字段/范围，operationId配置、204；短码完整映射、业务审计独立、课程对象权限及来源缺口响应 |
 | 前端 | 真实Vue、身份切换、窄屏/键盘、读失败禁保存、草稿/取消/晚响应、失权及两个本机Origin |
-| 架构与映射 | 双策略独立决策、DDD不依赖JPA/Entity/structured、仓储仅领域类型、真实CloneFactory赋值、record/final显式构造、中文Javadoc及注解独行 |
+| 架构与映射 | 双策略独立决策、DDD不依赖JPA/Entity/structured、仓储仅领域类型、真实CloneFactory赋值、record/final构造器映射完整性与返回值、业务组装例外、中文Javadoc及注解独行 |
 | 文档与契约 | YAML/JSON一致，37操作/31路径/73模型/K17；全部操作及离线入口可追溯，顺序图只画差异，链接与源码锚点有效；Apifox仅在明确授权同步后回读 |
 | 部署与监控 | Stack配置可解析、Secrets不泄露、内部端口隔离；promtool校验真实配置/规则及CPU负载、重置、缺样本；线上健康与指标采集另行验证 |
 

@@ -42,7 +42,7 @@
 
 本次构建仅打包，显式跳过测试，不称为构建机重新执行304项回归。发布源码的生产目录和pom与[RBAC双策略100%实测](rbac-jacoco-complete.md)对应提交`91d1b56`无差异，继续引用当时两策略各304项、六项零遗漏的证据。上述91次公网检查是另一次发布验收，不是JaCoCo测试数量；正式进程没有附加JaCoCo agent。
 
-[归档报告](../../reports/jacoco/20261123-rbac/README.md)仍固定原实测结果和ZIP摘要，不因发布重写。课程行90.60%、分支62.17%的成绩属于[前次课程测试集](release-20261123.md#部署后jacoco)，本次未补齐课程100%。外部Word/PDF/PPT和教师问答本轮未改写。
+[归档报告](https://github.com/minxuanbo/ooad-course-project/blob/65748fdf00b733221358d8012cf439de2f99e833/docs/reports/jacoco/20261123-rbac/README.md)仍固定原实测结果和ZIP摘要，不因发布重写。课程行90.60%、分支62.17%的成绩属于[前次课程测试集](release-20261123.md#部署后jacoco)，本次未补齐课程100%。外部Word/PDF/PPT和教师问答本轮未改写。
 
 ## 剩余事项
 

@@ -32,7 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 当前RBAC资源的必要查询与维护，范围、树规则和完整K在服务事务内完成。 */
+/** 登记应用资源的查询与维护，范围、树规则和完整K在服务事务内完成。 */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)

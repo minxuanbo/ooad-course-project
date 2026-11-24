@@ -29,7 +29,7 @@ public final class RoleAssignmentPolicy {
         Set.of(ApplicationSystem.CODE_RBAC));
   }
 
-  /** 已接入系统仍受级别与完整权限子集约束，未知系统即使停用也拒绝。 */
+  /** 已登记系统仍受级别与完整计划权限子集约束，未知系统即使停用也拒绝。 */
   public static boolean canAssign(
       Role role,
       int actorLevel,
@@ -40,7 +40,7 @@ public final class RoleAssignmentPolicy {
         && canRemove(role, actorLevel, customPermitted, allowedPermissionIds, systems);
   }
 
-  /** 删除关联仍检查级别与有效权限子集；停用项可清理，自定义项只允许管理员调整。 */
+  /** 删除关联仍检查级别与有效权限子集；全局及应用角色要求管理员，部门角色使用专门范围重载。 */
   public static boolean canRemove(
       Role role,
       int actorLevel,

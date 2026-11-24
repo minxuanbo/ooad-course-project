@@ -24,7 +24,7 @@ PR44的日志系统下拉、密码提示、实际权限查询留痕和Apifox服�
 
 代码skill：.local/rbac-issues/skills-20261117/projectmgt-code-conventions/SKILL.md；审核skill：.local/rbac-issues/skills/code-review/SKILL.md。遵守TDD、中文Javadoc、注解独行、Service事务与锁后重鉴权；本RBAC保留本地口令，管理分页page/size，外部目录沿page/pageSize，全新库首次SQL，不交付升级脚本。
 
-真实CloneFactory0.0.2固定spring-fundamentals提交40583ff94764d2e758bcb13be17f5c05ea4d6352，普通依赖和处理器统一版本。新版支持构造器映射，但本项目不可变领域record/final仍显式构造；可变同名同类型字段优先真实处理器并核对生成赋值，不以空包或改名旧jar替代。
+真实CloneFactory0.0.2固定spring-fundamentals提交40583ff94764d2e758bcb13be17f5c05ea4d6352，普通依赖和处理器统一版本。同名同类型的直接映射优先真实处理器，包含record/final目标的构造器映射；不可变copy返回新对象，必须接收返回值并核对全部构造参数。仅全部参数均来自source时允许带目标类型的null种子，否则提供有效目标或显式组装。业务工厂、派生计算、多来源/关联/类型转换及会破坏分层依赖的映射仍显式处理，不为使用处理器引入跨层依赖或无意义包装；不以空包或改名旧jar替代。
 
 老师课程来源固定990cea2，2026-11-23重新获取远端后未发现更新。prepare_course_source.py导出独立副本，应用structured三补丁及已确认DDD/学期/安全日志补丁；不改原目录、pom、Flyway或Vue业务源码。课程前端全部按老师原样，菜单行为不另行改写；当前DDD已验证，若有实际问题再评估structured。5项缺Controller、个人制批改、学生建组归属及普通教师日志范围等限制见docs/course-integration.md，不擅自补写整套课程业务。
 

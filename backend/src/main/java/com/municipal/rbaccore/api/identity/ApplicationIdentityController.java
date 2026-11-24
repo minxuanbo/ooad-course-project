@@ -44,21 +44,16 @@ public class ApplicationIdentityController {
     LoginCommand command = CloneFactory.copy(new LoginCommand(), dto);
     command.setAccount(dto.getUsername());
     ApplicationLoginResult result = service.login(command, dto.getSystems().getFirst());
-    return new ApplicationLoginVO(result.accessToken(), result.tokenType(), result.expiresIn());
+    return CloneFactory.copy((ApplicationLoginVO) null, result);
   }
 
-  /** record为不可变协议对象，显式构造而不依赖处理器写入final字段。 */
+  /** 新版处理器通过规范构造器返回完整record，调用者必须接收返回值。 */
   @GetMapping("/me")
   public ApplicationIdentityVO me(
       @RequestHeader(value = "Authorization", required = false)
       String header) {
     ApplicationIdentityResult result = service.current(header);
-    return new ApplicationIdentityVO(
-        result.subject(),
-        result.roles(),
-        result.permissions(),
-        result.system(),
-        result.permissionApis());
+    return CloneFactory.copy((ApplicationIdentityVO) null, result);
   }
 
   /** 未登记或已失效短码返回拒绝，未知短码不会隐式变为通配权限。 */
@@ -81,7 +76,7 @@ public class ApplicationIdentityController {
       @Size(min = 1, max = 128)
       String userId) {
     ApplicationUserResult result = service.user(header, identityId(userId));
-    return new ApplicationUserVO(result.userId(), result.no(), result.name());
+    return CloneFactory.copy((ApplicationUserVO) null, result);
   }
 
   /** 仅撤销当前应用JWT，管理端令牌不能借此外部入口退出。 */
@@ -110,10 +105,7 @@ public class ApplicationIdentityController {
             header, parentId, query.getKeyword(), query.getPage(), query.getPageSize());
     return new ApplicationDirectoryPageVO<>(
         result.items().stream()
-            .map(
-                item ->
-                    new ApplicationDepartmentVO(
-                        item.id(), item.code(), item.name(), item.parentId(), item.hasChildren()))
+            .map(item -> CloneFactory.copy((ApplicationDepartmentVO) null, item))
             .toList(),
         result.total(),
         result.page(),
@@ -137,14 +129,7 @@ public class ApplicationIdentityController {
             header, departmentId, query.getKeyword(), query.getPage(), query.getPageSize());
     return new ApplicationDirectoryPageVO<>(
         result.items().stream()
-            .map(
-                item ->
-                    new ApplicationDepartmentUserVO(
-                        item.userId(),
-                        item.no(),
-                        item.name(),
-                        item.departmentId(),
-                        item.departmentName()))
+            .map(item -> CloneFactory.copy((ApplicationDepartmentUserVO) null, item))
             .toList(),
         result.total(),
         result.page(),

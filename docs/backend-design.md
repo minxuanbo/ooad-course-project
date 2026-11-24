@@ -115,7 +115,7 @@ Command/Query/Result与HTTP DTO/VO分离，Controller及预检/AOP注入service.
 | 认证与本人   | account/password或可信身份→身份及有效权限 | 双入口唯一、有效管理API准入、退出幂等     |
 | 组织人员查询 | 可选部门/q/状态/page/size→可见树/分页     | 范围先于筛选与计数，不返回范围外父节点    |
 | 人员管理     | userId及roleIds/停用/目标部门→最新结果    | 子集、本人/管理员限制、调动双范围、根锁/K |
-| 角色与选权   | 角色查询/空权限新建/部分更新/整体选权     | 共同根与实际API、编码唯一、显式权限       |
+| 角色与选权   | 角色查询/空权限新建/部分更新/整体选权     | 角色读取允许局部子树部门项；定义/选权写要求共同根与实际API、编码唯一       |
 | 资源与映射   | 目录读取/允许字段更新/完整apiIds          | 同系统、树规则、映射OR、根锁/K            |
 | 最小日志     | 筛选/UTC范围/cursor/limit→快照分页        | 日志API+共同根、每批重验、脱敏            |
 | 初始化       | 原件、秘密、来源、预检清单→来源/回执      | 新项目、只读预览、重复不重置              |
@@ -317,7 +317,7 @@ R03、R07、R11、R13、R14、R23 等共享契约在两个策略实例分别运�
 | 同一可信根锁与本地事务                     | 保证锁后重验、单人完整K及所有相关写失败回滚        |
 | 领域仓储与复杂查询Gateway分开              | 不向领域泄漏Command/Result/JPA或技术游标           |
 | 本地账号、工号/手机号同身份                | 保留本RBAC认证，技术端口可复用，业务准入各自判断   |
-| 可变映射用真实CloneFactory，不可变显式构造 | 保留明确领域构造与不变量；0.0.2的构造器能力不改变本项目约定 |
+| 同字段映射用真实CloneFactory，包含不可变构造器映射 | 接收新对象返回值；业务工厂与跨层依赖仍单独处理 |
 | 顺序图仅含差异                             | 共同门禁、锁、K与提交由正文约定，不绘制重复执行链  |
 
 上述为本项目设计取舍；后续业务范围变化须同步需求、设计、API及验证，不以参考项目课程业务代替本系统规则。
@@ -332,7 +332,7 @@ DTO→Command、Result→VO、同名同类型toResult优先CloneFactory.copy；P
 
 ### 14.1 领域及不可变对象映射
 
-映射分三段：HTTP DTO→公共Command、公共Result→VO沿现有真实CloneFactory；Entity↔可变领域对象的共同字段可用真实复制后执行受控reconstitute/factory及关系映射。0.0.2真实处理器已支持record及final目标通过构造器返回新对象；本项目仍按既定领域规范对不可变领域对象、record、final属性逐字段显式构造，不能忽略copy返回值或绕过领域不变量。应用Query→领域Criteria、DomainPage→应用PageResult、领域ID/枚举/关系集合转换显式处理。人员查询时 DddScope 校验所选部门，再由 OrganizationPolicy 在可见组织事实内计算子树。应用层显式构造 SearchCriteria.Users，携带领域 Scope、搜索条件、状态及分页。空的部门筛选沿操作者完整范围；未知/越界仍沿现有404/403语义。不可为了映射方便开放权限关系或稳定编码setter。
+HTTP DTO→公共Command、公共Result→VO的直接同字段转换优先使用真实CloneFactory0.0.2。五种统一身份record VO以@CopyFrom(Result)生成完整规范构造器映射，Controller接收copy的新对象返回值；只有全部参数来自source时可使用带类型的null目标种子。处理器不会原地修改final字段。领域工厂、Entity关联展开、枚举转换、派生计算、分页集合元素转换仍显式组装；不得为映射让domain依赖JPA/port或共享port依赖DDD，也不创建仅为绕过边界的镜像模型。人员查询时 DddScope 校验所选部门，再由 OrganizationPolicy 在可见组织事实内计算子树。应用层显式构造 SearchCriteria.Users，携带领域 Scope、搜索条件、状态及分页。空的部门筛选沿操作者完整范围；未知/越界仍沿现有404/403语义。不可为了映射方便开放权限关系或稳定编码setter。
 
 JpaDomainMapper 显式构造领域记录；DddResults 等装配公开字段，关系和派生值逐项设置。改注解后clean检查真实CloneFactory.java，测试必须断言工号、姓名、部门、职位、级别及授权ID往返，不只断言对象非null。新版Java注解独立换行适用于后续新增/修改源码及测试；映射测试覆盖现有结构化链与DDD链。
 

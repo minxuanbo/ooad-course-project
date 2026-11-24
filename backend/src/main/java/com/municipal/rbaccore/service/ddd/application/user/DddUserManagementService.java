@@ -232,7 +232,7 @@ public class DddUserManagementService implements UserManagementUseCase {
     }
   }
 
-  /** 自定义角色的授予者还必须直属可信共同根。 */
+  /** 全局自定义及应用预置的增删资格要求有效五级且直属可信根，部门角色另走所属范围规则。 */
   private boolean customPermitted(User actor, OrganizationFacts organization) {
     return actor.level() == Role.ADMIN_LEVEL
         && OrganizationPolicy.global(organization, actor.department().id());

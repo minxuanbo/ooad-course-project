@@ -53,7 +53,7 @@
 
 原始材料留在忽略目录`.local/jacoco-complete-20261123`：`full-ddd-6.log`、`full-structured-6.log`、`evidence-6/{ddd,structured}/snapshot.json`及exec、`evidence-6/combined/{html,jacoco.xml,summary.json,jacoco.exec}`、`final-maven-gate.log`、`review-route-constants-ddd.log`和`mapping-audit.log`。`analysis-6/missed.json`为空，独立分析所得六项计数与正式合并工具一致。
 
-用户随后明确要求将报告归档并推送两仓，完整可浏览HTML、XML和摘要按授权收录于[报告目录](../../reports/jacoco/20261123-rbac/README.md)。ZIP及每个文件的摘要见同目录manifest；仅将两处机器生成的会话名称改为策略标签，时间和覆盖率计数不变。凭据、数据库、原exec、class/JAR、Surefire环境XML及原始日志仍不提交。归档及导航修改不改变生产代码，沿用上述同字节码实测结果。
+用户随后明确要求将报告归档并推送两仓，完整可浏览HTML、XML和摘要按授权收录于[报告目录](https://github.com/minxuanbo/ooad-course-project/blob/65748fdf00b733221358d8012cf439de2f99e833/docs/reports/jacoco/20261123-rbac/README.md)。ZIP及每个文件的摘要见同目录manifest；仅将两处机器生成的会话名称改为策略标签，时间和覆盖率计数不变。凭据、数据库、原exec、class/JAR、Surefire环境XML及原始日志仍不提交。归档及导航修改不改变生产代码，沿用上述同字节码实测结果。
 
 ## Standards
 

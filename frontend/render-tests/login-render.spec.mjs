@@ -7,6 +7,28 @@ const activityPath = '/api/authorization-logs'
 const departmentPath = '/api/departments'
 const logoutPath = '/api/auth/logout'
 
+/** 原型入口保留真实登录与密码显隐，不向正式页面带入演示账号。 */
+test('R17 登录页复刻原型并移除演示区域，窄屏仍可操作', async ({ page }) => {
+  await page.goto('/login')
+  await expect(page.getByRole('heading', { name: '欢迎登录', exact: true })).toBeVisible()
+  await expect(page.locator('.login-story h1')).toContainText('管理有界，')
+  await expect(page.locator('.story-illustration')).toBeVisible()
+  await expect(page.getByText('试用演示账号')).toHaveCount(0)
+  await expect(page.getByText('交互原型', { exact: false })).toHaveCount(0)
+  const password = page.getByLabel('登录密码', { exact: true })
+  await password.fill('fixture-only-password')
+  await page.getByRole('button', { name: '显示密码', exact: true }).click()
+  await expect(password).toHaveAttribute('type', 'text')
+  await page.getByRole('button', { name: '隐藏密码', exact: true }).click()
+  await expect(password).toHaveAttribute('type', 'password')
+  await page.screenshot({ path: '../.local/login-prototype-20261124/login-desktop.png', fullPage: true })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect(page.getByLabel('工号或手机号', { exact: true })).toBeVisible()
+  await expect(password).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  await page.screenshot({ path: '../.local/login-prototype-20261124/login-mobile.png', fullPage: true })
+})
+
 /** 只替换HTTP响应；登录、Vue挂载、路由切换和Teleport均执行正式页面代码。 */
 async function fixture(page, { holdIdentity = false, failOverview = false } = {}) {
   const calls = []
@@ -69,9 +91,9 @@ test.afterEach(async ({ page }, info) => {
 
 /** 必须从实际登录表单进入，不能预置token后直达工作区绕过挂载过程。 */
 async function submitLogin(page) {
-  await page.getByLabel('账号', { exact: true }).fill('fixture-admin')
-  await page.getByLabel('密码', { exact: true }).fill('fixture-only-password')
-  await page.getByRole('button', { name: '登录 →', exact: true }).click()
+  await page.getByLabel('工号或手机号', { exact: true }).fill('fixture-admin')
+  await page.getByLabel('登录密码', { exact: true }).fill('fixture-only-password')
+  await page.getByRole('button', { name: '登录', exact: true }).click()
 }
 
 /** 首次登录无需刷新就显示统计、右上操作及下一菜单，退出重登亦保持完整页面。 */
@@ -87,7 +109,7 @@ test('R17/R25 登录与退出重登直接显示首页数据及下一菜单，无
     await expect(page.getByRole('heading', { name: '部门管理', level: 1, exact: true })).toBeVisible()
     await expect(page.locator('#page-actions .page-refresh')).toBeVisible()
     await page.getByRole('button', { name: '退出', exact: true }).click()
-    await expect(page.getByRole('button', { name: '登录 →', exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: '登录', exact: true })).toBeVisible()
   }
   expect(state.calls.filter((call) => call.path === overviewPath)).toHaveLength(2)
   expect(state.errors).toEqual([])
@@ -98,7 +120,7 @@ test('R17/R25 身份读取延迟时等待验证，返回后显示完整首页', 
   const state = await fixture(page, { holdIdentity: true })
   await page.goto('/login')
   await submitLogin(page)
-  await expect(page.getByRole('button', { name: '正在验证身份…', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: '正在验证身份…', exact: true })).toBeDisabled()
   expect(state.calls.filter((call) => call.path === overviewPath)).toHaveLength(0)
   state.releaseIdentity()
   await expect(page.locator('.overview-welcome')).toBeVisible()
@@ -122,7 +144,7 @@ test('R17 失效会话自动回登录且不重复请求，重新登录后直接�
   const state = await fixture(page)
   await page.addInitScript(() => sessionStorage.setItem('rbacToken', 'expired-render-fixture'))
   await page.goto('/')
-  await expect(page.getByRole('button', { name: '登录 →', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: '登录', exact: true })).toBeVisible()
   await expect(page.locator('#notice')).toContainText('测试身份失效')
   expect(state.calls.map((call) => call.path)).toEqual([identityPath])
   expect(await page.evaluate(() => sessionStorage.getItem('rbacToken'))).toBeNull()

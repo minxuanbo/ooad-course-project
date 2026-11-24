@@ -50,7 +50,7 @@ HTTP表中的401/403包括预期拒绝，并会正常留下鉴权日志；不删
 
 ## 覆盖率与交付
 
-[双策略覆盖率补齐](access-extension-coverage-20261124.md)：两策略各328项失败/错误/跳过0，347份生产class一致；指令、分支、行、复杂度、方法、类全部100%，原pom六项零遗漏门槛通过。[脱敏完整报告](../../reports/jacoco/20261124-rbac/README.md)已随main同步两仓。当前发布的后端源码/pom与该实测源码一致，后续打包白名单及记录提交没有再次改变生产Java。
+[双策略覆盖率补齐](access-extension-coverage-20261124.md)：两策略各328项失败/错误/跳过0，347份生产class一致；指令、分支、行、复杂度、方法、类全部100%，原pom六项零遗漏门槛通过。[脱敏完整报告](https://github.com/minxuanbo/ooad-course-project/blob/65748fdf00b733221358d8012cf439de2f99e833/docs/reports/jacoco/20261124-rbac/README.md)已随main同步两仓。当前发布的后端源码/pom与该实测源码一致，后续打包白名单及记录提交没有再次改变生产Java。
 
 原始结果位于忽略目录`.local/r49-release-20261124`及SSH帮助器的r49/r50记录，含最终HTTP、浏览器、Apifox回读、镜像摘要、来源IP布尔结论及数据保留统计。数据库备份仅在服务器，不提交凭据、令牌、员工资料、运行日志或数据库。老师原目录、原Excel及旧卷保留；外部详设本轮未改，T14/T15仍不自动关闭。
 
