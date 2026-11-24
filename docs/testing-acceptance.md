@@ -6,6 +6,7 @@
 
 | 关注点 | 可追溯证据与边界 |
 | --- | --- |
+| 首次登录渲染修复，待发布 | [白屏与匿名记录核对](history/verification/login-render-and-anonymous-audit-20261124.md)：延迟Teleport目标解析；54项单元、4项正式构建渲染及本机前端连接真实API通过。后端/契约未改，尚未发布；截图401按真实失效或缺失身份保留，不归因于用户主动点击 |
 | 当前正式发布与性能 | [授权装载优化](history/verification/authorization-loading-performance-20261124.md)：PR52已合main并同步两仓，仅两个RBAC镜像更新，其余六项服务定义相同；本轮97项公网HTTP、三轮18次RBAC菜单读取及目录检查通过，七监控目标UP。资源页中位数2.15秒，其余0.69—1.18秒；单轮旧版基线和当前三轮中位数不冒充压测或延迟保证 |
 | 当前RBAC源码覆盖率 | [本轮证据](history/verification/authorization-loading-performance-20261124.md)、[完整报告](reports/jacoco/20261124-performance-rbac/README.md)：两策略各330项回归无失败/错误/跳过，347份生产class一致，合并六项100%且原门槛通过；Vue54项及构建通过，Apifox1.6.0差异0，不以功能覆盖率代替性能实测 |
 | 18系统目录与部门角色发布 | [PR49/50发布](history/verification/access-extension-release-20261124.md)：三项服务更新和原库保留；当时97项HTTP、8组RBAC浏览器及来源IP防伪造通过，课程浏览器受客户端阻断。其328项覆盖率报告只代表当时源码 |
