@@ -2,15 +2,15 @@
 
 ## 当前状态与工作边界
 
-本轮应用管理与课堂自查在codex/teacher-check-application-management，保留PR58按钮置灰。新增应用分页/新增/资料接入维护/逻辑移除四操作，独立有效LOGIN准入，七菜单显式映射读取API；用户要求不合main、不部署，正式仍为下文PR56版本。两策略各344项隔离真实MySQL无失败/错误/跳过、360份生产class一致，合并六项100%及原门槛通过，54单元/17构建渲染、63个真实CloneFactory映射核对通过。Apifox1.7.0的41操作/33路径/77模型回读差异0，桌面材料同步。证据见[课堂自查](docs/history/verification/teacher-check-applications-20261124.md)，新任务不得把旧发布算成本轮公网验证。
+本轮应用管理与课堂自查在codex/teacher-check-application-management，保留PR58按钮置灰。新增应用分页/新增/资料接入维护/逻辑移除四操作，独立有效LOGIN准入，七菜单显式映射读取API；用户随后明确授权部署，已从25fdc21发布两个RBAC镜像；PR59仍为草稿，未合main。正式115项HTTP、11组表单/菜单、34次浏览器API及7监控目标通过。旧库追加目录/映射并逐行保留原数据，身份接入服务因依赖健康检查自动重启一次，其余五项未修改服务的任务ID不变；实测及备份见[应用管理发布](docs/history/verification/application-management-release-20261124.md)。两策略各344项隔离真实MySQL无失败/错误/跳过、360份生产class一致，合并六项100%及原门槛通过，54单元/17构建渲染、63个真实CloneFactory映射核对通过。Apifox1.7.0的41操作/33路径/77模型回读差异0，桌面材料同步。证据见[课堂自查](docs/history/verification/teacher-check-applications-20261124.md)，新任务不得把旧发布算成本轮公网验证。
 
-structured和DDD均已实现；服务器两系统使用DDD。2026-11-24按用户授权合入PR56，13:38:33完成RBAC后端新版构造映射发布，13:39:53完成原型登录页发布；只有两个RBAC镜像改变，其他六项服务Spec和任务均未变。发布前JWT已失效，需重新登录；当前镜像与正式验证见[本次发布](docs/history/verification/login-prototype-constructor-mapping-20261124.md)。现有18业务目录、部门角色、原型界面及日志来源IP保留，原库见[目录发布](docs/history/verification/access-extension-release-20261124.md)。以后不因源码提交、合入或文档整理自动更新线上Stack或重启正式应用。
+structured和DDD均已实现；服务器两系统使用DDD。2026-11-24按用户授权合入PR56，13:38:33完成RBAC后端新版构造映射发布，13:39:53完成原型登录页发布；只有两个RBAC镜像改变，其他六项服务Spec和任务均未变。发布前JWT已失效，需重新登录；当时镜像与正式验证见[历史发布](docs/history/verification/login-prototype-constructor-mapping-20261124.md)。现有18业务目录、部门角色、原型界面及日志来源IP保留，原库见[目录发布](docs/history/verification/access-extension-release-20261124.md)。以后不因源码提交、合入或文档整理自动更新线上Stack或重启正式应用。
 
-PR56发布前RBAC双策略各331项隔离真实MySQL回归，失败/错误/跳过0，347份生产class一致，原六项100%合并覆盖率门槛通过；54项前端单元、5项构建渲染及20项架构/映射检查通过。本次正式97项业务HTTP、7项退出清理定点复核及9组表单/菜单验证通过，30次浏览器API均200、渲染异常0；七个监控目标UP。前轮菜单耗时仅保留于[性能证据](docs/history/verification/authorization-loading-performance-20261124.md)，本次未重测性能。逐请求读库、所有门禁与锁后重鉴权不变；课程原镜像保留，本次未追加课程浏览器验证。测试覆盖率不等同于正式流量覆盖率或性能结论；源码相同的后续记录提交不再次部署。
+PR56发布前RBAC双策略各331项隔离真实MySQL回归，失败/错误/跳过0，347份生产class一致，原六项100%合并覆盖率门槛通过；54项前端单元、5项构建渲染及20项架构/映射检查通过。该次正式97项业务HTTP、7项退出清理定点复核及9组表单/菜单验证通过，30次浏览器API均200、渲染异常0；七个监控目标UP。前轮菜单耗时仅保留于[性能证据](docs/history/verification/authorization-loading-performance-20261124.md)，本次未重测性能。逐请求读库、所有门禁与锁后重鉴权不变；课程原镜像保留，本次未追加课程浏览器验证。测试覆盖率不等同于正式流量覆盖率或性能结论；源码相同的后续记录提交不再次部署。
 
-用户随后确认RBAC页面内无权操作统一保留按钮并置灰，左侧菜单准入、后端权限和人员保护不变；老师课程前端仍原样。此项在codex/disabled-permission-actions独立修改，记录见[按钮置灰验证](docs/history/verification/disabled-permission-actions-20261124.md)。用户明确暂不部署，留待晚上统一发布；本次不合入main或触碰正式服务，旧发布证据不算新版本验证。
+用户随后确认RBAC页面内无权操作统一保留按钮并置灰，左侧菜单准入、后端权限和人员保护不变；老师课程前端仍原样。此项在codex/disabled-permission-actions独立修改，记录见[按钮置灰验证](docs/history/verification/disabled-permission-actions-20261124.md)。当时用户要求暂不部署；现已随PR59相同源码在上述晚上发布中上线。PR58本身未合入main，旧发布证据不算新版本验证。
 
-PR44的日志系统下拉、密码提示、实际权限查询留痕和Apifox服务器环境已完成，目标9042431；本轮已另获合入、双仓同步和重新部署授权。用户已要求按现行需求和设计职责整理全部docs，允许删除无当前价值的历史文件，保留有用来源及证据。外部详设及教师问答仅在用户指定桌面目录同步，原件已备份；原Excel、老师原目录、旧库/卷及原始日志仍保留。T14/T15不自动关闭；Apifox写入需明确授权，不由文档修改触发。新任务按[CONTRIBUTING](CONTRIBUTING.md)从main建立codex/分支、审核后推送草稿PR，单次合入和发布授权不延续至新任务。
+PR44的日志系统下拉、密码提示、实际权限查询留痕和Apifox服务器环境已完成，目标9042431；该历史任务已另获合入、双仓同步和重新部署授权。用户已要求按现行需求和设计职责整理全部docs，允许删除无当前价值的历史文件，保留有用来源及证据。外部详设及教师问答仅在用户指定桌面目录同步，原件已备份；原Excel、老师原目录、旧库/卷及原始日志仍保留。T14/T15不自动关闭；Apifox写入需明确授权，不由文档修改触发。新任务按[CONTRIBUTING](CONTRIBUTING.md)从main建立codex/分支、审核后推送草稿PR，单次合入和发布授权不延续至新任务。
 
 用户2026-11-24已授权实施18业务系统及部门角色并同步Apifox9042431，随后追加授权PR49合入main、部署及恢复JaCoCo六项100%。本轮沿现有任务分支完成；18业务系统按原表矩阵独立首次配置，另加RBAC和课程共20项。发布保留现有账号、口令、授权及历史日志，原库另存，实际结果见验收入口；此授权不延续为未来任务自动发布许可。
 

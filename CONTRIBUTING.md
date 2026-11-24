@@ -4,9 +4,9 @@
 
 ## 1. 当前边界
 
-本轮应用管理与课堂自查处于独立codex分支，保留按钮置灰改动；[本轮344项/六项100%及契约核对](docs/history/verification/teacher-check-applications-20261124.md)为源码验证，用户未授权合main或部署，正式环境仍如下文PR56。
+本轮应用管理与课堂自查处于独立codex分支，保留按钮置灰改动；[本轮344项/六项100%及契约核对](docs/history/verification/teacher-check-applications-20261124.md)为源码验证；用户随后明确授权部署，已按25fdc21更新两个RBAC镜像，见[正式发布](docs/history/verification/application-management-release-20261124.md)。正式115项HTTP、11组浏览器及7监控目标通过；接入服务因依赖健康检查自动重启一次，其余五项未修改服务任务不变。PR59仍为草稿，未合main；不把本轮部署授权延伸为合入或未来自动发布许可。
 
-两个系统DDD已发布，当前RBAC原型登录与新版构造器映射见[本次证据](docs/history/verification/login-prototype-constructor-mapping-20261124.md)：PR56仅更新两个RBAC镜像，其余六项服务Spec和任务不变；发布前JWT失效，需重新登录。双策略各331项及六项100%、正式97项业务HTTP和9组浏览器验证通过；前轮加载计时仍只对应[性能验证](docs/history/verification/authorization-loading-performance-20261124.md)。18业务目录和部门角色的原库保留见[目录发布](docs/history/verification/access-extension-release-20261124.md)。源码合入不代表再次部署，未获新发布指示时不更新Stack或重启正式应用。课程前端保持老师原始源码；外部设计材料仅按明确授权同步，原件备份保留。老师原目录、原Excel、原库/卷及原始日志保留。T14/T15不自动关闭；Apifox仅在明确授权范围内写入，目标为本项目9042431，写后回读。
+两个系统DDD已发布，此前RBAC原型登录与新版构造器映射见[历史证据](docs/history/verification/login-prototype-constructor-mapping-20261124.md)：PR56仅更新两个RBAC镜像，其余六项服务Spec和任务不变；发布前JWT失效，需重新登录。双策略各331项及六项100%、正式97项业务HTTP和9组浏览器验证通过；前轮加载计时仍只对应[性能验证](docs/history/verification/authorization-loading-performance-20261124.md)。18业务目录和部门角色的原库保留见[目录发布](docs/history/verification/access-extension-release-20261124.md)。源码合入不代表再次部署，未获新发布指示时不更新Stack或重启正式应用。课程前端保持老师原始源码；外部设计材料仅按明确授权同步，原件备份保留。老师原目录、原Excel、原库/卷及原始日志保留。T14/T15不自动关闭；Apifox仅在明确授权范围内写入，目标为本项目9042431，写后回读。
 
 11月23日的JWT修复作为[历史发布](docs/history/verification/jwt-coverage-release-20261123.md)保留。后续文档提交不重复构建或发布同一业务源码，不延伸单次授权为未来变更的自动发布许可。
 

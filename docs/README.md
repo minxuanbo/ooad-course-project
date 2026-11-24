@@ -17,4 +17,6 @@
 
 [18系统目录与部门角色设计](requirements/access-extension-plan.md)为现行设计，完整18系统首次配置及部门角色授撤已发布；具体版本、数据保留和通过范围见验收入口。
 
-本轮入口：[课堂检查与待发布应用管理](history/verification/teacher-check-applications-20261124.md)、[自定义角色操作方案](role-verification-guide.md)。
+本轮发布：[应用管理与按钮置灰](history/verification/application-management-release-20261124.md)。
+
+本轮源码入口：[课堂检查与应用管理源码](history/verification/teacher-check-applications-20261124.md)、[自定义角色操作方案](role-verification-guide.md)。

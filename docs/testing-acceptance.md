@@ -6,9 +6,10 @@
 
 | 关注点 | 可追溯证据与边界 |
 | --- | --- |
-| 本轮课堂自查及应用管理，未部署 | [源码、契约与材料验证](history/verification/teacher-check-applications-20261124.md)：两策略各344项、360份class一致、合并六项100%及原门槛通过；54单元、17构建渲染；Apifox41操作/77模型差异0。新增应用维护和独立LOGIN待发布，正式仍为PR56 |
-| 按钮统一置灰，未部署 | [本轮验证](history/verification/disabled-permission-actions-20261124.md)：RBAC获准页面内无权操作保留并禁用，只读/锁定及保护目标不放宽；左侧菜单与课程前端不变。仅前端和文档修改，54项单元、14项构建渲染通过；可控HTTP夹具不算正式后端验收。用户要求留待晚上统一发布，线上仍为下列PR56版本 |
-| 当前原型登录及构造器映射发布 | [本轮核对与发布](history/verification/login-prototype-constructor-mapping-20261124.md)：PR56已合main并同步双仓，13:39:53完成两个RBAC镜像更新，其余六项服务Spec/任务不变。真实0.0.2五种不可变VO构造映射；双策略各331项、六项100%原门槛通过，54单元/5渲染通过，Apifox37操作/73模型差异0；正式97项业务HTTP、7项退出清理复核和9组浏览器通过，30次API均200、渲染异常0，七监控目标UP。发布前JWT已失效 |
+| 当前应用管理与按钮置灰发布 | [本轮正式证据](history/verification/application-management-release-20261124.md)：从25fdc21发布两个RBAC镜像，备份及事务追加保留旧库；115项公网HTTP、11组表单/菜单、34次浏览器API均200及7监控目标通过。六项其他服务Spec不变，接入服务因依赖健康检查自动重启，其余五项任务不变；旧JWT失效。PR59仍为草稿，未合main |
+| 本轮课堂自查及应用管理源码 | [源码、契约与材料验证](history/verification/teacher-check-applications-20261124.md)：两策略各344项、360份class一致、合并六项100%及原门槛通过；54单元、17构建渲染；Apifox41操作/77模型差异0。相同业务源码已在上列本轮正式发布验证 |
+| 按钮统一置灰源码 | [本轮验证](history/verification/disabled-permission-actions-20261124.md)：RBAC获准页面内无权操作保留并禁用，只读/锁定及保护目标不放宽；左侧菜单与课程前端不变。仅前端和文档修改，54项单元、14项构建渲染通过；可控HTTP夹具不算正式后端验收。此前按用户要求待发布；现已与应用管理一起上线，正式验证见本轮发布 |
+| 前轮原型登录及构造器映射发布 | [本轮核对与发布](history/verification/login-prototype-constructor-mapping-20261124.md)：PR56已合main并同步双仓，13:39:53完成两个RBAC镜像更新，其余六项服务Spec/任务不变。真实0.0.2五种不可变VO构造映射；双策略各331项、六项100%原门槛通过，54单元/5渲染通过，Apifox37操作/73模型差异0；正式97项业务HTTP、7项退出清理复核和9组浏览器通过，30次API均200、渲染异常0，七监控目标UP。发布前JWT已失效 |
 | 前轮首次登录修复与匿名记录 | [白屏与匿名记录核对](history/verification/login-render-and-anonymous-audit-20261124.md)：PR54当时仅更新RBAC前端；54项单元、4项构建渲染及线上9组/30次200/渲染异常0。该次旧JWT继续有效、其余七服务不变；镜像现已替代，截图401来源分析仍保留 |
 | 前轮性能发布与实测 | [授权装载优化](history/verification/authorization-loading-performance-20261124.md)：PR52当时仅两个RBAC镜像更新，其余六项服务定义相同；97项公网HTTP、三轮18次RBAC菜单读取及目录检查通过。资源页中位数2.15秒，其余0.69—1.18秒；两个镜像现已由PR56替代，原计时不冒充本次重测、压测或延迟保证 |
 | 前轮PR56源码覆盖率 | [当时证据](history/verification/login-prototype-constructor-mapping-20261124.md)、[当时报告](https://github.com/minxuanbo/ooad-course-project/blob/3b0ec0a6db4aca591918a8c3b6b4185f537ebc23/docs/reports/jacoco/final-rbac/README.md)：两策略各331项回归无失败/错误/跳过，347份生产class一致，合并六项100%且原门槛通过；不以测试覆盖率代替正式流量或性能实测 |
