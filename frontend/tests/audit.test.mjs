@@ -140,7 +140,7 @@ test('T12 permitted department login reaches the shell without entering logs', a
   assert.deepEqual(routes, ['/'])
 })
 
-test('R17 实际请求403后刷新本人能力，隐藏已被撤销的菜单与按钮', async () => {
+test('R17 实际请求403后刷新本人能力，撤销菜单入口与按钮可用资格', async () => {
   const calls = []
   const run = createApiClient(async (path) => {
     calls.push(path)

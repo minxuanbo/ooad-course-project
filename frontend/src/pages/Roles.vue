@@ -138,9 +138,9 @@ onUnmounted(() => generation.cancel())
 <template>
   <PageActions :busy="busy || saving" @refresh="load(page)"
     ><button
-      v-if="canRoute('POST', '/roles', true)"
       class="primary role-create"
-      :disabled="busy || saving"
+      :disabled="busy || saving || !canRoute('POST', '/roles', true)"
+      :title="!canRoute('POST', '/roles', true) ? '没有新建角色的权限' : ''"
       @click="edit()"
     >
       <AppIcon name="plus" />新建角色
@@ -198,27 +198,35 @@ onUnmounted(() => generation.cancel())
               </span>
             </td>
             <td>
-              <button v-if="canRoute('GET', '/users')" class="text-button" @click="members = role">
+              <button
+                class="text-button"
+                :disabled="saving || !canRoute('GET', '/users')"
+                :title="!canRoute('GET', '/users') ? '没有查看角色成员的权限' : ''"
+                @click="members = role"
+              >
                 查看成员
               </button>
               <button
-                v-if="canRoute('GET', '/roles/{id}/permissions')"
                 class="text-button"
+                :disabled="saving || !canRoute('GET', '/roles/{id}/permissions')"
+                :title="!canRoute('GET', '/roles/{id}/permissions') ? '没有读取角色权限的权限' : ''"
                 @click="assigning = role"
               >
                 {{ canDefine(role, 'PUT', '/roles/{id}/permissions') ? '配置权限' : '查看权限' }}
               </button>
               <button
-                v-if="canDefine(role, 'PATCH', '/roles/{id}')"
                 class="text-button"
+                :disabled="saving || !canDefine(role, 'PATCH', '/roles/{id}')"
+                :title="!canDefine(role, 'PATCH', '/roles/{id}') ? '没有维护此角色定义的权限' : ''"
                 @click="edit(role)"
               >
                 编辑
               </button>
               <button
-                v-if="canDefine(role, 'PATCH', '/roles/{id}')"
                 class="text-button"
                 :class="{ danger: role.enabled }"
+                :disabled="saving || !canDefine(role, 'PATCH', '/roles/{id}')"
+                :title="!canDefine(role, 'PATCH', '/roles/{id}') ? '没有维护此角色状态的权限' : ''"
                 @click="openToggle(role)"
               >
                 {{ role.enabled ? '停用' : '启用' }}

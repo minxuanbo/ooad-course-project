@@ -133,7 +133,7 @@ async function loadCandidates(next = 0) {
   }
 }
 function toggle(id, checked) {
-  if (locked.value.has(id)) return
+  if (props.readonly || accessDenied.value || saving.value || locked.value.has(id)) return
   confirmEmpty.value = false
   confirmSave.value = false
   const value = new Set(selected.value)
@@ -185,8 +185,8 @@ onUnmounted(() => {
             {{ labels.get(id) || `ID ${id}（不在当前候选）` }}
             <small v-if="locked.has(id)">（锁定，保留现有授权）</small>
             <button
-              v-if="!readonly && !locked.has(id)"
-              :disabled="saving"
+              :disabled="saving || readonly || accessDenied || locked.has(id)"
+              :title="locked.has(id) ? '锁定项必须保留现有授权' : readonly ? '当前仅可查看，不能移除' : ''"
               :aria-label="'移除ID ' + id"
               @click="toggle(id, false)"
             >
@@ -195,11 +195,13 @@ onUnmounted(() => {
           </span>
         </div>
       </div>
-      <template v-if="!readonly">
+      <p v-if="readonly" class="muted">当前仅可查看已保存集合，候选查询、移除和保存均不可用。</p>
+      <div class="candidate-workspace">
         <form class="toolbar chooser-filters" @submit.prevent="loadCandidates(0)">
           <label v-if="kind !== 'roles'">
             所属系统
-            <select v-model="systemId" :disabled="saving || loading" @change="loadCandidates(0)">
+            <select v-model="systemId" :disabled="readonly || accessDenied || saving || loading" @change="loadCandidates(0)">
+              <option v-if="readonly" value="">只读查看</option>
               <option v-for="system in systems" :key="system.id" :value="String(system.id)">
                 {{ system.name }}{{ system.connectionStatus === 'PENDING' ? '（待接入）' : '' }}
               </option>
@@ -207,16 +209,16 @@ onUnmounted(() => {
           </label>
           <label>
             搜索候选
-            <input v-model="q" maxlength="100" placeholder="名称或编码" />
+            <input v-model="q" :disabled="readonly || accessDenied || saving" maxlength="100" placeholder="名称或编码" />
           </label>
-          <button class="secondary" :disabled="saving || loading || candidateBusy">查询</button>
+          <button class="secondary" :disabled="readonly || accessDenied || saving || loading || candidateBusy">查询</button>
         </form>
         <p v-if="candidateError" class="error" role="alert">
           {{ candidateError }}
-          <button class="secondary" @click="loadCandidates(page)">重试候选</button>
+          <button class="secondary" :disabled="readonly || accessDenied || saving || candidateBusy" @click="loadCandidates(page)">重试候选</button>
         </p>
         <p v-if="candidateBusy" role="status">正在读取候选…</p>
-        <div v-else class="candidate-list">
+        <div v-else-if="!readonly" class="candidate-list">
           <label
             v-for="item in visible"
             :key="item.id"
@@ -225,7 +227,7 @@ onUnmounted(() => {
             <input
               type="checkbox"
               :checked="selected.has(item.id)"
-              :disabled="saving || locked.has(item.id) || (!item.enabled && !selected.has(item.id))"
+              :disabled="readonly || accessDenied || saving || locked.has(item.id) || (!item.enabled && !selected.has(item.id))"
               @change="toggle(item.id, $event.target.checked)"
             />
             <span>
@@ -236,15 +238,15 @@ onUnmounted(() => {
           <p v-if="!visible.length && !candidateError" class="empty">没有符合条件的候选</p>
         </div>
         <Pagination
-          v-if="kind !== 'permissions'"
+          v-if="!readonly && kind !== 'permissions'"
           :page="page"
           :size="30"
           :total="total"
-          :busy="candidateBusy || saving"
+          :busy="readonly || accessDenied || candidateBusy || saving"
           @change="loadCandidates"
         />
         <p class="muted">跨页已选项会完整保留；角色授予还受级别、人员范围和有效权限子集限制。</p>
-      </template>
+      </div>
     </template>
     <p v-if="accessDenied" class="error" role="alert">
       权限或人员范围已变化，已禁用本次保存。请关闭弹窗并刷新列表后重新进入；草稿未提交。
@@ -265,9 +267,9 @@ onUnmounted(() => {
         {{ readonly ? '关闭' : '取消' }}
       </button>
       <button
-        v-if="!readonly"
         class="primary"
-        :disabled="!ready || loading || saving || accessDenied"
+        :disabled="readonly || !ready || loading || saving || accessDenied"
+        :title="readonly ? '当前仅可查看，没有保存权限' : ''"
         @click="save"
       >
         {{

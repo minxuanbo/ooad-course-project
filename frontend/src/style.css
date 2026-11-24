@@ -28,9 +28,14 @@ button {
   border-radius: 7px;
   padding: 10px 16px;
 }
-button:disabled {
-  opacity: 0.5;
+button:disabled,
+.selection-chip button:disabled {
+  color: #8993a1;
+  background: #f0f2f5;
+  border-color: #e0e4e9;
+  opacity: 1;
   cursor: not-allowed;
+  box-shadow: none;
 }
 button:focus-visible,
 input:focus-visible {
@@ -75,7 +80,7 @@ code,
   background: #3865e8;
   color: white;
 }
-.primary:hover {
+.primary:hover:not(:disabled) {
   background: #2853cf;
 }
 .secondary {
@@ -83,7 +88,7 @@ code,
   color: #53617a;
   border: 1px solid #dfe5ef;
 }
-.secondary:hover {
+.secondary:hover:not(:disabled) {
   background: #f1f5fc;
 }
 .text-button {
