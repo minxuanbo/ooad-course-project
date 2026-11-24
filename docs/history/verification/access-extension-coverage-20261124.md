@@ -20,6 +20,6 @@
 
 ## 报告与复现
 
-[完整报告归档](../../reports/jacoco/20261124-rbac/README.md)包含脱敏HTML、XML、计数及逐文件摘要，未包含凭据、Surefire环境XML、exec、class或数据库。使用[现行复现命令](../../../backend/README.md#7-双策略jacoco复现)，最终完整测试日志及快照位于忽略目录`.local/member-queries-20261123`的release49-final-ddd-20261124、release49-final-structured-20261124；合并及原门槛记录位于`.local/r49-release-20261124`。
+[完整报告归档](https://github.com/minxuanbo/ooad-course-project/blob/65748fdf00b733221358d8012cf439de2f99e833/docs/reports/jacoco/20261124-rbac/README.md)包含脱敏HTML、XML、计数及逐文件摘要，未包含凭据、Surefire环境XML、exec、class或数据库。使用[现行复现命令](../../../backend/README.md#7-双策略jacoco复现)，最终完整测试日志及快照位于忽略目录`.local/member-queries-20261123`的release49-final-ddd-20261124、release49-final-structured-20261124；合并及原门槛记录位于`.local/r49-release-20261124`。
 
 100%只表示测试命中了JaCoCo可测代码计数，不证明没有缺陷、穷尽业务组合、通过性能压测或生产流量全覆盖。服务器发布和数据兼容必须单独核验。

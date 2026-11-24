@@ -12,7 +12,7 @@
 | 模型与实现 | [领域模型](docs/domain-model.md)、[数据库](docs/database-design.md)、[后端](docs/backend-design.md)、[前端](docs/frontend-design.md) |
 | HTTP 与页面 | [OpenAPI](api/README.md)、[业务契约](docs/api-contract.md)、[页面接口对照](docs/api-map.md) |
 | 数据与双系统接入 | [初始化](docs/initialization.md)、[课程接入](docs/course-integration.md) |
-| 运行与验证 | [本地复现](docs/reproduction.md)、[服务器部署](deploy/README.md)、[测试与验收](docs/testing-acceptance.md)、[JaCoCo报告](docs/reports/jacoco/20261124-performance-rbac/README.md) |
+| 运行与验证 | [本地复现](docs/reproduction.md)、[服务器部署](deploy/README.md)、[测试与验收](docs/testing-acceptance.md)、[JaCoCo报告](docs/reports/jacoco/final-rbac/README.md) |
 | 协作 | [贡献约定](CONTRIBUTING.md) |
 
 ## 运行与数据
