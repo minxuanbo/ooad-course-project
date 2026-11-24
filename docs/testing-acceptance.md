@@ -4,7 +4,9 @@
 
 ## 1. 当前状态与证据
 
-当前源码新增R35应用接入向导及数据库操作元数据，并将初始受管范围调整为RBAC和课程。两策略各365项、418份class一致、合并六项100%及原门槛通过；前端54单元/22构建渲染、Python46项通过，Apifox1.8.0的45/37/94语义差异0，见[本轮源码证据](history/verification/implementation-evidence.md#application-onboarding-wizard-20261124)。本轮正式104项HTTP和12组浏览器通过，39次浏览器API均200，七监控目标UP，见[发布证据](history/verification/release-evidence.md#application-onboarding-release-20261125)。最终报告仅保留[当前JaCoCo](reports/jacoco/final-rbac/README.md)。
+当前前端已修正角色选权的当前系统摘要：54项单元、25项构建渲染通过，正式9项配套只读HTTP/10项行为检查、19次浏览器API均200，七监控目标UP，见[本轮前端发布](history/verification/release-evidence.md#permission-selection-summary-release-20261125)。仅前端镜像变化，后端及最终JaCoCo未变，本轮不重跑后端回归；详设不修改。
+
+应用接入向导版本新增R35应用接入向导及数据库操作元数据，并将初始受管范围调整为RBAC和课程。两策略各365项、418份class一致、合并六项100%及原门槛通过；前端54单元/22构建渲染、Python46项通过，Apifox1.8.0的45/37/94语义差异0，见[本轮源码证据](history/verification/implementation-evidence.md#application-onboarding-wizard-20261124)。该版正式104项HTTP和12组浏览器通过，39次浏览器API均200，七监控目标UP，见[发布证据](history/verification/release-evidence.md#application-onboarding-release-20261125)。最终报告仅保留[当前JaCoCo](reports/jacoco/final-rbac/README.md)。
 
 原应用管理25fdc21的115项HTTP与11组浏览器成绩仅对应[当时版本](history/verification/release-evidence.md#application-management-release-20261124)。此前性能计时只对应其原环境，见[加载实测](history/verification/ui-performance-evidence.md#authorization-loading-performance-20261124)，不能据此断言本轮响应时间。
 
