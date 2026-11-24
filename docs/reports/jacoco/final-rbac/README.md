@@ -13,4 +13,4 @@
 
 [完整报告](rbac-jacoco-report.zip)包含html/index.html、XML、摘要和验证元数据；[manifest](manifest.json)记录报告及本轮源码逐文件SHA-256，可核对对应版本。机器会话名已脱敏，不发布exec、class、凭据、数据库或环境XML。
 
-本轮未部署。覆盖率为隔离测试执行覆盖，不代表正式流量覆盖、性能或业务无缺陷；前轮性能及正式验收保留其原版本边界。复现方法见[后端说明](../../../../backend/README.md#7-双策略jacoco复现)。
+该生产字节码已完成本轮发布并回读JAR摘要；正式验收见[发布记录](../../../history/verification/release-evidence.md#application-onboarding-release-20261125)。覆盖率为隔离测试执行覆盖，不代表正式流量覆盖、性能或业务无缺陷；前轮性能及正式验收保留其原版本边界。复现方法见[后端说明](../../../../backend/README.md#7-双策略jacoco复现)。

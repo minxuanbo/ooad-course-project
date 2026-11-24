@@ -1,12 +1,12 @@
 # 双系统DDD部署与首次初始化
 
-本文说明节点职责、配置、首发、验收及恢复方法。当前两个RBAC镜像见[应用管理与按钮置灰发布](../docs/history/verification/release-evidence.md#application-management-release-20261124)，前轮[原型登录与构造映射发布](../docs/history/verification/release-evidence.md#login-prototype-constructor-mapping-20261124)，前轮菜单性能见[性能优化发布](../docs/history/verification/ui-performance-evidence.md#authorization-loading-performance-20261124)，18目录和部门角色数据适配见[目录发布](../docs/history/verification/release-evidence.md#access-extension-release-20261124)；首次导入见[首发证据](../docs/history/verification/release-evidence.md#ddd-production-deployment)，最初本机部署回归见[适配验证](../docs/history/verification/implementation-evidence.md#ddd-deployment-adaptation)。
+本文说明节点职责、配置、首发、验收及恢复。当前发布见[应用接入向导与两系统范围](../docs/history/verification/release-evidence.md#application-onboarding-release-20261125)，旧版镜像、备份与测试按[部署档案](../docs/history/verification/release-evidence.md)各自日期查阅；首次来源保留于该档案，不把历史成绩算成本轮通过。
 
-线上为8项服务定义：7项replicated服务各1/1，node-exporter为global服务4/4。两Java日志使用+08:00，7个监控采集目标UP。本轮从已审核25fdc21更新两个RBAC Image，PR59仍为草稿、未合main；其他六项服务Spec不变。发布窗口身份接入服务因RBAC依赖健康检查自动重启一次，其余五项未修改服务任务ID不变；不宣称零停机。课程与接入镜像保持原样，没有重建Stack或开放端口。发布前JWT失效，需重新登录；后续源码记录提交不自动再次部署。
+线上为8项服务定义：7项单副本和node-exporter全局4任务。两系统DDD，当前仅RBAC与课程两项应用；未来通过应用管理及向导新增。当前更新两个RBAC镜像及独立接入镜像，其余五项服务Spec和任务保持原样。RBAC已卸载旧operation文件配置，逐请求从api_operations读取，课程前端原样。
 
-先在独立副本演练旧库兼容，再停止RBAC写入，三库单快照备份及B/E异机校验后，事务追加LOGIN、应用管理及菜单读取映射。COMMIT前逐行核对旧数据，账号、口令、原授权和历史日志保留，不重跑首次初始化、不改永久表结构。18业务目录仍待接入，逐请求读库、锁后重鉴权、部门范围与维护者保护不变。
+独立副本演练、停写、三库B/E异机备份与校验后清理18项模拟目录并增加两支撑表；人员、口令、角色、两系统既有授权和原日志保留，未重跑首次初始化。补齐课程CTM建班真实API映射，保持实时授权、锁后重鉴权和维护者保护。
 
-本次115项正式HTTP和11组真实表单/菜单通过，34次浏览器API均200、渲染异常0。独立LOGIN、应用分页及边界拒绝、实时撤权恢复、八项身份协议和原课程只读链路均有本轮证据。Apifox1.7.0的45操作/37路径/94模型已在源码阶段同步并回读一致；本次无契约变化，不重复改远端环境。没有新一轮全量课程浏览器、性能/压测、节点故障或整机重启结果。
+本轮104项正式HTTP、12组表单/菜单及向导检查通过；39次浏览器API均200，7个监控目标UP。Apifox1.8.0为45操作/37路径/94模型，回读差异0。发布前JWT失效，需重新登录；后续源码或记录同步不自动重新部署。未追加全量课程浏览器、性能/压测及节点故障测试。
 
 ## 1. 五节点及访问入口
 

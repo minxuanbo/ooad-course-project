@@ -312,4 +312,3 @@ npm run build
 | 双会话撤权后原会话保存 | 403 `PERMISSION_DENIED` | `f4bddb04-df4d-41db-89ad-9661ca2f3e10` |
 
 停止并重启 DDD JAR 后，用新浏览器会话读到 `employee`、`s6-role-01`、`s6-role-31`。调动人员仍在项目 B，停用账号状态仍为停用。两套独立验收实例在运行后关闭。原始证据位于工作树忽略目录 `.local/stage6-ddd-aligned/run-20261119-114542/` 和 `.local/stage6-ddd/run-20261119-114946/`，截图已抽查中文显示。
-

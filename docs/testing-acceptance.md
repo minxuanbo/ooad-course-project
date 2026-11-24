@@ -4,9 +4,9 @@
 
 ## 1. 当前状态与证据
 
-当前源码新增R35应用接入向导及数据库操作元数据，并将初始受管范围调整为RBAC和课程。两策略各365项、418份class一致、合并六项100%及原门槛通过；前端54单元/22构建渲染、Python45项通过，Apifox1.8.0的45/37/94语义差异0，见[本轮源码证据](history/verification/implementation-evidence.md#application-onboarding-wizard-20261124)。正式发布待单独完成，不沿用PR59成绩。最终报告仅保留[当前JaCoCo](reports/jacoco/final-rbac/README.md)。
+当前源码新增R35应用接入向导及数据库操作元数据，并将初始受管范围调整为RBAC和课程。两策略各365项、418份class一致、合并六项100%及原门槛通过；前端54单元/22构建渲染、Python46项通过，Apifox1.8.0的45/37/94语义差异0，见[本轮源码证据](history/verification/implementation-evidence.md#application-onboarding-wizard-20261124)。本轮正式104项HTTP和12组浏览器通过，39次浏览器API均200，七监控目标UP，见[发布证据](history/verification/release-evidence.md#application-onboarding-release-20261125)。最终报告仅保留[当前JaCoCo](reports/jacoco/final-rbac/README.md)。
 
-上一版正式应用管理已按25fdc21发布，115项公网HTTP及11组浏览器验证通过，详见[对应发布](history/verification/release-evidence.md#application-management-release-20261124)。此前性能计时只对应其原环境，见[加载实测](history/verification/ui-performance-evidence.md#authorization-loading-performance-20261124)，不能据此断言本轮响应时间。
+原应用管理25fdc21的115项HTTP与11组浏览器成绩仅对应[当时版本](history/verification/release-evidence.md#application-management-release-20261124)。此前性能计时只对应其原环境，见[加载实测](history/verification/ui-performance-evidence.md#authorization-loading-performance-20261124)，不能据此断言本轮响应时间。
 
 各版源码及覆盖率证据见[后端档案](history/verification/implementation-evidence.md)，两系统上线与备份见[部署档案](history/verification/release-evidence.md)，UI与性能见[界面档案](history/verification/ui-performance-evidence.md)。历史成绩不混作当前成绩。
 
