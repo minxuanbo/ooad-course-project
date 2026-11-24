@@ -4,6 +4,7 @@
 
 | 材料 | 保留用途 |
 | --- | --- |
+| [按钮统一置灰](verification/disabled-permission-actions-20261124.md) | 逐按钮禁用、只读集合、保护目标与撤权状态的前端行为验证；用户明确暂不部署，保留与PR56线上版本的边界 |
 | [原型登录与新版构造映射](verification/login-prototype-constructor-mapping-20261124.md) | 本轮用户追加新版映射规范、331项双策略及最终六项100%、Apifox及外部材料一致性与独立发布结果；旧报告副本已清理，历史事实不改写 |
 | [首次登录渲染与匿名访问](verification/login-render-and-anonymous-audit-20261124.md) | 延迟Teleport修复、54项单元/4项构建渲染及当时正式9组浏览器验证；仅前端发布、旧会话有效与匿名请求来源边界，镜像现由原型登录发布替代 |
 | [授权装载性能优化](verification/authorization-loading-performance-20261124.md) | 当时两个RBAC镜像、330项双策略回归及六项100%、97项HTTP、三轮菜单耗时和查询量；镜像现由原型登录/构造映射发布替代，性能计时仍独立保留 |
