@@ -44,6 +44,9 @@ async function fixture(page, grants, { revokeStatus = false } = {}) {
         state.people.find((item) => path === `/api/users/${item.id}/status`).enabled = false
         data = null
       } else if (path === '/api/users') data = { items: state.people, total: state.people.length }
+      else if (path === '/api/overview') data = { departmentId: 1, departmentName: '测试总公司',
+        totalUsers: 2, enabledUsers: 2, disabledUsers: 0, totalDepartments: 2,
+        distribution: [{ id: 2, name: '测试下级部门', totalUsers: 2 }] }
       else if (/\/users\/\d+\/roles$/.test(path))
         data = { roles: state.people.find((item) => path === `/api/users/${item.id}/roles`).roles,
           lockedRoleIds: [7] }
@@ -65,7 +68,8 @@ async function fixture(page, grants, { revokeStatus = false } = {}) {
   await page.getByLabel('工号或手机号', { exact: true }).fill('fixture-reader')
   await page.getByLabel('登录密码', { exact: true }).fill('fixture-only-password')
   await page.getByRole('button', { name: '登录', exact: true }).click()
-  await expect(page.getByRole('heading', { name: '已进入权限管理工作区', exact: true })).toBeVisible()
+  if (grants.includes('GET /api/overview')) await expect(page.locator('.overview-metric')).toHaveCount(4)
+  else await expect(page.getByRole('heading', { name: '已进入权限管理工作区', exact: true })).toBeVisible()
   return state
 }
 
@@ -75,6 +79,22 @@ async function disabled(button) {
   await expect(button).toBeDisabled()
   await button.evaluate((element) => element.click())
 }
+
+/** 总览分布仍可查看统计，无人员查询权限时入口置灰且悬停不变为可用色。 */
+test('R17/R25 总览人员入口禁用样式不被局部规则或悬停覆盖', async ({ page }) => {
+  const state = await fixture(page, ['GET /api/overview'])
+  const button = page.getByRole('button', { name: /测试下级部门/ })
+  await disabled(button)
+  await expect(button).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+  const color = await button.evaluate((element) => getComputedStyle(element).color)
+  await button.hover()
+  await expect(button).toHaveCSS('color', color)
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(page.getByRole('navigation').getByRole('link', { name: '人员管理', exact: true })).toHaveCount(0)
+  expect(state.calls.some((call) => call.path === '/api/users')).toBe(false)
+  expect(state.denied).toEqual([])
+  expect(state.errors).toEqual([])
+})
 
 /** 人员只读入口仍可读现有角色，但写入与受保护人员操作保留置灰。 */
 test('R17 人员只读按钮保留显示，角色弹窗的移除、查询和保存均置灰', async ({ page }) => {

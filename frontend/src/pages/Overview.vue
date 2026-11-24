@@ -175,6 +175,7 @@ onUnmounted(() => {
             :key="item.id"
             class="overview-distribution-row"
             :disabled="!canRoute('GET', '/users')"
+            :title="!canRoute('GET', '/users') ? '没有查看员工的权限' : ''"
             @click="members = item"
           >
             <span>{{ item.name }}</span
@@ -435,8 +436,12 @@ onUnmounted(() => {
   color: #7991b1;
   font-size: 11px;
 }
-.overview-distribution-row:hover {
+.overview-distribution-row:hover:not(:disabled) {
   color: #3865ef;
+}
+.overview-distribution-row:disabled {
+  color: #8993a1;
+  background: #f0f2f5;
 }
 .overview-bar {
   height: 6px;
