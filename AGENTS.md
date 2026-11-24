@@ -8,6 +8,8 @@
 
 上轮25fdc21应用管理已发布，见[原发布](docs/history/verification/release-evidence.md#application-management-release-20261124)；现有两个自定义验证角色须保留。课前一次发布授权不延伸为未来任务自动发布；源码或记录提交本身不自动重启正式服务。课程前端维持原样，不擅自扩写课程业务。T14/T15不自动关闭；Apifox仅在明确授权范围内写入并回读。文档按现行职责合并，版本证据集中归档；桌面仅保留最终PDF/PPT/Markdown/提交包/JaCoCo，原件私有备份保留。
 
+用户2026-11-25另授权的当前系统已选权限摘要已仅发布RBAC前端，来源a297868；54项单元/25项构建渲染、正式9项只读HTTP及10项行为检查通过，19次浏览器API均200，七监控目标UP，其余七项服务Spec和任务未变，旧JWT仍有效，见[摘要发布](docs/history/verification/release-evidence.md#permission-selection-summary-release-20261125)。全部系统授权草稿与保存语义保留。仅项目docs归类同步，详设及课程身份不修改；本轮双仓合入及旧分支清理已获授权，不延伸为未来任务授权。
+
 ## 业务与架构
 
 - 当前业务依据为[需求](docs/requirements.md)，字段主规范为api/openapi.yaml，JSON同源；业务语义见docs/api-contract.md。当前45操作、37路径、94 Schema，完整维护能力K17。

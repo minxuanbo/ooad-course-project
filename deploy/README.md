@@ -1,12 +1,10 @@
 # 双系统DDD部署与首次初始化
 
-本文说明节点职责、配置、首发、验收及恢复。当前发布见[应用接入向导与两系统范围](../docs/history/verification/release-evidence.md#application-onboarding-release-20261125)，旧版镜像、备份与测试按[部署档案](../docs/history/verification/release-evidence.md)各自日期查阅；首次来源保留于该档案，不把历史成绩算成本轮通过。
+本文说明节点职责、配置、首发、验收及恢复。当前仅更新RBAC前端，见[当前系统选权摘要发布](../docs/history/verification/release-evidence.md#permission-selection-summary-release-20261125)；后端、独立接入及两系统目录沿用[应用向导发布](../docs/history/verification/release-evidence.md#application-onboarding-release-20261125)。精确镜像、备份及各版验证分别保留于部署档案。
 
-线上为8项服务定义：7项单副本和node-exporter全局4任务。两系统DDD，当前仅RBAC与课程两项应用；未来通过应用管理及向导新增。当前更新两个RBAC镜像及独立接入镜像，其余五项服务Spec和任务保持原样。RBAC已卸载旧operation文件配置，逐请求从api_operations读取，课程前端原样。
+线上8项服务定义：7项单副本和node-exporter全局4任务，七个采集目标UP。本次其余七项服务Spec和任务ID均不变，后端会话继续有效；浏览器刷新即可加载新前端。正式目录仅RBAC和课程，未来通过应用管理及向导新增，PENDING阻止未完成接入的通行；后端operationId仍逐请求读数据库，课程前端原样。
 
-独立副本演练、停写、三库B/E异机备份与校验后清理18项模拟目录并增加两支撑表；人员、口令、角色、两系统既有授权和原日志保留，未重跑首次初始化。补齐课程CTM建班真实API映射，保持实时授权、锁后重鉴权和维护者保护。
-
-本轮104项正式HTTP、12组表单/菜单及向导检查通过；39次浏览器API均200，7个监控目标UP。Apifox1.8.0为45操作/37路径/94模型，回读差异0。发布前JWT失效，需重新登录；后续源码或记录同步不自动重新部署。未追加全量课程浏览器、性能/压测及节点故障测试。
+本轮54项单元、25项构建渲染及正式9项配套HTTP/10项行为检查通过，19次浏览器API均200。账号、授权、数据库及端口未改，详设不改。后端源码、OpenAPI1.8.0及最终覆盖率报告未变，不把旧后端或性能成绩算成本轮重跑；文档和源码同步不触发再次部署。
 
 ## 1. 五节点及访问入口
 

@@ -1,5 +1,17 @@
 # 历次部署证据
 
+<a id="permission-selection-summary-release-20261125"></a>
+
+## 当前系统选权摘要前端发布（2026-11-25）
+
+生产前端来源a2978686d556b3236f69ead98f3482384f182b2d，在A按原deploy/rbac-frontend.Dockerfile构建，仅将ooad_rbac-frontend更新为SWR固定摘要sha256:606ff53bdeef7e140e13fa818e25a79b97e76998eba69387d6a2609691716bd7。C已备份全部服务Spec、运行任务ID和前版环境，目录/opt/ooad/backups/permission-summary-a297868-20261125；没有数据库写入、后端构建或课程改动。新前端容器revision回读一致，其余七项服务Spec和任务ID逐项一致，七个监控目标UP。发布前管理JWT继续返回200，未要求退出重登。
+
+54项单元、25项构建浏览器测试全通过，3项有效行为RED/GREEN及规范/需求双轴审核见[界面证据](ui-performance-evidence.md#permission-selection-summary-20261125)。正式Chrome通过表单登录，对课程管理员和系统管理员分别切换RBAC/课程，逐ID核对摘要与当前系统权限树交集；搜索无匹配时摘要仍保留，移除仅在本地草稿并取消，前后读取的角色完整授权集合相同。发布后9项配套只读HTTP检查、10项行为检查通过，19次浏览器API均200、渲染异常0；两个独立验收会话均退出。
+
+本次实读课程管理员在RBAC为0项、课程为34项，系统管理员分别41/35项；这些仅是用户当时维护的授权状态，不能用来强制恢复初始化。正式探针没有PUT角色权限，也没有修改课程身份；跨系统保存全集及停用项保留在可控HTTP真实Vue测试直接断言。没有新一轮后端MySQL/JaCoCo、课程全量、性能或压测结论；原最终JaCoCo继续对应未变的后端源码。OpenAPI未变，与已回读Apifox1.8.0的45操作/37路径/94模型比较差异0，无需接口写入。详设及桌面文件按用户要求不修改。
+
+发布与验收控制器位于.local/permission-selection-summary-20261125，release.mjs的prepare/build/update/verify分别保存独立记录；verify-live.mjs before/after保存会话连续性及浏览器脱敏结论，截图未进入Git。发布后文档记录和Git同步不再次重启服务。
+
 <a id="application-onboarding-release-20261125"></a>
 
 ## 应用向导与两系统范围正式发布（2026-11-24至25日）
