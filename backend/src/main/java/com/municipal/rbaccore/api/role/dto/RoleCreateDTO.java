@@ -15,7 +15,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
-/** 新建角色只接收编码和名称，首尾空白在请求边界归一后校验。 */
+/** 新建全局或部门角色，校验编码、名称、类型及所属部门，首尾空白在请求边界归一。 */
 @Getter
 @Setter
 @CopyTo(CreateRoleCommand.class)

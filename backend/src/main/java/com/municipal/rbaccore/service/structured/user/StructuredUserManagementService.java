@@ -308,7 +308,7 @@ public class StructuredUserManagementService implements UserManagementUseCase {
     return RoleResultMapping.result(role);
   }
 
-  /** 删除关联必须满足级别与完整有效子集，自定义项只允许可信根管理员调整。 */
+  /** 删除关联校验级别与完整子集；全局及应用角色限管理员，部门角色另按领导及所属范围裁决。 */
   private boolean canRemove(
       RoleEntity role,
       StructuredPersonnelAuthority.AuthoritySnapshot actor,

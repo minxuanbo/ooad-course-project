@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { api, setToken } from '../api.js'
-import AppIcon from '../components/AppIcon.vue'
+import LoginIcon from '../components/LoginIcon.vue'
 import organizationImage from '../assets/login-organization.svg'
 const router = useRouter()
 const account = ref(''),
@@ -44,9 +44,9 @@ async function login() {
       </div>
       <img class="story-illustration" :src="organizationImage" alt="" />
       <div class="story-chips" aria-hidden="true">
-        <span><AppIcon name="building" />统一组织</span>
-        <span><AppIcon name="users" />高效协作</span>
-        <span><AppIcon name="shield" />权限可控</span>
+        <span><LoginIcon name="building" />统一组织</span>
+        <span><LoginIcon name="users" />高效协作</span>
+        <span><LoginIcon name="shield" />权限可控</span>
       </div>
     </section>
     <section class="login-main">
@@ -57,7 +57,7 @@ async function login() {
         <div class="field">
           <label for="account">工号或手机号</label>
           <div class="input-shell">
-            <AppIcon name="user" />
+            <LoginIcon name="user" />
             <input id="account" v-model="account" autocomplete="username" maxlength="100"
               placeholder="请输入工号或手机号" :disabled="busy" required />
           </div>
@@ -65,28 +65,28 @@ async function login() {
         <div class="field">
           <label for="password">登录密码</label>
           <div class="input-shell">
-            <AppIcon name="lock" />
+            <LoginIcon name="lock" />
             <input id="password" v-model="password" :type="reveal ? 'text' : 'password'"
               autocomplete="current-password" placeholder="请输入密码" :disabled="busy" required />
             <button class="password-toggle" type="button" :aria-label="reveal ? '隐藏密码' : '显示密码'"
               :aria-pressed="reveal" @click="reveal = !reveal">
-              <AppIcon :name="reveal ? 'eyeOff' : 'eye'" />
+              <LoginIcon :name="reveal ? 'eyeOff' : 'eye'" />
             </button>
           </div>
         </div>
         <p v-if="error" class="error" role="alert">{{ error }}</p>
-        <button class="primary login-submit" :disabled="busy" aria-label="登录">
+        <button class="primary login-submit" :disabled="busy" :aria-label="busy ? '正在验证身份…' : '登录'">
           <template v-if="busy">正在验证身份…</template>
-          <template v-else>登 录<AppIcon name="arrow" /></template>
+          <template v-else>登 录<LoginIcon name="arrow" /></template>
         </button>
-        <div class="login-note"><AppIcon name="shield" />仅向已获管理权限的账号开放</div>
+        <div class="login-note"><LoginIcon name="shield" />仅向已获管理权限的账号开放</div>
       </form>
       <footer class="login-footer">市政公司 · 统一权限管理系统</footer>
     </section>
   </main>
 </template>
 <style scoped>
-.login-page { min-height: 100vh; min-height: 100dvh; background: #fff; display: grid; grid-template-columns: minmax(420px, 48%) 1fr; }
+.login-page { font-family: Inter, 'Segoe UI', 'Microsoft YaHei UI', 'Microsoft YaHei', sans-serif; min-height: 100vh; min-height: 100dvh; background: #fff; line-height: normal; display: grid; grid-template-columns: minmax(420px, 48%) 1fr; }
 .login-story { position: relative; overflow: hidden; background: #f0f5fe; padding: 42px 48px 28px; display: flex; flex-direction: column; }
 .login-story::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(#b1c7e940 .7px, transparent .7px); background-size: 22px 22px; mask-image: linear-gradient(to bottom, transparent, #000 70%); pointer-events: none; }
 .login-brand { position: relative; display: flex; align-items: center; gap: 11px; }
@@ -102,7 +102,7 @@ async function login() {
 .story-illustration { width: 100%; max-width: 480px; margin: 12px auto; position: relative; }
 .story-chips { display: flex; gap: 21px; color: #68819f; font-size: 12px; position: relative; padding-bottom: 12px; margin-top: auto; }
 .story-chips span { display: inline-flex; align-items: center; gap: 6px; }
-.login-main { display: flex; align-items: center; justify-content: center; min-width: 0; padding: 60px 40px 80px; position: relative; }
+.login-main { display: flex; align-items: center; justify-content: center; min-width: 0; padding: 45px 40px 58px; position: relative; }
 .login-form { width: min(100%, 352px); }
 .login-form h2 { font-size: 29px; margin: 12px 0; color: #182944; letter-spacing: 1px; font-weight: 650; }
 .login-form > p:not(.error) { color: #7b879a; margin: 0 0 34px; line-height: 1.8; }

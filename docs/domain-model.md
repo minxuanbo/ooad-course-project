@@ -40,7 +40,7 @@
 
 领域状态/属性常量由对应对象以public static final声明：Role归口DEFAULT_LEVEL、PROJECT_MANAGER_LEVEL、DEPARTMENT_MANAGER_LEVEL、COMPANY_LEADER_LEVEL、ADMIN_LEVEL五基础级别，FIRST_MANAGER_LEVEL引用PROJECT_MANAGER_LEVEL；自定义角色的managementLevel为空。InitialAuthorizationPolicy引用Role的级别常量进行首次分类。Department归口四种类型，Permission归口MENU/BUTTON/API，ApplicationSystem归口RBAC系统编码。应用/领域不引用公共协议枚举作为自身状态，也不按角色名称猜级别；应用Mapper在领域取值与现有DepartmentType等协议值间显式转换。布尔启用状态保持其既有语义，不虚构额外生命周期。
 
-UserKey、RoleKey、PermissionKey、ApiKey、DepartmentKey等不可变标识只用于领域/仓储边界的类型安全；HTTP仍为正安全整数，工号仍为字符串。PageWindow、DepartmentScope、ApiOperation、UserCriteria、RoleCriteria、AuthorizationFacts、OrganizationFacts、DepartmentUsage、MaintenanceFacts等值/事实都归domain.model；不可变值和record使用显式构造，不交CloneFactory写final字段。
+UserKey、RoleKey、PermissionKey、ApiKey、DepartmentKey等不可变标识只用于领域/仓储边界的类型安全；HTTP仍为正安全整数，工号仍为字符串。PageWindow、DepartmentScope、ApiOperation、UserCriteria、RoleCriteria、AuthorizationFacts、OrganizationFacts、DepartmentUsage、MaintenanceFacts等值/事实都归domain.model；直接同字段不可变转换可使用0.0.2构造器映射并接收新值；领域业务工厂及跨层关联装配显式处理，不写final字段。
 
 跨聚合策略在model.policy：AuthorizationPolicy逐链计算有效Permission/API及OR，不把父菜单当继承；RoleAssignmentPolicy同时检查目标保护、授予上限及完整有效Permission子集，新增/删除逐项验权，现有不可改角色可锁定保留，自定义角色不冻结人员；OrganizationPolicy核实来源根并计算有效子树/合法父子，以requireNonRoot保护可信根、requireEmpty拒绝存在人员、下级或所属角色的删除、requireUnique保证同父有效部门名称唯一；MaintenancePolicy判断一个启用、可信根、级别5的用户独自覆盖K，不把多人权限拼接。策略接受明确事实，不访问仓储、HTTP、Spring或全局缓存。
 
@@ -95,7 +95,7 @@ DDD仓储位于service.ddd.domain.repository，Infrastructure实现适配与装�
 | Role                     | 启用↔停用                         | 保留权限和用户关联；下次管理请求重算                    |
 | Permission / ApiResource | 启用↔停用                         | 保留映射；父节点状态不代替子节点直接授权判断            |
 | Department               | 首次导入→新增下级/改名/删除空节点  | 类型固定，不调整层级；删除保留来源墓碑且不再参与范围    |
-| ApplicationSystem        | 从登记事实读取应用目录        | 演示系统不进入正式初始化，课程按R29独立登记              |
+| ApplicationSystem        | 从登记事实读取应用目录        | 默认万人初始化仅RBAC；独立首次配置登记18项PENDING业务目录及CONNECTED课程，运行通行另查接入状态 |
 
 没有必须异步完成的业务流程，不引入事件总线、Outbox或分布式最终一致性。最小鉴权日志是运行记录，不冒充完整领域事件或变更审计。后续确有跨系统事件需求时另行评审。
 

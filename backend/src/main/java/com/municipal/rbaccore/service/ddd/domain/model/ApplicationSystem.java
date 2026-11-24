@@ -21,7 +21,7 @@ public record ApplicationSystem(
     return connectionStatus == Connection.CONNECTED;
   }
 
-  /** 当前产品只维护RBAC目录，历史外系统仍可能存在于待核验关联中。 */
+  /** 判断是否为RBAC管理受众，不限制数据库登记的其他应用目录。 */
   public boolean isRbac() {
     return CODE_RBAC.equals(code);
   }

@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
 public class JpaApplicationSystemRepositoryAdapter implements ApplicationSystemRepository {
   private final ApplicationSystemJpaRepository rows;
 
-  /** 查询已接入系统并映射领域值，不调用任何应用服务。 */
+  /** 查询全部已登记系统并映射领域值，不调用任何应用服务。 */
   @Override
   public java.util.List<ApplicationSystem> catalog() {
     return rows.findAll(org.springframework.data.domain.Sort.by("id")).stream()

@@ -27,7 +27,7 @@ git worktree add -b codex/your-task ../ooad-your-task origin/main
 - 业务规则更新需求正文；字段先改api/openapi.yaml并同源导出JSON，事务/范围语义写api-contract；同步受影响实现、页面和测试。
 - 业务代码遵守指定20261117编码skill及用户确认的例外：本RBAC保留本地口令；管理分页page/size，外部目录沿老师page/pageSize；全新库首次SQL，不交付升级脚本。
 - 两套业务实现独立，共享端口不依赖实现；DDD应用不依赖JPA/Entity/structured，领域仓储只用领域类型与JDK容器。事务在Service，写入锁后重鉴权。
-- 中文Javadoc、注解独行、真实CloneFactory；不可变领域record/final按约显式构造。业务改动先RED再GREEN，真实MySQL验证事务，配置与文档用相应工具验证。
+- 中文Javadoc、注解独行、真实CloneFactory；record/final的直接同字段转换使用0.0.2构造器映射并接收返回值；业务组装和跨层依赖例外按AGENTS执行。业务改动先RED再GREEN，真实MySQL验证事务，配置与文档用相应工具验证。
 - UML与源码对应，按指定UML skill交付可编辑源、SVG/PNG并目检；类图并列双策略，顺序图只画差异，共同流程不重复。
 - 当前设计按职责组织，稳定需求ID保留追溯；删除无用历史时核对独有价值、引用及Git可恢复性，有用来源/实测保留。
 - 凭据、万人CSV、数据库、运行日志、构建产物和原始报告只在忽略目录；不提交用户原件或私有资料。

@@ -7,11 +7,46 @@ import com.municipal.rbaccore.api.resource.dto.ResourcePermissionPatchDTO;
 import com.municipal.rbaccore.infrastructure.persistence.entity.RoleEntity;
 import com.municipal.rbaccore.service.port.resource.UpdatePermissionCommand;
 import com.municipal.rbaccore.service.port.role.UpdateRoleCommand;
+import com.municipal.rbaccore.api.identity.vo.*;
+import com.municipal.rbaccore.service.port.identity.*;
+import com.municipal.rbaccore.service.port.security.RbacCatalog;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /** R19验证真实课程处理器生成的映射，不用反射复制或模拟替代。 */
 class R19CloneFactoryMappingTest {
+  /** 新版构造器映射须真正创建完整record，不能因final字段而返回空对象或漏字段。 */
+  @Test
+  @DisplayName("R19/R32 CloneFactory0.0.2完整构造五种不可变身份协议响应")
+  void R19R32_constructsImmutableIdentityResponses() {
+    Map<String, List<RbacCatalog.Route>> routes =
+        Map.of("view", List.of(new RbacCatalog.Route("GET", "/sample")));
+    Object[][] cases = {
+      {ApplicationLoginVO.class, ApplicationLoginResult.class,
+          new ApplicationLoginResult("fixture-token", "Bearer", 43200),
+          new ApplicationLoginVO("fixture-token", "Bearer", 43200)},
+      {ApplicationIdentityVO.class, ApplicationIdentityResult.class,
+          new ApplicationIdentityResult("37", List.of("reader"), List.of("view"), "sample", routes),
+          new ApplicationIdentityVO("37", List.of("reader"), List.of("view"), "sample", routes)},
+      {ApplicationUserVO.class, ApplicationUserResult.class,
+          new ApplicationUserResult("37", "00037", "映射员工"),
+          new ApplicationUserVO("37", "00037", "映射员工")},
+      {ApplicationDepartmentVO.class, ApplicationDepartmentResult.class,
+          new ApplicationDepartmentResult(9L, "D09", "映射部门", 2L, true),
+          new ApplicationDepartmentVO(9L, "D09", "映射部门", 2L, true)},
+      {ApplicationDepartmentUserVO.class, ApplicationDepartmentUserResult.class,
+          new ApplicationDepartmentUserResult("37", "00037", "映射员工", 9L, "映射部门"),
+          new ApplicationDepartmentUserVO("37", "00037", "映射员工", 9L, "映射部门")}
+    };
+    for (Object[] sample : cases) {
+      Object actual = assertDoesNotThrow(() ->
+          CloneFactory.class.getMethod("copy", (Class<?>) sample[0], (Class<?>) sample[1])
+              .invoke(null, null, sample[2]));
+      assertEquals(sample[3], actual, ((Class<?>) sample[0]).getSimpleName());
+    }
+  }
   /** PATCH只复制非空字段，编码和未提供状态保持原值。 */
   @Test
   @DisplayName("R13/R19 角色PATCH通过真实CloneFactory保留缺省字段")

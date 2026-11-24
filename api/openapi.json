@@ -1809,7 +1809,7 @@
           "资源与映射"
         ],
         "summary": "整体替换权限API映射",
-        "description": "只同系统API，可保存停用API但不贡献有效授权；未接入系统目标403、已获准目标的跨系统关联400。根锁及完整K保护。",
+        "description": "只同系统API，可保存停用API但不贡献有效授权；未登记系统目标403、已获准目标的跨系统关联400。根锁及完整K保护。",
         "responses": {
           "200": {
             "description": "成功",
@@ -3219,7 +3219,7 @@
       "SystemId": {
         "name": "systemId",
         "in": "query",
-        "description": "省略为真实rbac系统ID；显式课程接入时可选择课程系统，未接入系统403",
+        "description": "省略为真实rbac系统ID；可选择任意已登记系统（含PENDING待接入目录），未登记系统403；运行时业务准入另查CONNECTED",
         "schema": {
           "type": "integer",
           "minimum": 1,

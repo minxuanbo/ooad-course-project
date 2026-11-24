@@ -120,7 +120,7 @@ test('R17/R25 身份读取延迟时等待验证，返回后显示完整首页', 
   const state = await fixture(page, { holdIdentity: true })
   await page.goto('/login')
   await submitLogin(page)
-  await expect(page.getByRole('button', { name: '登录', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: '正在验证身份…', exact: true })).toBeDisabled()
   expect(state.calls.filter((call) => call.path === overviewPath)).toHaveLength(0)
   state.releaseIdentity()
   await expect(page.locator('.overview-welcome')).toBeVisible()

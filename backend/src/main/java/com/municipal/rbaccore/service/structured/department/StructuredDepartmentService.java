@@ -93,7 +93,7 @@ public class StructuredDepartmentService implements DepartmentUseCase {
         });
   }
 
-  /** 结构化组织层级规则不放进公共契约；后续DDD由领域对象独立表达同一业务要求。 */
+  /** 结构化组织层级规则不放进公共契约；DDD由领域对象独立表达同一业务要求。 */
   private boolean allowsChild(DepartmentType parent, DepartmentType child) {
     return switch (parent) {
       case HEADQUARTERS ->
