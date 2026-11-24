@@ -2539,7 +2539,7 @@
           "统一身份鉴权"
         ],
         "summary": "当前应用实时身份与权限",
-        "description": "按令牌受众实时返回角色编码、权限编码和system；角色须启用且贡献本应用有效权限。无API映射权限直接导出，有映射短码须全部同系统且启用。",
+        "description": "按令牌受众实时返回角色编码、权限编码和system；角色须启用且贡献本应用有效权限。MENU/BUTTON可无API映射直接导出；API类型必须至少一条映射；存在映射时须全部同系统且启用。",
         "x-maintenance-member": false,
         "x-management-scope": "application-identity",
         "responses": {

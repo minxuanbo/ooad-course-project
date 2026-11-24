@@ -38,7 +38,7 @@ import org.springframework.web.bind.annotation.*;
 public class ResourceController {
   private final ResourceUseCase service;
 
-  /** 必要系统目录只返回RBAC，权限与共同根由统一服务检查。 */
+  /** 返回已登记应用目录，实际API与共同根范围由服务检查。 */
   @GetMapping("/systems")
   public List<SystemVO> systems(
       @RequestHeader(value = "Authorization", required = false)
