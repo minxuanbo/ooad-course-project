@@ -2,6 +2,17 @@ package com.municipal.rbaccore.service.port.resource;
 
 /** 本系统目录、树及API映射的共享用例。 */
 public interface ResourceUseCase {
+  /** 应用管理列表使用同筛选分页，与下拉目录分别授权。 */
+  SystemPageResult searchSystems(String header, SystemQuery query);
+
+  /** 登记待接入应用，不自动创建业务权限或授予角色。 */
+  SystemResult createSystem(String header, CreateSystemCommand command);
+
+  /** 修改应用名称、启停和接入状态，保留稳定编码及关系。 */
+  SystemResult patchSystem(String header, Long id, UpdateSystemCommand command);
+
+  /** 逻辑移除受管应用，保留历史与配置供审核或恢复。 */
+  SystemResult removeSystem(String header, Long id);
 
   /** 返回本系统目录。 */
   java.util.List<SystemResult> systems(String header);

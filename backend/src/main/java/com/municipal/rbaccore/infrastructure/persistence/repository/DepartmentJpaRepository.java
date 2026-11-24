@@ -1,15 +1,40 @@
 package com.municipal.rbaccore.infrastructure.persistence.repository;
 
 import com.municipal.rbaccore.infrastructure.persistence.entity.DepartmentEntity;
+import com.municipal.rbaccore.infrastructure.persistence.identity.DepartmentDirectoryRow;
 import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
 /** 组织树查询及跨授权写入共用的稳定根锁。 */
 public interface DepartmentJpaRepository extends JpaRepository<DepartmentEntity, Long> {
+  /** 外部目录按同一范围和搜索条件计数，根层与直属子层不会混合。 */
+  @Query(
+      "select count(d) from DepartmentEntity d left join d.parent p where d.deleted=false and d.id"
+          + " in :scope and ((:rootOnly=true and d.id=:selected) or (:rootOnly=false and"
+          + " p.id=:selected)) and (lower(d.name) like :keyword escape '!' or lower(d.code) like"
+          + " :keyword escape '!')")
+  long countDirectory(boolean rootOnly, Long selected, java.util.Set<Long> scope, String keyword);
+
+  /** 最小字段投影由Spring Data分页执行，子项计数不加载整个组织实体。 */
+  @Query(
+      "select new"
+          + " com.municipal.rbaccore.infrastructure.persistence.identity.DepartmentDirectoryRow(d.id,d.code,d.name,p.id,(select"
+          + " count(c) from DepartmentEntity c where c.parent.id=d.id and c.deleted=false)) from"
+          + " DepartmentEntity d left join d.parent p where d.deleted=false and d.id in :scope and"
+          + " ((:rootOnly=true and d.id=:selected) or (:rootOnly=false and p.id=:selected)) and"
+          + " (lower(d.name) like :keyword escape '!' or lower(d.code) like :keyword escape '!')"
+          + " order by d.id")
+  java.util.List<DepartmentDirectoryRow> directory(
+      boolean rootOnly,
+      Long selected,
+      java.util.Set<Long> scope,
+      String keyword,
+      Pageable pageable);
 
   /** 读取有效部门的当前祖先编号，UNION去重避免损坏树形成无限递归。 */
   @Query(

@@ -8,6 +8,8 @@ import Departments from './pages/Departments.vue'
 import Roles from './pages/Roles.vue'
 import Resources from './pages/Resources.vue'
 import AuditLogs from './pages/AuditLogs.vue'
+import Applications from './pages/Applications.vue'
+import Onboarding from './pages/Onboarding.vue'
 import { session, refreshSession, notify, canRoute } from './api.js'
 import { resourcePageAvailable } from './lib/presentation.js'
 import './style.css'
@@ -17,6 +19,8 @@ const router = createRouter({
     { path: '/', component: Home, meta: { title: '工作总览' } },
     { path: '/login', component: Login },
     { path: '/users', component: Users, meta: { title: '人员管理', capability: '/users' } },
+    { path: '/applications/:id/onboarding', component: Onboarding, meta: { title: '应用接入向导', capability: '/systems/{id}/onboarding', global: true } },
+    { path: '/applications', component: Applications, meta: { title: '应用管理', capability: '/systems/page', global: true } },
     {
       path: '/departments',
       component: Departments,

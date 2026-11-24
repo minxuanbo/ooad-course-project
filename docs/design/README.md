@@ -1,11 +1,11 @@
 # 当前实现图资源
 
-所有当前图统一展示在[后端设计第17章](../backend-design.md#17-结构化与ddd-uml)：包图2组、两套类图16对、差异顺序图24对，共82组同源SVG/PNG。37项HTTP操作和2类离线入口的对应关系见该章17.4及[覆盖数据](ddd-diagrams.json)。
+所有当前图统一展示在[后端设计第17章](../backend-design.md#17-结构化与ddd-uml)：包图2组、两套类图17对、差异顺序图26对，共88组同源SVG/PNG。45项HTTP操作和2类离线入口的对应关系见该章17.4及[覆盖数据](ddd-diagrams.json)。
 
 | 来源/脚本 | 生成范围 |
 | --- | --- |
-| [ddd-diagrams.json](ddd-diagrams.json)、[build-ddd-design.mjs](../../scripts/build-ddd-design.mjs) | 两套包图、15张DDD模块类图、48张差异顺序图 |
-| [build-structured-design.mjs](../../scripts/build-structured-design.mjs) | 从实际Java字段和方法生成对应15张structured模块类图 |
+| [ddd-diagrams.json](ddd-diagrams.json)、[build-ddd-design.mjs](../../scripts/build-ddd-design.mjs) | 两套包图、16张DDD模块类图、52张差异顺序图 |
+| [build-structured-design.mjs](../../scripts/build-structured-design.mjs) | 从实际Java字段和方法生成对应16张structured模块类图 |
 | [build-identity-design.py](../../scripts/build-identity-design.py) | 完整通用身份模块的两张类图，同时交PlantUML源 |
 | [uml-svg.mjs](../../scripts/uml-svg.mjs) | 共用SVG图元、文字宽度、类框/连线几何检查及PNG渲染 |
 

@@ -27,23 +27,84 @@ public class DddResourceService implements ResourceUseCase {
   private final ManagementAccessUseCase access;
   private final DddWrite writes;
 
+  /** 维护目录的分页投影由仓储返回，授权仍在应用用例独立执行。 */
+  @Override
+  @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+  public SystemPageResult searchSystems(String header, SystemQuery query) {
+    access.require(header);
+    DomainPage<ApplicationSystem> page =
+        systems.search(
+            new SearchCriteria.Systems(
+                query.getQ(), query.getEnabled(), query.getPage(), query.getSize()));
+    return new SystemPageResult(
+        page.items().stream().map(this::systemResult).toList(),
+        page.total(),
+        page.page(),
+        page.size());
+  }
+
+  /** 新登记默认待接入，业务权限和角色不由应用登记隐式创建。 */
+  @Override
+  @Transactional(isolation = Isolation.READ_COMMITTED)
+  public SystemResult createSystem(String header, CreateSystemCommand command) {
+    return writes.global(
+        header,
+        () ->
+            systemResult(
+                systems.save(
+                    new ApplicationSystem(
+                        null,
+                        command.getCode(),
+                        command.getName().trim(),
+                        true,
+                        ApplicationSystem.Connection.PENDING))));
+  }
+
+  /** 领域值表达生命周期变更，仓储只负责保存同一目录事实。 */
+  @Override
+  @Transactional(isolation = Isolation.READ_COMMITTED)
+  public SystemResult patchSystem(String header, Long id, UpdateSystemCommand command) {
+    return writes.global(
+        header,
+        () ->
+            systemResult(
+                systems.save(
+                    selectSystem(id)
+                        .revise(
+                            command.getName(),
+                            command.getEnabled(),
+                            command.getConnectionStatus() == null
+                                ? null
+                                : ApplicationSystem.Connection.valueOf(
+                                    command.getConnectionStatus().name())))));
+  }
+
+  /** 移除仅关闭应用可用性，引用、ID和日志仍保留。 */
+  @Override
+  @Transactional(isolation = Isolation.READ_COMMITTED)
+  public SystemResult removeSystem(String header, Long id) {
+    return writes.global(
+        header, () -> systemResult(systems.save(selectSystem(id).revise(null, false, null))));
+  }
+
+  /** 不为字段映射让共享port依赖DDD，领域枚举及结果明确转换。 */
+  private SystemResult systemResult(ApplicationSystem system) {
+    SystemResult result = new SystemResult();
+    result.setId(system.id());
+    result.setCode(system.code());
+    result.setName(system.name());
+    result.setEnabled(system.enabled());
+    result.setConnectionStatus(ConnectionStatus.valueOf(system.connectionStatus().name()));
+    return result;
+  }
+
   /** 按登记事实返回全部应用目录，保留停用项供维护。 */
   @Override
   public List<SystemResult> systems(String header) {
     access.require(header);
     selectSystem(null);
     return systems.catalog().stream()
-        .map(
-            system -> {
-              SystemResult result = new SystemResult();
-              result.setId(system.id());
-              result.setCode(system.code());
-              result.setName(system.name());
-              result.setEnabled(system.enabled());
-              result.setConnectionStatus(
-                  ConnectionStatus.valueOf(system.connectionStatus().name()));
-              return result;
-            })
+        .map(this::systemResult)
         .toList();
   }
 

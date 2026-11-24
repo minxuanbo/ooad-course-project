@@ -20,6 +20,7 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 /** 通用应用身份事务脚本，仅处理已登记应用的账号、角色与权限事实。 */
@@ -92,9 +93,7 @@ public class StructuredApplicationIdentityService implements ApplicationIdentity
 
   /** 组织目录的计数和列表在同一快照下，仅按一层父级及关键词查询。 */
   @Override
-  @Transactional(
-      readOnly = true,
-      isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
+  @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
   public ApplicationDirectoryPage<ApplicationDepartmentResult> departments(
       String header, Long parentId, String keyword, int page, int pageSize) {
     CurrentIdentity actor = requireRoute(header, "/auth/departments");
@@ -105,9 +104,7 @@ public class StructuredApplicationIdentityService implements ApplicationIdentity
 
   /** 部门用户不展开下级，目标范围与查询API授权分别校验。 */
   @Override
-  @Transactional(
-      readOnly = true,
-      isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
+  @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
   public ApplicationDirectoryPage<ApplicationDepartmentUserResult> departmentUsers(
       String header, Long departmentId, String keyword, int page, int pageSize) {
     CurrentIdentity actor = requireRoute(header, "/auth/departments/{departmentId}/users");
@@ -186,7 +183,8 @@ public class StructuredApplicationIdentityService implements ApplicationIdentity
             .distinct()
             .sorted()
             .toList();
-    if (codes.isEmpty())
+    if (codes.isEmpty()
+        || operations.loginPermission(system).filter(code -> !codes.contains(code)).isPresent())
       throw new BusinessException(403, "APPLICATION_ACCESS_DENIED", "该账号没有此应用的有效授权");
     Set<Long> ids =
         direct.stream()
@@ -227,8 +225,7 @@ public class StructuredApplicationIdentityService implements ApplicationIdentity
   /** 无API的菜单与资格权限直接生效；有映射的短码要求全部映射同系统且启用。 */
   private boolean exportable(PermissionEntity permission) {
     return permission.getSystem().isEnabled()
-        && permission.getSystem().getConnectionStatus()
-            == com.municipal.rbaccore.service.port.resource.ConnectionStatus.CONNECTED
+        && permission.getSystem().getConnectionStatus() == ConnectionStatus.CONNECTED
         && (permission.getType() != PermissionType.API || !permission.getApis().isEmpty())
         && permission.getApis().stream()
             .allMatch(

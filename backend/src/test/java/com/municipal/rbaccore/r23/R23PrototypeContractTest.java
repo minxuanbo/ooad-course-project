@@ -18,7 +18,6 @@ import com.municipal.rbaccore.service.port.error.BusinessException;
 import com.municipal.rbaccore.service.port.identity.IdentityDirectoryGateway;
 import com.municipal.rbaccore.service.port.role.RoleResult;
 import com.municipal.rbaccore.service.port.security.CurrentIdentity;
-import com.municipal.rbaccore.service.port.security.RbacCatalog;
 import com.municipal.rbaccore.service.port.security.RequestContext;
 import com.municipal.rbaccore.service.port.user.AssignableRoleQuery;
 import com.municipal.rbaccore.service.port.user.UserQuery;
@@ -29,6 +28,7 @@ import com.municipal.rbaccore.service.structured.security.StructuredEffectivePer
 import com.municipal.rbaccore.service.structured.security.StructuredMaintenanceGuard;
 import com.municipal.rbaccore.service.structured.security.StructuredPersonnelAuthority;
 import com.municipal.rbaccore.service.structured.user.StructuredUserManagementService;
+import com.municipal.rbaccore.shared.ManagementContractFixture;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +41,8 @@ import org.springframework.http.*;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /** R23—R28获批原型的真实MySQL及HTTP增量契约。 */
 @SpringBootTest(
@@ -76,7 +78,7 @@ class R23PrototypeContractTest {
   @Autowired
   IdentityDirectoryGateway directory;
   @Autowired
-  org.springframework.transaction.PlatformTransactionManager transactions;
+  PlatformTransactionManager transactions;
 
   /** 本人权限投影保留真实父ID，不凭导航祖先补发授权。 */
   @Test
@@ -85,7 +87,10 @@ class R23PrototypeContractTest {
     Long child =
         jdbc.queryForObject(
             "SELECT MIN(id) FROM permissions WHERE system_id=1 AND id<>1", Long.class);
-    jdbc.update("UPDATE permissions SET parent_id=1 WHERE id=?", child);
+    jdbc.update(
+        "INSERT INTO permissions(id,system_id,code,name,type,enabled)"
+            + " VALUES(997,1,'unassigned.parent','未授父菜单','MENU',1)");
+    jdbc.update("UPDATE permissions SET parent_id=997 WHERE id=?", child);
     try {
       JsonNode data = call(HttpMethod.GET, MY_PERMISSIONS, token(1), null).getBody().path("data");
       JsonNode selected =
@@ -93,9 +98,13 @@ class R23PrototypeContractTest {
               .filter(item -> item.path("id").asLong() == child)
               .findFirst()
               .orElseThrow();
-      assertEquals(1, selected.path("parentId").asInt());
+      assertEquals(997, selected.path("parentId").asInt());
+      assertFalse(
+          java.util.stream.StreamSupport.stream(data.spliterator(), false)
+              .anyMatch(item -> item.path("id").asLong() == 997));
     } finally {
       jdbc.update("UPDATE permissions SET parent_id=NULL WHERE id=?", child);
+      jdbc.update("DELETE FROM permissions WHERE id=997");
     }
   }
 
@@ -103,7 +112,7 @@ class R23PrototypeContractTest {
   @Test
   @DisplayName("R24 结构化候选真实JPA对空权限集合只保留空授权角色")
   void R24_StructuredCandidateQueryWithNoEffectivePermissions() {
-    new org.springframework.transaction.support.TransactionTemplate(transactions)
+    new TransactionTemplate(transactions)
         .executeWithoutResult(
             status -> {
               StructuredAuthenticationService auth =
@@ -177,7 +186,7 @@ class R23PrototypeContractTest {
     query.setEnabled(false);
     query.setDepartmentId(2L);
     assertEquals(1, userQueries.list("Bearer " + admin, query).getTotal());
-    new org.springframework.transaction.support.TransactionTemplate(transactions)
+    new TransactionTemplate(transactions)
         .executeWithoutResult(
             status -> {
               JpaUserRepositoryAdapter adapter =
@@ -341,78 +350,7 @@ class R23PrototypeContractTest {
   /** 专库内构造独立根管理员、部门经理和跨系统无API权限，不触及业务库。 */
   @BeforeEach
   void prepare() {
-    assertEquals("rbac_core_t11_test", jdbc.queryForObject("SELECT DATABASE()", String.class));
-    jdbc.update("UPDATE permissions SET parent_id=NULL");
-    for (String table :
-        List.of(
-            "authorization_logs",
-            "bootstrap_receipts",
-            "import_sources",
-            "user_roles",
-            "role_permissions",
-            "permission_apis",
-            "users",
-            "roles",
-            "permissions",
-            "api_resources",
-            "systems")) jdbc.update("DELETE FROM " + table);
-    jdbc.update("UPDATE departments SET parent_id=NULL");
-    jdbc.update("DELETE FROM departments");
-    jdbc.update("INSERT INTO departments(id,code,name) VALUES(1,'root','总公司')");
-    jdbc.update(
-        "INSERT INTO departments(id,code,name,parent_id)"
-            + " VALUES(2,'dept','工程部',1),(3,'project','项目',2)");
-    jdbc.update(
-        "INSERT INTO import_sources(source_type,source_key,source_json,department_id)"
-            + " VALUES('ORGANIZATION','总公司','[]',1)");
-    jdbc.update(
-        "INSERT INTO systems(id,code,name,enabled)"
-            + " VALUES(1,'rbac','RBAC',1),(2,'business','业务系统',1)");
-    jdbc.update(
-        "INSERT INTO roles(id,code,name,enabled)"
-            + " VALUES(1,'system-admin','管理员',1),(2,'department-manager','经理',1),(3,'employee','员工',1),(4,'custom','自定义',1)");
-    jdbc.update(
-        "UPDATE roles SET role_type=CASE WHEN id<=3 THEN 'SYSTEM_BUILTIN' ELSE 'GLOBAL_CUSTOM' END,"
-            + " management_level=CASE id WHEN 1 THEN 5 WHEN 2 THEN 3 WHEN 3 THEN 1 ELSE NULL END");
-    jdbc.update(
-        "UPDATE departments SET type=CASE id WHEN 1 THEN 'HEADQUARTERS' WHEN 3 THEN 'PROJECT' ELSE"
-            + " 'DEPARTMENT' END");
-    long next = 1;
-    for (Map.Entry<String, List<RbacCatalog.Route>> entry : RbacCatalog.definitions().entrySet()) {
-      long permission = next++;
-      jdbc.update(
-          "INSERT INTO permissions(id,system_id,code,name,type,enabled) VALUES(?,1,?,?,'BUTTON',1)",
-          permission,
-          entry.getKey(),
-          entry.getKey());
-      jdbc.update("INSERT INTO role_permissions VALUES(1,?)", permission);
-      if (RbacCatalog.PERSONNEL.contains(entry.getKey()))
-        jdbc.update("INSERT INTO role_permissions VALUES(2,?)", permission);
-      for (RbacCatalog.Route route : entry.getValue()) {
-        long api = next++;
-        jdbc.update(
-            "INSERT INTO api_resources(id,system_id,http_method,path_template,enabled)"
-                + " VALUES(?,1,?,?,1)",
-            api,
-            route.method(),
-            route.path());
-        jdbc.update("INSERT INTO permission_apis VALUES(?,?)", permission, api);
-      }
-    }
-    jdbc.update(
-        "INSERT INTO permissions(id,system_id,code,name,type,enabled)"
-            + " VALUES(999,2,'sensitive','业务操作','BUTTON',1)");
-    jdbc.update("INSERT INTO role_permissions VALUES(3,999)");
-    for (int id : List.of(1, 2, 3, 4))
-      jdbc.update(
-          "INSERT INTO users(id,username,password_hash,name,department_id,enabled,position)"
-              + " VALUES(?,?,?,?,?,1,'只读职位')",
-          id,
-          "stage4-" + id,
-          encoder.encode(PASSWORD),
-          "人员" + id,
-          id == 1 ? 1 : 2);
-    jdbc.update("INSERT INTO user_roles VALUES(1,1),(2,2),(3,2),(4,3)");
+    ManagementContractFixture.prepare(jdbc, encoder);
   }
 
   /** 无API映射不代表没有权限，普通员工角色不可越过跨系统权限子集。 */
@@ -535,7 +473,7 @@ class R23PrototypeContractTest {
     JsonNode identity = call(HttpMethod.GET, ME, admin, null).getBody().path("data").path("user");
     assertEquals(5, identity.path("managementLevel").asInt());
     assertTrue(identity.path("globalScope").asBoolean());
-    assertEquals(25, identity.path("routes").size());
+    assertEquals(34, identity.path("routes").size());
   }
 
   /** 级别与权限子集叠加；自定义角色不冻结人员，但仍只能由管理员增删。 */

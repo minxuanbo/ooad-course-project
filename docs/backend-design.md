@@ -10,7 +10,7 @@
 
 本RBAC自己保存口令并认证，不照搬课程项目的外部统一身份。课程按通用身份协议显式接入；Redis、语音、存储和其他示例集成不纳入RBAC范围。
 
-默认首次授权管理RBAC自身权限，通用应用目录按登记事实读取，课程独立配置接入，共用Vue、29项管理HTTP操作与8项可选通用应用身份操作、22项HTTP错误、12表首次SQL、固定五级角色及17项完整维护能力集合K。18业务系统经独立首次配置进入正式计划授权，默认PENDING；实际登录、短码及API仍要求CONNECTED。课程身份适配职责见[课程接入](course-integration.md)，两策略各自计算权限，不将业务实现放入共享port。
+默认首次授权管理RBAC自身权限，通用应用目录按登记事实读取，课程独立配置接入，共用Vue、37项管理HTTP操作与8项可选通用应用身份操作、稳定HTTP错误、14表首次SQL、固定五级角色及17项完整维护能力集合K。初始只配置RBAC及课程；新增第三个系统无需修改后端，实际登录、短码及API仍要求CONNECTED。课程身份适配职责见[课程接入](course-integration.md)，两策略各自计算权限，不将业务实现放入共享port。
 
 共享用例端口隔离HTTP与业务实现，领域仓储隔离领域与持久化，配置互斥装配两种策略。RBAC负责本地账号认证与通用应用授权；课程业务及Teacher/Student绑定属于独立课程系统。
 
@@ -74,7 +74,7 @@ application→domain.model/domain.repository/service.port；domain仅依赖领�
 
 | 区域                                | 当前内容                                                                     | DDD边界                                                                                                                                   |
 | ----------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| api、frontend、OpenAPI              | HTTP DTO/VO、校验、错误/信封、Vue和37操作契约（29管理、8通用身份）                                | 复用同一接口/页面，Controller只调service.port，不写实现分支                                                                                   |
+| api、frontend、OpenAPI              | HTTP DTO/VO、校验、错误/信封、Vue和45操作契约（37管理、8通用身份）                                | 复用同一接口/页面，Controller只调service.port，不写实现分支                                                                                   |
 | service.port                        | 用例/支撑接口、Command/Query/Result、协议枚举、错误码、固定角色/方法路径目录 | 不导入Entity、Spring、Servlet、结构化或DDD类型；目录是协议/首次数据元信息，不执行动态权限、范围或组织层级策略                                 |
 | infrastructure.security/web/logging | BCrypt、Bearer承载的JWT、请求/游标/技术日志、MVC预检及门禁                             | 通过AuthenticationUseCase、ManagementAuthorization、ManagementAccessUseCase等端口调用当次装配实现，不能直接调用StructuredService或DDD应用服务 |
 | infrastructure.excel                | Excel解析、原件/源字段校验、LoginIdentifiers离线标识碰撞检查                 | 复用来源读取端口与技术预检；不依赖结构化服务，DDD业务仍独立保证身份不变量                                                                     |
@@ -112,7 +112,7 @@ Command/Query/Result与HTTP DTO/VO分离，Controller及预检/AOP注入service.
 
 | 用例端口组   | 输入/输出                                 | 关键约束                                  |
 | ------------ | ----------------------------------------- | ----------------------------------------- |
-| 认证与本人   | account/password或可信身份→身份及有效权限 | 双入口唯一、有效管理API准入、退出幂等     |
+| 认证与本人   | account/password或可信身份→身份及有效权限 | 双入口唯一、有效LOGIN准入、退出幂等     |
 | 组织人员查询 | 可选部门/q/状态/page/size→可见树/分页     | 范围先于筛选与计数，不返回范围外父节点    |
 | 人员管理     | userId及roleIds/停用/目标部门→最新结果    | 子集、本人/管理员限制、调动双范围、根锁/K |
 | 角色与选权   | 角色查询/空权限新建/部分更新/整体选权     | 角色读取允许局部子树部门项；定义/选权写要求共同根与实际API、编码唯一       |
@@ -217,7 +217,7 @@ StructuredUserManagementService在事务内组织根锁、锁后重验、人员�
 
 ### 8.1 基础规则
 
-沿Java21/JPA/MySQL8.4基线，显式rbac_core、utf8mb4_0900_bin、JPA validate、sql.init.mode=never。仅提供全新库首次SQL，不提供旧库升级；类型、空值及索引以[物理模型](database/physical-model.md)为准。
+沿Java21/JPA/MySQL8.4基线，显式rbac_core、utf8mb4_0900_bin、JPA validate、sql.init.mode=never。仅提供全新库首次SQL，不提供旧库升级；类型、空值及索引以[物理模型](database-design.md#physical-model)为准。
 
 ### 8.2 唯一与关联规则
 
@@ -255,7 +255,7 @@ K校验必须看见本事务的待提交变更。适配器保存时同步完整�
 
 ## 10. API、安全与错误
 
-OpenAPI定义37个操作（29项管理操作，含部门及总览5项扩展；另有8项可选通用应用身份操作）；[业务约束](api-contract.md)解释实际API OR、同系统、范围、可授予子集和17项K。API门禁按服务端方法/模板，不依据固定权限code、角色名或客户端admin标识。本人查询与退出沿独立兼容契约。
+OpenAPI定义45个操作（37项管理操作，含部门及总览5项扩展；另有8项可选通用应用身份操作）；[业务约束](api-contract.md)解释实际API OR、同系统、范围、可授予子集和17项K。API门禁按服务端方法/模板，不依据固定权限code、角色名或客户端admin标识。本人查询每次仍须有效LOGIN；退出沿独立幂等契约。
 
 账号唯一性和口令校验后还需管理端准入。Bearer索引保留在进程内，重启失效；每次管理请求重读最新状态/授权/部门，不把token内旧权限当真。用户停用后已有身份不能管理。统一{code,message,data,requestId}，401/403/404/409各按规范，500不泄露栈、SQL或输入。
 
@@ -263,7 +263,7 @@ OpenAPI定义37个操作（29项管理操作，含部门及总览5项扩展；�
 
 ### 10.1 认证与错误翻译
 
-认证技术共用IdentityTokenStore、PasswordHashing、RequestContext，业务链独立：UserRepository按同一输入精确匹配工号/手机号→AuthenticationPolicy要求唯一、启用、口令符合→AuthorizationPolicy要求本RBAC登记管理API→发令牌。未知/歧义/停用/错口令仍401 LOGIN_FAILED，正确口令但无管理准入仍403；不新增会话实体，也不依赖另一个统一身份提供方。
+认证技术共用IdentityTokenStore、PasswordHashing、RequestContext，业务链独立：UserRepository按同一输入精确匹配工号/手机号→AuthenticationPolicy要求唯一、启用、口令符合→AuthorizationPolicy计算当前有效路由，DddAuthorizationService要求覆盖POST /api/auth/login→发令牌。未知/歧义/停用/错口令仍401 LOGIN_FAILED，正确口令但无管理准入仍403；不新增会话实体，也不依赖另一个统一身份提供方。
 
 领域异常DomainViolation只包含领域原因和可公开提示，不携HTTP、SQL或JPA对象；application.support的DddFailureTranslator翻译为既有BusinessException及现行HTTP错误；通用应用准入错误为APPLICATION_ACCESS_DENIED，API Advice保持共用。基础设施在保存发生处把数据库冲突翻译为既有错误，不在全局Advice按表名判断。框架路由404/405仍沿共用Advice；离线初始化错误保持既有CLI语义。
 
@@ -546,7 +546,7 @@ DDD：`DddResourceService`，领域仓储/模型及策略边界如下。
 
 [DDD SVG](design/class-ddd-api-resource.svg)
 
-#### 已登记应用目录（systems）
+#### 应用目录与生命周期（systems）
 
 structured：`StructuredResourceService`，直接依赖`ApplicationSystemJpaRepository`及`ManagedApplications`。
 
@@ -600,7 +600,7 @@ DDD：`DddManagementAccess`，领域仓储/模型及策略边界如下。
 
 ### 17.3 差异顺序图
 
-逐项核对37个HTTP操作、2个离线入口及横切支撑后，按24组独立差异编排，每组structured/DDD各1张，共48张。重复使用同一实现模式的接口只引用同一组图，具体对应见17.4；不是将每个接口复制两遍。
+逐项核对41个HTTP操作、2个离线入口及横切支撑后，按25组独立差异编排，每组structured/DDD各1张，共50张。重复使用同一实现模式的接口只引用同一组图，具体对应见17.4；不是将每个接口复制两遍。
 
 共同HTTP绑定/校验、Controller、DTO/VO映射、JWT签发/解析、AOP、技术日志、根锁取得、锁后重鉴权、最终保护调用、保存后的提交/回滚不画。普通保存本身不再作为两套差异重复展示；ImportBatch/Publication是领域批次边界，属于真实接口差异。`maintenance`组只画完整维护者资格算法，不重复最终保护/锁的共同编排。
 
@@ -942,6 +942,14 @@ structured的Service执行exportable筛选并投影角色/短码；DDD由Applica
 
 [DDD SVG](design/sequence-application-projection-ddd.svg)
 
+#### 应用资料与生命周期（application-lifecycle）
+
+structured直接对ApplicationSystemEntity作可选字段映射；DDD调用ApplicationSystem.revise返回新领域值。新增构造默认PENDING，移除仅enabled=false。共同的HTTP校验、根锁、锁后鉴权、提交及维护者保护不重复绘图；分页复用user-query模式。
+
+![structured 应用生命周期差异](design/sequence-application-lifecycle-structured.png)
+
+![DDD 应用生命周期差异](design/sequence-application-lifecycle-ddd.png)
+
 ### 17.4 覆盖与省略矩阵
 
 每个操作均有明确结论。“共同流程”表示两套语义和协作相同；纯类型/结果装配差异由类图说明，不制造仅换类名的顺序图。
@@ -986,6 +994,14 @@ structured的Service执行exportable筛选并投影角色/短码；DDD由Applica
 | `GET /auth/departments` | `ApplicationIdentityUseCase.departments` | application-projection / organization-scope | 目录门禁和范围依上述差异；IdentityDirectoryGateway的计数/分页SQL是共用实现，不画双份。 |
 | `GET /auth/departments/{departmentId}/users` | `ApplicationIdentityUseCase.departmentUsers` | application-projection / organization-scope | 直属部门范围差异同上；五字段及page/pageSize查询共用。 |
 | `GET /auth/api-permissions/{operationId}` | `ApplicationIdentityUseCase.apiAllowed` | application-projection | ApiOperationCatalog定位、permissionRoles和路由匹配算法相同，仅current投影依两套实现。 |
+| `POST /api/systems` | `ResourceUseCase.createSystem` | application-lifecycle | Entity字段修改与不可变ApplicationSystem.revise；新增构造和逻辑移除使用同一生命周期边界，公共事务不重复画。 |
+| `PATCH /api/systems/{id}` | `ResourceUseCase.patchSystem` | application-lifecycle | Entity字段修改与不可变ApplicationSystem.revise；新增构造和逻辑移除使用同一生命周期边界，公共事务不重复画。 |
+| `DELETE /api/systems/{id}` | `ResourceUseCase.removeSystem` | application-lifecycle | Entity字段修改与不可变ApplicationSystem.revise；新增构造和逻辑移除使用同一生命周期边界，公共事务不重复画。 |
+| `GET /api/systems/page` | `ResourceUseCase.searchSystems` | user-query（分页模式复用） | 同快照筛选分页的技术/领域边界，复用分页模式。 |
+| `GET /api/systems/{id}/onboarding` | `OnboardingUseCase.snapshot` | onboarding-publication（同一接入配置边界） | 结构化独立事务脚本校验和JPA读写；DDD聚合problems/connect与领域仓储。解析、指纹和真实HTTP协议探测为共用技术，不绘制重复流程。 |
+| `POST /api/systems/{id}/onboarding/import` | `OnboardingUseCase.preview` | onboarding-publication（同一接入配置边界） | 结构化独立事务脚本校验和JPA读写；DDD聚合problems/connect与领域仓储。解析、指纹和真实HTTP协议探测为共用技术，不绘制重复流程。 |
+| `POST /api/systems/{id}/onboarding/check` | `OnboardingUseCase.check` | onboarding-publication | 结构化独立事务脚本校验和JPA读写；DDD聚合problems/connect与领域仓储。解析、指纹和真实HTTP协议探测为共用技术，不绘制重复流程。 |
+| `POST /api/systems/{id}/onboarding/complete` | `OnboardingUseCase.complete` | onboarding-publication | 结构化独立事务脚本校验和JPA读写；DDD聚合problems/connect与领域仓储。解析、指纹和真实HTTP协议探测为共用技术，不绘制重复流程。 |
 <!-- END: backend-coverage -->
 
 | 非HTTP入口/支撑 | 对应差异 | 共同部分 |
@@ -996,7 +1012,7 @@ structured的Service执行exportable筛选并投影角色/短码；DDD由Applica
 | MaintenanceProtection | maintenance（资格算法） | 根锁、锁后重鉴权、最终保护的顺序 |
 | JWT、AuditQueryGateway、IdentityDirectoryGateway、ApiOperationCatalog | 共用技术实现，不画双份 | 签名、单会话撤销、快照、目录SQL与操作配置 |
 
-当前图集82组：包图2、类图32、差异顺序图48。生成数据、源码锚点及运行命令见[图件说明](design/README.md)。被现行图集替代的旧片段及重复图已清理，原版本可从Git历史恢复。
+当前图集88组：包图2、类图32、差异顺序图50。生成数据、源码锚点及运行命令见[图件说明](design/README.md)。被现行图集替代的旧片段及重复图已清理，原版本可从Git历史恢复。
 
 ## 18. 通用应用身份与课程本地接入
 
@@ -1008,13 +1024,13 @@ JWT签名、issuer及时间由标准JOSE/Nimbus校验，编解码器继续核对
 
 角色、账号启停、权限及部门范围逐请求读取。API类型短码须有实际映射且全部映射同应用启用；通用/auth/me返回subject、roles、permissions、system、permissionApis。角色可跨应用拥有权限，Permission与ApiResource映射必须同应用。
 
-外部目录采用page从1、pageSize默认20最多100，按人员子树逐层展开直接子部门，直属人员只返回5个最小字段。IdentityDirectoryGateway在同一数据库快照先筛选、计数、分页。operationId只由IDENTITY_OPERATIONS_FILE显式配置定位，未知操作404、损坏/重复配置启动失败；permissionRoles只决定全局门禁适用角色，课程对象权限仍由课程Service判断。
+外部目录采用page从1、pageSize默认20最多100，按人员子树逐层展开直接子部门，直属人员只返回5个最小字段。IdentityDirectoryGateway在同一数据库快照先筛选、计数、分页。operationId由api_operations按应用及操作编码逐请求读取，未知或已移除操作404；独立首次脚本显式导入operations.json，产品启动不覆盖数据库配置；permissionRoles只决定全局门禁适用角色，课程对象权限仍由课程Service判断。
 
 权限查询通过RequestContext.permissionCheck把真假结果交给共享过滤器，生成独立PERMISSION_CHECK事件；两套用例仍各自计算权限，日志技术不承载业务决策。日志Gateway在已获日志权限的事务内附带登记应用目录，Controller显式映射systems元素；不扩大GET /api/systems的资源目录准入，不新增HTTP端点或数据库表。此日志步骤为共享流程，双策略差异顺序图继续省略。
 
 课程teacher/student/course-admin及路由保存在integrations/course配置中。课程首次接入按总公司本部范围分配teacher、其余student，合格根直属五级RBAC管理员同账号兼course-admin，并建立老师课程本地绑定；由独立初始化脚本显式执行，不加入RBAC领域。课程先提交绑定、RBAC后在根锁事务发布通用授权和回执，不宣称分布式原子事务；重复回执不重置后续授权。
 
-老师原目录保持独立；原本机联调副本保留3个structured生产补丁，固定990cea2的部署副本另有DDD对等修复、当前学期标记释放及安全日志补丁。统一身份审计另2项不在RBAC8项契约中；本机支撑继续保留，服务器采用独立Waitress/MySQL持久保存课程业务审计，老师缺少的Controller等来源限制继续保留。配置、端口及已知缺口以[课程接入](course-integration.md)为准；两个后端均DDD的正式运行边界见[部署说明](../deploy/README.md)，实际云端结果见[发布记录](history/verification/ddd-production-deployment.md)。详设外部文件不改。
+老师原目录保持独立；原本机联调副本保留3个structured生产补丁，固定990cea2的部署副本另有DDD对等修复、当前学期标记释放及安全日志补丁。统一身份审计另2项不在RBAC8项契约中；本机支撑继续保留，服务器采用独立Waitress/MySQL持久保存课程业务审计，老师缺少的Controller等来源限制继续保留。配置、端口及已知缺口以[课程接入](course-integration.md)为准；两个后端均DDD的正式运行边界见[部署说明](../deploy/README.md)，实际云端结果见[发布记录](history/verification/release-evidence.md#ddd-production-deployment)。外部交付材料按明确授权同步。
 
 ## 19. 应用目录和部门角色职责
 
@@ -1024,4 +1040,32 @@ structured在StructuredUserManagementService直接读取实体、祖先事实和
 
 StructuredRoleService与DddRoleService为角色读取提供受限部门范围，ManagementPreflight调用RoleUseCase.checkTarget在输入解析前核实；定义写入仍沿共同根门禁，部门定义额外要求有效五级。领导读取不开放角色选权、启停或归属变更。两种身份授权实现每次过滤不适用部门角色，再检查CONNECTED；角色导出同样过滤，不能借其他角色同名权限带出过期身份。
 
-独立scripts/initialize_business_catalog.py只发布一次外部配置，复用原表只读解析，不新增另一套Java运行授权实现。18待接入系统无真实API，配置能力不代表业务系统已接入；正式接入需要方法/模板、operationId映射及对象范围验收。已有课程前端与业务保持原接入边界。
+部署首次配置只登记真实课程，原Excel中其余18项系统不进入运行目录；移除其批量初始化入口。新增应用通过数据库登记及向导完成方法/模板、operationId和对象规则验收，不增加应用代码白名单。课程前端和业务边界保持原样。
+
+### 19.1 应用管理与独立登录
+
+ApplicationController适配应用管理四操作：分页、新增、PATCH、DELETE；ResourceController原GET /api/systems保持选择器数组。两策略分别实现searchSystems/createSystem/patchSystem/removeSystem，DDD仓储接收SearchCriteria.Systems、返回DomainPage<ApplicationSystem>；structured直接使用Spring Data Specification。两者分页均同一REPEATABLE_READ快照，新增待接入、稳定编码，移除/恢复保留关系，写入仍同根锁和维护者保护。
+
+管理准入以有效链覆盖POST /api/auth/login判断，初始rbac.login仅为稳定目录标识，不按某个code硬授权。只授登录的用户可进入空工作台；七个菜单显式映射页面读取API，各按钮独立映射真实操作。撤回登录资格后原JWT的管理本人查询也拒绝，退出保持幂等；维护者除K17及有效五级/可信根外还须有效LOGIN。课程对象权限继续由课程系统负责。
+
+外部身份目录使用Spring Data JPA专用投影和同条件计数；JpaIdentityDirectoryGateway不再直接持有EntityManager或拼接动态JPQL。投影属于技术读模型，不把DTO或JPA类型泄漏到领域仓储。装配选择器只扫描所选策略；StructuredImportService没有组件注解，须保留显式导入，不能误认为被重复注册。
+
+## 20. 应用接入用例
+
+OnboardingController只做DTO形状校验及VO映射。四项实际API、可信根五级资格在预检与Service中执行；完成进入共同根锁，重读聚合/实体、资格、完整指纹和关联，角色子集变化另验选权API，写后维护者保护仍由统一写边界执行。HTTP解析、摘要和协议探测是共享技术端口，不承载两策略组织决策。
+
+structured由StructuredOnboardingService直接读取JPA并独立执行树/映射/角色/保留规则，差量保存实体关联。DDD由DddOnboardingService编排ApplicationOnboarding.problems/connect及OnboardingRepository，JpaOnboardingRepositoryAdapter负责技术读写；领域仓储没有JPA、DTO或port模型。两策略保留相同事务与行为契约。共同身份/根锁/协议探测不画双份，新增发布差异图只展示独立事务脚本与领域聚合边界。
+
+DatabaseApiOperationCatalog逐请求读取api_operations及application_profiles；ConfiguredApiOperationCatalog只留离线文件校验，不作为运行bean或文件回退。IdentityWebConfiguration只给/auth/*开放固定来源及当前启用CONNECTED入口的精确Origin；不开放管理端跨域。LocalIdentityProtocolProbe通过@HttpExchange访问本机真实端点，finally清理本次会话；entryUrl从不作为抓取目标。
+
+### 应用接入模块对照图
+
+![structured接入配置](design/class-structured-onboarding.png)
+
+![DDD接入配置](design/class-ddd-onboarding.png)
+
+![structured接入发布差异](design/sequence-onboarding-publication-structured.png)
+
+![DDD接入发布差异](design/sequence-onboarding-publication-ddd.png)
+
+共同的根锁、身份鉴权、完整指纹、人工确认与HTTP探测均省略；这里对比事务脚本内的独立校验/实体持久化和领域聚合行为/仓储边界。

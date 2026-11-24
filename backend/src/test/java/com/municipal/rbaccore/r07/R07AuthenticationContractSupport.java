@@ -28,6 +28,7 @@ import com.municipal.rbaccore.service.port.importing.BootstrapCredentials;
 import com.municipal.rbaccore.service.port.importing.ImportUseCase;
 import com.municipal.rbaccore.service.port.security.MaintenanceProtection;
 import com.municipal.rbaccore.service.port.security.Managed;
+import com.municipal.rbaccore.service.port.security.RbacCatalog;
 import com.municipal.rbaccore.shared.TestProjectPaths;
 import java.net.URI;
 import java.util.*;
@@ -48,6 +49,7 @@ import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.event.EventListener;
 import org.springframework.http.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -69,12 +71,40 @@ abstract class R07AuthenticationContractSupport {
   private static final String LOGS = "/api/authorization-logs";
   private static final String ME = "/api/me";
   private static final String PERMISSIONS = "/api/me/permissions";
+  private static final String PERMISSION_ITEM = "/api/permissions/";
   private static final String UNREGISTERED = "/api/t05-unregistered";
   private static final String UNKNOWN_ENDPOINT = "/api/r18-unknown-endpoint";
   private static final String ACTUATOR_HEALTH = "/actuator/health";
   private static final String ACTUATOR_METRICS = "/actuator/prometheus";
   private static final String PASSWORD = "t05-employee-password";
   private static final String ADMIN_PASSWORD = "t05-admin-password";
+
+  /** 初始名称从数据库原样返回中文，客户端不能借属性更新偷偷改稳定目录名称。 */
+  @Test
+  @DisplayName("R30 初始权限中文名称真实返回且未开放名称修改入口")
+  void R30_ChineseCatalogNamesAndImmutableMetadata() throws Exception {
+    String admin = token("admin", ADMIN_PASSWORD);
+    JsonNode data = body(request("GET", PERMISSIONS, admin, null)).get("data");
+    Map<String, String> expected = RbacCatalog.displayNames();
+    int found = 0;
+    for (JsonNode permission : data) {
+      String name = expected.get(permission.path("code").asText());
+      if (name != null) {
+        assertEquals(name, permission.path("name").asText());
+        found++;
+      }
+    }
+    assertEquals(expected.size(), found);
+    long id = jdbc.queryForObject("SELECT id FROM permissions WHERE code='rbac.login'", Long.class);
+    assertEquals(
+        400,
+        request("PATCH", PERMISSION_ITEM + id, admin, Map.of("name", "不允许改名"))
+            .getStatusCode()
+            .value());
+    assertEquals(
+        "登录RBAC", jdbc.queryForObject("SELECT name FROM permissions WHERE id=?", String.class, id));
+  }
+
   @Autowired
   TestRestTemplate http;
   @Autowired
@@ -107,7 +137,6 @@ abstract class R07AuthenticationContractSupport {
   AuthorizationLogJpaRepository auditRows;
 
   @Autowired
-
   ApplicationSystemJpaRepository systems;
 
   private long rootId;
@@ -338,8 +367,8 @@ abstract class R07AuthenticationContractSupport {
 
   /** R34内部运维协议保持原始JSON和Prometheus文本，不能套用业务响应包装。 */
   @Test
-  @DisplayName("R34内部健康与Prometheus保留标准响应协议")
-  void R34_InternalOperationsKeepNativeResponse() throws Exception {
+  @DisplayName("R22 内部健康与Prometheus保留标准响应协议")
+  void R22_InternalOperationsKeepNativeResponse() throws Exception {
     ResponseEntity<String> health = http.getForEntity(ACTUATOR_HEALTH, String.class);
     assertEquals(200, health.getStatusCode().value());
     JsonNode status = json.readTree(health.getBody());
@@ -438,7 +467,7 @@ abstract class R07AuthenticationContractSupport {
         new java.util.concurrent.atomic.AtomicInteger();
 
     /** 记录数据库日志写入失败通知的次数。 */
-    @org.springframework.context.event.EventListener
+    @EventListener
     public void onFailure(JpaAuditWriter.WriteFailure event) {
       assertFalse(event.exceptionType().contains("SQL"));
       count.incrementAndGet();
@@ -463,6 +492,8 @@ abstract class R07AuthenticationContractSupport {
     jdbc.update("UPDATE permissions SET parent_id=NULL");
     for (String table :
         List.of(
+            "api_operations",
+            "application_profiles",
             "authorization_logs",
             "bootstrap_receipts",
             "import_sources",
@@ -512,12 +543,12 @@ abstract class R07AuthenticationContractSupport {
     assertEquals(10001, bootstrap.initialize(TestProjectPaths.sources()).createdAssignments());
     assertEquals(5, roles.count());
     assertEquals(10001, jdbc.queryForObject("SELECT count(*) FROM user_roles", Integer.class));
-    assertEquals(25, jdbc.queryForObject("SELECT count(*) FROM api_resources", Integer.class));
+    assertEquals(34, jdbc.queryForObject("SELECT count(*) FROM api_resources", Integer.class));
     assertEquals(
-        5,
+        7,
         jdbc.queryForObject("SELECT count(*) FROM permissions WHERE type='MENU'", Integer.class));
     assertEquals(
-        25,
+        34,
         jdbc.queryForObject("SELECT count(*) FROM permissions WHERE type='BUTTON'", Integer.class));
     assertEquals(
         0,
@@ -540,7 +571,7 @@ abstract class R07AuthenticationContractSupport {
             "SELECT username FROM users WHERE position='部长' ORDER BY id LIMIT 1", String.class);
     departmentManagerId = id(departmentManager);
     assertEquals(
-        12,
+        14,
         jdbc.queryForObject(
             "SELECT count(*) FROM information_schema.tables WHERE table_schema=DATABASE()",
             Integer.class));
@@ -694,8 +725,8 @@ abstract class R07AuthenticationContractSupport {
       jdbc.update("UPDATE roles SET name='任意改名' WHERE id=?", roleId);
       assertEquals(200, request("GET", USERS, token, null).getStatusCode().value());
       jdbc.update("DELETE FROM user_roles WHERE user_id=?", departmentManagerId);
-      assertEquals(200, request("GET", ME, token, null).getStatusCode().value());
-      assertEquals(0, body(request("GET", PERMISSIONS, token, null)).get("data").size());
+      assertEquals(403, request("GET", ME, token, null).getStatusCode().value());
+      assertEquals(403, request("GET", PERMISSIONS, token, null).getStatusCode().value());
       assertEquals(403, request("GET", USERS, token, null).getStatusCode().value());
       assertEquals(
           403,
@@ -784,6 +815,8 @@ abstract class R07AuthenticationContractSupport {
   void R04_RecomputesEnabledChainsAndOrMappings() throws Exception {
     long account = fixture("t05-chain", null, null, PASSWORD);
     long role = createRole("t05-chain-role", "rbac.users.read");
+    jdbc.update(
+        "INSERT INTO role_permissions SELECT ?,id FROM permissions WHERE code='rbac.login'", role);
     long alternative = 0;
     try {
       jdbc.update("INSERT INTO user_roles(user_id,role_id) VALUES(?,?)", account, role);
@@ -956,6 +989,9 @@ abstract class R07AuthenticationContractSupport {
     assertEquals(403, denied.getStatusCode().value());
     assertOneLog(denied, "AUTHORIZATION", false);
     long logRole = createRole("t05-log-only", "rbac.logs.read");
+    jdbc.update(
+        "INSERT INTO role_permissions SELECT ?,id FROM permissions WHERE code='rbac.login'",
+        logRole);
     try {
       jdbc.update(
           "INSERT INTO user_roles(user_id,role_id) VALUES(?,?)", departmentManagerId, logRole);

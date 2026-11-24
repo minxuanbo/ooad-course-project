@@ -2,6 +2,9 @@
 import importlib.util
 from pathlib import Path
 import unittest
+import os
+import sys
+from unittest.mock import patch
 
 source = Path(__file__).resolve().parents[2] / 'deploy/initialize_deployment.py'
 spec = importlib.util.spec_from_file_location('deployment_initializer', source)
@@ -19,6 +22,27 @@ class DeploymentBindingsTest(unittest.TestCase):
             {'id': 6, 'username': '0006', 'name': '分公司学生', 'department': '分公司', 'teacher': False}]}
         self.teachers = [{'id': 77, 'user_id': '0003', 'no': '0003', 'deleted': False}]
         self.students = [{'id': 88, 'user_id': '0006', 'no': '0006', 'status': 'active'}]
+
+    def test_R28_first_install_only_adds_explicit_course_application(self):
+        """核心首次授权已有RBAC，部署入口只显式配置真实课程，不导入Excel模拟系统。"""
+        for apply in (False, True):
+            with self.subTest(apply=apply), patch.dict(os.environ, {'INITIALIZATION_PHASE': 'offline-first-install'}), \
+                    patch.object(sys, 'argv', ['initializer'] + (['--apply'] if apply else [])), \
+                    patch.object(module, 'Database') as database, patch.object(module, 'initialize', return_value={'applied': apply}) as initialize, patch('builtins.print'):
+                module.main()
+                self.assertEqual(2, database.call_count)
+                args = initialize.call_args.args
+                self.assertEqual('course-project-management', args[3]['system'])
+                self.assertEqual(apply, args[4])
+                self.assertTrue(args[5])
+                self.assertEqual({'course-project-management'}, {operation['system'] for operation in args[5]})
+
+    def test_R28_startup_cannot_run_offline_first_install(self):
+        """普通运行阶段拒绝初始化，不能因重启再次恢复删除的应用或授权。"""
+        with patch.dict(os.environ, {'INITIALIZATION_PHASE': 'runtime'}), patch.object(sys, 'argv', ['initializer']), patch.object(module, 'Database') as database:
+            with self.assertRaisesRegex(ValueError, 'OFFLINE_FIRST_INSTALL_REQUIRED'):
+                module.main()
+            database.assert_not_called()
 
     def test_R34_legacy_numbers_rebind_in_place_and_admin_is_added(self):
         sql, report = module.reconcile_bindings(self.plan, self.teachers, self.students)

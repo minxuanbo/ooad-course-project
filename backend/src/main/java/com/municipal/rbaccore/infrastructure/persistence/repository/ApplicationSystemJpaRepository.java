@@ -4,13 +4,15 @@ import com.municipal.rbaccore.infrastructure.persistence.entity.ApplicationSyste
 import jakarta.persistence.LockModeType;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 /** 系统目录按稳定编码定位，不把前端原型ID当成真实主键。 */
 public interface ApplicationSystemJpaRepository
-    extends JpaRepository<ApplicationSystemEntity, Long> {
+    extends JpaRepository<ApplicationSystemEntity, Long>,
+        JpaSpecificationExecutor<ApplicationSystemEntity> {
   /** 按装配层提供的登记编码读取，包含可维护的待接入目录。 */
   java.util.List<ApplicationSystemEntity> findByCodeInOrderByIdAsc(java.util.Set<String> codes);
 
@@ -21,6 +23,6 @@ public interface ApplicationSystemJpaRepository
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("select system from ApplicationSystemEntity system where system.code = :code")
   Optional<ApplicationSystemEntity> lockForAuditAppend(
-  @Param("code")
-  String code);
+      @Param("code")
+      String code);
 }

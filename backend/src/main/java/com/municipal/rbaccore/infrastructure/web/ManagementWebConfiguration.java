@@ -20,6 +20,7 @@ public class ManagementWebConfiguration implements WebMvcConfigurer {
             "/api/departments",
             "/api/departments/*",
             "/api/systems",
+            "/api/systems/**",
             "/api/permissions/**",
             "/api/api-resources/**",
             "/api/roles",

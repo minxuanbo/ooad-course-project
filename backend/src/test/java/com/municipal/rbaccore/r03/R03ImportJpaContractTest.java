@@ -3,6 +3,8 @@ package com.municipal.rbaccore.r03;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.municipal.rbaccore.config.ImportStrategySelector;
+import com.municipal.rbaccore.infrastructure.excel.SourceCellsJson;
 import com.municipal.rbaccore.infrastructure.excel.WorkbookImportPlanner;
 import com.municipal.rbaccore.infrastructure.persistence.entity.DepartmentEntity;
 import com.municipal.rbaccore.infrastructure.persistence.entity.ImportSourceEntity;
@@ -12,11 +14,11 @@ import com.municipal.rbaccore.infrastructure.persistence.repository.DepartmentJp
 import com.municipal.rbaccore.infrastructure.persistence.repository.ImportSourceJpaRepository;
 import com.municipal.rbaccore.infrastructure.persistence.repository.RoleJpaRepository;
 import com.municipal.rbaccore.infrastructure.persistence.repository.UserJpaRepository;
+import com.municipal.rbaccore.infrastructure.security.BCryptPasswordHashing;
 import com.municipal.rbaccore.service.port.error.ImportException;
 import com.municipal.rbaccore.service.port.importing.BootstrapCredentials;
 import com.municipal.rbaccore.service.port.importing.ImportPlan;
 import com.municipal.rbaccore.service.port.importing.ImportReport;
-import com.municipal.rbaccore.config.ImportStrategySelector;
 import com.municipal.rbaccore.service.port.importing.ImportUseCase;
 import com.municipal.rbaccore.shared.TestProjectPaths;
 import jakarta.persistence.EntityManager;
@@ -60,11 +62,7 @@ class R03ImportJpaContractTest {
   @EntityScan(basePackageClasses = {DepartmentEntity.class, ImportSourceEntity.class})
   @EnableJpaRepositories(
       basePackageClasses = {DepartmentJpaRepository.class, ImportSourceJpaRepository.class})
-  @Import({
-    ImportStrategySelector.class,
-    com.municipal.rbaccore.infrastructure.excel.SourceCellsJson.class,
-    com.municipal.rbaccore.infrastructure.security.BCryptPasswordHashing.class
-  })
+  @Import({ImportStrategySelector.class, SourceCellsJson.class, BCryptPasswordHashing.class})
   static class ImportTestConfiguration {
     /** 建表脚本只允许T03专用本机测试库，先于数据源创建执行。 */
     @Bean
@@ -119,8 +117,12 @@ class R03ImportJpaContractTest {
   void R03_SourceDatabaseReadFailureDoesNotInitialize() {
     jdbc.execute("RENAME TABLE import_sources TO r03_held_import_sources");
     try {
-      assertEquals("IMPORT_DATABASE_ERROR", assertThrows(ImportException.class,
-          () -> service.importDirectory(TestProjectPaths.sources(), CREDENTIALS)).getCode());
+      assertEquals(
+          "IMPORT_DATABASE_ERROR",
+          assertThrows(
+                  ImportException.class,
+                  () -> service.importDirectory(TestProjectPaths.sources(), CREDENTIALS))
+              .getCode());
       assertEquals(0, users.count());
       assertEquals(0, departments.count());
     } finally {
@@ -132,8 +134,12 @@ class R03ImportJpaContractTest {
   @Test
   @DisplayName("R03 缺少初始化凭据时不创建任何组织或账号")
   void R03_RejectsMissingCredentialsBeforeWriting() {
-    assertEquals("BOOTSTRAP_CONFIG_INVALID", assertThrows(ImportException.class,
-        () -> service.importDirectory(TestProjectPaths.sources(), null)).getCode());
+    assertEquals(
+        "BOOTSTRAP_CONFIG_INVALID",
+        assertThrows(
+                ImportException.class,
+                () -> service.importDirectory(TestProjectPaths.sources(), null))
+            .getCode());
     assertEquals(0, users.count());
     assertEquals(0, departments.count());
     assertEquals(0, sources.count());
@@ -144,15 +150,38 @@ class R03ImportJpaContractTest {
   @DisplayName("R03 重复导入逐项拒绝来源摘要、行号、目标账号及组织层级漂移")
   void R03_RejectsEachPersistedSourceDrift() {
     service.importDirectory(TestProjectPaths.sources(), CREDENTIALS);
-    assertRejectedMutation("UPDATE import_sources SET file_sha256=REPEAT('a',64) WHERE source_type='EMPLOYEE' AND source_key='SG000001'", "SOURCE_CHANGED");
-    assertRejectedMutation("UPDATE import_sources SET source_row=999999 WHERE source_type='EMPLOYEE' AND source_key='SG000001'", "SOURCE_CHANGED");
-    assertRejectedMutation("UPDATE import_sources SET source_json='not-json' WHERE source_type='EMPLOYEE' AND source_key='SG000001'", "SOURCE_CHANGED");
-    assertRejectedMutation("UPDATE users SET username='renamed-employee' WHERE username='SG000001'", "SOURCE_CHANGED");
-    assertRejectedMutation("UPDATE users SET username='renamed-administrator' WHERE username='admin'", "SOURCE_CHANGED");
-    assertRejectedMutation("UPDATE import_sources SET department_id=(SELECT id FROM departments WHERE code<>(SELECT code FROM departments WHERE parent_id IS NULL) ORDER BY id LIMIT 1) WHERE source_type='ORGANIZATION' AND source_key='总公司'", "SOURCE_CHANGED");
-    Long root = jdbc.queryForObject("SELECT id FROM departments WHERE parent_id IS NULL", Long.class);
-    Long nested = jdbc.queryForObject("SELECT id FROM departments WHERE parent_id IS NOT NULL AND parent_id<>? ORDER BY id LIMIT 1", Long.class, root);
-    assertRejectedMutation("UPDATE departments SET parent_id=" + root + " WHERE id=" + nested, "TARGET_TREE_CHANGED");
+    assertRejectedMutation(
+        "UPDATE import_sources SET file_sha256=REPEAT('a',64) WHERE source_type='EMPLOYEE' AND"
+            + " source_key='SG000001'",
+        "SOURCE_CHANGED");
+    assertRejectedMutation(
+        "UPDATE import_sources SET source_row=999999 WHERE source_type='EMPLOYEE' AND"
+            + " source_key='SG000001'",
+        "SOURCE_CHANGED");
+    assertRejectedMutation(
+        "UPDATE import_sources SET source_json='not-json' WHERE source_type='EMPLOYEE' AND"
+            + " source_key='SG000001'",
+        "SOURCE_CHANGED");
+    assertRejectedMutation(
+        "UPDATE users SET username='renamed-employee' WHERE username='SG000001'", "SOURCE_CHANGED");
+    assertRejectedMutation(
+        "UPDATE users SET username='renamed-administrator' WHERE username='admin'",
+        "SOURCE_CHANGED");
+    assertRejectedMutation(
+        "UPDATE import_sources SET department_id=(SELECT id FROM departments WHERE code<>(SELECT"
+            + " code FROM departments WHERE parent_id IS NULL) ORDER BY id LIMIT 1) WHERE"
+            + " source_type='ORGANIZATION' AND source_key='总公司'",
+        "SOURCE_CHANGED");
+    Long root =
+        jdbc.queryForObject("SELECT id FROM departments WHERE parent_id IS NULL", Long.class);
+    Long nested =
+        jdbc.queryForObject(
+            "SELECT id FROM departments WHERE parent_id IS NOT NULL AND parent_id<>? ORDER BY id"
+                + " LIMIT 1",
+            Long.class,
+            root);
+    assertRejectedMutation(
+        "UPDATE departments SET parent_id=" + root + " WHERE id=" + nested, "TARGET_TREE_CHANGED");
     assertEquals(10001, users.count());
     assertEquals(10112, sources.count());
   }
@@ -282,7 +311,7 @@ class R03ImportJpaContractTest {
                 + "WHERE d.name='总公司'",
             Integer.class));
     assertEquals(
-        12,
+        14,
         jdbc.queryForObject(
             "SELECT count(*) FROM information_schema.tables WHERE table_schema=DATABASE()",
             Integer.class));

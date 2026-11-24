@@ -1,6 +1,7 @@
 package com.municipal.rbaccore.service.structured.resource;
 
 import cn.edu.xmu.clonefactory.util.CloneFactory;
+import com.municipal.rbaccore.infrastructure.persistence.ApplicationSystemSpecifications;
 import com.municipal.rbaccore.infrastructure.persistence.entity.ApiResourceEntity;
 import com.municipal.rbaccore.infrastructure.persistence.entity.ApplicationSystemEntity;
 import com.municipal.rbaccore.infrastructure.persistence.entity.PermissionEntity;
@@ -11,24 +12,32 @@ import com.municipal.rbaccore.service.port.error.BusinessException;
 import com.municipal.rbaccore.service.port.resource.ApiPageResult;
 import com.municipal.rbaccore.service.port.resource.ApiQuery;
 import com.municipal.rbaccore.service.port.resource.ApiResult;
+import com.municipal.rbaccore.service.port.resource.ConnectionStatus;
+import com.municipal.rbaccore.service.port.resource.CreateSystemCommand;
 import com.municipal.rbaccore.service.port.resource.PermissionApisResult;
 import com.municipal.rbaccore.service.port.resource.ReplacePermissionApisCommand;
 import com.municipal.rbaccore.service.port.resource.ResourcePermissionResult;
 import com.municipal.rbaccore.service.port.resource.ResourceUseCase;
+import com.municipal.rbaccore.service.port.resource.SystemPageResult;
+import com.municipal.rbaccore.service.port.resource.SystemQuery;
 import com.municipal.rbaccore.service.port.resource.SystemResult;
 import com.municipal.rbaccore.service.port.resource.UpdateApiCommand;
 import com.municipal.rbaccore.service.port.resource.UpdatePermissionCommand;
+import com.municipal.rbaccore.service.port.resource.UpdateSystemCommand;
+import com.municipal.rbaccore.service.port.security.ManagedApplications;
 import com.municipal.rbaccore.service.port.security.RbacCatalog;
 import com.municipal.rbaccore.service.structured.security.StructuredGlobalManagementAccess;
 import java.util.*;
 import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,23 +46,87 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class StructuredResourceService implements ResourceUseCase {
-  private final com.municipal.rbaccore.service.port.security.ManagedApplications applications;
+  private final ManagedApplications applications;
   private final ApplicationSystemJpaRepository systems;
   private final PermissionJpaRepository permissions;
   private final ApiResourceJpaRepository apis;
   private final StructuredGlobalManagementAccess access;
+
+  /** 使用同一数据库谓词完成筛选、计数和分页，越末页保留真实总数。 */
+  @Override
+  @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+  public SystemPageResult searchSystems(String header, SystemQuery query) {
+    access.require(header);
+    Specification<ApplicationSystemEntity> filter =
+        ApplicationSystemSpecifications.matching(query.getQ(), query.getEnabled());
+    long total = systems.count(filter);
+    List<SystemResult> items =
+        (long) query.getPage() * query.getSize() >= total
+            ? List.of()
+            : systems
+                .findAll(filter, PageRequest.of(query.getPage(), query.getSize(), Sort.by("id")))
+                .getContent()
+                .stream()
+                .map(this::systemResult)
+                .toList();
+    return new SystemPageResult(items, total, query.getPage(), query.getSize());
+  }
+
+  /** 创建待接入应用，不自动授予任何已有角色。 */
+  @Override
+  @Transactional
+  public SystemResult createSystem(String header, CreateSystemCommand command) {
+    return write(
+        header,
+        () -> {
+          ApplicationSystemEntity system =
+              new ApplicationSystemEntity(command.getCode(), command.getName());
+          system.setConnectionStatus(ConnectionStatus.PENDING);
+          try {
+            return systemResult(systems.saveAndFlush(system));
+          } catch (DataIntegrityViolationException exception) {
+            throw new BusinessException(409, "APPLICATION_CODE_CONFLICT", "应用编码已经登记");
+          }
+        });
+  }
+
+  /** 资料及接入状态在根锁后重新鉴权，稳定编码和原有关系保留。 */
+  @Override
+  @Transactional
+  public SystemResult patchSystem(String header, Long id, UpdateSystemCommand command) {
+    return write(
+        header,
+        () -> {
+          ApplicationSystemEntity system = selectSystem(id);
+          CloneFactory.copyNotNull(system, command);
+          system.setName(system.getName().trim());
+          if (command.getEnabled() != null) system.setEnabled(command.getEnabled());
+          return systemResult(systems.saveAndFlush(system));
+        });
+  }
+
+  /** 撤销受管接入不删除历史数据，恢复须另外明确启用。 */
+  @Override
+  @Transactional
+  public SystemResult removeSystem(String header, Long id) {
+    UpdateSystemCommand command = new UpdateSystemCommand();
+    command.setEnabled(false);
+    return patchSystem(header, id, command);
+  }
+
+  /** 真实处理器复制目录字段，primitive启停值显式映射。 */
+  private SystemResult systemResult(ApplicationSystemEntity system) {
+    SystemResult result = CloneFactory.copy(new SystemResult(), system);
+    result.setEnabled(system.isEnabled());
+    return result;
+  }
 
   /** 枚举已登记应用；目录查询本身仍须实际API和共同根。 */
   public List<SystemResult> systems(String header) {
     access.require(header);
     currentSystem();
     return systems.findByCodeInOrderByIdAsc(applications.codes()).stream()
-        .map(
-            system -> {
-              SystemResult result = CloneFactory.copy(new SystemResult(), system);
-              result.setEnabled(system.isEnabled());
-              return result;
-            })
+        .map(this::systemResult)
         .toList();
   }
 

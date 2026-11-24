@@ -301,9 +301,9 @@ onUnmounted(() => generation.cancel())
           </div>
           <div class="department-actions">
             <button
-              v-if="canRoute('GET', '/users')"
               class="secondary icon-label"
-              :disabled="saving"
+              :disabled="saving || !canRoute('GET', '/users')"
+              :title="!canRoute('GET', '/users') ? '没有查看员工的权限' : ''"
               @click="members = selected"
             >
               <AppIcon name="users" />查看员工</button
@@ -389,9 +389,9 @@ onUnmounted(() => generation.cancel())
                 </td>
                 <td class="row-actions">
                   <button
-                    v-if="canRoute('GET', '/users')"
                     class="text-button"
-                    :disabled="saving"
+                    :disabled="saving || !canRoute('GET', '/users')"
+                    :title="!canRoute('GET', '/users') ? '没有查看员工的权限' : ''"
                     @click="members = node"
                   >
                     查看员工</button

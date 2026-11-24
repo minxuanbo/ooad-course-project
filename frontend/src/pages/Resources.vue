@@ -87,7 +87,7 @@ async function selectPermission(node) {
   await loadPermissionApis()
 }
 
-/** 只查询服务端已接入目录，不创建原型中的演示业务系统。 */
+/** 只查询服务端已登记目录，不创建原型中的演示业务系统。 */
 async function load(next = 0) {
   const version = generation.next()
   const identity = identityKey()
@@ -242,19 +242,19 @@ onUnmounted(() => {
     </form>
     <div class="resource-tabs" aria-label="资源分类">
       <button
-        v-if="canRoute('GET', '/permissions/tree', true)"
         :class="{ active: tab === 'permissions' }"
         :aria-pressed="tab === 'permissions'"
-        :disabled="saving"
+        :disabled="saving || !canRoute('GET', '/permissions/tree', true)"
+        :title="!canRoute('GET', '/permissions/tree', true) ? '没有读取菜单与按钮目录的权限' : ''"
         @click="selectTab('permissions')"
       >
         菜单与按钮
       </button>
       <button
-        v-if="canRoute('GET', '/api-resources', true)"
         :class="{ active: tab === 'apis' }"
         :aria-pressed="tab === 'apis'"
-        :disabled="saving"
+        :disabled="saving || !canRoute('GET', '/api-resources', true)"
+        :title="!canRoute('GET', '/api-resources', true) ? '没有查询API资源的权限' : ''"
         @click="selectTab('apis')"
       >
         API资源
@@ -321,9 +321,9 @@ onUnmounted(() => {
             </dd>
           </dl>
           <button
-            v-if="canRoute('PATCH', '/permissions/{id}', true)"
             class="secondary"
-            :disabled="saving"
+            :disabled="saving || !canRoute('PATCH', '/permissions/{id}', true)"
+            :title="!canRoute('PATCH', '/permissions/{id}', true) ? '没有编辑权限属性的权限' : ''"
             @click="edit(selected)"
           >
             编辑属性
@@ -333,9 +333,9 @@ onUnmounted(() => {
               已映射API <span>{{ permissionApis?.length ?? '—' }}</span>
             </h3>
             <button
-              v-if="canRoute('GET', '/permissions/{id}/apis', true)"
               class="text-button"
-              :disabled="busy || saving"
+              :disabled="busy || saving || !canRoute('GET', '/permissions/{id}/apis', true)"
+              :title="!canRoute('GET', '/permissions/{id}/apis', true) ? '没有读取API映射的权限' : ''"
               @click="mapping = selected"
             >
               {{ canRoute('PUT', '/permissions/{id}/apis', true) ? '配置映射' : '查看映射' }}
@@ -402,8 +402,9 @@ onUnmounted(() => {
             </td>
             <td>
               <button
-                v-if="canRoute('PATCH', '/api-resources/{id}', true)"
                 class="text-button"
+                :disabled="saving || !canRoute('PATCH', '/api-resources/{id}', true)"
+                :title="!canRoute('PATCH', '/api-resources/{id}', true) ? '没有启停API资源的权限' : ''"
                 @click="edit(item, true)"
               >
                 启停设置
@@ -603,6 +604,12 @@ onUnmounted(() => {
 .permission-tree button.selected {
   background: #edf3ff;
   color: #3865ef;
+}
+.resource-tabs button:disabled,
+.permission-tree button:disabled {
+  color: #8993a1;
+  background: #f0f2f5;
+  box-shadow: none;
 }
 .permission-tree button :deep(.ui-icon) {
   width: 14px;

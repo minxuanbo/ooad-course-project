@@ -34,10 +34,10 @@ class R29CourseIntegrationFixtureTest(unittest.TestCase):
         display, routes = course_catalog()
         self.assertEqual(17, len(display))
         self.assertEqual(18, len(routes))
-        self.assertEqual(24, sum(map(len, routes.values())))
-        self.assertEqual(22, len({route for entries in routes.values() for route in entries}))
+        self.assertEqual(25, sum(map(len, routes.values())))
+        self.assertEqual(23, len({route for entries in routes.values() for route in entries}))
         for code in ('TCM', 'CV', 'CTM', 'TEC'):
-            self.assertEqual(3 if code in {'CV','CTM'} else 2, len(routes[code]), code)
+            self.assertEqual({'CV': 3, 'CTM': 4}.get(code, 2), len(routes[code]), code)
 
     def test_R29_user_lookup_uses_teacher_real_route(self):
         """身份查询登记必须对应老师现有Controller，拒绝先前错误模板。"""
@@ -54,8 +54,8 @@ class R29CourseIntegrationFixtureTest(unittest.TestCase):
         self.assertNotIn('/identity/users/', sql)
         self.assertIn('INSERT INTO user_roles VALUES(5,50),(6,50),(8,50),(8,51),(9,52),(10,52);', sql)
         apis = re.findall(r"INSERT INTO api_resources VALUES\(\d+,2,'([^']+)','([^']+)'", sql)
-        self.assertEqual(22, len(apis))
-        self.assertEqual(22, len(set(apis)))
+        self.assertEqual(23, len(apis))
+        self.assertEqual(23, len(set(apis)))
 
 
 if __name__ == '__main__':

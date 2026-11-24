@@ -255,9 +255,9 @@ onUnmounted(() => generation.cancel())
           </td>
           <td class="row-actions">
             <button
-              v-if="canRoute('GET', '/users/{id}/roles')"
               class="text-button"
-              :disabled="saving"
+              :disabled="saving || !canRoute('GET', '/users/{id}/roles')"
+              :title="!canRoute('GET', '/users/{id}/roles') ? '没有查看人员角色的权限' : ''"
               @click="editRoles(user)"
             >
               {{
@@ -269,21 +269,21 @@ onUnmounted(() => generation.cancel())
               }}
             </button>
             <button
-              v-if="
-                user.writable &&
-                canRoute('PUT', '/users/{id}/department') &&
-                canRoute('GET', '/departments/tree')
-              "
               class="text-button"
-              :disabled="saving"
+              :disabled="
+                saving || !user.writable ||
+                !canRoute('PUT', '/users/{id}/department') ||
+                !canRoute('GET', '/departments/tree')
+              "
+              title="需具备调动及部门查询权限，且目标人员允许维护"
               @click="openMove(user)"
             >
               调动归属
             </button>
             <button
-              v-if="user.writable && user.enabled && canRoute('PATCH', '/users/{id}/status')"
               class="text-button danger"
-              :disabled="saving"
+              :disabled="saving || !user.writable || !user.enabled || !canRoute('PATCH', '/users/{id}/status')"
+              title="需具备停用权限，且目标账号启用并允许维护"
               @click="openDisable(user)"
             >
               停用

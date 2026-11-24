@@ -21,7 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(propagation = Propagation.MANDATORY)
 public class DddMaintenanceGuard implements MaintenanceProtection {
   private static final Set<ApiResource.Route> REQUIRED =
-      RbacCatalog.maintenanceRoutes().stream()
+      java.util.stream.Stream.concat(
+              RbacCatalog.maintenanceRoutes().stream(),
+              java.util.stream.Stream.of(RbacCatalog.LOGIN_ROUTE))
           .map(route -> new ApiResource.Route(route.method(), route.path()))
           .collect(Collectors.toUnmodifiableSet());
 

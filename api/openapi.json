@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "市政公司统一权限管理系统 API",
-    "version": "1.6.0",
-    "description": "structured/ddd共享契约：29项RBAC管理操作及8项可选通用应用身份鉴权操作。两类登录统一使用HS256身份JWT，不包含角色或权限快照，管理端与外部应用受众隔离。应用目录来自登记数据及状态，APP_IDENTITY_ENABLED只控制外部8项入口。角色可跨应用拥有权限，Permission—API映射必须同系统。统一身份审计2项不在本契约，K仍为17项RBAC路由。"
+    "version": "1.8.0",
+    "description": "structured/ddd共享契约：37项RBAC管理操作及8项可选通用应用身份鉴权操作。两类登录统一使用HS256身份JWT，不包含角色或权限快照，管理端与外部应用受众隔离。应用目录来自登记数据及状态，APP_IDENTITY_ENABLED只控制外部8项入口。角色可跨应用拥有权限，Permission—API映射必须同系统。统一身份审计2项不在本契约，K仍为17项RBAC路由。 应用接入向导支持只读OpenAPI3导入、独立登录资格、同应用映射、角色子集及锁后原子发布。 初始受管范围仅RBAC与课程；不导入其他18项模拟业务目录。保留动态新增应用，新登记PENDING在完成接入前不通行。"
   },
   "servers": [
     {
@@ -28,6 +28,9 @@
       "name": "资源与映射"
     },
     {
+      "name": "应用管理"
+    },
+    {
       "name": "鉴权日志"
     },
     {
@@ -48,7 +51,7 @@
           "认证与本人"
         ],
         "summary": "工号或手机号登录",
-        "description": "工号或手机号加口令定位同一账号，核实启用状态和实际管理API准入后签发aud=rbac的身份JWT；普通员工仅有外部应用角色仍不能进入管理端。",
+        "description": "工号或手机号定位同一启用账号，验证口令后必须拥有本RBAC登录API的当前有效映射；无登录资格403 MANAGEMENT_ACCESS_DENIED。仅登录资格可以进入空工作台，不取得总览、菜单或写入能力；每项业务仍独立授权。HS256身份JWT通过Bearer携带，无角色权限快照。",
         "responses": {
           "200": {
             "description": "成功",
@@ -81,7 +84,7 @@
             }
           },
           "403": {
-            "description": "实际API权限/部门范围/管理准入拒绝",
+            "description": "缺少实际操作权限、登录资格或可信根范围",
             "content": {
               "application/json": {
                 "schema": {
@@ -113,7 +116,8 @@
         },
         "security": [],
         "x-management-scope": "anonymous",
-        "x-maintenance-member": false
+        "x-maintenance-member": false,
+        "x-initial-permission-code": "rbac.login"
       }
     },
     "/api/auth/logout": {
@@ -163,7 +167,7 @@
           "认证与本人"
         ],
         "summary": "本人身份",
-        "description": "只要求有效身份，不以users.read作为前置；不能指定他人id。",
+        "description": "只要求有效身份，不以users.read作为前置；不能指定他人id。 当前RBAC登录权限被撤销时返回403；仅返回实际有效权限，不自动补授菜单祖先。",
         "responses": {
           "200": {
             "description": "成功",
@@ -194,6 +198,16 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "缺少实际操作权限、登录资格或可信根范围",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         },
         "x-management-scope": "self",
@@ -207,7 +221,7 @@
           "认证与本人"
         ],
         "summary": "本人本系统有效权限",
-        "description": "只返回实际有效权限；不补导航祖先，不直接推断具体API可调用性。",
+        "description": "只返回实际有效权限；不补导航祖先，不直接推断具体API可调用性。 当前RBAC登录权限被撤销时返回403；仅返回实际有效权限，不自动补授菜单祖先。",
         "responses": {
           "200": {
             "description": "成功",
@@ -231,6 +245,16 @@
           },
           "500": {
             "description": "安全内部错误，requestId可追踪",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "缺少实际操作权限、登录资格或可信根范围",
             "content": {
               "application/json": {
                 "schema": {
@@ -295,7 +319,7 @@
           }
         },
         "x-management-scope": "subtree",
-        "x-initial-permission-code": "rbac.users.read",
+        "x-initial-permission-code": "rbac.departments.tree.read",
         "x-maintenance-member": true
       }
     },
@@ -473,7 +497,7 @@
           }
         ],
         "x-management-scope": "subtree",
-        "x-initial-permission-code": "rbac.users.read",
+        "x-initial-permission-code": "rbac.users.roles.read",
         "x-maintenance-member": true
       },
       "put": {
@@ -660,7 +684,7 @@
           }
         ],
         "x-management-scope": "subtree",
-        "x-initial-permission-code": "rbac.users.roles.write",
+        "x-initial-permission-code": "rbac.users.roles.candidates.read",
         "x-maintenance-member": true
       }
     },
@@ -1038,7 +1062,7 @@
           }
         },
         "x-management-scope": "root",
-        "x-initial-permission-code": "rbac.roles.write",
+        "x-initial-permission-code": "rbac.roles.create",
         "x-maintenance-member": true
       }
     },
@@ -1218,7 +1242,7 @@
           }
         ],
         "x-management-scope": "department",
-        "x-initial-permission-code": "rbac.roles.read",
+        "x-initial-permission-code": "rbac.roles.permissions.read",
         "x-maintenance-member": true
       },
       "put": {
@@ -1327,7 +1351,7 @@
           "资源与映射"
         ],
         "summary": "本轮系统目录",
-        "description": "返回全部已登记应用（含停用项供维护），真实ID不固定；系统/权限/API的新增登记通过经过核对的首次SQL完成，本轮不开放系统CRUD。",
+        "description": "返回全部已登记应用及稳定ID，含停用项供资源选择器维护；应用管理表格使用独立分页接口。目录来自数据库，无应用代码白名单。",
         "responses": {
           "200": {
             "description": "成功",
@@ -1371,8 +1395,91 @@
           }
         },
         "x-management-scope": "root",
-        "x-initial-permission-code": "rbac.resources.read",
+        "x-initial-permission-code": "rbac.systems.read",
         "x-maintenance-member": true
+      },
+      "post": {
+        "operationId": "createApplication",
+        "tags": [
+          "应用管理"
+        ],
+        "summary": "新增受管应用",
+        "description": "逐请求读取当前有效授权；维护须可信根及对应实际API，写入先锁共同根再重新鉴权。应用编号与编码稳定，不以角色名或应用代码白名单授权。 新应用默认enabled=true、PENDING，不创建业务权限或自动授予角色；code唯一，重复登记409 APPLICATION_CODE_CONFLICT。",
+        "x-management-scope": "root",
+        "x-initial-permission-code": "rbac.systems.create",
+        "x-maintenance-member": false,
+        "responses": {
+          "201": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemVOResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求字段、枚举、分页或ID越界",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "缺少或失效身份",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "缺少实际操作权限、登录资格或可信根范围",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "编码冲突或最后维护者保护，整次事务回滚",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "安全内部错误，保留requestId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SystemCreateDTO"
+              }
+            }
+          }
+        }
       }
     },
     "/api/permissions/tree": {
@@ -1520,7 +1627,7 @@
           }
         ],
         "x-management-scope": "root",
-        "x-initial-permission-code": "rbac.resources.read",
+        "x-initial-permission-code": "rbac.apis.read",
         "x-maintenance-member": true
       }
     },
@@ -1720,7 +1827,7 @@
           }
         },
         "x-management-scope": "root",
-        "x-initial-permission-code": "rbac.resources.write",
+        "x-initial-permission-code": "rbac.apis.write",
         "x-maintenance-member": true
       }
     },
@@ -1800,7 +1907,7 @@
           }
         ],
         "x-management-scope": "root",
-        "x-initial-permission-code": "rbac.resources.read",
+        "x-initial-permission-code": "rbac.resources.apis.read",
         "x-maintenance-member": true
       },
       "put": {
@@ -1898,7 +2005,7 @@
           }
         },
         "x-management-scope": "root",
-        "x-initial-permission-code": "rbac.resources.write",
+        "x-initial-permission-code": "rbac.resources.apis.write",
         "x-maintenance-member": true
       }
     },
@@ -2160,7 +2267,7 @@
           }
         },
         "x-management-scope": "subtree",
-        "x-initial-permission-code": "rbac.departments.write",
+        "x-initial-permission-code": "rbac.departments.create",
         "x-maintenance-member": false,
         "requestBody": {
           "required": true,
@@ -2353,7 +2460,7 @@
           }
         },
         "x-management-scope": "subtree",
-        "x-initial-permission-code": "rbac.departments.write",
+        "x-initial-permission-code": "rbac.departments.delete",
         "x-maintenance-member": false,
         "parameters": [
           {
@@ -3113,6 +3220,655 @@
           }
         }
       }
+    },
+    "/api/systems/{id}": {
+      "patch": {
+        "operationId": "updateApplication",
+        "tags": [
+          "应用管理"
+        ],
+        "summary": "维护应用资料与接入状态",
+        "description": "逐请求读取当前有效授权；维护须可信根及对应实际API，写入先锁共同根再重新鉴权。应用编号与编码稳定，不以角色名或应用代码白名单授权。 仅支持name、enabled、connectionStatus，至少一项；省略保持原值，稳定code不可修改。恢复不会恢复人工撤销的授权。",
+        "x-management-scope": "root",
+        "x-initial-permission-code": "rbac.systems.write",
+        "x-maintenance-member": false,
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemVOResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求字段、枚举、分页或ID越界",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "缺少或失效身份",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "缺少实际操作权限、登录资格或可信根范围",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "编码冲突或最后维护者保护，整次事务回滚",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "安全内部错误，保留requestId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SystemPatchDTO"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "removeApplication",
+        "tags": [
+          "应用管理"
+        ],
+        "summary": "移除受管应用",
+        "description": "逐请求读取当前有效授权；维护须可信根及对应实际API，写入先锁共同根再重新鉴权。应用编号与编码稳定，不以角色名或应用代码白名单授权。 采用逻辑移除：enabled=false，保留编号、目录、权限映射和历史日志。提交后原应用身份的下一请求立即拒绝；可经PATCH enabled=true恢复。未知目录403，移除RBAC导致无完整维护者则409 LAST_ADMIN_REQUIRED并回滚。",
+        "x-management-scope": "root",
+        "x-initial-permission-code": "rbac.systems.remove",
+        "x-maintenance-member": false,
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemVOResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求字段、枚举、分页或ID越界",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "缺少或失效身份",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "缺少实际操作权限、登录资格或可信根范围",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "编码冲突或最后维护者保护，整次事务回滚",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "安全内部错误，保留requestId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          }
+        ]
+      }
+    },
+    "/api/systems/page": {
+      "get": {
+        "operationId": "searchApplications",
+        "tags": [
+          "应用管理"
+        ],
+        "summary": "分页查询受管应用",
+        "description": "逐请求读取当前有效授权；维护须可信根及对应实际API，写入先锁共同根再重新鉴权。应用编号与编码稳定，不以角色名或应用代码白名单授权。 q按名称/编码包含匹配，百分号和下划线为普通文本；enabled省略为全部。数据库同谓词计数分页，越末页items为空但total保留。",
+        "x-management-scope": "root",
+        "x-initial-permission-code": "rbac.systems.page.read",
+        "x-maintenance-member": false,
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemPageVOResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求字段、枚举、分页或ID越界",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "缺少或失效身份",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "缺少实际操作权限、登录资格或可信根范围",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "编码冲突或最后维护者保护，整次事务回滚",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "安全内部错误，保留requestId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/Size"
+          },
+          {
+            "$ref": "#/components/parameters/Q"
+          },
+          {
+            "$ref": "#/components/parameters/Enabled"
+          }
+        ]
+      }
+    },
+    "/api/systems/{id}/onboarding": {
+      "get": {
+        "operationId": "getOnboarding",
+        "tags": [
+          "应用管理"
+        ],
+        "summary": "查看应用接入向导",
+        "description": "仅可信根直属、有效五级且拥有该实际API的管理员。RBAC自身拒绝409 ONBOARDING_RBAC_RESERVED；未知应用按范围拒绝。返回当前完整接入配置及指纹，角色选项不包含人员。",
+        "x-management-scope": "trusted-root-level-5",
+        "x-initial-permission-code": "rbac.systems.onboarding.read",
+        "x-maintenance-member": false,
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingSnapshotVOResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求字段、枚举、分页或ID越界",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "缺少或失效身份",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "缺少实际操作权限、登录资格或可信根范围",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "编码冲突或最后维护者保护，整次事务回滚",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "安全内部错误，保留requestId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          }
+        ]
+      }
+    },
+    "/api/systems/{id}/onboarding/import": {
+      "post": {
+        "operationId": "previewOnboardingOpenApi",
+        "tags": [
+          "应用管理"
+        ],
+        "summary": "预览导入OpenAPI",
+        "description": "仅可信根直属、有效五级且拥有该实际API的管理员。RBAC自身拒绝409 ONBOARDING_RBAC_RESERVED；未知应用按范围拒绝。只读解析，不访问远端URL或写库。所有导入操作默认requiresPermission=true，既有条件覆盖须前端显式选择。",
+        "x-management-scope": "trusted-root-level-5",
+        "x-initial-permission-code": "rbac.systems.onboarding.import",
+        "x-maintenance-member": false,
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingImportVOResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求字段、枚举、分页或ID越界",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "缺少或失效身份",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "缺少实际操作权限、登录资格或可信根范围",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "编码冲突或最后维护者保护，整次事务回滚",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "安全内部错误，保留requestId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OnboardingImportDTO"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          }
+        ]
+      }
+    },
+    "/api/systems/{id}/onboarding/check": {
+      "post": {
+        "operationId": "checkOnboarding",
+        "tags": [
+          "应用管理"
+        ],
+        "summary": "检查应用接入配置",
+        "description": "仅可信根直属、有效五级且拥有该实际API的管理员。RBAC自身拒绝409 ONBOARDING_RBAC_RESERVED；未知应用按范围拒绝。重读当前状态、比对指纹并校验草稿关联。选填专用凭据执行真实登录/本人/未知短码拒绝/受众隔离/退出/退出后失效；PENDING应用真实403报告待启用。configurationValid不代表业务后端对象权限已验证。",
+        "x-management-scope": "trusted-root-level-5",
+        "x-initial-permission-code": "rbac.systems.onboarding.check",
+        "x-maintenance-member": false,
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingReportVOResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求字段、枚举、分页或ID越界",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "缺少或失效身份",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "缺少实际操作权限、登录资格或可信根范围",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "编码冲突或最后维护者保护，整次事务回滚",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "安全内部错误，保留requestId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OnboardingCheckDTO"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          }
+        ]
+      }
+    },
+    "/api/systems/{id}/onboarding/complete": {
+      "post": {
+        "operationId": "completeOnboarding",
+        "tags": [
+          "应用管理"
+        ],
+        "summary": "完成应用接入",
+        "description": "仅可信根直属、有效五级且拥有该实际API的管理员。RBAC自身拒绝409 ONBOARDING_RBAC_RESERVED；未知应用按范围拒绝。共同根锁后重鉴权及比对完整指纹；重新校验配置与两项人工确认，原子保存差量并标记CONNECTED。变化角色子集另需PUT /api/roles/{id}/permissions权限；已有权限/API稳定保留，其他应用授权及所有人员角色不变。完成后客户端可再次check验证生效。",
+        "x-management-scope": "trusted-root-level-5",
+        "x-initial-permission-code": "rbac.systems.onboarding.complete",
+        "x-maintenance-member": false,
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingSnapshotVOResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求字段、枚举、分页或ID越界",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "缺少或失效身份",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "缺少实际操作权限、登录资格或可信根范围",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "编码冲突或最后维护者保护，整次事务回滚",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "安全内部错误，保留requestId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OnboardingCompleteDTO"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -3317,6 +4073,105 @@
       }
     },
     "schemas": {
+      "SystemCreateDTO": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "name"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 191,
+            "pattern": "\\S"
+          }
+        }
+      },
+      "SystemPatchDTO": {
+        "type": "object",
+        "additionalProperties": false,
+        "minProperties": 1,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 191,
+            "pattern": "\\S"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "connectionStatus": {
+            "$ref": "#/components/schemas/ConnectionStatus"
+          }
+        }
+      },
+      "SystemPageVO": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "total",
+          "page",
+          "size"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SystemVO"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      },
+      "SystemPageVOResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "OK"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/SystemPageVO"
+          },
+          "requestId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "data",
+          "requestId"
+        ]
+      },
       "IdentityVO": {
         "type": "object",
         "additionalProperties": false,
@@ -4468,13 +5323,19 @@
               "DEPARTMENT_ROOT_REQUIRED",
               "DEPARTMENT_NOT_EMPTY",
               "DEPARTMENT_NAME_CONFLICT",
+              "APPLICATION_CODE_CONFLICT",
               "DATA_CONFLICT",
               "LAST_ADMIN_REQUIRED",
               "INTERNAL_ERROR",
               "APPLICATION_ACCESS_DENIED",
               "IDENTITY_USER_NOT_FOUND",
               "IDENTITY_DEPARTMENT_NOT_FOUND",
-              "API_OPERATION_NOT_FOUND"
+              "API_OPERATION_NOT_FOUND",
+              "OPENAPI_INVALID",
+              "ONBOARDING_RBAC_RESERVED",
+              "ONBOARDING_STALE",
+              "ONBOARDING_CONFIRMATION_REQUIRED",
+              "ONBOARDING_INVALID"
             ]
           },
           "message": {
@@ -5626,6 +6487,568 @@
           "CONNECTED"
         ],
         "description": "PENDING可规划授权但拒绝运行期通行；CONNECTED表示已完成真实接入"
+      },
+      "OnboardingApi": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "GET",
+              "POST",
+              "PUT",
+              "PATCH",
+              "DELETE",
+              "HEAD",
+              "OPTIONS"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "maxLength": 512,
+            "pattern": "^/[^\\s?#]*$"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "method",
+          "path",
+          "enabled"
+        ]
+      },
+      "OnboardingPermission": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 100,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 191
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "MENU",
+              "BUTTON",
+              "API"
+            ]
+          },
+          "parentCode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "apiKeys": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 520
+            },
+            "minItems": 0,
+            "maxItems": 2000
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "type",
+          "enabled",
+          "apiKeys"
+        ]
+      },
+      "OnboardingOperation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "operationId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.-]{1,128}$"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "GET",
+              "POST",
+              "PUT",
+              "PATCH",
+              "DELETE",
+              "HEAD",
+              "OPTIONS"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "maxLength": 512,
+            "pattern": "^/[^\\s?#]*$"
+          },
+          "requiresPermission": {
+            "type": "boolean"
+          },
+          "permissionRoles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 100,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+            },
+            "minItems": 0,
+            "maxItems": 2000
+          }
+        },
+        "required": [
+          "operationId",
+          "method",
+          "path",
+          "requiresPermission",
+          "permissionRoles"
+        ]
+      },
+      "OnboardingGrant": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "roleId": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "permissionCodes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "minItems": 0,
+            "maxItems": 2000
+          }
+        },
+        "required": [
+          "roleId",
+          "permissionCodes"
+        ]
+      },
+      "OnboardingPlanDTO": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "baseFingerprint": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "entryUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 512
+          },
+          "loginPermissionCode": {
+            "type": "string",
+            "maxLength": 100,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+          },
+          "apis": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OnboardingApi"
+            },
+            "minItems": 0,
+            "maxItems": 2000
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OnboardingPermission"
+            },
+            "minItems": 1,
+            "maxItems": 2000
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OnboardingOperation"
+            },
+            "minItems": 0,
+            "maxItems": 2000
+          },
+          "roleGrants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OnboardingGrant"
+            },
+            "minItems": 0,
+            "maxItems": 2000
+          }
+        },
+        "required": [
+          "baseFingerprint",
+          "loginPermissionCode",
+          "apis",
+          "permissions",
+          "operations",
+          "roleGrants"
+        ],
+        "description": "入口为空或合法HTTP(S)且无userinfo/fragment；仅作展示及动态身份Origin，不抓取该地址。已有API和权限须保留，可停用；指纹必须等于最新快照。角色只替换本应用子集，其他应用和人员角色不变。"
+      },
+      "OnboardingPlanVO": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "baseFingerprint": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "entryUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 512
+          },
+          "loginPermissionCode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100
+          },
+          "apis": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OnboardingApi"
+            },
+            "minItems": 0,
+            "maxItems": 2000
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OnboardingPermission"
+            },
+            "minItems": 0,
+            "maxItems": 2000
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OnboardingOperation"
+            },
+            "minItems": 0,
+            "maxItems": 2000
+          },
+          "roleGrants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OnboardingGrant"
+            },
+            "minItems": 0,
+            "maxItems": 2000
+          }
+        },
+        "required": [
+          "baseFingerprint",
+          "entryUrl",
+          "loginPermissionCode",
+          "apis",
+          "permissions",
+          "operations",
+          "roleGrants"
+        ]
+      },
+      "OnboardingRoleVO": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "SYSTEM_BUILTIN",
+              "APPLICATION_PRESET",
+              "DEPARTMENT_CUSTOM",
+              "GLOBAL_CUSTOM"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "type",
+          "enabled"
+        ]
+      },
+      "OnboardingSnapshotVO": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "system": {
+            "$ref": "#/components/schemas/SystemVO"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/OnboardingPlanVO"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OnboardingRoleVO"
+            },
+            "minItems": 0,
+            "maxItems": 2147483647
+          }
+        },
+        "required": [
+          "system",
+          "plan",
+          "roles"
+        ]
+      },
+      "OnboardingImportDTO": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "document": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1048576,
+            "description": "内联OpenAPI3 JSON或YAML文本。拒绝重复键、集合别名、深度超限、路径外部引用、重复operationId，最多1000项。"
+          }
+        },
+        "required": [
+          "document"
+        ]
+      },
+      "OnboardingImportVO": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OnboardingOperation"
+            },
+            "minItems": 0,
+            "maxItems": 1000
+          }
+        },
+        "required": [
+          "operations"
+        ]
+      },
+      "OnboardingCheckDTO": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "plan": {
+            "$ref": "#/components/schemas/OnboardingPlanDTO"
+          },
+          "testAccount": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100
+          },
+          "testPassword": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100,
+            "writeOnly": true
+          }
+        },
+        "required": [
+          "plan"
+        ],
+        "description": "测试账号和密码须同时为空或同时非空；只用于本次RBAC本机真实HTTP探测，不持久化、不入日志。检查当前已发布配置，不把草稿当作已生效。"
+      },
+      "OnboardingCheckVO": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FAIL",
+              "PENDING"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "httpStatus": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "status",
+          "message",
+          "httpStatus"
+        ]
+      },
+      "OnboardingReportVO": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "configurationValid": {
+            "type": "boolean"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 0,
+            "maxItems": 2147483647
+          },
+          "protocolChecks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OnboardingCheckVO"
+            },
+            "minItems": 0,
+            "maxItems": 2147483647
+          }
+        },
+        "required": [
+          "configurationValid",
+          "errors",
+          "protocolChecks"
+        ]
+      },
+      "OnboardingCompleteDTO": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "plan": {
+            "$ref": "#/components/schemas/OnboardingPlanDTO"
+          },
+          "businessConfirmed": {
+            "type": "boolean",
+            "const": true
+          },
+          "revocationConfirmed": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "plan",
+          "businessConfirmed",
+          "revocationConfirmed"
+        ]
+      },
+      "OnboardingSnapshotVOResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "OK"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/OnboardingSnapshotVO"
+          },
+          "requestId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "data",
+          "requestId"
+        ]
+      },
+      "OnboardingImportVOResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "OK"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/OnboardingImportVO"
+          },
+          "requestId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "data",
+          "requestId"
+        ]
+      },
+      "OnboardingReportVOResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "OK"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/OnboardingReportVO"
+          },
+          "requestId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "data",
+          "requestId"
+        ]
       }
     }
   }

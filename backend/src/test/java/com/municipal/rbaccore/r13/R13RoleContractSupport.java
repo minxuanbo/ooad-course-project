@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.municipal.rbaccore.infrastructure.persistence.ddd.JpaRoleRepositoryAdapter;
 import com.municipal.rbaccore.infrastructure.persistence.entity.ApiResourceEntity;
 import com.municipal.rbaccore.infrastructure.persistence.entity.ApplicationSystemEntity;
 import com.municipal.rbaccore.infrastructure.persistence.entity.DepartmentEntity;
@@ -17,6 +18,9 @@ import com.municipal.rbaccore.infrastructure.persistence.repository.PermissionJp
 import com.municipal.rbaccore.infrastructure.persistence.repository.RoleJpaRepository;
 import com.municipal.rbaccore.infrastructure.persistence.repository.UserJpaRepository;
 import com.municipal.rbaccore.infrastructure.web.RequestAuditFilter;
+import com.municipal.rbaccore.service.ddd.domain.model.ApplicationSystem;
+import com.municipal.rbaccore.service.ddd.domain.model.AuthorizationFacts;
+import com.municipal.rbaccore.service.ddd.domain.model.Role;
 import com.municipal.rbaccore.service.port.resource.PermissionType;
 import com.municipal.rbaccore.service.port.security.ManagementAuthorization;
 import com.municipal.rbaccore.service.port.security.RbacCatalog;
@@ -125,27 +129,22 @@ abstract class R13RoleContractSupport {
         new TransactionTemplate(transactions)
             .execute(
                 status -> {
-                  com.municipal.rbaccore.infrastructure.persistence.ddd.JpaRoleRepositoryAdapter
-                      repository =
-                          new com.municipal.rbaccore.infrastructure.persistence.ddd
-                              .JpaRoleRepositoryAdapter(roles, permissions, departments, systems);
-                  com.municipal.rbaccore.service.ddd.domain.model.ApplicationSystem source =
-                      new com.municipal.rbaccore.service.ddd.domain.model.ApplicationSystem(
-                          systemId, "rbac", "权限系统", true);
-                  com.municipal.rbaccore.service.ddd.domain.model.Role role =
-                      new com.municipal.rbaccore.service.ddd.domain.model.Role(
+                  JpaRoleRepositoryAdapter repository =
+                      new com.municipal.rbaccore.infrastructure.persistence.ddd
+                          .JpaRoleRepositoryAdapter(roles, permissions, departments, systems);
+                  ApplicationSystem source = new ApplicationSystem(systemId, "rbac", "权限系统", true);
+                  Role role =
+                      new Role(
                           null,
                           "r28-preset",
                           "应用预置",
                           null,
                           true,
                           Set.of(),
-                          com.municipal.rbaccore.service.ddd.domain.model.Role.Type
-                              .APPLICATION_PRESET,
+                          Role.Type.APPLICATION_PRESET,
                           null,
                           source);
-                  com.municipal.rbaccore.service.ddd.domain.model.Role saved =
-                      repository.save(role);
+                  Role saved = repository.save(role);
                   assertEquals(source.id(), saved.application().id());
                   assertNull(saved.managementLevel());
                   com.municipal.rbaccore.infrastructure.persistence.ddd
@@ -156,8 +155,8 @@ abstract class R13RoleContractSupport {
                   assertTrue(
                       authorization
                           .candidates(
-                              new com.municipal.rbaccore.service.ddd.domain.model.AuthorizationFacts
-                                  .AssignableRoleCriteria(1, false, Set.of(), "r28-preset", 0, 20))
+                              new AuthorizationFacts.AssignableRoleCriteria(
+                                  1, false, Set.of(), "r28-preset", 0, 20))
                           .items()
                           .isEmpty());
                   return saved.id();
@@ -171,8 +170,8 @@ abstract class R13RoleContractSupport {
 
   /** 部门角色的定义、范围读取、差集分配和实时失效共同验证。 */
   @Test
-  @DisplayName("R35 部门领导只能分配适用且权限为本人子集的部门角色，调动原子撤权")
-  void R35_DepartmentAssignmentAndTransfer() throws Exception {
+  @DisplayName("R23 部门领导只能分配适用且权限为本人子集的部门角色，调动原子撤权")
+  void R23_DepartmentAssignmentAndTransfer() throws Exception {
     String admin = token("t09-admin");
     account("t35-manager", childId, new ArrayList<>(permissionIds.values()));
     account("t35-employee", childId, List.of());
@@ -326,6 +325,8 @@ abstract class R13RoleContractSupport {
     jdbc.update("UPDATE permissions SET parent_id=NULL");
     for (String table :
         List.of(
+            "api_operations",
+            "application_profiles",
             "authorization_logs",
             "bootstrap_receipts",
             "import_sources",
@@ -628,7 +629,9 @@ abstract class R13RoleContractSupport {
         rawRequest("PATCH", role(target), admin, "{\"enabled\":false} trailing"),
         400,
         "INVALID_ARGUMENT");
-    assertEquals(List.of(permissionId), savedIds(target));
+    assertEquals(
+        List.of(permissionId, permissionIds.get("rbac.login")).stream().sorted().toList(),
+        savedIds(target));
     assertTrue(jdbc.queryForObject("SELECT enabled FROM roles WHERE id=?", Boolean.class, target));
   }
 
@@ -641,7 +644,7 @@ abstract class R13RoleContractSupport {
     long retired = permissionIds.get("rbac.logs.read");
     long target = account("t09-target", rootId, List.of(userRead, retired));
     jdbc.update("UPDATE permissions SET enabled=0 WHERE id=?", retired);
-    assertEquals(2, success(request("GET", selected(target), admin, null), 200).get("ids").size());
+    assertEquals(3, success(request("GET", selected(target), admin, null), 200).get("ids").size());
     for (Object body :
         List.of(
             Map.of(),
@@ -656,7 +659,9 @@ abstract class R13RoleContractSupport {
             Map.of("ids", List.of(retired)),
             Map.of("ids", List.of(), "uniqueIds", true))) {
       assertError(request("PUT", selected(target), admin, body), 400, "INVALID_ARGUMENT");
-      assertEquals(List.of(userRead, retired).stream().sorted().toList(), savedIds(target));
+      assertEquals(
+          List.of(userRead, retired, permissionIds.get("rbac.login")).stream().sorted().toList(),
+          savedIds(target));
     }
 
     success(request("PUT", selected(target), admin, Map.of("ids", List.of(userRead))), 200);
@@ -696,7 +701,13 @@ abstract class R13RoleContractSupport {
     assertError(login("t09-employee"), 403, "MANAGEMENT_ACCESS_DENIED");
     long userRead = permissionIds.get("rbac.users.read");
 
-    success(request("PUT", selected(target), admin, Map.of("ids", List.of(userRead))), 200);
+    success(
+        request(
+            "PUT",
+            selected(target),
+            admin,
+            Map.of("ids", List.of(userRead, permissionIds.get("rbac.login")))),
+        200);
     String employee = token("t09-employee");
     assertEquals(200, request("GET", USERS, employee, null).getStatusCode().value());
     assertError(request("GET", LOGS, employee, null), 403, "PERMISSION_DENIED");
@@ -706,12 +717,17 @@ abstract class R13RoleContractSupport {
             "PUT",
             selected(target),
             admin,
-            Map.of("ids", List.of(userRead, permissionIds.get("rbac.logs.read")))),
+            Map.of(
+                "ids",
+                List.of(
+                    userRead,
+                    permissionIds.get("rbac.logs.read"),
+                    permissionIds.get("rbac.login")))),
         200);
     assertError(request("GET", LOGS, employee, null), 403, "MANAGEMENT_SCOPE_DENIED");
 
     success(request("PUT", selected(target), admin, Map.of("ids", List.of())), 200);
-    assertError(request("GET", USERS, employee, null), 403, "PERMISSION_DENIED");
+    assertError(request("GET", USERS, employee, null), 403, "MANAGEMENT_ACCESS_DENIED");
     assertError(login("t09-employee"), 403, "MANAGEMENT_ACCESS_DENIED");
     assertEquals(200, request("GET", USERS, admin, null).getStatusCode().value());
 
@@ -734,7 +750,7 @@ abstract class R13RoleContractSupport {
     String member = token("t09-switch");
 
     success(request("PATCH", role(target), admin, Map.of("enabled", false)), 200);
-    assertError(request("GET", USERS, member, null), 403, "PERMISSION_DENIED");
+    assertError(request("GET", USERS, member, null), 403, "MANAGEMENT_ACCESS_DENIED");
     assertError(login("t09-switch"), 403, "MANAGEMENT_ACCESS_DENIED");
 
     success(
@@ -742,7 +758,9 @@ abstract class R13RoleContractSupport {
             "PUT",
             selected(target),
             admin,
-            Map.of("ids", List.of(permissionIds.get("rbac.logs.read")))),
+            Map.of(
+                "ids",
+                List.of(permissionIds.get("rbac.logs.read"), permissionIds.get("rbac.login")))),
         200);
     assertError(login("t09-switch"), 403, "MANAGEMENT_ACCESS_DENIED");
 
@@ -993,6 +1011,8 @@ abstract class R13RoleContractSupport {
                 status -> {
                   RoleEntity role = roles.save(new RoleEntity("t09-second", "另一个角色"));
                   role.grantPermission(permissions.findById(read).orElseThrow());
+                  role.grantPermission(
+                      permissions.findById(permissionIds.get("rbac.login")).orElseThrow());
                   Long userId =
                       jdbc.queryForObject(
                           "SELECT id FROM users WHERE username='t09-multi'", Long.class);
@@ -1020,7 +1040,7 @@ abstract class R13RoleContractSupport {
     success(request("GET", USERS, member, null), 200);
 
     success(request("PATCH", role(second), admin, Map.of("enabled", false)), 200);
-    assertError(request("GET", USERS, member, null), 403, "PERMISSION_DENIED");
+    assertError(request("GET", USERS, member, null), 403, "MANAGEMENT_ACCESS_DENIED");
     assertError(login("t09-multi"), 403, "MANAGEMENT_ACCESS_DENIED");
     jdbc.update(
         "DELETE FROM user_roles WHERE user_id=(SELECT id FROM users WHERE username='t09-multi')");
@@ -1053,7 +1073,9 @@ abstract class R13RoleContractSupport {
             request("PUT", selected(target), admin, Map.of("ids", List.of(nextPermission))),
             state.equals("23000") ? 409 : 500,
             state.equals("23000") ? "DATA_CONFLICT" : "INTERNAL_ERROR");
-        assertEquals(List.of(oldPermission), savedIds(target));
+        assertEquals(
+            List.of(oldPermission, permissionIds.get("rbac.login")).stream().sorted().toList(),
+            savedIds(target));
       } finally {
         jdbc.execute("DROP TRIGGER t09_fail_permission");
       }
@@ -1163,7 +1185,7 @@ abstract class R13RoleContractSupport {
                 }
                 jdbc.update("DELETE FROM role_permissions WHERE role_id=?", writer);
               });
-      assertError(waiting.get().get(20, TimeUnit.SECONDS), 403, "PERMISSION_DENIED");
+      assertError(waiting.get().get(20, TimeUnit.SECONDS), 403, "MANAGEMENT_ACCESS_DENIED");
       assertEquals(
           "t09-admin",
           jdbc.queryForObject("SELECT name FROM roles WHERE id=?", String.class, adminRoleId));
@@ -1183,7 +1205,7 @@ abstract class R13RoleContractSupport {
     assertError(
         request("PUT", selected(adminRoleId), admin, Map.of("ids", List.of())),
         403,
-        "PERMISSION_DENIED");
+        "MANAGEMENT_ACCESS_DENIED");
     assertError(login("t09-admin"), 403, "MANAGEMENT_ACCESS_DENIED");
     assertEquals(original, savedIds(adminRoleId));
   }
@@ -1244,7 +1266,10 @@ abstract class R13RoleContractSupport {
         .queryForList(
             "SELECT id FROM users WHERE enabled=1 AND department_id=?", Long.class, rootId)
         .stream()
-        .filter(id -> effective.routes(id).containsAll(RbacCatalog.maintenanceRoutes()))
+        .filter(
+            id ->
+                effective.canEnter(id)
+                    && effective.routes(id).containsAll(RbacCatalog.maintenanceRoutes()))
         .count();
   }
 
@@ -1312,6 +1337,10 @@ abstract class R13RoleContractSupport {
               RoleEntity role = roles.save(new RoleEntity(username, username));
               role.setManagementLevel(5);
               for (Long id : ids) role.grantPermission(permissions.findById(id).orElseThrow());
+              // 本用例的受控操作员另有显式登录资格；空角色仍保持空权限。
+              if (!ids.isEmpty())
+                role.grantPermission(
+                    permissions.findById(permissionIds.get("rbac.login")).orElseThrow());
               UserEntity user =
                   new UserEntity(
                       username,

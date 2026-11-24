@@ -1,6 +1,6 @@
 {
   "status": "IMPLEMENTED",
-  "baseline": "62907464ba76d035c758f4867ed22219a3484271",
+  "baseline": "当前双策略源码：应用管理、独立LOGIN、菜单读取映射与可视化接入配置；运行状态另见验收。",
   "entries": [
     {
       "id": "identity",
@@ -393,13 +393,15 @@
     },
     {
       "id": "systems",
-      "title": "已登记应用目录",
+      "title": "应用目录与生命周期",
       "service": "DddResourceService",
       "port": "ResourceUseCase",
       "repository": "ApplicationSystemRepository",
       "repoMethods": [
         "+ findRbac(): Optional<ApplicationSystem>",
-        "+ catalog(): List<ApplicationSystem>"
+        "+ catalog(): List<ApplicationSystem>",
+        "+ search(Systems): DomainPage<ApplicationSystem>",
+        "+ save(system: ApplicationSystem): ApplicationSystem"
       ],
       "model": "ApplicationSystem",
       "fields": [
@@ -410,14 +412,19 @@
       ],
       "methods": [
         "+ isRbac(): boolean",
-        "+ connected(): boolean"
+        "+ connected(): boolean",
+        "+ revise(name, enabled, connection): ApplicationSystem"
       ],
       "policy": "ManagementAccessUseCase",
       "policyMethods": [
         "+ require(header: String): void"
       ],
       "serviceMethods": [
-        "+ systems(header): List<SystemResult>"
+        "+ systems(header): List<SystemResult>",
+        "+ searchSystems(header, query): SystemPageResult",
+        "+ createSystem(header, command): SystemResult",
+        "+ patchSystem(header, id, command): SystemResult",
+        "+ removeSystem(header, id): SystemResult"
       ],
       "adapter": "JpaApplicationSystemRepositoryAdapter",
       "repoRole": "systems",
@@ -477,6 +484,39 @@
       "adapter": "JpaOrganizationRepositoryAdapter",
       "repoRole": "scope",
       "repositoryInterface": false
+    },
+    {
+      "id": "onboarding",
+      "title": "应用接入配置",
+      "service": "DddOnboardingService",
+      "port": "OnboardingUseCase",
+      "repository": "OnboardingRepository",
+      "repoMethods": [
+        "+ find(key: ApplicationOnboarding.Key): Optional<ApplicationOnboarding>",
+        "+ save(value: ApplicationOnboarding): void"
+      ],
+      "model": "ApplicationOnboarding",
+      "fields": [
+        "- application: ApplicationSystem",
+        "- configuration: Configuration",
+        "- roles: List<RoleOption>"
+      ],
+      "methods": [
+        "+ problems(desired): List<String>",
+        "+ connect(desired): ApplicationOnboarding"
+      ],
+      "policy": "OnboardingCodec",
+      "policyMethods": [
+        "+ fingerprint(plan, facts): String"
+      ],
+      "serviceMethods": [
+        "+ snapshot(header, id): OnboardingSnapshot",
+        "+ check(header, id, plan, account, password): OnboardingReport",
+        "+ complete(header, id, plan, business, revocation): OnboardingSnapshot"
+      ],
+      "adapter": "JpaOnboardingRepositoryAdapter",
+      "repoRole": "repository",
+      "supportRole": "codec"
     }
   ],
   "scenarios": [
@@ -1719,6 +1759,7 @@
           "service: StructuredDepartmentService",
           "users: UserJpaRepository",
           "departments: DepartmentJpaRepository",
+          "roles: RoleJpaRepository",
           "node: DepartmentEntity"
         ],
         "calls": [
@@ -1740,6 +1781,11 @@
           [
             1,
             4,
+            "ownedRoles = existsByOwnerDepartmentId(id)"
+          ],
+          [
+            1,
+            5,
             "setDeleted(true)"
           ]
         ],
@@ -1747,7 +1793,7 @@
           {
             "who": 1,
             "lines": [
-              "可信根检查及占用判断由Service直接完成。"
+              "Service核实可信根，分别检查人员、下级和所属角色占用。"
             ]
           }
         ]
@@ -2252,6 +2298,144 @@
           3
         ]
       }
+    },
+    {
+      "id": "application-lifecycle",
+      "title": "应用资料与生命周期",
+      "source": "service/structured/resource/StructuredResourceService.java",
+      "anchor": "patchSystem(",
+      "dddSource": "DddResourceService",
+      "dddAnchor": "patchSystem",
+      "structured": {
+        "lifelines": [
+          "service: StructuredResourceService"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "patchSystem 的差异片段"
+          ]
+        ],
+        "notes": [
+          {
+            "who": 1,
+            "lines": [
+              "CloneFactory.copyNotNull更新Entity的资料与状态。",
+              "code及关系保留；根锁、鉴权、维护者保护为共同编排。"
+            ]
+          }
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddResourceService",
+          "system: ApplicationSystem"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "patchSystem 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "changed = revise(name, enabled, connection)"
+          ]
+        ],
+        "notes": [
+          {
+            "who": 1,
+            "lines": [
+              "新领域值保持稳定id/code和原有关系。"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "onboarding-publication",
+      "title": "接入配置校验与发布",
+      "source": "service/structured/onboarding/StructuredOnboardingService.java",
+      "anchor": "complete(",
+      "dddSource": "DddOnboardingService",
+      "dddAnchor": "complete",
+      "structured": {
+        "lifelines": [
+          "service: StructuredOnboardingService",
+          "systems: ApplicationSystemJpaRepository"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "complete 的差异片段"
+          ],
+          [
+            1,
+            1,
+            "errors = problems(before, desired, roles)"
+          ],
+          [
+            1,
+            1,
+            "persist(system, desired)"
+          ],
+          [
+            1,
+            2,
+            "saveAndFlush(system)"
+          ]
+        ],
+        "notes": [
+          {
+            "who": 1,
+            "lines": [
+              "事务脚本独立校验树、映射、角色子集与目录保留。",
+              "persist差量保存多表实体，保留人员与跨应用授权。"
+            ]
+          }
+        ]
+      },
+      "ddd": {
+        "lifelines": [
+          "service: DddOnboardingService",
+          "current: ApplicationOnboarding",
+          "repository: OnboardingRepository"
+        ],
+        "calls": [
+          [
+            0,
+            1,
+            "complete 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "errors = problems(desired)"
+          ],
+          [
+            1,
+            2,
+            "connected = connect(desired)"
+          ],
+          [
+            1,
+            3,
+            "save(connected)"
+          ]
+        ],
+        "notes": [
+          {
+            "who": 1,
+            "lines": [
+              "聚合表达配置不变量并返回连接后的新领域值。",
+              "仓储适配器承担差量持久化；应用不依赖JPA。"
+            ]
+          }
+        ]
+      }
     }
   ],
   "sharedSequenceExcluded": [
@@ -2564,13 +2748,77 @@
         "useCase": "ApplicationIdentityUseCase.apiAllowed",
         "fragments": "application-projection",
         "reason": "ApiOperationCatalog定位、permissionRoles和路由匹配算法相同，仅current投影依两套实现。"
+      },
+      {
+        "operationId": "createApplication",
+        "method": "POST",
+        "path": "/api/systems",
+        "useCase": "ResourceUseCase.createSystem",
+        "fragments": "application-lifecycle",
+        "reason": "Entity字段修改与不可变ApplicationSystem.revise；新增构造和逻辑移除使用同一生命周期边界，公共事务不重复画。"
+      },
+      {
+        "operationId": "updateApplication",
+        "method": "PATCH",
+        "path": "/api/systems/{id}",
+        "useCase": "ResourceUseCase.patchSystem",
+        "fragments": "application-lifecycle",
+        "reason": "Entity字段修改与不可变ApplicationSystem.revise；新增构造和逻辑移除使用同一生命周期边界，公共事务不重复画。"
+      },
+      {
+        "operationId": "removeApplication",
+        "method": "DELETE",
+        "path": "/api/systems/{id}",
+        "useCase": "ResourceUseCase.removeSystem",
+        "fragments": "application-lifecycle",
+        "reason": "Entity字段修改与不可变ApplicationSystem.revise；新增构造和逻辑移除使用同一生命周期边界，公共事务不重复画。"
+      },
+      {
+        "operationId": "searchApplications",
+        "method": "GET",
+        "path": "/api/systems/page",
+        "useCase": "ResourceUseCase.searchSystems",
+        "fragments": "user-query（分页模式复用）",
+        "reason": "同快照筛选分页的技术/领域边界，复用分页模式。"
+      },
+      {
+        "operationId": "getOnboarding",
+        "method": "GET",
+        "path": "/api/systems/{id}/onboarding",
+        "useCase": "OnboardingUseCase.snapshot",
+        "fragments": "onboarding-publication（同一接入配置边界）",
+        "reason": "结构化独立事务脚本校验和JPA读写；DDD聚合problems/connect与领域仓储。解析、指纹和真实HTTP协议探测为共用技术，不绘制重复流程。"
+      },
+      {
+        "operationId": "previewOnboardingOpenApi",
+        "method": "POST",
+        "path": "/api/systems/{id}/onboarding/import",
+        "useCase": "OnboardingUseCase.preview",
+        "fragments": "onboarding-publication（同一接入配置边界）",
+        "reason": "结构化独立事务脚本校验和JPA读写；DDD聚合problems/connect与领域仓储。解析、指纹和真实HTTP协议探测为共用技术，不绘制重复流程。"
+      },
+      {
+        "operationId": "checkOnboarding",
+        "method": "POST",
+        "path": "/api/systems/{id}/onboarding/check",
+        "useCase": "OnboardingUseCase.check",
+        "fragments": "onboarding-publication",
+        "reason": "结构化独立事务脚本校验和JPA读写；DDD聚合problems/connect与领域仓储。解析、指纹和真实HTTP协议探测为共用技术，不绘制重复流程。"
+      },
+      {
+        "operationId": "completeOnboarding",
+        "method": "POST",
+        "path": "/api/systems/{id}/onboarding/complete",
+        "useCase": "OnboardingUseCase.complete",
+        "fragments": "onboarding-publication",
+        "reason": "结构化独立事务脚本校验和JPA读写；DDD聚合problems/connect与领域仓储。解析、指纹和真实HTTP协议探测为共用技术，不绘制重复流程。"
       }
     ],
     "offline": [
       "ImportUseCase.importDirectory",
       "AuthorizationBootstrapUseCase.preview/initialize"
     ],
-    "scenarioCount": 24,
-    "classDiagramPairs": 16
+    "scenarioCount": 26,
+    "classDiagramPairs": 17
   }
 }

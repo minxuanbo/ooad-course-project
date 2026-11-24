@@ -18,18 +18,20 @@ RBAC与老师课程工程是两个独立业务系统。RBAC提供通用授权目
 | 文件 | 设计用途 |
 | --- | --- |
 | [catalog.json](../integrations/course/catalog.json) | 应用、角色、中文权限名、短码与全部必要路由 |
-| [operations.json](../integrations/course/operations.json) | operationId、方法/模板及全局门禁适用角色；由IDENTITY_OPERATIONS_FILE显式装配 |
+| [operations.json](../integrations/course/operations.json) | operationId、方法/模板及全局门禁适用角色；由独立首次脚本导入api_operations，后续通过向导维护 |
 | [initialization.json](../integrations/course/initialization.json) | 本部教师、其他学生及同账号管理员的首次分配规则 |
 
 ## 2. 身份与授权链
 
 RBAC实现8项统一身份鉴权，清单和字段见[OpenAPI](../api/openapi.yaml)及[业务契约](api-contract.md)。管理`/api/auth/login`与外部`/auth/login`均签发HS256身份JWT，仅含sub/aud/iss/iat/exp/jti。Bearer是HTTP携带方式；管理aud=rbac，课程aud为登记的课程应用编码，不能交叉使用。签名秘密外置，无固定默认值。
 
-每次请求按当前User→Role→Permission→ApiResource及应用状态重算，JWT不缓存角色权限。原JWT在授撤权提交后的下一请求立即体现变化；退出只撤当前会话，RBAC重启须重新登录。普通员工即便有课程角色，也须实际RBAC管理API才能进入管理端。
+每次请求按当前User→Role→Permission→ApiResource及应用状态重算，JWT不缓存角色权限。原JWT在授撤权提交后的下一请求立即体现变化；退出只撤当前会话，RBAC重启须重新登录。课程角色不自动提供RBAC登录资格。管理端另要求有效RBAC登录权限，只授登录进入空工作台，业务读取与操作仍分别授权。
 
 `/auth/me`返回subject、roles、permissions、system、permissionApis。API类型权限必须有非空且全部同应用启用的映射才导出短码；菜单/按钮可表达无API的展示资格。接入层再按catalog核查老师同一粗粒度短码所需的路由全集，任一必要映射缺失即关闭整个短码，防止部分撤权后借其他路由继续放行。
 
-目录接口遵循page从1、pageSize默认20最多100；部门逐层展开、人员仅直属，实际API和本人子树同时受限。operationId由文件配置定位；未知操作404，配置损坏/重复阻止启动。全局门禁通过后，课程Service仍检查授课、选课、分组、课程状态等对象条件。
+目录接口遵循page从1、pageSize默认20最多100；部门逐层展开、人员仅直属，实际API和本人子树同时受限。operationId由api_operations按应用逐请求读取；未知操作404，不回退旧文件。首次文件及向导写入均校验格式和重复。全局门禁通过后，课程Service仍检查授课、选课、分组、课程状态等对象条件。
+
+当前课程目录含23项真实API、25条短码映射。CTM覆盖课程组长、教学班教师、教学班读取及建班四条路由；`createClasses`对课程管理员执行该全局门禁，普通教师继续由课程对象规则判断。首次目录及现有库均须保留`POST /courses/{courseId}/classes`与CTM的映射，向导会拒绝缺失映射的受控操作。
 
 ### 身份日志与课程业务日志
 
@@ -86,7 +88,7 @@ python scripts/initialize_course_integration.py --mysql <mysql.exe绝对路径> 
 
 服务器两个后端均DDD，课程公开80、RBAC公开8088，支撑8085及数据库/Actuator/Prometheus留内网。容器DNS、业务端口与内部管理端口不同，精确路由以[Stack](../deploy/stack.yml)和[部署步骤](../deploy/README.md)为准。CloneFactory固定真实0.0.2来源，见[依赖安装](../deploy/README.md#本机依赖安装)。
 
-本机可以分别选择两策略，但不得同时写同一验收库；课程来源与补丁使用上述准备脚本，初始化命令见第4节。RBAC开启APP_IDENTITY_ENABLED、配置operations文件绝对URI；课程Vue关闭mock，分别设置课程API和身份支撑地址。运行配置和检查见[本地复现](reproduction.md#6-课程系统本地联调)。
+本机可以分别选择两策略，但不得同时写同一验收库；课程来源与补丁使用上述准备脚本，初始化命令见第4节。RBAC开启APP_IDENTITY_ENABLED，独立首次脚本将operations.json显式导入api_operations，运行不配置旧operations文件路径；后续通过向导维护。课程Vue关闭mock，分别设置课程API和身份支撑地址。运行配置和检查见[本地复现](initialization.md#reproduction-6-课程系统本地联调)。
 
 ### 本机浏览器入口与跨域配置
 

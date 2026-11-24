@@ -1,6 +1,8 @@
 package com.municipal.rbaccore.infrastructure.web;
 
 import com.municipal.rbaccore.api.department.DepartmentController;
+import com.municipal.rbaccore.api.onboarding.OnboardingController;
+import com.municipal.rbaccore.api.resource.ApplicationController;
 import com.municipal.rbaccore.api.resource.ResourceController;
 import com.municipal.rbaccore.api.role.RoleController;
 import com.municipal.rbaccore.api.shared.ApiLimits;
@@ -9,6 +11,7 @@ import com.municipal.rbaccore.service.port.audit.AuditEvent;
 import com.municipal.rbaccore.service.port.audit.AuditWriter;
 import com.municipal.rbaccore.service.port.department.DepartmentUseCase;
 import com.municipal.rbaccore.service.port.error.BusinessException;
+import com.municipal.rbaccore.service.port.onboarding.OnboardingUseCase;
 import com.municipal.rbaccore.service.port.resource.ResourceUseCase;
 import com.municipal.rbaccore.service.port.role.RoleUseCase;
 import com.municipal.rbaccore.service.port.security.ManagementAccessUseCase;
@@ -28,6 +31,7 @@ import org.springframework.web.servlet.HandlerMapping;
 @RequiredArgsConstructor
 public class ManagementPreflight implements HandlerInterceptor {
   private final ManagementAccessUseCase access;
+  private final OnboardingUseCase onboarding;
   private final ResourceUseCase resources;
   private final UserManagementUseCase users;
   private final DepartmentUseCase departments;
@@ -39,7 +43,9 @@ public class ManagementPreflight implements HandlerInterceptor {
   public boolean preHandle(
       HttpServletRequest request, HttpServletResponse response, Object handler) {
     if (!(handler instanceof HandlerMethod method)
-        || (!ResourceController.class.isAssignableFrom(method.getBeanType())
+        || (!OnboardingController.class.isAssignableFrom(method.getBeanType())
+            && !ResourceController.class.isAssignableFrom(method.getBeanType())
+            && !ApplicationController.class.isAssignableFrom(method.getBeanType())
             && !RoleController.class.isAssignableFrom(method.getBeanType())
             && !UserController.class.isAssignableFrom(method.getBeanType())
             && !DepartmentController.class.isAssignableFrom(method.getBeanType()))) {
@@ -50,6 +56,10 @@ public class ManagementPreflight implements HandlerInterceptor {
     String header = request.getHeader("Authorization");
     try {
       Long id = targetId(request);
+      if (OnboardingController.class.isAssignableFrom(method.getBeanType())) {
+        onboarding.checkTarget(header, id);
+        return true;
+      }
       if (DepartmentController.class.isAssignableFrom(method.getBeanType())) {
         departments.checkTarget(header, id, !request.getMethod().equals("GET"));
         return true;
@@ -66,7 +76,9 @@ public class ManagementPreflight implements HandlerInterceptor {
         return true;
       }
       access.require(header);
-      if (id != null
+      if (id != null && template.equals("/api/systems/{id}")) {
+        resources.checkSystemTarget(header, id);
+      } else if (id != null
           && (template.equals("/api/permissions/{id}")
               || template.equals("/api/permissions/{id}/apis"))) {
         resources.checkPermissionTarget(header, id);

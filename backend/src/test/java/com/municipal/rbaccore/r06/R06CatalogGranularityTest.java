@@ -13,7 +13,7 @@ class R06CatalogGranularityTest {
 
   /** 原型中的单操作权限落实为真实API一对一映射，维护恢复集合保持不变。 */
   @Test
-  @DisplayName("R06/R14 同页面按钮独立授权，25个管理接口不遗漏不重叠且完整K仍为17")
+  @DisplayName("R06/R14/R34 操作与登录独立授权，34个资源不遗漏不重叠且完整K仍为17")
   void R06_separatesEveryManagementOperation() {
     Set<RbacCatalog.Route> unique = new HashSet<>();
     RbacCatalog.definitions()
@@ -22,7 +22,7 @@ class R06CatalogGranularityTest {
               assertEquals(1, routes.size(), code + "不能默认捆绑其他按钮接口");
               assertTrue(unique.add(routes.getFirst()), code + "与其他默认权限重复映射");
             });
-    assertEquals(25, unique.size());
+    assertEquals(34, unique.size());
     assertEquals(17, RbacCatalog.maintenanceRoutes().size());
     assertEquals(
         Set.of(new RbacCatalog.Route("GET", "/api/users")),

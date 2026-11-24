@@ -32,11 +32,15 @@ class R29OperationCatalogBoundaryTest {
     ConfiguredApiOperationCatalog catalog = load(Map.of("operations", List.of(first, second)));
     assertEquals("/items/{id}", catalog.find("application-a", "read-item").orElseThrow().path());
     assertTrue(catalog.find("application-a", "read-item").orElseThrow().requiresPermission());
-    assertEquals(2, catalog.find("application-a", "read-item").orElseThrow().permissionRoles().size());
+    assertEquals(
+        2, catalog.find("application-a", "read-item").orElseThrow().permissionRoles().size());
     assertFalse(catalog.find("application-b", "read-item").orElseThrow().requiresPermission());
     assertTrue(catalog.find("application-c", "read-item").isEmpty());
-    assertTrue(new ConfiguredApiOperationCatalog(new DefaultResourceLoader(), mapper, " ")
-        .find("application-a", "read-item").isEmpty());
+    assertTrue(catalog.loginPermission("application-a").isEmpty());
+    assertTrue(
+        new ConfiguredApiOperationCatalog(new DefaultResourceLoader(), mapper, " ")
+            .find("application-a", "read-item")
+            .isEmpty());
     assertTrue(load(Map.of("operations", List.of())).find("application-a", "read-item").isEmpty());
   }
 
@@ -48,7 +52,10 @@ class R29OperationCatalogBoundaryTest {
     invalid.put("system", java.util.Arrays.asList(null, "_invalid"));
     invalid.put("operationId", java.util.Arrays.asList(null, "invalid space"));
     invalid.put("method", java.util.Arrays.asList(null, "TRACE"));
-    invalid.put("path", java.util.Arrays.asList(null, "relative", "/" + "x".repeat(512), "/items?q=1", "/items#part"));
+    invalid.put(
+        "path",
+        java.util.Arrays.asList(
+            null, "relative", "/" + "x".repeat(512), "/items?q=1", "/items#part"));
     invalid.put("requiresPermission", java.util.Arrays.asList((Object) null));
     for (Map.Entry<String, List<Object>> field : invalid.entrySet()) {
       for (Object bad : field.getValue()) {
@@ -73,12 +80,21 @@ class R29OperationCatalogBoundaryTest {
   @Test
   @DisplayName("R29 不可读取文件及坏JSON均失败关闭")
   void R29_rejectsUnreadableAndMalformedFiles() throws Exception {
-    assertThrows(IllegalStateException.class, () -> new ConfiguredApiOperationCatalog(
-        new DefaultResourceLoader(), mapper, directory.resolve("missing.json").toUri().toString()));
+    assertThrows(
+        IllegalStateException.class,
+        () ->
+            new ConfiguredApiOperationCatalog(
+                new DefaultResourceLoader(),
+                mapper,
+                directory.resolve("missing.json").toUri().toString()));
     Path broken = directory.resolve("broken.json");
     Files.writeString(broken, "{not json");
-    IllegalStateException failure = assertThrows(IllegalStateException.class,
-        () -> new ConfiguredApiOperationCatalog(new DefaultResourceLoader(), mapper, broken.toUri().toString()));
+    IllegalStateException failure =
+        assertThrows(
+            IllegalStateException.class,
+            () ->
+                new ConfiguredApiOperationCatalog(
+                    new DefaultResourceLoader(), mapper, broken.toUri().toString()));
     assertEquals("统一身份API操作配置无效，请核对接入文件", failure.getMessage());
   }
 
@@ -97,12 +113,14 @@ class R29OperationCatalogBoundaryTest {
   private ConfiguredApiOperationCatalog load(Map<String, Object> configuration) throws Exception {
     Path path = directory.resolve("operations.json");
     mapper.writeValue(path.toFile(), configuration);
-    return new ConfiguredApiOperationCatalog(new DefaultResourceLoader(), mapper, path.toUri().toString());
+    return new ConfiguredApiOperationCatalog(
+        new DefaultResourceLoader(), mapper, path.toUri().toString());
   }
 
   /** 统一检查固定错误消息，避免配置值和文件内容泄露到异常。 */
   private void assertInvalid(Map<String, Object> configuration) {
-    assertEquals("统一身份API操作配置无效，请核对接入文件",
+    assertEquals(
+        "统一身份API操作配置无效，请核对接入文件",
         assertThrows(IllegalStateException.class, () -> load(configuration)).getMessage());
   }
 }

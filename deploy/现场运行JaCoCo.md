@@ -1,6 +1,6 @@
 # JaCoCo回归与报告
 
-报告记录测试JVM实际执行的代码，不是线上进程的运行覆盖率。测试使用独立可丢弃MySQL，不能把测试URL指向正式业务库；不重新初始化线上、不重启产品服务。最近双策略各331项及六项100%实测见[构造器映射验证](../docs/history/verification/login-prototype-constructor-mapping-20261124.md)，[最终报告](../docs/reports/jacoco/final-rbac/README.md)提供脱敏HTML、XML及摘要；历史报告副本按用户要求清理，原版本可由Git读取。
+报告记录测试JVM实际执行的代码，不是线上进程的运行覆盖率。测试使用独立可丢弃MySQL，不能把测试URL指向正式业务库；不重新初始化线上、不重启产品服务。最近双策略各331项及六项100%实测见[构造器映射验证](../docs/history/verification/release-evidence.md#login-prototype-constructor-mapping-20261124)，[最终报告](../docs/reports/jacoco/final-rbac/README.md)提供脱敏HTML、XML及摘要；历史报告副本按用户要求清理，原版本可由Git读取。
 
 ## 本机执行
 

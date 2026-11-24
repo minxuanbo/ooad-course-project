@@ -1,6 +1,6 @@
 # 统一权限管理系统需求说明
 
-本文描述现行业务行为及验收边界。R01—R33是稳定需求标识，供代码、测试和图件追溯；正文按业务主题组织，不以实施轮次追加章节。实际完成范围见[测试与验收](testing-acceptance.md)。
+本文描述现行业务行为及验收边界。R01—R35是稳定需求标识，供代码、测试和图件追溯；正文按业务主题组织，不以实施轮次追加章节。实际完成范围见[测试与验收](testing-acceptance.md)。
 
 ## 1. 来源与适用范围
 
@@ -9,6 +9,7 @@
 | 老师检查记录与补充课堂图片 | 核心对象、部门管理、菜单/按钮—API、原型先行、JPA/AOP/事务/CloneFactory及双业务系统方向；摘录见[需求来源](requirements/sources.md#1-老师要求) |
 | 用户2026-11-07—12明确确认 | 双入口、管理端准入、最小日志、新项目初始化、领导节点合并、五角色、双实现同仓库；详见下文 |
 | 用户2026-11-13原型评审确认 | 防越级角色授予、部门增删改名、人员只读职位/角色摘要、同级人员保护、跨系统资源/原表矩阵、范围内总览及管理员工作区；现行规则见R23—R28 |
+| 用户2026-11-24第二次检查记录确认 | 当前只保留RBAC和课程，清除其余未接入目录；仍需动态新增第三个系统，见R28/R34/R35 |
 | 三份老师原始Excel | 原始人员、组织和业务权限资料；不是口令、状态、HTTP资源或逐人授权的来源 |
 | 课程系统既有协议 | 接入统一身份及业务授权，不把课程对象或业务范围移入RBAC；见[后端设计](backend-design.md) |
 
@@ -20,12 +21,12 @@
 
 | 编号 | 要求 |
 | --- | --- |
-| R01 | 保留六个核心实体：User、Role、Permission、Department、ApplicationSystem、ApiResource；公司、分公司均为部门树节点，不建独立全局账号实体、管理员属性或独立管理范围表。 |
-| R02 | 用户必须属于一个部门。人员管理范围是本人部门及后代；共同根须由来源映射和真实树核实，部门名称或任意parentId为空不能作为全局资格。 |
-| R03 | 原始组织111节点，导入仅将“公司领导”合并到“总公司”，其10人归根，目标110部门；10000员工加独立admin共10001账号，根直属11人。保留原件、源行、六列、文件摘要与新ID映射，不迁旧ID/哈希/状态/授权。 |
-| R04 | username就是工号，来自Excel“用户名”；phone来自“电话号码”，是同一账号另一登录入口。工号唯一，手机号可空、非空值唯一；来源导入拒绝跨用户标识碰撞。不增加employee_no、标识注册表或第三种别名。 |
-| R05 | 员工全部启用，员工统一初始口令与管理员独立口令分别来自必填部署配置，各账号独立BCrypt盐；默认管理员账号名admin，可显式配置。秘密不进入源码、命令参数或报告。 |
-| R06 | 组织账号导入与首次授权分开。首次按已确认且经来源核对的清单批量授予五角色；预览只读，实际授权整批事务；重复执行不覆盖后续状态、部门、口令或授权调整，来源变化或不一致拒绝。 |
+| R01 | 保留六个核心实体：User、Role、Permission、Department、ApplicationSystem、ApiResource；公司、分公司均为部门树节点，不建独立全局账号实体、管理员属性或独立管理范围表。<br>对应测试：[R03_ImportsCompletePopulationIntoMySql](../backend/src/test/java/com/municipal/rbaccore/r03/R03ImportJpaContractTest.java#L271)；[R19R21_singleBackendContainsBothStrategies](../backend/src/test/java/com/municipal/rbaccore/architecture/R19R21StructuredBoundaryTest.java#L36)；[R19R21_portsContainNoPersistenceOrWebTypes](../backend/src/test/java/com/municipal/rbaccore/architecture/R19R21StructuredBoundaryTest.java#L115)。 |
+| R02 | 用户必须属于一个部门。人员管理范围是本人部门及后代；共同根须由来源映射和真实树核实，部门名称或任意parentId为空不能作为全局资格。<br>对应测试：[R04_ScopesTreeAndPaginationInDatabase](../backend/src/test/java/com/municipal/rbaccore/r07/R07AuthenticationContractSupport.java#L907)；[R11_MovesWithinDoubleScope](../backend/src/test/java/com/municipal/rbaccore/r11/R11UserManagementContractSupport.java#L432)；[R24_rootSourceMustBeRootAndComplete](../backend/src/test/java/com/municipal/rbaccore/r23/R24StructuredReadBoundaryTest.java#L95)。 |
+| R03 | 原始组织111节点，导入仅将“公司领导”合并到“总公司”，其10人归根，目标110部门；10000员工加独立admin共10001账号，根直属11人。保留原件、源行、六列、文件摘要与新ID映射，不迁旧ID/哈希/状态/授权。<br>对应测试：[R03_ImportsCompletePopulationIntoMySql](../backend/src/test/java/com/municipal/rbaccore/r03/R03ImportJpaContractTest.java#L271)；[R03_RejectsEachPersistedSourceDrift](../backend/src/test/java/com/municipal/rbaccore/r03/R03ImportJpaContractTest.java#L151)；[R03_RejectsInvalidOrganizationTrees](../backend/src/test/java/com/municipal/rbaccore/r03/R03WorkbookImportPlannerTest.java#L93)。 |
+| R04 | username就是工号，来自Excel“用户名”；phone来自“电话号码”，是同一账号另一登录入口。工号唯一，手机号可空、非空值唯一；来源导入拒绝跨用户标识碰撞。不增加employee_no、标识注册表或第三种别名。<br>对应测试：[R04_DualLoginAndManagementAdmission](../backend/src/test/java/com/municipal/rbaccore/r07/R07AuthenticationContractSupport.java#L602)；[R04_IdentifierBoundaries](../backend/src/test/java/com/municipal/rbaccore/r07/R07AuthenticationContractSupport.java#L670)；[R03_PreservesLeadingZerosAndStableCodes](../backend/src/test/java/com/municipal/rbaccore/r03/R03WorkbookImportPlannerTest.java#L74)。 |
+| R05 | 员工全部启用，员工统一初始口令与管理员独立口令分别来自必填部署配置，各账号独立BCrypt盐；默认管理员账号名admin，可显式配置。秘密不进入源码、命令参数或报告。<br>对应测试：[R03_productionBeansUseRealHashing](../backend/src/test/java/com/municipal/rbaccore/config/R03ImportConfigurationTest.java#L47)；[R03_RejectsMissingCredentialsBeforeWriting](../backend/src/test/java/com/municipal/rbaccore/r03/R03ImportJpaContractTest.java#L136)；[R04_DisabledAndWrongPasswordAreUniform](../backend/src/test/java/com/municipal/rbaccore/r07/R07AuthenticationContractSupport.java#L641)。 |
+| R06 | 组织账号导入与首次授权分开。首次按已确认且经来源核对的清单批量授予五角色；预览只读，实际授权整批事务；重复执行不覆盖后续状态、部门、口令或授权调整，来源变化或不一致拒绝。<br>对应测试：[R06_ClassifiesAllOriginalEmployees](../backend/src/test/java/com/municipal/rbaccore/r06/R06InitialRoleRulesTest.java#L21)；[R06_acceptsCompleteStateAndKeepsReceiptChanges](../backend/src/test/java/com/municipal/rbaccore/r06/R06InitializationPolicyBoundaryTest.java#L34)；[R06_rejectsIncompleteOrUnclaimedInitialization](../backend/src/test/java/com/municipal/rbaccore/r06/R06InitializationPolicyBoundaryTest.java#L46)。 |
 
 首次清单人数及业务能力如下。岗位分类只用于这一次已确认清单，不作为运行时鉴权或后续调动自动改角色的依据。
 
@@ -43,26 +44,28 @@
 
 | 编号 | 可验收的业务要求 |
 | --- | --- |
-| R07 | 单一account/password入口精确匹配工号或手机号；必须定位唯一用户，同用户两字段同值视为一人。未知、跨用户歧义、错口令、停用统一401 LOGIN_FAILED；不得按号码长度猜输入类型。 |
-| R08 | 账号/口令通过后，至少有一项本系统已登记且有效的管理API才可登录；无角色、空角色、普通员工、仅父菜单或仅外系统权限拒绝。已有身份每次管理请求仍重新鉴权；授权变更提交后的新请求立即按最新权限判断，无需重新登录，详见3.1。 |
-| R09 | 有效授权沿启用User→Role→Permission→同系统启用ApiResource及ApplicationSystem计算，按方法与服务端路径模板匹配。多角色/多权限按OR；父菜单不隐含子按钮API，父节点停用不级联撤销直接授予子项。 |
-| R10 | 人员查询先限定部门范围，再执行直属/子树、角色关联、姓名/工号搜索、状态、分页及同条件计数。直属查询必须指定部门；角色筛选包含停用角色成员，未知角色返回空页。部门页可查看直属员工并切换含下级，角色页可查看成员，均只读且不得扩大可见范围。未知可见部门404，范围外部门403；部门树不得泄露范围外父节点/兄弟节点。 |
-| R11 | 选人后可查看当前角色和受限候选，整体替换角色；候选及保存同时满足R23授予级别和完整有效Permission子集，不能只比较API能力，不得先过滤外系统权限后当作空角色授出。目标人员另受R27保护。 |
-| R12 | 停用账号后现有身份不能继续管理，再次登录拒绝。调动要求原部门与目标部门均在操作者范围内；保持同一用户身份，同事务移除不再适用的部门角色，其他角色保留；调回不自动恢复，后续请求按新部门范围判断。 |
-| R13 | 角色定义写入和资源维护须共同根及对应实际API；局部有效领导可按相同实际读取API访问本人子树的部门角色，数据库过滤后分页。部门角色定义及选权另要求可信根有效五级管理员。角色支持查询、新建空权限定义、改名、启停、整体替换权限；不扩展删除、继承、审批或版本。 |
-| R14 | 资源维护限定已登记系统目录（含待接入规划）、权限parentId/type/enabled、API enabled及权限—API整体映射。只有菜单可有子节点，父子同系统、树无环、映射同系统。系统/code/name及API method/path不提供编辑入口。 |
-| R15 | 相关写入共用可信根锁，锁后重新检查当前身份、权限及范围；写后至少保留一名直属共同根、启用、有效基础管理级别为5且独自具备完整K的用户。同用户多角色可汇总，不同用户不能拼接成一名管理员。冲突和故障全回滚。 |
-| R16 | 最小鉴权日志记录真实登录/鉴权允许及拒绝，明确事件时间、主体、目标、结果、原因及请求追踪信息，支持筛选、同条件总数和快照游标分页，详见3.2。查询同时要求日志API及共同根，完整K不是查询前置；部门账号即使误授该API也拒绝。不含归档、导出或完整变更审计。 |
-| R23 | 增加明确角色授予级别：系统管理员可授全部角色；公司领导可授公司领导及以下；部门经理可授部门经理/项目经理/普通员工；项目经理只可授项目经理/普通员工。全局自定义及应用预置角色仅启用、直属可信根且有效基础级别为5的操作者可授；部门自定义角色可由所属部门或上级范围内的有效领导分配/撤回，目标须在角色所属部门子树且低于操作者级别。自定义角色不提升级别；始终叠加R11完整计划权限子集（包含待接入项）和R02范围。 |
-| R24 | 独立部门管理支持新增、改名、删除，不提供调整层级。系统管理员维护全公司；公司领导/部门经理/项目经理仅可改名或删除本人直属部门的严格下级，不能操作本人、上级、平级。新增父级可选本人部门或下级且须符合类型：总公司可建分公司/部门/项目；分公司可建部门/项目；部门只能建项目；项目不可建下级，不创建第二个总公司。仅无人、无下级且无所属角色的空部门可删，根不可删；新增不自动授予人员角色。名称先trim再验1—100字符，同一上级下不能重名；改名不改变ID、人员归属、职位、角色或范围，原Excel不改。每次仍须对应实际操作权限。 |
-| R25 | 增加总览，展示当前可管理范围的人员总数、启用/停用人数、组织节点及下级分布，提供获准工作区快捷入口。系统管理员可见全公司，其他管理者仅见本人部门及下级；最近鉴权活动仍须日志API和共同根，不向非根混入全局日志。 |
-| R26 | 人员列表展示只读职位及当前已授角色摘要，职位来源为老师Excel“岗位”等已核实人事资料，不提供职位编辑或职位调动，也不因职位文本自动增减权限。角色摘要包含停用角色，明确标为“角色已停用”，账号列为“账号状态”；二者独立，停用角色保留关联但不贡献权限，不会自动停用持有者账号。进入分配抽屉仍读取完整当前角色和分页候选。 |
-| R27 | 非系统管理员仅可修改级别严格低于本人的范围内人员；本人、同级、上级只读，角色调整/停用/部门调动全部受限。公司领导之间不因共享部门范围而相互修改。可按R23将下级授为本级，成功后按其最新级别保护。系统管理员例外仍须有效API、范围及完整维护者保护。自定义角色不提升操作者或目标级别，不冻结人员。角色整体替换须锁后读取当前集合，新增和删除项分别验证级别、权限子集；无权改变的现有项可以原样保留，不能伪造保留或增删。全局自定义及应用预置仅可信根有效五级管理员增删，部门角色按R23范围授撤，前端显示锁定项；停用和调动按原人员保护与部门范围判断。 |
-| R28 | 独立首次配置正式登记原权限表18业务系统、115模块、359功能点，五个SYSTEM_BUILTIN基础角色逐项按原表矩阵授予，不覆盖已有RBAC/课程权限。全部仅展开同行动作，空白不授权，本人限定保留，view规范化留痕；不编造业务API。18项接入状态PENDING，可规划和分配权限，身份登录、短码及实际API判断均拒绝。RBAC与课程CONNECTED，共20项目录。相同回执不重置人工维护。角色显式区分SYSTEM_BUILTIN、APPLICATION_PRESET、DEPARTMENT_CUSTOM、GLOBAL_CUSTOM；课程3角色由配置登记且无管理级别，部门角色必有所属部门，其余规则见R23。 |
-| R29 | 对接老师course-project-mgt既有生产前后端与统一身份HTTP协议。Application目录从登记数据读取，不在RBAC代码维护应用白名单、教师/学生标记或课程业务策略。角色可含多个应用权限，Permission—ApiResource映射必须同系统。通用应用身份按凭据、系统启用与当前有效授权签发独立受众；管理端仍沿R08拒绝无管理权限账号。teacher/student/课程管理员均为显式角色配置，老师自己的登录、Teacher/Student关联和对象规则保留。角色、权限、映射及启停提交后，旧令牌下一请求实时重算。权限type增加API：要求非空映射且全部同系统启用；菜单、按钮可无API表达展示或资格。完整本地体验覆盖学生、教师、课程管理员以及老师已实现的教学业务和日志；老师仅在文档或常量中声明但没有生产实现的功能单列说明，不伪造。老师原工程尽量不改；任何必要修改须报告。不增加委托授予或可授角色清单机制。 |
-| R30 | 权限展示名称应采用通俗中文，覆盖RBAC初始目录和课程接入目录；编码保留稳定标识，不修改ID、关联或鉴权语义。两套首次授权和本地联调数据均需一致，不在Vue按角色或英文编码猜测中文名称。 |
+| R07 | 单一account/password入口精确匹配工号或手机号；必须定位唯一用户，同用户两字段同值视为一人。未知、跨用户歧义、错口令、停用统一401 LOGIN_FAILED；不得按号码长度猜输入类型。<br>对应测试：[R04_DualLoginAndManagementAdmission](../backend/src/test/java/com/municipal/rbaccore/r07/R07AuthenticationContractSupport.java#L602)；[R04_DisabledAndWrongPasswordAreUniform](../backend/src/test/java/com/municipal/rbaccore/r07/R07AuthenticationContractSupport.java#L641)；[R04_IdentifierBoundaries](../backend/src/test/java/com/municipal/rbaccore/r07/R07AuthenticationContractSupport.java#L670)。 |
+| R08 | 账号/口令通过后，必须具有显式映射POST /api/auth/login的有效RBAC登录权限。只授登录可进入空工作台，不可读取任何业务数据；再授某个菜单显式映射的读取API才可进入该页。无登录权限的普通员工、空角色和仅外系统权限拒绝。已有身份每次管理请求仍重新鉴权；授权变更提交后的新请求立即按最新权限判断，无需重新登录，详见3.1。<br>对应测试：[R08_LoginOnlyAndSingleMenu](../backend/src/test/java/com/municipal/rbaccore/r34/R34ApplicationManagementContractTest.java#L218)；[R04_RejectsExternalAndNavigationOnlyRoles](../backend/src/test/java/com/municipal/rbaccore/r07/R07AuthenticationContractSupport.java#L748)；[R11_RevocationAffectsRequestsAndLogin](../backend/src/test/java/com/municipal/rbaccore/r11/R11UserManagementContractSupport.java#L370)。 |
+| R09 | 有效授权沿启用User→Role→Permission→同系统启用ApiResource及ApplicationSystem计算，按方法与服务端路径模板匹配。多角色/多权限按OR；菜单可显式映射本页读取API，按钮另映射写入或独立查询API；二者通过Permission—ApiResource关系关联，父子层级不授予任何隐含API。父节点停用不级联撤销直接授予子项。<br>对应测试：[R09_ExcludeInactivePermissionChains](../backend/src/test/java/com/municipal/rbaccore/r34/R34ApplicationManagementContractTest.java#L247)；[R08_SelectedChildRetainsItsParentId](../backend/src/test/java/com/municipal/rbaccore/r23/R23PrototypeContractTest.java#L86)；[R14_ChangesActualAuthorizationImmediately](../backend/src/test/java/com/municipal/rbaccore/r14/R14ResourceContractSupport.java#L272)。 |
+| R10 | 人员查询先限定部门范围，再执行直属/子树、角色关联、姓名/工号搜索、状态、分页及同条件计数。直属查询必须指定部门；角色筛选包含停用角色成员，未知角色返回空页。部门页可查看直属员工并切换含下级，角色页可查看成员，均只读且不得扩大可见范围。未知可见部门404，范围外部门403；部门树不得泄露范围外父节点/兄弟节点。<br>对应测试：[R10_DepartmentAndRoleMembers](../backend/src/test/java/com/municipal/rbaccore/r07/R07AuthenticationContractSupport.java#L149)；[R04_ScopesTreeAndPaginationInDatabase](../backend/src/test/java/com/municipal/rbaccore/r07/R07AuthenticationContractSupport.java#L907)；[R18_MemberQueryValidation](../backend/src/test/java/com/municipal/rbaccore/r07/R07AuthenticationContractSupport.java#L235)。 |
+| R11 | 选人后可查看当前角色和受限候选，整体替换角色；候选及保存同时满足R23授予级别和完整有效Permission子集，不能只比较API能力，不得先过滤外系统权限后当作空角色授出。目标人员另受R27保护。<br>对应测试：[R11_ReplacesRolesAtomically](../backend/src/test/java/com/municipal/rbaccore/r11/R11UserManagementContractSupport.java#L300)；[R11_RejectsDifferentPermissionForSameApi](../backend/src/test/java/com/municipal/rbaccore/r11/R11UserManagementContractSupport.java#L585)；[R11_LoadsOnlyRequestedCandidatePage](../backend/src/test/java/com/municipal/rbaccore/r11/R11UserManagementContractSupport.java#L722)。 |
+| R12 | 停用账号后现有身份不能继续管理，再次登录拒绝。调动要求原部门与目标部门均在操作者范围内；保持同一用户身份，同事务移除不再适用的部门角色，其他角色保留；调回不自动恢复，后续请求按新部门范围判断。<br>对应测试：[R11_MovesWithinDoubleScope](../backend/src/test/java/com/municipal/rbaccore/r11/R11UserManagementContractSupport.java#L432)；[R11_DisableEndsSessionAndLogin](../backend/src/test/java/com/municipal/rbaccore/r11/R11UserManagementContractSupport.java#L391)；[R11_RechecksTargetScopeAfterLockWait](../backend/src/test/java/com/municipal/rbaccore/r11/R11UserManagementContractSupport.java#L811)。 |
+| R13 | 角色定义写入和资源维护须共同根及对应实际API；局部有效领导可按相同实际读取API访问本人子树的部门角色，数据库过滤后分页。部门角色定义及选权另要求可信根有效五级管理员。角色支持查询、新建空权限定义、改名、启停、整体替换权限；不扩展删除、继承、审批或版本。<br>对应测试：[R13_RoleLifecycle](../backend/src/test/java/com/municipal/rbaccore/r13/R13RoleContractSupport.java#L384)；[R13_RejectsInvalidDefinitions](../backend/src/test/java/com/municipal/rbaccore/r13/R13RoleContractSupport.java#L510)；[R13_SearchAndPages](../backend/src/test/java/com/municipal/rbaccore/r13/R13RoleContractSupport.java#L418)。 |
+| R14 | 资源维护限定已登记系统目录（含待接入规划）、权限parentId/type/enabled、API enabled及权限—API整体映射。只有菜单可有子节点，父子同系统、树无环、映射同系统。既有资源页不提供权限system/code/name或API method/path编辑；R35接入向导可维护外部应用权限名称和新增目录，已有ID与code稳定，已有API须保留或停用。应用资料和接入生命周期见R34/R35。<br>对应测试：[R14_PersistsNodeAndMappingChanges](../backend/src/test/java/com/municipal/rbaccore/r14/R14ResourceContractSupport.java#L238)；[R14_RejectsInvalidInputAndTrees](../backend/src/test/java/com/municipal/rbaccore/r14/R14ResourceContractSupport.java#L345)；[R14_QueriesStablePagesAndTrees](../backend/src/test/java/com/municipal/rbaccore/r14/R14ResourceContractSupport.java#L203)。 |
+| R15 | 相关写入共用可信根锁，锁后重新检查当前身份、权限及范围；写后至少保留一名直属共同根、启用、有效基础管理级别为5、具有有效RBAC登录资格且独自具备完整K的用户。同用户多角色可汇总，不同用户不能拼接成一名管理员。冲突和故障全回滚。<br>对应测试：[R11_ProtectsLastAdministrator](../backend/src/test/java/com/municipal/rbaccore/r11/R11UserManagementContractSupport.java#L538)；[R11_ConcurrentRevocationsKeepOneAdministrator](../backend/src/test/java/com/municipal/rbaccore/r11/R11UserManagementContractSupport.java#L569)；[R13_RechecksAfterWaiting](../backend/src/test/java/com/municipal/rbaccore/r13/R13RoleContractSupport.java#L1165)；[R13_RollsBackStorageFailures](../backend/src/test/java/com/municipal/rbaccore/r13/R13RoleContractSupport.java#L1053)。 |
+| R16 | 最小鉴权日志记录真实登录/鉴权允许及拒绝，明确事件时间、主体、目标、结果、原因及请求追踪信息，支持筛选、同条件总数和快照游标分页，详见3.2。查询同时要求日志API及共同根，完整K不是查询前置；部门账号即使误授该API也拒绝。不含归档、导出或完整变更审计。<br>对应测试：[R16_RequestSourceIp](../backend/src/test/java/com/municipal/rbaccore/r07/R07AuthenticationContractSupport.java#L254)；[R04_PaginatesLogsWithStableSnapshot](../backend/src/test/java/com/municipal/rbaccore/r07/R07AuthenticationContractSupport.java#L1033)；[R16_ConcurrentAuditCommitsPreserveSnapshotMembership](../backend/src/test/java/com/municipal/rbaccore/r07/R07AuthenticationContractSupport.java#L1102)。 |
+| R23 | 增加明确角色授予级别：系统管理员可授全部角色；公司领导可授公司领导及以下；部门经理可授部门经理/项目经理/普通员工；项目经理只可授项目经理/普通员工。全局自定义及应用预置角色仅启用、直属可信根且有效基础级别为5的操作者可授；部门自定义角色可由所属部门或上级范围内的有效领导分配/撤回，目标须在角色所属部门子树且低于操作者级别。自定义角色不提升级别；始终叠加R11完整计划权限子集（包含待接入项）和R02范围。<br>对应测试：[R23_RestrictsCustomRolesToRootLevelFive](../backend/src/test/java/com/municipal/rbaccore/r11/R11UserManagementContractSupport.java#L673)；[R23_DepartmentAssignmentAndTransfer](../backend/src/test/java/com/municipal/rbaccore/r13/R13RoleContractSupport.java#L174)；[R27_GrantLevelAndCustomProtection](../backend/src/test/java/com/municipal/rbaccore/r23/R23PrototypeContractTest.java#L482)。 |
+| R24 | 独立部门管理支持新增、改名、删除，不提供调整层级。系统管理员维护全公司；公司领导/部门经理/项目经理仅可改名或删除本人直属部门的严格下级，不能操作本人、上级、平级。新增父级可选本人部门或下级且须符合类型：总公司可建分公司/部门/项目；分公司可建部门/项目；部门只能建项目；项目不可建下级，不创建第二个总公司。仅无人、无下级且无所属角色的空部门可删，根不可删；新增不自动授予人员角色。名称先trim再验1—100字符，同一上级下不能重名；改名不改变ID、人员归属、职位、角色或范围，原Excel不改。每次仍须对应实际操作权限。<br>对应测试：[R23_DepartmentLifecycle](../backend/src/test/java/com/municipal/rbaccore/r23/R23PrototypeContractTest.java#L397)；[R24_DepartmentBoundaries](../backend/src/test/java/com/municipal/rbaccore/r23/R23PrototypeContractTest.java#L559)；[R13_DepartmentRoleValidationAndDeletion](../backend/src/test/java/com/municipal/rbaccore/r13/R13RoleContractSupport.java#L1279)。 |
+| R25 | 增加总览，展示当前可管理范围的人员总数、启用/停用人数、组织节点及下级分布，提供获准工作区快捷入口。系统管理员可见全公司，其他管理者仅见本人部门及下级；最近鉴权活动仍须日志API和共同根，不向非根混入全局日志。<br>对应测试：[R26_SummariesAndCounts](../backend/src/test/java/com/municipal/rbaccore/r23/R23PrototypeContractTest.java#L458)；[R24_RenamedDepartmentReportsCurrentUsage](../backend/src/test/java/com/municipal/rbaccore/r23/R23PrototypeContractTest.java#L427)。 |
+| R26 | 人员列表展示只读职位及当前已授角色摘要，职位来源为老师Excel“岗位”等已核实人事资料，不提供职位编辑或职位调动，也不因职位文本自动增减权限。角色摘要包含停用角色，明确标为“角色已停用”，账号列为“账号状态”；二者独立，停用角色保留关联但不贡献权限，不会自动停用持有者账号。进入分配抽屉仍读取完整当前角色和分页候选。<br>对应测试：[R26_SummariesAndCounts](../backend/src/test/java/com/municipal/rbaccore/r23/R23PrototypeContractTest.java#L458)；[R11R19_PersonFieldsSurviveMappings](../backend/src/test/java/com/municipal/rbaccore/r11/R11UserManagementContractSupport.java#L960)。 |
+| R27 | 非系统管理员仅可修改级别严格低于本人的范围内人员；本人、同级、上级只读，角色调整/停用/部门调动全部受限。公司领导之间不因共享部门范围而相互修改。可按R23将下级授为本级，成功后按其最新级别保护。系统管理员例外仍须有效API、范围及完整维护者保护。自定义角色不提升操作者或目标级别，不冻结人员。角色整体替换须锁后读取当前集合，新增和删除项分别验证级别、权限子集；无权改变的现有项可以原样保留，不能伪造保留或增删。全局自定义及应用预置仅可信根有效五级管理员增删，部门角色按R23范围授撤，前端显示锁定项；停用和调动按原人员保护与部门范围判断。<br>对应测试：[R24_PeerProtection](../backend/src/test/java/com/municipal/rbaccore/r23/R23PrototypeContractTest.java#L375)；[R27_PreservedCustomRoleDoesNotBlockOtherChanges](../backend/src/test/java/com/municipal/rbaccore/r23/R23PrototypeContractTest.java#L518)；[R11_RechecksTargetScopeAfterLockWait](../backend/src/test/java/com/municipal/rbaccore/r11/R11UserManagementContractSupport.java#L811)。 |
+| R28 | 正式初始受管目录只包含RBAC自身和真实接入的课程管理系统，不导入原权限Excel的其余18项系统、模拟权限或五角色业务矩阵。五个基础角色的RBAC权限按本系统实际菜单/API定义；课程三角色由独立接入配置登记。保留应用管理新增第三个系统的能力：新应用默认PENDING，配置并完成接入后CONNECTED，待接入不产生实际通行。角色来源仍区分SYSTEM_BUILTIN、APPLICATION_PRESET、DEPARTMENT_CUSTOM、GLOBAL_CUSTOM，所属和授予范围沿R23；不因当前只配置两应用而增加后端白名单。<br>对应测试：[首次部署范围及运行期拒绝](../scripts/tests/test_deployment_bindings.py)；[R28_RoleOwnershipAndPresetRoundTrip](../backend/src/test/java/com/municipal/rbaccore/r13/R13RoleContractSupport.java#L94)；[R28_PendingApplicationFailsClosed](../backend/src/test/java/com/municipal/rbaccore/r29/R29ApplicationIdentityContractTest.java#L787)；[R34_CreateReviseRemoveAndRestore](../backend/src/test/java/com/municipal/rbaccore/r34/R34ApplicationManagementContractTest.java#L48)。 |
+| R29 | 对接老师course-project-mgt既有生产前后端与统一身份HTTP协议。Application目录从登记数据读取，不在RBAC代码维护应用白名单、教师/学生标记或课程业务策略。角色可含多个应用权限，Permission—ApiResource映射必须同系统。通用应用身份按凭据、系统启用与当前有效授权签发独立受众；管理端仍沿R08检查独立RBAC登录资格。teacher/student/课程管理员均为显式角色配置，老师自己的登录、Teacher/Student关联和对象规则保留。角色、权限、映射及启停提交后，旧令牌下一请求实时重算。权限type增加API：要求非空映射且全部同系统启用；菜单、按钮可无API表达展示或资格。完整本地体验覆盖学生、教师、课程管理员以及老师已实现的教学业务和日志；老师仅在文档或常量中声明但没有生产实现的功能单列说明，不伪造。老师原工程尽量不改；任何必要修改须报告。不增加委托授予或可授角色清单机制。<br>对应测试：[R29_RegisteredApplicationIsGeneric](../backend/src/test/java/com/municipal/rbaccore/r29/R29ApplicationIdentityContractTest.java#L496)；[R29_RevocationUsesCurrentRelations](../backend/src/test/java/com/municipal/rbaccore/r29/R29ApplicationIdentityContractTest.java#L229)；[R29_CrossSystemMappingAndApiState](../backend/src/test/java/com/municipal/rbaccore/r29/R29ApplicationIdentityContractTest.java#L241)。 |
+| R30 | 权限展示名称应采用通俗中文，覆盖RBAC初始目录和课程接入目录；编码保留稳定标识，不修改ID、关联或鉴权语义。两套首次授权和本地联调数据均需一致，不在Vue按角色或英文编码猜测中文名称。<br>对应测试：[R30_ChineseCatalogNamesAndImmutableMetadata](../backend/src/test/java/com/municipal/rbaccore/r07/R07AuthenticationContractSupport.java#L85)。 |
+| R34 | 提供应用管理菜单，按数据库分页查询、新增、改名、接入状态维护、移除和恢复受管系统。新增code稳定唯一、name必填，默认启用且PENDING，不自动授予角色或接口；标记CONNECTED前应完成实际接口接入。移除以enabled=false关闭通行，保留目录、权限/API关系、ID和历史日志；PATCH启用恢复当前仍保留的关系，不恢复人工撤权。全部操作要求对应实际API和可信根，写入根锁后重鉴权及完整维护者保护；移除RBAC导致无维护者时409全回滚。受管系统并非后端代码白名单；登记目录不等于该业务系统已部署。<br>对应测试：[R34_CreateReviseRemoveAndRestore](../backend/src/test/java/com/municipal/rbaccore/r34/R34ApplicationManagementContractTest.java#L48)；[R34_RejectUnauthorizedAndUnknown](../backend/src/test/java/com/municipal/rbaccore/r34/R34ApplicationManagementContractTest.java#L82)；[R34_RejectConflictAndInvalidFields](../backend/src/test/java/com/municipal/rbaccore/r34/R34ApplicationManagementContractTest.java#L113)；[R34_SearchAndPageBoundaries](../backend/src/test/java/com/municipal/rbaccore/r34/R34ApplicationManagementContractTest.java#L162)；[R34_RetainManagementApplication](../backend/src/test/java/com/municipal/rbaccore/r34/R34ApplicationManagementContractTest.java#L153)；[R34_ValidBoundariesAndCurrentState](../backend/src/test/java/com/municipal/rbaccore/r34/R34ApplicationManagementContractTest.java#L198)。 |
+| R35 | 可信根直属、有效五级且有各自实际API的管理员可在SPA内登记/复用应用、只读预览OpenAPI3 JSON/YAML、配置菜单/按钮/API及独立登录资格、选择角色在该应用的权限子集、检查并完成接入。草稿只在当前页面内存，关闭提示；已有API/权限保留稳定ID与编码，可停用。完整指纹防止旧草稿覆盖并发维护，写事务获共同根锁后重验当前身份、全部关联和人工确认，再原子差量发布；角色权限变化另需配置角色权限API，其他应用和所有人员角色不变。运行operationId和登录项逐请求读取数据库，不回退文件。自动检查可使用专用测试账号调用本RBAC真实身份HTTP，仅测登录/本人/短码拒绝/受众隔离/退出；待接入按真实拒绝报告PENDING，完成后自动复检。业务后端及对象权限、专用环境授撤权由人工确认，测试口令仅RAM且不持久化/记录。已启用CONNECTED应用entryUrl的精确Origin动态开放/auth/*，不开放管理端跨域或抓取该URL。RBAC自身仍由既有资源页维护。<br>对应测试：[R35完整HTTP契约](../backend/src/test/java/com/municipal/rbaccore/r35/R35OnboardingContractTest.java)；[规范/指纹边界](../backend/src/test/java/com/municipal/rbaccore/infrastructure/onboarding/R35MetadataBoundaryTest.java)；[真实HTTP协议故障](../backend/src/test/java/com/municipal/rbaccore/infrastructure/onboarding/R35ProtocolProbeBoundaryTest.java)；[向导浏览器流程](../frontend/render-tests/onboarding.spec.mjs)；[首次元数据安装边界](../scripts/tests/test_onboarding_initialization.py)。 |
 
-K包含角色维护、角色权限配置、人员角色分配、资源与映射维护及其必要查询，共17个方法/路径模板；日志、停人、调动不在K内。精确定义沿[契约2.3](api-contract.md#23-精确目录与管理员保护-k)，不得用角色名或权限编码存在代替实际API覆盖。
+完整维护者还须有效RBAC登录权限；登录资格独立于K，不将K扩大为所有操作。K包含角色维护、角色权限配置、人员角色分配、资源与映射维护及其必要查询，共17个方法/路径模板；日志、停人、调动不在K内。精确定义沿[契约2.3](api-contract.md#23-精确目录与管理员保护-k)，不得用角色名或权限编码存在代替实际API覆盖。
 
 ### 3.1 实时鉴权与撤权生效（R08、R09、R12、R15）
 
@@ -97,7 +100,7 @@ K包含角色维护、角色权限配置、人员角色分配、资源与映射�
 
 ### 3.3 角色授予级别与权限子集（R11、R23）
 
-正式初始化中三个管理角色具有相同的RBAC人员、部门和总览权限；实际候选仍同时受级别、人员范围及数据库已登记应用的完整有效Permission子集约束。18业务系统经独立首次配置进入正式目录和计划授权子集，转换口径见R28；待接入计划权不产生实际通行能力。
+正式初始化中三个管理角色具有相同的RBAC人员、部门和总览权限；实际候选仍同时受级别、人员范围及数据库已登记应用的完整有效Permission子集约束。初始只登记RBAC及课程；未来新应用的待接入权限仍参与完整子集比较，但不产生实际通行能力。
 
 公司领导、部门经理、项目经理虽具有相同类型的人员管理API，也不能据此相互授予任意级别角色。级别是独立的授予约束，不代表权限继承，不扩大人员管理范围，不代替逐次实际API鉴权。
 
@@ -113,27 +116,27 @@ K包含角色维护、角色权限配置、人员角色分配、资源与映射�
 
 | 编号 | 要求 |
 | --- | --- |
-| R17 | 前端应包含登录、部门人员、人员角色/停用/调动、角色权限、资源映射、日志必要交互；按实际操作与范围显示入口，但后端独立执行权限判断。完整设计见[前端设计](frontend-design.md)。 |
-| R18 | 先原型、后API契约、后实现；共享统一响应、requestId、稳定错误码、输入校验和分页。前端交互原型不能冒充真实HTTP或界面完成证据。 |
-| R19 | Java21、Spring Boot、Spring Data JPA、AOP、Service读写声明式事务及老师真实CloneFactory；Controller仅适配，持久化错误在写边界翻译。禁止旧JDBC业务链路复活。 |
-| R20 | 最小日志/AOP不得输出口令、令牌、Authorization、原始手机号登录输入、SQL、请求体或完整隐私对象；安全失败返回可追踪requestId，不泄露内部异常。 |
-| R21 | 同仓库提供structured与ddd两套独立业务实现，共享API/数据库契约，通过配置选择；同一套行为契约分别验证两种实现。DDD应用层依赖抽象领域仓储，领域对象不依赖JPA/MVC。共享接口、持久化技术及前端，不共享具体业务决策实现。 |
-| R22 | 初始化、运行与验收使用明确隔离库，不修改原业务库、Excel或历史日志；启动仅校验结构，不自动建旧表、导入或重授角色。构建、初始化与限制须可复现。 |
+| R17 | 前端应包含登录、部门人员、人员角色/停用/调动、角色权限、资源映射、日志必要交互；页面入口按实际查询能力与范围显示，已进入页面内的无权操作按钮保留并置灰，不发起对应查询或提交。只读、锁定、受保护目标及状态限制同样禁用，后端独立执行权限判断。完整设计见[前端设计](frontend-design.md)。<br>对应测试：[R08_LoginOnlyAndSingleMenu](../backend/src/test/java/com/municipal/rbaccore/r34/R34ApplicationManagementContractTest.java#L218)；[R13_DefaultOperationsAreIndependent](../backend/src/test/java/com/municipal/rbaccore/r13/R13RoleContractSupport.java#L935)；[页面缺权按钮与单菜单浏览器测试](../frontend/render-tests/applications.spec.mjs)；[导航、竞态与交互测试](../frontend/tests)。 |
+| R18 | 先原型、后API契约、后实现；共享统一响应、requestId、稳定错误码、输入校验和分页。前端交互原型不能冒充真实HTTP或界面完成证据。<br>对应测试：[R18_routingErrorsMatchContract](../backend/src/test/java/com/municipal/rbaccore/r07/R07AuthenticationContractSupport.java#L967)；[R04_ValidatesApiInput](../backend/src/test/java/com/municipal/rbaccore/r07/R07AuthenticationContractSupport.java#L1158)；[R34_AccessPrecedesInvalidInput](../backend/src/test/java/com/municipal/rbaccore/r34/R34ApplicationManagementContractTest.java#L101)。 |
+| R19 | Java21、Spring Boot、Spring Data JPA、AOP、Service读写声明式事务及老师真实CloneFactory；Controller仅适配，持久化错误在写边界翻译。禁止旧JDBC业务链路复活。<br>对应测试：[R19R21_controllersDependOnUseCases](../backend/src/test/java/com/municipal/rbaccore/architecture/R19R21StructuredBoundaryTest.java#L65)；[R19R32_constructsImmutableIdentityResponses](../backend/src/test/java/com/municipal/rbaccore/architecture/R19CloneFactoryMappingTest.java#L23)；[R19_generatedPatchesRetainOmittedValues](../backend/src/test/java/com/municipal/rbaccore/r18/R18OptionalInputBoundaryTest.java#L93)。 |
+| R20 | 最小日志/AOP不得输出口令、令牌、Authorization、原始手机号登录输入、SQL、请求体或完整隐私对象；安全失败返回可追踪requestId，不泄露内部异常。<br>对应测试：[R04_IsolatesAuditStorageFailure](../backend/src/test/java/com/municipal/rbaccore/r07/R07AuthenticationContractSupport.java#L878)；[R18_missingHeaderAndConstraintRemainSanitized](../backend/src/test/java/com/municipal/rbaccore/api/shared/error/R18ErrorFallbackTest.java#L16)。 |
+| R21 | 同仓库提供structured与ddd两套独立业务实现，共享API/数据库契约，通过配置选择；同一套行为契约分别验证两种实现。DDD应用层依赖抽象领域仓储，领域对象不依赖JPA/MVC。共享接口、持久化技术及前端，不共享具体业务决策实现。<br>对应测试：[runtimeSelectsOneStrategy](../backend/src/test/java/com/municipal/rbaccore/architecture/R19BackendStrategyTest.java#L22)；[unknownStrategyFailsBeforeDatabase](../backend/src/test/java/com/municipal/rbaccore/architecture/R19BackendStrategyTest.java#L61)；[R21_dddUsesDomainBoundary](../backend/src/test/java/com/municipal/rbaccore/architecture/R19R21StructuredBoundaryTest.java#L46)。 |
+| R22 | 初始化、运行与验收使用明确隔离库，不修改原业务库、Excel或历史日志；启动仅校验结构，不自动建旧表、导入或重授角色。构建、初始化与限制须可复现。<br>对应测试：[R03_guardsEachUnsafeConfiguration](../backend/src/test/java/com/municipal/rbaccore/config/R03ImportConfigurationTest.java#L18)；[R19_BuildAndDeploymentSwitchToCoreRuntime](../backend/src/test/java/com/municipal/rbaccore/architecture/R19LegacyRemovalBoundaryTest.java#L105)。 |
 
-性能只约束万人场景必须分页、数据库范围筛选及避免候选全量/N+1，不虚构响应时间、吞吐量或SLA。覆盖率配置保留，JaCoCo暂不作为发布门槛；功能测试通过不能表述为100%覆盖。
+性能只约束万人场景必须分页、数据库范围筛选及避免候选全量/N+1，不虚构响应时间、吞吐量或SLA。JaCoCo保留六项零遗漏检查；双策略干净回归、生产字节码一致后合并，功能测试通过不能代替覆盖率检查，100%也不代表正式流量覆盖。
 
 ## 5. 业务用例与验收边界
 
 | 用例 | 参与者/前置 | 结果与异常 | 需求 |
 | --- | --- | --- | --- |
-| 登录管理端 | 工号或手机号、口令；账号唯一且有有效管理API | 建立同一身份；错误/歧义401，无管理准入403 | R04、R07—R09 |
+| 登录管理端 | 工号或手机号、口令；账号唯一且有有效RBAC登录权限 | 建立同一身份；错误/歧义401，无登录资格403 | R04、R07—R09 |
 | 查询组织人员 | 具对应实际API的管理者 | 返回本人范围树及分页人员；范围外403 | R02、R10 |
 | 调整人员 | 有对应API、目标及候选均获准 | 整体授角色/停用/调动，拒绝越权或不完整维护者结果 | R11—R12、R15 |
 | 维护角色和资源 | 共同根及每个实际操作API | 共享定义、显式映射、树规则；失败全回滚 | R13—R15 |
 | 查询鉴权日志 | 共同根及日志API | 脱敏快照/游标，部门即误授仍拒绝 | R16、R20 |
 | 离线新项目初始化 | 原始资料、显式独立库与秘密配置 | 导入、只读预检、首次五角色，重复执行保留变更 | R01—R06、R22 |
 
-成功、拒绝、缺失对象、并发及回滚都属于用例验收，详见[验证矩阵](testing-acceptance.md)。本说明不新增注册、密码重置、组织层级调整、角色权限继承、直接用户权限、归档导出或课程业务需求。部门增删改名按R24限定；18系统目录及原表计划授权按R28，真实课程接入按R29；课程生产页面继续使用老师工程，不在RBAC实现业务页面。
+成功、拒绝、缺失对象、并发及回滚都属于用例验收，详见[验证矩阵](testing-acceptance.md)。本说明不新增注册、密码重置、组织层级调整、角色权限继承、直接用户权限、归档导出或课程业务需求。部门增删改名按R24限定；两系统初始范围及后续动态扩展按R28，真实课程接入按R29；课程生产页面继续使用老师工程，不在RBAC实现业务页面。
 
 ## 6. 质量与演进约束
 
@@ -154,8 +157,8 @@ K包含角色维护、角色权限配置、人员角色分配、资源与映射�
 
 | 标识 | 现行要求 |
 | --- | --- |
-| R32 | RBAC实现老师统一身份鉴权全部8项：`POST /auth/login`、`POST /auth/logout`、`GET /auth/me`、`GET /auth/permissions/{permission}`、`GET /auth/departments`、`GET /auth/departments/{departmentId}/users`、`GET /auth/api-permissions/{operationId}`、`GET /auth/users/{userId}`。另2项统一身份业务审计由独立接入支撑提供，不归入RBAC接口。 |
-| R33 | 管理端和外部应用统一使用HS256身份JWT，仅含sub/aud/iss/iat/exp/jti，不含角色权限；通过Bearer携带。管理aud=rbac，外部aud为单个登记应用，保持管理准入及受众隔离。校验签名、算法、issuer、受众、时效和当前会话；单会话退出即时失效，重启须重新登录，无固定默认密钥，不增加刷新/委托或数据库会话实体。 |
+| R32 | RBAC实现老师统一身份鉴权全部8项：`POST /auth/login`、`POST /auth/logout`、`GET /auth/me`、`GET /auth/permissions/{permission}`、`GET /auth/departments`、`GET /auth/departments/{departmentId}/users`、`GET /auth/api-permissions/{operationId}`、`GET /auth/users/{userId}`。另2项统一身份业务审计由独立接入支撑提供，不归入RBAC接口。<br>对应测试：[R32_DepartmentDirectoryIsLayeredAndScoped](../backend/src/test/java/com/municipal/rbaccore/r29/R29ApplicationIdentityContractTest.java#L579)；[R32_DepartmentUsersAreMinimalAndPermissionControlled](../backend/src/test/java/com/municipal/rbaccore/r29/R29ApplicationIdentityContractTest.java#L619)；[R32_ApiAuthorityUsesCurrentMapping](../backend/src/test/java/com/municipal/rbaccore/r29/R29ApplicationIdentityContractTest.java#L645)。 |
+| R33 | 管理端和外部应用统一使用HS256身份JWT，仅含sub/aud/iss/iat/exp/jti，不含角色权限；通过Bearer携带。管理aud=rbac，外部aud为单个登记应用，保持管理准入及受众隔离。校验签名、算法、issuer、受众、时效和当前会话；单会话退出即时失效，重启须重新登录，无固定默认密钥，不增加刷新/委托或数据库会话实体。<br>对应测试：[R33_ManagementHttpUsesJwt](../backend/src/test/java/com/municipal/rbaccore/r07/R07AuthenticationContractSupport.java#L1302)；[R32_TamperedJwtIsRejected](../backend/src/test/java/com/municipal/rbaccore/r29/R29ApplicationIdentityContractTest.java#L683)；[R33_PreservesAudienceAndSingleSessionRevocation](../backend/src/test/java/com/municipal/rbaccore/r29/R33JwtIdentityStoreTest.java#L56)；[R32_RejectsExpiryAndIssuer](../backend/src/test/java/com/municipal/rbaccore/r29/R32JwtCodecTest.java#L33)。 |
 
 外部目录使用page从1开始、pageSize默认20最多100；不传parentId返回可见范围根，传入时只展开直接下级，按部门名称/编码搜索并返回hasChildren。两个目录接口分别要求本应用实际API映射及本人部门子树范围；用户目录只查直属人员，返回userId/no/name/departmentId/departmentName，不含联系方式或内部角色。未知目标返回协议404。
 
@@ -165,6 +168,8 @@ operationId由通用接入元数据定位方法及模板，不硬编码课程操
 
 **R31**：总公司本部（含本部职能部门、项目，排除分公司及其下属）的领导和普通员工首次授teacher，其余员工授student。启用、可信根直属、有效基础级别5的RBAC管理员同账号兼course-admin，初始admin同时绑定课程教师。分公司领导的RBAC管理级别不改变其课程学生身份。
 
+对应测试：[首次身份分配的正常、重复与漂移测试](../scripts/tests/test_course_initialization.py)；[部署绑定与管理员资格测试](../scripts/tests/test_deployment_bindings.py)。
+
 独立初始化同时核对员工来源“分公司”列与可信组织父链，以RBAC user_id绑定课程Teacher/Student。默认产品启动和身份开关不批量授予身份。先完成RBAC资料与五角色，再显式预览/执行课程接入；回执匹配时重复执行保留后续角色、权限、状态及业务身份维护，来源或配置变化拒绝自动覆盖。两库分别提交，不宣称分布式原子事务。命令和恢复边界见[课程接入](course-integration.md#4-首次身份分配与恢复)。
 
 ### 7.3 部署与设计约束
@@ -173,4 +178,10 @@ operationId由通用接入元数据定位方法及模板，不硬编码课程操
 
 当前会话索引在RBAC进程内，后端各单副本、stop-first，不宣称高可用。C只公开课程80及RBAC8088，数据库、Java、监控端口留内网。日志网页和Java展示采用北京时间，存储/传输及JWT时效继续使用UTC。监控按老师SpringAOP示例采集宿主机CPU，采用1秒采集、2秒CPU窗口及规则计算间隔；设计与运行状态分别见[监控](../deploy/monitoring.md)和[验收](testing-acceptance.md)。
 
-双策略类图应并列反映真实源码；顺序图覆盖全部实现差异，共同流程不画双份，同一差异模式可明确复用。外部详设Word/PDF/PPT不随项目文档维护自动更新。
+双策略类图应并列反映真实源码；顺序图覆盖全部实现差异，共同流程不画双份，同一差异模式可明确复用。外部详设PDF、PPT和Markdown讲稿仅在用户明确要求的桌面目录同步，不提交Word中间件。
+
+## 8. 测试阅读与编号
+
+每条需求下面的链接指向具体测试方法或专项脚本，方法名与DisplayName保留需求编号；相同共享契约在structured和DDD配置各运行一次。正常、异常及适用的边界在同一契约中直接断言响应和持久化结果；不以重复权限用例替代停用权限过滤。R02等组织范围需求被登录、查询和人员管理用例共同覆盖，因此不强行为每个编号创建空目录。
+
+技术分层、单页应用、图件和呈现规范另用架构/渲染/源码检查验证，不能伪装成HTTP业务边界测试。初始化Python脚本、前端浏览器和Java回归分别报告，历史测试名称包含旧任务号时按本页稳定需求解释。具体验收结果及验证边界见测试与验收。

@@ -1,18 +1,16 @@
 # 项目文档
 
-正文按现行规则和设计职责组织。需求解释“系统应做什么”，设计解释“如何实现”，运行文档给出执行方法；实测版本、结果和限制集中在验收证据中。
+现行文档按职责维护，字段与报文以OpenAPI为准；版本、环境、成绩及限制集中在验收证据，历史成绩只对应当时源码。
 
 | 阅读目的 | 入口 |
 | --- | --- |
-| 业务范围与依据 | [需求](requirements.md)、[来源](requirements/sources.md) |
-| 对象与存储 | [领域模型](domain-model.md)、[数据库设计](database-design.md)、[物理字典](database/physical-model.md) |
-| 两套后端 | [后端设计](backend-design.md)，第17章包含并列类图、差异顺序图与操作追溯 |
-| 页面与 HTTP | [前端设计](frontend-design.md)、[页面接口对照](api-map.md)、[业务契约](api-contract.md)、[OpenAPI](../api/openapi.yaml) |
-| 数据与外部应用 | [初始化](initialization.md)、[课程接入](course-integration.md) |
-| 执行与验证 | [本地复现](reproduction.md)、[服务器部署](../deploy/README.md)、[监控设计](../deploy/monitoring.md)、[测试与验收](testing-acceptance.md)、[JaCoCo报告](reports/jacoco/final-rbac/README.md) |
+| 业务要求与来源 | [需求及对应测试](requirements.md)、[资料来源](requirements/sources.md) |
+| 领域与数据库 | [领域模型](domain-model.md)、[概念模型及完整物理字典](database-design.md) |
+| 双策略与页面 | [后端及差异UML](backend-design.md)、[前端设计](frontend-design.md)、[可编辑图件](design/README.md) |
+| 接口与接入 | [业务契约及全部页面API对照](api-contract.md)、[OpenAPI](../api/openapi.yaml)、[课程接入边界](course-integration.md) |
+| 初始化与运行 | [首次初始化及完整本地复现](initialization.md)、[服务器部署](../deploy/README.md)、[监控](../deploy/monitoring.md) |
+| 验证与操作 | [测试方法、当前状态及自定义角色操作方案](testing-acceptance.md)、[最终JaCoCo](reports/jacoco/final-rbac/README.md) |
 
-当前契约共37项操作（29管理、8身份），structured 与 DDD 共用一套前端和数据库。OpenAPI YAML 是 HTTP 字段主规范，JSON 同源派生；业务契约补充范围、事务与错误语义。[图件入口](design/README.md)说明有效图集及生成方式。
+当前契约为45操作、37路径、94模型，其中37项管理与8项外部身份操作，完整维护集合K仍17。structured与DDD共用HTTP契约、SQL和Vue SPA；运行版本须以[验收](testing-acceptance.md)为准。
 
-有追溯价值的来源、原型确认和实测证据保留在[证据索引](history/README.md)；过期计划、重复说明及被现行图集替代的旧图已清理，原版本仍可从 Git 历史恢复。原 Excel、用户外部文件、旧库及原始日志不属于清理范围。
-
-[18系统目录与部门角色设计](requirements/access-extension-plan.md)为现行设计，完整18系统首次配置及部门角色授撤已发布；具体版本、数据保留和通过范围见验收入口。
+接口对照已并入业务契约，复现并入初始化，角色演示并入测试与验收，物理字典并入数据库设计；不再维护重复入口。独有历史证据合为[三份主题档案](history/README.md)，原型确认及老师纪要仍保留。旧文件可由Git历史恢复，原Excel、桌面原件、旧库/卷和原始日志不属于文档清理范围。

@@ -58,6 +58,7 @@ const shortcuts = computed(() =>
     { path: '/departments', capability: '/departments', name: '部门管理', icon: 'building' },
     { path: '/users', capability: '/users', name: '人员管理', icon: 'users' },
     { path: '/roles', capability: '/roles', name: '角色与权限', icon: 'shield' },
+    { path: '/applications', capability: '/systems/page', name: '应用管理', icon: 'resource', global: true },
     {
       path: '/resources',
       resource: true,
@@ -175,6 +176,7 @@ onUnmounted(() => {
             :key="item.id"
             class="overview-distribution-row"
             :disabled="!canRoute('GET', '/users')"
+            :title="!canRoute('GET', '/users') ? '没有查看员工的权限' : ''"
             @click="members = item"
           >
             <span>{{ item.name }}</span
@@ -435,8 +437,12 @@ onUnmounted(() => {
   color: #7991b1;
   font-size: 11px;
 }
-.overview-distribution-row:hover {
+.overview-distribution-row:hover:not(:disabled) {
   color: #3865ef;
+}
+.overview-distribution-row:disabled {
+  color: #8993a1;
+  background: #f0f2f5;
 }
 .overview-bar {
   height: 6px;

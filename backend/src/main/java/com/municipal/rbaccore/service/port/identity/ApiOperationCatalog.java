@@ -8,6 +8,11 @@ public interface ApiOperationCatalog {
   /** 在单个应用内定位操作，未知操作不猜测为公共接口。 */
   Optional<Operation> find(String system, String operationId);
 
+  /** 未显式配置登录项时保留原接入语义。 */
+  default Optional<String> loginPermission(String system) {
+    return Optional.empty();
+  }
+
   /** 无全局权限要求的操作只跳过全局门禁，对象权限仍由业务系统处理。 */
   record Operation(
       String method, String path, boolean requiresPermission, Set<String> permissionRoles) {

@@ -1,10 +1,12 @@
 # 双系统DDD部署与首次初始化
 
-本文说明节点职责、配置、首发、验收及恢复方法。当前两个RBAC镜像见[原型登录与构造映射发布](../docs/history/verification/login-prototype-constructor-mapping-20261124.md)，前轮菜单性能见[性能优化发布](../docs/history/verification/authorization-loading-performance-20261124.md)，18目录和部门角色数据适配见[目录发布](../docs/history/verification/access-extension-release-20261124.md)；首次导入见[首发证据](../docs/history/verification/ddd-production-deployment.md)，最初本机部署回归见[适配验证](../docs/history/verification/ddd-deployment-adaptation.md)。
+本文说明节点职责、配置、首发、验收及恢复。当前发布见[应用接入向导与两系统范围](../docs/history/verification/release-evidence.md#application-onboarding-release-20261125)，旧版镜像、备份与测试按[部署档案](../docs/history/verification/release-evidence.md)各自日期查阅；首次来源保留于该档案，不把历史成绩算成本轮通过。
 
-线上为8项服务定义：7项replicated服务各1/1，node-exporter为global服务4/4。两Java日志使用+08:00，7个监控采集目标UP。最新原型登录与构造映射发布仅更新两个RBAC的Image，其余六项服务Spec和运行任务ID相同；课程与接入镜像保持原样。采用固定摘要的docker service update，未重建Stack、修改数据库结构或重跑初始化。RBAC后端更新使发布前JWT失效，需重新登录；前轮仅前端的首次登录修复没有重启后端，两次边界分别记载。后续源码合入或文档整理不自动触发再次发布。
+线上为8项服务定义：7项单副本和node-exporter全局4任务。两系统DDD，当前仅RBAC与课程两项应用；未来通过应用管理及向导新增。当前更新两个RBAC镜像及独立接入镜像，其余五项服务Spec和任务保持原样。RBAC已卸载旧operation文件配置，逐请求从api_operations读取，课程前端原样。
 
-既有北京时间展示及Java日志格式、CPU新口径与内网node-exporter、日志systems及权限查询留痕继续保留。18业务目录及原回执保留，逐请求读库和锁后重鉴权不变。本次正式97项业务HTTP及7项退出清理定点复核通过，线上表单登录、重登及菜单读取共9组、30次API均200、渲染异常0。Apifox仅同步目录/权限导出说明，37操作/31路径/73模型回读差异0；没有新增课程浏览器交互或性能计时结果。
+独立副本演练、停写、三库B/E异机备份与校验后清理18项模拟目录并增加两支撑表；人员、口令、角色、两系统既有授权和原日志保留，未重跑首次初始化。补齐课程CTM建班真实API映射，保持实时授权、锁后重鉴权和维护者保护。
+
+本轮104项正式HTTP、12组表单/菜单及向导检查通过；39次浏览器API均200，7个监控目标UP。Apifox1.8.0为45操作/37路径/94模型，回读差异0。发布前JWT失效，需重新登录；后续源码或记录同步不自动重新部署。未追加全量课程浏览器、性能/压测及节点故障测试。
 
 ## 1. 五节点及访问入口
 
@@ -101,7 +103,7 @@ Java离线任务使用tasks.mysql直达唯一MySQL任务，避免万人BCrypt计
 
 仅在全新环境首发且获发布授权时，确认预览和apply结果后，在C设置APP_REPLICAS=1重新stack deploy。数据库首次脚本只对全新卷执行，不把此流程作为旧库升级工具。
 
-Docker20以restart-condition=none的普通Swarm服务承载一次性任务，完成后仍显示0/1；须查看任务Complete/Failed与退出码区分结果。验收后先归档服务Spec、任务详情和日志并核验，再按明确名称删除终态临时服务，保留正式服务、卷、Secrets及初始化结果。已完成清理的原服务列表和归档位置统一见[清理证据](../docs/history/verification/beijing-time-and-service-cleanup.md)，不将终态0/1当作正式服务故障。
+Docker20以restart-condition=none的普通Swarm服务承载一次性任务，完成后仍显示0/1；须查看任务Complete/Failed与退出码区分结果。验收后先归档服务Spec、任务详情和日志并核验，再按明确名称删除终态临时服务，保留正式服务、卷、Secrets及初始化结果。已完成清理的原服务列表和归档位置统一见[清理证据](../docs/history/verification/release-evidence.md#beijing-time-and-service-cleanup)，不将终态0/1当作正式服务故障。
 
 ## 6. 老师验收与日志
 
@@ -113,9 +115,9 @@ docker service logs --follow --since 2m ooad_rbac-backend
 
 Stack为两个Java服务显式设置LOGGING_PATTERN_DATEFORMAT，时间格式包含Asia/Shanghai及+08:00，例如2026-11-23T12:37:29.205+08:00；线上已实测生效。不依赖JVM或容器默认时区，不改变数据库/JWT的UTC语义。docker service logs --timestamps额外添加的Docker原始采集时间戳仍为UTC，不能通过Logback修改；普通课堂查看使用以上不带--timestamps的命令，取证归档继续保留UTC采集时间。接入支撑Python技术日志仍为UTC，不扩大两Java日志的北京时间承诺。
 
-在RBAC浏览器依次切换工作总览、部门管理、人员管理、角色与权限、资源与API、鉴权日志。核对每次实际/api请求成功，以及对应Controller/Service的开始、完成、耗时日志；不能以Nginx访问日志或数据库鉴权日志代替。无需在前端新增“日志控制台”，页面正常加载及后端日志同步出现即可。Stack明确配置三层DEBUG、根INFO；日志不含密码、JWT、Authorization、完整参数或响应。Docker每容器10MB×5轮转，退出/更新前将验收时间段导出到受控归档目录。
+在RBAC浏览器依次切换工作总览、应用管理、部门管理、人员管理、角色与权限、资源与API、鉴权日志。核对每次实际/api请求成功，以及对应Controller/Service的开始、完成、耗时日志；不能以Nginx访问日志或数据库鉴权日志代替。无需在前端新增“日志控制台”，页面正常加载及后端日志同步出现即可。Stack明确配置三层DEBUG、根INFO；日志不含密码、JWT、Authorization、完整参数或响应。Docker每容器10MB×5轮转，退出/更新前将验收时间段导出到受控归档目录。
 
-本次两个RBAC镜像发布通过97项正式业务HTTP、7项退出清理定点复核及9组正式表单/菜单验证，30次浏览器API均200、渲染异常0，见[发布记录](../docs/history/verification/login-prototype-constructor-mapping-20261124.md)。前轮性能发布的97项公网HTTP及三轮18次菜单耗时见[性能记录](../docs/history/verification/authorization-loading-performance-20261124.md)，不计为本次重测。此前18目录发布的97项HTTP/8组浏览器、11月23日的108次及JWT补发91次HTTP、首发重启持久化均独立保留；本次未追加整机重启、节点故障或课程浏览器测试。Prometheus通过内网抓rbac-backend:8082和course-backend:8081；global node-exporter采集B/C/D/E宿主机指标，CPU为1秒采集、2秒窗口和计算间隔，实际7目标均UP，详见[监控](monitoring.md)。9090或9100不发布到宿主机或公网；访问须使用明确的内网诊断通道，不能把C的127.0.0.1:9090当成已发布端口。当前单manager方案不宣称高可用。
+本次两个RBAC镜像发布通过115项正式HTTP及11组正式表单/菜单验证，34次浏览器API均200、渲染异常0，见[发布记录](../docs/history/verification/release-evidence.md#application-management-release-20261124)。前轮PR56的97项HTTP、7项退出清理复核及9组表单结果单独保留。前轮性能发布的97项公网HTTP及三轮18次菜单耗时见[性能记录](../docs/history/verification/ui-performance-evidence.md#authorization-loading-performance-20261124)，不计为本次重测。此前18目录发布的97项HTTP/8组浏览器、11月23日的108次及JWT补发91次HTTP、首发重启持久化均独立保留；本次未追加整机重启、节点故障或课程浏览器测试。Prometheus通过内网抓rbac-backend:8082和course-backend:8081；global node-exporter采集B/C/D/E宿主机指标，CPU为1秒采集、2秒窗口和计算间隔，实际7目标均UP，详见[监控](monitoring.md)。9090或9100不发布到宿主机或公网；访问须使用明确的内网诊断通道，不能把C的127.0.0.1:9090当成已发布端口。当前单manager方案不宣称高可用。
 
 ## 7. 备份与回滚
 
@@ -139,7 +141,7 @@ Pop-Location
 确认安装BUILD SUCCESS且提交完全一致，再构建本工程。完整功能回归需先准备对应隔离MySQL专库，见[后端回归配置](../backend/README.md#2-本地回归与隔离)；只打包时可以显式跳过测试，但不得把该构建结果表述为回归通过。首次依赖下载需要Gitee/Maven网络。密码、token、生成报告和老师源码留在忽略目录，不提交Git。
 
 
-本机组织账号导入、五角色预检/首次授权及默认JAR仍按[后端说明](../backend/README.md#3-新项目本地初始化与运行)和[复现指南](../docs/reproduction.md)执行。默认初始化仅登记RBAC；课程配置独立显式接入，不由产品启动自动触发。用户桌面设计交付与实际发布资料按明确修订任务同步；老师原目录保持不变。
+本机组织账号导入、五角色预检/首次授权及默认JAR仍按[后端说明](../backend/README.md#3-新项目本地初始化与运行)和[复现指南](../docs/initialization.md#reproduction)执行。默认初始化仅登记RBAC；课程配置独立显式接入，不由产品启动自动触发。用户桌面设计交付与实际发布资料按明确修订任务同步；老师原目录保持不变。
 
 ## 请求来源IP
 

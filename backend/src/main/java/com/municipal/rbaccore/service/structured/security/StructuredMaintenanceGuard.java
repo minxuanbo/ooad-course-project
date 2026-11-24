@@ -31,7 +31,8 @@ public class StructuredMaintenanceGuard implements MaintenanceProtection {
   @Transactional(propagation = Propagation.MANDATORY)
   public void retainOne() {
     for (UserEntity user : users.findByDepartmentIdAndEnabledTrue(scope.trustedRootId())) {
-      if (authority.level(user) == 5
+      if (permissions.canEnter(user.getId())
+          && authority.level(user) == 5
           && permissions.routes(user.getId()).containsAll(RbacCatalog.maintenanceRoutes())) {
         return;
       }

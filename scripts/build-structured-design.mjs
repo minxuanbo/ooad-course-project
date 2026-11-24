@@ -37,6 +37,7 @@ function fields(name,selected) {
 }
 // id -> Service、字段仓储名、实际字段类型、辅助字段名、辅助字段类型、相关实体/读模型。
 const modules={
+  onboarding:['StructuredOnboardingService','systems','ApplicationSystemJpaRepository','codec','OnboardingCodec','ApplicationSystemEntity'],
   identity:['StructuredAuthenticationService','users','UserJpaRepository','permissions','StructuredEffectivePermissionService','UserEntity'],
   personnel:['StructuredUserManagementService','users','UserJpaRepository','authority','StructuredPersonnelAuthority','UserEntity'],
   query:['StructuredUserQueryService','users','UserJpaRepository','scope','StructuredDepartmentScopeService','UserEntity'],
@@ -55,6 +56,7 @@ const modules={
 }
 // 每组只选用例实际需要的成员，不按源码出现顺序凑前几个方法。
 const slices={
+ onboarding:{repo:['findById','saveAndFlush'],model:['setConnectionStatus'],support:['fingerprint'],fields:['id','code','enabled','connectionStatus']},
  identity:{repo:['findByUsernameOrPhone','findById'],model:[],support:['canEnter','permissions'],fields:['id','username','passwordHash','enabled','department']},
  personnel:{repo:['findById','saveAndFlush'],model:['assignRole','removeRole','moveTo'],support:['snapshot','canManage','requireManage'],fields:['id','department','enabled','roles']},
  query:{repo:['count','findAll','withRoles'],model:[],support:['filteredIds','allowedIds'],fields:['id','username','name','department']},

@@ -55,9 +55,9 @@ public class StructuredEffectivePermissionService implements ManagementAuthoriza
         .collect(Collectors.toUnmodifiableSet());
   }
 
-  /** 至少一个已评审管理API有效可达；菜单、角色名和外系统权限不构成准入。 */
+  /** 管理端独立登录能力必须有效，业务菜单和角色名称不能代替。 */
   public boolean canEnter(Long userId) {
-    return routes(userId).stream().anyMatch(RbacCatalog.managementRoutes()::contains);
+    return routes(userId).contains(RbacCatalog.LOGIN_ROUTE);
   }
 
   /** 后端只匹配服务端识别的方法与模板，不依赖前端权限参数。 */

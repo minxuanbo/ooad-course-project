@@ -3,7 +3,7 @@ import { defineConfig } from '@playwright/test'
 /** 运行真实Vue/Router的可控HTTP渲染回归，不连接业务库或正式后端。 */
 export default defineConfig({
   testDir: './render-tests',
-  testMatch: 'login-render.spec.mjs',
+  testMatch: '*.spec.mjs',
   workers: 1,
   timeout: 20000,
   retries: 0,

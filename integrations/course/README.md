@@ -5,7 +5,7 @@
 | 文件 | 用途 |
 | --- | --- |
 | [catalog.json](catalog.json) | 应用、角色、权限中文名称及短码路由全集 |
-| [operations.json](operations.json) | operationId与方法/模板，需显式配置IDENTITY_OPERATIONS_FILE |
+| [operations.json](operations.json) | operationId与方法/模板，独立首次脚本显式导入api_operations |
 | [initialization.json](initialization.json) | 本部教师、其他学生、同账号管理员首次分配 |
 | [local_identity_gateway.py](local_identity_gateway.py) | 本机联调：实时身份转接、完整短码校验及SQLite业务审计 |
 | [deployment_gateway.py](deployment_gateway.py) | 服务器Waitress入口，实时转接与独立MySQL审计 |

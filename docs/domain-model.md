@@ -10,7 +10,7 @@
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | 用户User                  | 单一内部身份、一个所属部门、零到多个角色；分配角色、停用、调动保持同一id。工号/手机号定位同一账号，不按姓名唯一定位。 |
 | 角色Role                  | 具有显式来源分类的权限集合；部门自定义须有所属部门，应用预置须有来源应用；可改名/启停/整体替换权限，编码稳定。停用不删除关联，恢复后按当前资源状态重算。                    |
-| 权限Permission            | 同一系统的菜单、按钮或通用API权限；维护父级、类型、有效状态及显式API映射。父菜单负责展示，不隐含子权限。                           |
+| 权限Permission            | 同一系统的菜单、按钮或通用API权限；维护父级、类型、有效状态及显式API映射。父菜单组织展示，可显式映射自己的读取API，不隐含子按钮写权限。                           |
 | API资源ApiResource        | 单一系统的方法+路径模板，表达后端操作入口。多个权限可覆盖同一API，以有效链OR判定。                                    |
 | 应用系统ApplicationSystem | 权限与API的归属和有效性边界；目录从数据库已登记应用及状态读取；默认初始化只登记rbac，课程等应用独立配置。                                         |
 | 部门Department            | 总公司/分公司/部门/项目的层级节点；定义人员归属与子树范围，不直接给人授予权限。                                       |
@@ -23,7 +23,7 @@
 
 人员归属决定可管理子树：总公司领导归根后覆盖所有分公司，分公司领导仅覆盖该分公司及后代。组织位置只约束范围；领导/经理称谓不授予操作权限。
 
-全局维护保护是跨对象不变量：相关写提交后至少存在一个启用、直属可信根、有效基础级别为5的用户，独自覆盖完整17项K。角色、权限、映射、API、人员角色、人员状态和调动都可能影响此结论，因此不能把检查局限在单个Role实体内。
+全局维护保护是跨对象不变量：相关写提交后至少存在一个启用、直属可信根、有效基础级别为5的用户，具有有效RBAC登录资格并独自覆盖完整17项K。角色、权限、映射、API、人员角色、人员状态和调动都可能影响此结论，因此不能把检查局限在单个Role实体内。
 
 ## 3. DDD聚合与依赖
 
@@ -34,7 +34,7 @@
 | Permission        | ApplicationSystem、parentId、type、enabled、Set<ApiResource>；revise/replaceApis                       | 同系统树无环、BUTTON无子、映射同系统、K |
 | ApiResource       | 系统、方法/模板只读、enabled；changeAvailability                                                                      | 系统状态和K                             |
 | Department        | 稳定code、parentId、type、name、deleted；child/rename/tombstone，变更前由OrganizationPolicy核验相关不变量       | 可信根与范围、同父名称、人员/下级存在性 |
-| ApplicationSystem | 已登记应用标识与启用事实，只读                                                                                     | 有效授权链同系统边界，不新增系统CRUD    |
+| ApplicationSystem | 稳定code、名称、启用与接入事实；revise返回新值                                                                                     | 目录登记、逻辑移除/恢复、有效授权链同系统边界及维护者保护    |
 
 领域record保存只读领域快照：User含Department与Set<Role>，Role含Set<Permission>，Permission含ApplicationSystem与Set<ApiResource>，不嵌入JPA对象。关系集合返回只读副本，替换行为明确增删，不通过公开setter任意修改权限关系。来源导入通过受控reconstitute或factory建立完整快照，不调用运行时HTTP补造数据。User只包含自身已分配角色快照，不包含全公司员工；Role不持有所有用户。关联事实由仓储批量装配，跨对象不变量仍由策略和应用用例协调。
 
@@ -42,7 +42,7 @@
 
 UserKey、RoleKey、PermissionKey、ApiKey、DepartmentKey等不可变标识只用于领域/仓储边界的类型安全；HTTP仍为正安全整数，工号仍为字符串。PageWindow、DepartmentScope、ApiOperation、UserCriteria、RoleCriteria、AuthorizationFacts、OrganizationFacts、DepartmentUsage、MaintenanceFacts等值/事实都归domain.model；直接同字段不可变转换可使用0.0.2构造器映射并接收新值；领域业务工厂及跨层关联装配显式处理，不写final字段。
 
-跨聚合策略在model.policy：AuthorizationPolicy逐链计算有效Permission/API及OR，不把父菜单当继承；RoleAssignmentPolicy同时检查目标保护、授予上限及完整有效Permission子集，新增/删除逐项验权，现有不可改角色可锁定保留，自定义角色不冻结人员；OrganizationPolicy核实来源根并计算有效子树/合法父子，以requireNonRoot保护可信根、requireEmpty拒绝存在人员、下级或所属角色的删除、requireUnique保证同父有效部门名称唯一；MaintenancePolicy判断一个启用、可信根、级别5的用户独自覆盖K，不把多人权限拼接。策略接受明确事实，不访问仓储、HTTP、Spring或全局缓存。
+跨聚合策略在model.policy：AuthorizationPolicy逐链计算有效Permission/API及OR，按显式映射计算，不把父菜单当继承；RoleAssignmentPolicy同时检查目标保护、授予上限及完整有效Permission子集，新增/删除逐项验权，现有不可改角色可锁定保留，自定义角色不冻结人员；OrganizationPolicy核实来源根并计算有效子树/合法父子，以requireNonRoot保护可信根、requireEmpty拒绝存在人员、下级或所属角色的删除、requireUnique保证同父有效部门名称唯一；MaintenancePolicy判断一个启用、可信根、级别5的用户独自覆盖K，不把多人权限拼接。策略接受明确事实，不访问仓储、HTTP、Spring或全局缓存。
 
 DDD仓储位于service.ddd.domain.repository，Infrastructure实现适配与装配；应用只依赖领域模型/仓储及公共用例抽象。事务、端口签名及复杂读模型见后端设计第4、6、9章。
 
@@ -69,7 +69,7 @@ DDD仓储位于service.ddd.domain.repository，Infrastructure实现适配与装�
 
 人员与部门保护规则：非系统管理员还须满足目标级别严格低于本人，本人、同级、上级只读；系统管理员例外仍受实际API、范围及完整维护者保护。自定义角色不提升操作者级别，全局/应用关联仅可信根有效五级管理员可授，部门关联由所属或上级范围内领导按完整权限子集授撤，但可在原人员范围内维护较低级持有人，锁定原样保留项不算重新授予。部门新增父级∈D(u)，局部改名/删除须为严格下级；删除仅空且非根，类型固定，无层级调整。删除保留来源墓碑，不参与有效子树。两套实现均使用当前事务的角色与部门事实执行上述规则。
 
-18业务系统及原表矩阵由独立首次配置进入正式计划授权，默认PENDING；运行期登录、短码和API通行仍失败关闭。课程系统按R29显式接入老师已有身份协议和真实API，不自行设计课程业务接口；沿用同一六实体模型，课程数据仍只在老师数据库。
+初始只配置RBAC与课程，不导入其他业务矩阵。后续新应用PENDING阶段登录、短码和API通行失败关闭。课程系统按R29显式接入老师已有身份协议和真实API，不自行设计课程业务接口；沿用同一六实体模型，课程数据仍只在老师数据库。
 
 ## 6. 命令、行为与一致性
 
@@ -95,7 +95,7 @@ DDD仓储位于service.ddd.domain.repository，Infrastructure实现适配与装�
 | Role                     | 启用↔停用                         | 保留权限和用户关联；下次管理请求重算                    |
 | Permission / ApiResource | 启用↔停用                         | 保留映射；父节点状态不代替子节点直接授权判断            |
 | Department               | 首次导入→新增下级/改名/删除空节点  | 类型固定，不调整层级；删除保留来源墓碑且不再参与范围    |
-| ApplicationSystem        | 从登记事实读取应用目录        | 默认万人初始化仅RBAC；独立首次配置登记18项PENDING业务目录及CONNECTED课程，运行通行另查接入状态 |
+| ApplicationSystem        | 新增PENDING、修改资料、逻辑移除与恢复        | 默认万人初始化仅RBAC；独立首次配置登记CONNECTED课程，新应用由向导登记，运行通行另查接入状态 |
 
 没有必须异步完成的业务流程，不引入事件总线、Outbox或分布式最终一致性。最小鉴权日志是运行记录，不冒充完整领域事件或变更审计。后续确有跨系统事件需求时另行评审。
 
@@ -106,3 +106,20 @@ R01—R06落在身份、组织及初始化来源；R07—R09落在登录和有�
 授权事实按当前用户读取，人员页批量读取当页角色。域仓储和锁后回归证据见测试与验收说明。
 
 应用身份只投影当前受众下的有效角色编码和权限，不增加课程实体。Permission.type的API项要求非空有效映射；MENU/BUTTON保留展示和资格控制用途。自定义角色不冻结User，角色差集校验及锁定项规则见R27。
+
+<a id="access-extension-plan"></a>
+
+## 角色来源与接入范围
+
+| 角色来源 | 级别及归属 | 维护与分配 |
+| --- | --- | --- |
+| SYSTEM_BUILTIN | 五个基础级别5/4/3/2/1，无应用归属 | 按现行级别、人员范围和完整权限子集授予 |
+| APPLICATION_PRESET | 无管理级别，来源应用必填 | 课程独立配置三角色，可信根有效五级分配 |
+| DEPARTMENT_CUSTOM | 无管理级别，所属部门必填 | 管理员定义，领导按所属范围及完整子集授撤 |
+| GLOBAL_CUSTOM | 无管理级别，无所属部门 | 可信根有效五级分配；不扩大持有人数据范围 |
+
+初始受管目录为RBAC及课程，未来通过应用管理及向导接入第三个系统。PENDING保留为新应用配置前的阻断状态，不预置无实际业务的系统名单。角色可跨应用选权，Permission—API必须同应用；自定义角色不提升级别、不冻结人员，锁后仅检查实际差集。
+
+## 接入配置聚合
+
+ApplicationOnboarding是外部应用接入用例的领域配置快照，组合ApplicationSystem、API/权限/操作元数据及角色定义，不新增管理员/教师实体。`problems`表达本应用树、完整映射、目录保留、角色子集与独立登录不变量；`connect`在校验后返回连接后的新值。跨对象身份资格、实际API、锁和维护者保护仍由应用用例编排。领域仓储只收领域Key/聚合；技术JSON、OpenAPI及真实HTTP探测通过共享端口，领域不依赖DTO/JPA。

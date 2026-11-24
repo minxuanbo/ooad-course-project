@@ -128,6 +128,8 @@ abstract class R11UserManagementContractSupport {
     jdbc.execute("DROP TRIGGER IF EXISTS t11_fail_move");
     for (String table :
         List.of(
+            "api_operations",
+            "application_profiles",
             "authorization_logs",
             "bootstrap_receipts",
             "import_sources",
@@ -376,7 +378,7 @@ abstract class R11UserManagementContractSupport {
     success(request("GET", USERS, employee, null), 200);
 
     success(request("PUT", userRoles(employeeUserId), root, Map.of("ids", List.of())), 200);
-    assertError(request("GET", USERS, employee, null), 403, "PERMISSION_DENIED");
+    assertError(request("GET", USERS, employee, null), 403, "MANAGEMENT_ACCESS_DENIED");
     assertError(login(EMPLOYEE), 403, "MANAGEMENT_ACCESS_DENIED");
     assertTrue(savedRoleIds(employeeUserId).isEmpty());
     assertTrue(
@@ -906,7 +908,10 @@ abstract class R11UserManagementContractSupport {
         .queryForList(
             "SELECT id FROM users WHERE enabled=1 AND department_id=?", Long.class, rootId)
         .stream()
-        .filter(id -> effective.routes(id).containsAll(RbacCatalog.maintenanceRoutes()))
+        .filter(
+            id ->
+                effective.canEnter(id)
+                    && effective.routes(id).containsAll(RbacCatalog.maintenanceRoutes()))
         .count();
   }
 
@@ -923,6 +928,10 @@ abstract class R11UserManagementContractSupport {
                       ? 5
                       : code.equals("t11-personnel") ? 3 : 2);
               for (Long id : ids) role.grantPermission(permissions.findById(id).orElseThrow());
+              // 本用例的受控操作员另有显式登录资格；空角色仍保持空权限。
+              if (!ids.isEmpty())
+                role.grantPermission(
+                    permissions.findById(permissionIds.get("rbac.login")).orElseThrow());
               role.setEnabled(enabled);
               return roles.save(role).getId();
             });

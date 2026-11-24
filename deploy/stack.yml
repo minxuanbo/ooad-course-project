@@ -52,7 +52,6 @@ services:
       SPRING_CONFIG_IMPORT: configtree:/run/secrets/
       APP_IDENTITY_ENABLED: "true"
       IDENTITY_ALLOWED_ORIGINS: ${COURSE_PUBLIC_ORIGIN}
-      IDENTITY_OPERATIONS_FILE: file:///app/config/operations.json
       IDENTITY_JWT_ISSUER: ${RBAC_PUBLIC_ORIGIN}
       AUDIT_TRUSTED_PROXIES: ${RBAC_AUDIT_TRUSTED_PROXIES:-}
       MANAGEMENT_SERVER_PORT: "8082"
@@ -70,9 +69,6 @@ services:
         target: spring.datasource.password
       - source: jwt_secret
         target: app.identity.jwt-secret
-    configs:
-      - source: operations
-        target: /app/config/operations.json
     networks: [javaee-proxy]
     logging: *logging
     healthcheck:
@@ -293,9 +289,6 @@ configs:
   audit_schema:
     name: ooad_audit_schema_${RELEASE_ID}
     file: ./course-audit-schema.sql
-  operations:
-    name: ooad_operations_${RELEASE_ID}
-    file: ../integrations/course/operations.json
   nginx_rbac:
     name: ooad_nginx_rbac_${RELEASE_ID}
     file: ./nginx-rbac.conf

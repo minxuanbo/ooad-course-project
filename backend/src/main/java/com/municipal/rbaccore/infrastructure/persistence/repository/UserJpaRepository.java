@@ -1,6 +1,7 @@
 package com.municipal.rbaccore.infrastructure.persistence.repository;
 
 import com.municipal.rbaccore.infrastructure.persistence.entity.UserEntity;
+import com.municipal.rbaccore.infrastructure.persistence.identity.UserDirectoryRow;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,6 +14,20 @@ import org.springframework.data.jpa.repository.Query;
 /** 用户持久化；两个登录字段使用相同的二进制字符比较规则。 */
 public interface UserJpaRepository
     extends JpaRepository<UserEntity, Long>, JpaSpecificationExecutor<UserEntity> {
+
+  /** 外部目录只数指定部门直属人员，停用身份仍按原目录契约展示。 */
+  @Query(
+      "select count(u) from UserEntity u where u.department.id=:department and (lower(u.username)"
+          + " like :keyword escape '!' or lower(u.name) like :keyword escape '!')")
+  long countDirectory(Long department, String keyword);
+
+  /** 使用专用最小投影和数据库窗口，不读联系人及授权关系。 */
+  @Query(
+      "select new"
+          + " com.municipal.rbaccore.infrastructure.persistence.identity.UserDirectoryRow(u.id,u.username,u.name,u.department.id,u.department.name)"
+          + " from UserEntity u where u.department.id=:department and (lower(u.username) like"
+          + " :keyword escape '!' or lower(u.name) like :keyword escape '!') order by u.id")
+  java.util.List<UserDirectoryRow> directory(Long department, String keyword, Pageable pageable);
 
   /** 范围内启用人员聚合，不载入人员实体。 */
   long countByDepartmentIdInAndEnabledTrue(List<Long> ids);
