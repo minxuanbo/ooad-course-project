@@ -33,6 +33,14 @@ const confirmSave = ref(false),
   accessDenied = ref(false)
 const initialGeneration = new RequestGeneration(),
   candidateGeneration = new RequestGeneration()
+const summarizeCurrentSystem = computed(() => props.kind === 'permissions' && !props.readonly)
+/** 权限树包含当前系统全部候选；摘要不随搜索收窄，也不改变跨系统提交草稿。 */
+const displayedSelected = computed(() => {
+  const ids = [...selected.value]
+  if (!summarizeCurrentSystem.value) return ids
+  const systemPermissionIds = new Set(candidates.value.map((item) => item.id))
+  return ids.filter((id) => systemPermissionIds.has(id))
+})
 const visible = computed(() =>
   candidates.value.filter(
     (item) =>
@@ -178,22 +186,27 @@ onUnmounted(() => {
     <button v-if="!ready && !loading" class="secondary" @click="loadInitial">完整重试</button>
     <template v-if="ready">
       <div class="selected-summary">
-        <strong>已选 {{ selected.size }} 项</strong>
-        <p v-if="!selected.size" class="muted">当前未授予任何项</p>
-        <div class="selected-chips">
-          <span v-for="id in selected" :key="id" class="selection-chip">
-            {{ labels.get(id) || `ID ${id}（不在当前候选）` }}
-            <small v-if="locked.has(id)">（锁定，保留现有授权）</small>
-            <button
-              :disabled="saving || readonly || accessDenied || locked.has(id)"
-              :title="locked.has(id) ? '锁定项必须保留现有授权' : readonly ? '当前仅可查看，不能移除' : ''"
-              :aria-label="'移除ID ' + id"
-              @click="toggle(id, false)"
-            >
-              ×
-            </button>
-          </span>
-        </div>
+        <p v-if="summarizeCurrentSystem && candidateBusy" role="status">正在读取当前系统已选权限…</p>
+        <p v-else-if="summarizeCurrentSystem && candidateError" class="muted">当前系统已选权限暂不可用；完整选择草稿已保留。</p>
+        <template v-else>
+          <strong>{{ summarizeCurrentSystem ? '当前系统已选' : '已选' }} {{ displayedSelected.length }} 项</strong>
+          <p v-if="!displayedSelected.length" class="muted">{{ summarizeCurrentSystem ? '当前系统未选择权限' : '当前未授予任何项' }}</p>
+          <div class="selected-chips">
+            <span v-for="id in displayedSelected" :key="id" class="selection-chip">
+              {{ labels.get(id) || `ID ${id}（不在当前候选）` }}
+              <small v-if="locked.has(id)">（锁定，保留现有授权）</small>
+              <button
+                :disabled="saving || readonly || accessDenied || locked.has(id)"
+                :title="locked.has(id) ? '锁定项必须保留现有授权' : readonly ? '当前仅可查看，不能移除' : ''"
+                :aria-label="'移除ID ' + id"
+                @click="toggle(id, false)"
+              >
+                ×
+              </button>
+            </span>
+          </div>
+        </template>
+        <p v-if="summarizeCurrentSystem" class="muted">仅展示当前系统，其他系统的选择会保留；保存时提交所有系统的完整集合。</p>
       </div>
       <p v-if="readonly" class="muted">当前仅可查看已保存集合，候选查询、移除和保存均不可用。</p>
       <div class="candidate-workspace">
