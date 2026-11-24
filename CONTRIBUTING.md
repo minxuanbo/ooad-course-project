@@ -4,7 +4,7 @@
 
 ## 1. 当前边界
 
-两个系统DDD已发布，当前RBAC性能优化、330项双策略回归及加载实测见[本次证据](docs/history/verification/authorization-loading-performance-20261124.md)，18业务目录和部门角色的原库保留见[前次发布](docs/history/verification/access-extension-release-20261124.md)。源码合入不代表再次部署，未获新发布指示时不更新Stack或重启正式应用。课程前端保持老师原始源码；外部设计材料仅按明确授权同步，原件备份保留。老师原目录、原Excel、原库/卷及原始日志保留。T14/T15不自动关闭；Apifox仅在明确授权范围内写入，目标为本项目9042431，写后回读。
+两个系统DDD已发布，当前RBAC前端首次登录修复及9组正式浏览器验证见[本次证据](docs/history/verification/login-render-and-anonymous-audit-20261124.md)，此次仅前端更新，其余七项服务Spec和任务不变。后端保留[性能版本](docs/history/verification/authorization-loading-performance-20261124.md)，330项双策略回归及加载计时仍只对应前轮验证；18业务目录和部门角色的原库保留见[目录发布](docs/history/verification/access-extension-release-20261124.md)。源码合入不代表再次部署，未获新发布指示时不更新Stack或重启正式应用。课程前端保持老师原始源码；外部设计材料仅按明确授权同步，原件备份保留。老师原目录、原Excel、原库/卷及原始日志保留。T14/T15不自动关闭；Apifox仅在明确授权范围内写入，目标为本项目9042431，写后回读。
 
 11月23日的JWT修复作为[历史发布](docs/history/verification/jwt-coverage-release-20261123.md)保留。后续文档提交不重复构建或发布同一业务源码，不延伸单次授权为未来变更的自动发布许可。
 
