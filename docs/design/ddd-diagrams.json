@@ -25,7 +25,7 @@
       ],
       "policy": "AuthenticationPolicy",
       "policyMethods": [
-        "+ eligibleAccount(matches): Optional<User>"
+        "+ eligibleAccount(matches): Optional<User> {static}"
       ],
       "serviceMethods": [
         "+ login(command): LoginResult",
@@ -60,10 +60,10 @@
       ],
       "policy": "RoleAssignmentPolicy",
       "policyMethods": [
-        "+ canManage(actor, global, target): boolean",
-        "+ departmental(role, level, owners, ancestors): boolean",
-        "+ canAssign(role, level, admin, ids, systems, owners, ancestors): boolean",
-        "+ canRemove(role, level, admin, ids, systems, owners, ancestors): boolean"
+        "+ canManage(actor, global, target): boolean {static}",
+        "+ departmental(role, level, owners, ancestors): boolean {static}",
+        "+ canAssign(role, level, admin, ids, systems, owners, ancestors): boolean {static}",
+        "+ canRemove(role, level, admin, ids, systems, owners, ancestors): boolean {static}"
       ],
       "serviceMethods": [
         "+ replaceRoles(header, id, command): UserWithRolesResult",
@@ -93,8 +93,8 @@
       "methods": [],
       "policy": "OrganizationPolicy",
       "policyMethods": [
-        "+ scope(facts, root): OrganizationFacts.Scope",
-        "+ global(facts, departmentId): boolean"
+        "+ scope(facts, root): OrganizationFacts.Scope {static}",
+        "+ global(facts, departmentId): boolean {static}"
       ],
       "serviceMethods": [
         "+ list(header, query): UserPageResult",
@@ -133,7 +133,7 @@
       ],
       "policy": "PermissionSelectionPolicy",
       "policyMethods": [
-        "+ replace(role, selected, requested): Role"
+        "+ replace(role, selected, requested): Role {static}"
       ],
       "serviceMethods": [
         "+ create(header, command): RoleResult",
@@ -168,8 +168,8 @@
       ],
       "policy": "PermissionTreePolicy",
       "policyMethods": [
-        "+ revise(current, tree, parentId, type, enabled): Permission",
-        "+ map(current, resources, requested): Permission"
+        "+ revise(current, tree, parentId, type, enabled): Permission {static}",
+        "+ map(current, resources, requested): Permission {static}"
       ],
       "serviceMethods": [
         "+ patchPermission(header, id, command): ResourcePermissionResult",
@@ -204,11 +204,11 @@
       ],
       "policy": "OrganizationPolicy",
       "policyMethods": [
-        "+ allowsChild(parent, type, trustedRoot): boolean",
-        "+ scope(facts, root): OrganizationFacts.Scope",
-        "+ requireNonRoot(node, facts): void",
-        "+ requireEmpty(usage): void",
-        "+ requireUnique(facts, parent, name, existing): void"
+        "+ allowsChild(parent, type, trustedRoot): boolean {static}",
+        "+ scope(facts, root): OrganizationFacts.Scope {static}",
+        "+ requireNonRoot(node, facts): void {static}",
+        "+ requireEmpty(usage): void {static}",
+        "+ requireUnique(facts, parent, name, existing): void {static}"
       ],
       "serviceMethods": [
         "+ create(header, command): DepartmentResult",
@@ -293,8 +293,8 @@
       "methods": [],
       "policy": "ImportPolicy",
       "policyMethods": [
-        "+ existing(manifest, state, admin): Receipt",
-        "+ batch(manifest, accounts, admin): ImportBatch"
+        "+ existing(manifest, state, admin): Receipt {static}",
+        "+ batch(manifest, accounts, admin): ImportBatch {static}"
       ],
       "serviceMethods": [
         "+ importDirectory(directory, credentials): ImportReport"
@@ -322,8 +322,8 @@
       "methods": [],
       "policy": "InitialAuthorizationPolicy",
       "policyMethods": [
-        "+ plan(manifest, permissions, codes): BootstrapPlan",
-        "+ validate(plan, state, catalog): Map<Long, Integer>"
+        "+ plan(manifest, permissions, codes): BootstrapPlan {static}",
+        "+ validate(plan, state, catalog): Map<Long, Integer> {static}"
       ],
       "serviceMethods": [
         "+ preview(directory): RoleBootstrapPlan",
@@ -350,7 +350,7 @@
       "methods": [],
       "policy": "MaintenancePolicy",
       "policyMethods": [
-        "+ qualifies(facts, root, required): boolean"
+        "+ qualifies(facts, root, required): boolean {static}"
       ],
       "serviceMethods": [
         "+ lock(): void",
@@ -447,9 +447,9 @@
       "methods": [],
       "policy": "AuthorizationPolicy",
       "policyMethods": [
-        "+ routes(facts): Set<ApiResource.Route>",
-        "+ directPermissions(facts): Set<Permission>",
-        "+ directPermissions(facts, systems): Set<Permission>"
+        "+ routes(facts): Set<ApiResource.Route> {static}",
+        "+ directPermissions(facts): Set<Permission> {static}",
+        "+ directPermissions(facts, systems): Set<Permission> {static}"
       ],
       "serviceMethods": [
         "+ routes(userId): Set<Route>",
@@ -476,7 +476,7 @@
       "methods": [],
       "policy": "OrganizationPolicy",
       "policyMethods": [
-        "+ global(facts, departmentId): boolean"
+        "+ global(facts, departmentId): boolean {static}"
       ],
       "serviceMethods": [
         "+ require(header): void"
@@ -1026,6 +1026,7 @@
       "ddd": {
         "lifelines": [
           "service: DddUserQueryService",
+          "criteria: SearchCriteria.Users",
           "repository: UserRepository"
         ],
         "meta": [],
@@ -1038,18 +1039,16 @@
           [
             1,
             2,
+            "Users(scope, …)",
+            "create"
+          ],
+          [
+            1,
+            3,
             "domainPage = search(criteria)"
           ]
         ],
-        "loops": [],
-        "notes": [
-          {
-            "who": 1,
-            "lines": [
-              "应用服务用SearchCriteria.Users封装范围、筛选条件与分页。"
-            ]
-          }
-        ]
+        "loops": []
       },
       "dddSource": "DddUserQueryService",
       "dddAnchor": "list"
@@ -1404,7 +1403,8 @@
           "scope: DddScope",
           "target: User",
           "role: Role",
-          "OrganizationPolicy"
+          "OrganizationPolicy",
+          "transferred: User"
         ],
         "calls": [
           [
@@ -1430,11 +1430,17 @@
           [
             1,
             3,
-            "changed = transfer(department)"
+            "transferred = transfer(department)"
+          ],
+          [
+            3,
+            6,
+            "User(id, …, target, enabled, roles)",
+            "create"
           ],
           [
             1,
-            3,
+            6,
             "changed = replaceRoles(retained)"
           ]
         ],
@@ -1477,22 +1483,20 @@
           [
             1,
             3,
+            "RoleEntity(code, name)",
+            "create"
+          ],
+          [
+            1,
+            3,
             "belongTo(owner)"
           ]
         ],
         "opts": [
           {
-            "first": 2,
-            "last": 2,
+            "first": 3,
+            "last": 3,
             "text": "[type = DEPARTMENT_CUSTOM，owner已核实]"
-          }
-        ],
-        "notes": [
-          {
-            "who": 1,
-            "lines": [
-              "应用服务先创建空权限RoleEntity。"
-            ]
           }
         ]
       },
@@ -1983,6 +1987,11 @@
           ],
           [
             1,
+            4,
+            "canLogin = canEnter(user.id)"
+          ],
+          [
+            1,
             3,
             "level = level(user)"
           ],
@@ -1996,22 +2005,27 @@
           {
             "who": 1,
             "lines": [
-              "同一人须为有效五级且覆盖全部K；不拼多人权限。"
+              "同一用户同时满足有效LOGIN、五级和完整K。"
             ]
           }
         ],
         "loops": [
           {
             "first": 2,
-            "last": 3,
-            "text": "逐个根直属启用人员，发现合格者即停止"
+            "last": 4,
+            "text": "[遍历根直属启用人员，发现合格者即停止]"
           }
         ],
         "opts": [
           {
             "first": 3,
             "last": 3,
-            "text": "该人员有效基础级别为5"
+            "text": "[可登录RBAC]"
+          },
+          {
+            "first": 4,
+            "last": 4,
+            "text": "[可登录RBAC且有效基础级别为5]"
           }
         ]
       },
@@ -2277,7 +2291,8 @@
           {
             "who": 1,
             "lines": [
-              "Service筛选贡献本应用有效权限的角色，装配短码/API事实。"
+              "exportable展示短码遍历中的筛选；角色权限ID及API事实各自再遍历。",
+              "Service从适用角色中保留贡献本应用有效权限的角色。"
             ]
           }
         ],

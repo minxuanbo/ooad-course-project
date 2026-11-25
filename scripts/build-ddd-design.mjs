@@ -360,7 +360,8 @@ function identityOperations(source, names) {
     const [, staticModifier, result, parameters] = declaration
     const args = parameters.trim() ? parameters.split(',').map((value) => value.trim().split(/\s+/).at(-1)) : []
     const shownArgs = args.length > 3 ? [...args.slice(0, 2), '…'] : args
-    return `+ ${name}(${shownArgs.join(', ')}): ${result}${staticModifier ? ' {static}' : ''}`
+    const resultType = result.replace(/\b(?:[a-z]\w*\.)+(?=[A-Z])/g, '')
+    return `+ ${name}(${shownArgs.join(', ')}): ${resultType}${staticModifier ? ' {static}' : ''}`
   })
 }
 
@@ -374,21 +375,21 @@ async function applicationIdentityDiagram(ddd) {
   const names = ['login', 'current', 'allowed', 'user', 'logout', 'departments', 'departmentUsers', 'apiAllowed']
 
   const collaborators = [
-    ddd ? ['repository', 'authorization', 'AuthorizationRepository', ['facts'], 20, 415]
-      : ['repository', 'permissions', 'PermissionJpaRepository', ['directPermissions'], 20, 415],
-    ddd ? ['scope', 'organizations', 'OrganizationRepository', ['load'], 20, 670]
-      : ['scope', 'scope', 'StructuredDepartmentScopeService', ['allowedIds', 'isGlobal'], 20, 670],
-    ['catalog', 'operations', 'ApiOperationCatalog', ['find', 'loginPermission'], 1470, 415],
-    ddd ? ['policy', null, 'ApplicationAuthorizationPolicy', ['exported'], 1470, 670]
-      : ['policy', 'effective', 'StructuredEffectivePermissionService', ['applicableRoleIds'], 1470, 670],
-    ['directory', 'directory', 'IdentityDirectoryGateway', ['department', 'departments', 'users'], 645, 1030],
+    { id: 'authentication', role: 'authentication', type: 'AuthenticationUseCase', operations: ['verify', 'requireForSystem'], x: 20, y: 105 },
+    { id: 'tokens', role: 'tokens', type: 'IdentityTokenStore', operations: ['issueForSystem', 'requireForSystem', 'revoke'], x: 1470, y: 105 },
+    { id: 'repository', role: ddd ? 'authorization' : 'permissions',
+      type: ddd ? 'AuthorizationRepository' : 'PermissionJpaRepository',
+      operations: ddd ? ['facts'] : ['directPermissions'], x: 20, y: 415 },
+    { id: 'scope', role: ddd ? 'organizations' : 'scope',
+      type: ddd ? 'OrganizationRepository' : 'StructuredDepartmentScopeService',
+      operations: ddd ? ['load'] : ['allowedIds', 'isGlobal'], x: 20, y: 670 },
+    { id: 'catalog', role: 'operations', type: 'ApiOperationCatalog', operations: ['find', 'loginPermission'], x: 1470, y: 415 },
+    { id: 'policy', role: ddd ? null : 'effective',
+      type: ddd ? 'ApplicationAuthorizationPolicy' : 'StructuredEffectivePermissionService',
+      operations: ddd ? ['exported'] : ['applicableRoleIds'], x: 1470, y: 670 },
+    { id: 'directory', role: 'directory', type: 'IdentityDirectoryGateway', operations: ['department', 'departments', 'users'], x: 645, y: 1030 },
   ]
-  const associations = [
-    ['authentication', 'AuthenticationUseCase'],
-    ['tokens', 'IdentityTokenStore'],
-    ...collaborators.filter(([, role]) => role).map(([, role, type]) => [role, type]),
-  ]
-  const fields = associations.map(([role, type]) => {
+  const fields = collaborators.filter(({ role }) => role).map(({ role, type }) => {
     if (!new RegExp(`\\b${type} ${role};`).test(serviceSource))
       throw Error(`身份类图字段失效：${service}.${role}`)
     return `- ${role}: ${type}`
@@ -399,7 +400,7 @@ async function applicationIdentityDiagram(ddd) {
   const boxes = [
     { id: 'service', x: 645, y: 385, w: 700, h: 520, title: service, fields, methods: identityOperations(serviceSource, names), center: true },
     { id: 'port', x: 645, y: 105, w: 700, h: 185, title: `«interface» ${port}`, methods: identityOperations(portSource, names.slice(0, 2)) },
-    ...collaborators.map(([id, , type, operations, x, y]) => {
+    ...collaborators.map(({ id, type, operations, x, y }) => {
       const source = requireJava(type)
       const title = (new RegExp(`\\binterface ${type}\\b`).test(source) ? '«interface» ' : '') + type
       return { id, x, y, w: id === 'directory' ? 700 : 500, h: 128 + operations.length * 28,
@@ -408,13 +409,19 @@ async function applicationIdentityDiagram(ddd) {
   ]
   const edges = [
     { from: 'service', to: 'port', kind: 'realization', points: [[995, 385], [995, 290]] },
-    ...collaborators.map(([to, role, , , x, y]) => {
+    ...collaborators.map(({ id: to, role, x, y }) => {
       if (to === 'directory') return { from: 'service', to, kind: 'association',
         points: [[995, 905], [995, y]], role: [979, 970, role, 16, 'end'] }
       const left = x === 20
+      const serviceEdge = left ? 645 : 1345
+      const collaboratorEdge = left ? 520 : 1470
+      const mid = (serviceEdge + collaboratorEdge) / 2
+      if (y === 105) return { from: 'service', to, kind: 'association',
+        points: [[serviceEdge, 435], [mid, 435], [mid, 235], [collaboratorEdge, 235]],
+        role: [mid - 12, 340, role, 16, 'end'] }
       return { from: 'service', to, kind: role ? 'association' : 'dependency',
-        points: [[left ? 645 : 1345, y + 100], [left ? 520 : 1470, y + 100]],
-        ...(role ? { role: [left ? 582.5 : 1407.5, y + 82, role, 16, 'middle', 105] } : {}) }
+        points: [[serviceEdge, y + 100], [collaboratorEdge, y + 100]],
+        ...(role ? { role: [mid, y + 82, role, 16, 'middle', 105] } : {}) }
     }),
   ]
   assertGeometry(boxes, edges)
@@ -628,11 +635,20 @@ for (const scenario of design.scenarios) {
       if (!format.test(names[i]) || !data.calls.some(([from, to]) => i === from || i === to))
         throw Error(`生命线命名错误或没有消息：${scenario.id}/${names[i]}`)
     }
-    for(const [,receiver,label] of data.calls.slice(1)) {
+    const createdAt = new Map()
+    for (let i = 1; i < data.calls.length; i++) {
+      const [, receiver, label, kind] = data.calls[i]
       const type=names[receiver].split(':').at(-1).trim()
       const java=requireJava(type)
       const method=label.match(/(?:^|=\s*)([A-Za-z_]\w*)\(/)?.[1]
       if(!method)throw Error('消息缺少真实方法：'+scenario.id+'/'+label)
+      if (kind === 'create') {
+        if (method !== type.split('.').at(-1) || !java.includes(method + '(') ||
+            data.meta?.includes(receiver) || data.calls.slice(0, i).some(([from, to]) => from === receiver || to === receiver))
+          throw Error(`创建消息与类型或生命线起点不一致：${scenario.id}/${label}`)
+        createdAt.set(receiver, i)
+        continue
+      }
       const inherited=/extends\s+(?:JpaRepository|JpaSpecificationExecutor)/.test(java)&&
         ['findById','findAll','findAllById','save','saveAndFlush','count'].includes(method)
       const lombokSetter=method.startsWith('set')&&/@(?:lombok\.)?Setter\b/.test(java)&&
@@ -664,12 +680,15 @@ for (const scenario of design.scenarios) {
       { who: 1, x: centers[1], top: y(0), bottom: end - 25 },
     ]
     for (let i = 1; i < data.calls.length; i++) {
-      const [from, to] = data.calls[i]
+      const [from, to, , kind] = data.calls[i]
+      if (kind === 'create') continue
+      const next = data.calls[i + 1]
+      const createsObject = next?.[0] === to && next?.[3] === 'create'
       bars.push({
         who: to,
         x: centers[to] + (from === to ? 19 : 0),
         top: y(i),
-        bottom: y(i) + 60,
+        bottom: y(createsObject ? i + 1 : i) + 60,
         nested: from === to,
       })
     }
@@ -703,7 +722,8 @@ for (const scenario of design.scenarios) {
     body += centers
       .map((x, i) => {
         const meta = (data.meta || []).includes(i)
-        return `<path d="M${x},165V${end + 20}" stroke="#9aa7b7" stroke-dasharray="7 6"/><rect x="${x - (i ? 170 : 90)}" y="100" width="${i ? 340 : 180}" height="65" fill="white" stroke="#223046"/>${meta ? text(x, 126, '«MetaClass»', 17, 'middle') + text(x, 151, ': ' + names[i], 20, 'middle', 318) : text(x, 139, names[i], 19, 'middle', i ? 318 : 160)}`
+        const top = createdAt.has(i) ? y(createdAt.get(i)) - 32 : 100
+        return `<path d="M${x},${top + 65}V${end + 20}" stroke="#9aa7b7" stroke-dasharray="7 6"/><rect x="${x - (i ? 170 : 90)}" y="${top}" width="${i ? 340 : 180}" height="65" fill="white" stroke="#223046"/>${meta ? text(x, top + 26, '«MetaClass»', 17, 'middle') + text(x, top + 51, ': ' + names[i], 20, 'middle', 318) : text(x, top + 39, names[i], 19, 'middle', i ? 318 : 160)}`
       })
       .join('')
     body += bars
@@ -718,24 +738,32 @@ for (const scenario of design.scenarios) {
       if(top+height>=end-25)throw Error('说明压到执行条结尾：'+scenario.id)
       body += `<rect x="${left}" y="${top}" width="660" height="${height}" fill="#fffbea" stroke="#b6a56d"/>${note.lines.map((line,i)=>text(left+12,top+25+i*25,line,16,'start',636)).join('')}`
     }
+    let callNumber = 0
     for (let i = 0; i < data.calls.length; i++) {
-      const [from, to, label] = data.calls[i]
+      const [from, to, label, kind] = data.calls[i]
       if (design.sharedSequenceExcluded.some((word) => label.includes(word)))
         throw Error(`差异图含共同流程：${label}`)
       const receiver = bars.find((b) => b.who === to && b.top === y(i))
       const sender = bars.find(
         (b) => b.who === from && b.top <= y(i) && b.bottom >= y(i) && !b.nested,
       )
+      if (kind === 'create' && sender) {
+        const right = to > from
+        const x1 = sender.x + (right ? 7 : -7), x2 = centers[to] + (right ? -170 : 170)
+        body += `<path d="M${x1},${y(i)}H${x2}" stroke="#223046" stroke-dasharray="8 5" marker-end="url(#open)"/>${text(Math.min(x1, x2) + 12, y(i) - 14, '«create» ' + label, 18, 'start', Math.abs(x2 - x1) - 24)}`
+        continue
+      }
       if (!receiver || !sender) throw Error(`调用未吸附执行条：${scenario.id}/${label}`)
+      callNumber++
       if (from === to) {
         const left = receiver.x + 7,
           start = sender.x + 7
-        body += `<path d="M${start},${y(i) - 22}h65V${y(i)}H${left}" fill="none" stroke="#223046" marker-end="url(#filled)"/>${text(start + 78, y(i) - 8, i + 1 + ' ' + label, 17, 'start', width - start - 110)}`
+        body += `<path d="M${start},${y(i) - 22}h65V${y(i)}H${left}" fill="none" stroke="#223046" marker-end="url(#filled)"/>${text(start + 78, y(i) - 8, callNumber + ' ' + label, 17, 'start', width - start - 110)}`
       } else {
         const right = to > from
         const x1 = sender.x + (right ? 7 : -7),
           x2 = receiver.x + (right ? -7 : 7)
-        body += `<path d="M${x1},${y(i)}H${x2}" stroke="#223046" marker-end="url(#filled)"/>${text(Math.min(x1, x2) + 12, y(i) - 14, i + 1 + ' ' + label, 18, 'start', Math.abs(x2 - x1) - 24)}`
+        body += `<path d="M${x1},${y(i)}H${x2}" stroke="#223046" marker-end="url(#filled)"/>${text(Math.min(x1, x2) + 12, y(i) - 14, callNumber + ' ' + label, 18, 'start', Math.abs(x2 - x1) - 24)}`
       }
     }
     await emit(

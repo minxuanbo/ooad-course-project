@@ -22,7 +22,7 @@
   <path d="M580,898H1220 M580,946H1220" stroke="#223046"/>
   <text x="900" y="882" font-size="23" text-anchor="middle" fill="#223046">PermissionTreePolicy</text>
   <text x="593" y="926" font-size="18" text-anchor="start" fill="#223046">—</text>
-  <text x="593" y="972" font-size="17.344632768361574" text-anchor="start" fill="#223046">+ revise(current, tree, parentId, type, enabled): Permission</text><text x="593" y="1000" font-size="18" text-anchor="start" fill="#223046">+ map(current, resources, requested): Permission</text><rect x="20" y="850" width="450" height="215" rx="2" fill="white" stroke="#223046" stroke-width="1.5"/>
+  <text text-decoration="underline" x="593" y="972" font-size="17.344632768361574" text-anchor="start" fill="#223046">+ revise(current, tree, parentId, type, enabled): Permission</text><text text-decoration="underline" x="593" y="1000" font-size="18" text-anchor="start" fill="#223046">+ map(current, resources, requested): Permission</text><rect x="20" y="850" width="450" height="215" rx="2" fill="white" stroke="#223046" stroke-width="1.5"/>
   <path d="M20,898H470 M20,974H470" stroke="#223046"/>
   <text x="245" y="882" font-size="23" text-anchor="middle" fill="#223046">JpaPermissionRepositoryAdapter</text>
   <text x="33" y="926" font-size="18" text-anchor="start" fill="#223046">- rows: PermissionJpaRepository</text><text x="33" y="954" font-size="18" text-anchor="start" fill="#223046">- apis: ApiResourceJpaRepository</text>

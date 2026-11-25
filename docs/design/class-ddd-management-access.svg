@@ -22,4 +22,4 @@
   <path d="M580,898H1220 M580,946H1220" stroke="#223046"/>
   <text x="900" y="882" font-size="23" text-anchor="middle" fill="#223046">OrganizationPolicy</text>
   <text x="593" y="926" font-size="18" text-anchor="start" fill="#223046">—</text>
-  <text x="593" y="972" font-size="18" text-anchor="start" fill="#223046">+ global(facts, departmentId): boolean</text></g></svg>
+  <text text-decoration="underline" x="593" y="972" font-size="18" text-anchor="start" fill="#223046">+ global(facts, departmentId): boolean</text></g></svg>
