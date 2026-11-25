@@ -744,8 +744,7 @@
         "lifelines": [
           "service: StructuredRoleService",
           "permissions: PermissionJpaRepository",
-          "role: RoleEntity",
-          "roles: RoleJpaRepository"
+          "role: RoleEntity"
         ],
         "calls": [
           [
@@ -811,7 +810,7 @@
           [
             1,
             3,
-            "changed = replace(role, selected, requested)"
+            "changed = replace(role, selected, requestedCount, systems)"
           ]
         ],
         "loops": []
@@ -934,8 +933,7 @@
       "structured": {
         "lifelines": [
           "service: StructuredDepartmentService",
-          "department: DepartmentEntity",
-          "departments: DepartmentJpaRepository"
+          "department: DepartmentEntity"
         ],
         "calls": [
           [
@@ -964,8 +962,7 @@
         "lifelines": [
           "service: DddDepartmentService",
           "OrganizationPolicy",
-          "Department",
-          "repository: OrganizationRepository"
+          "Department"
         ],
         "meta": [
           2,
@@ -1029,7 +1026,6 @@
       "ddd": {
         "lifelines": [
           "service: DddUserQueryService",
-          "criteria: SearchCriteria.Users",
           "repository: UserRepository"
         ],
         "meta": [],
@@ -1042,15 +1038,18 @@
           [
             1,
             2,
-            "new Users(scope, query, enabled, roleId, page, size)"
-          ],
-          [
-            1,
-            3,
             "domainPage = search(criteria)"
           ]
         ],
-        "loops": []
+        "loops": [],
+        "notes": [
+          {
+            "who": 1,
+            "lines": [
+              "应用服务用SearchCriteria.Users封装范围、筛选条件与分页。"
+            ]
+          }
+        ]
       },
       "dddSource": "DddUserQueryService",
       "dddAnchor": "list"
@@ -1388,7 +1387,14 @@
           {
             "first": 3,
             "last": 3,
-            "text": "[部门角色不适用新部门]"
+            "text": "[角色不适用新部门]"
+          }
+        ],
+        "loops": [
+          {
+            "first": 2,
+            "last": 3,
+            "text": "[遍历人员现有角色]"
           }
         ]
       },
@@ -1434,6 +1440,13 @@
         ],
         "meta": [
           5
+        ],
+        "loops": [
+          {
+            "first": 3,
+            "last": 3,
+            "text": "[过滤人员现有角色]"
+          }
         ]
       }
     },
@@ -1448,7 +1461,6 @@
         "lifelines": [
           "service: StructuredRoleService",
           "roles: RoleJpaRepository",
-          "RoleEntity",
           "created: RoleEntity"
         ],
         "calls": [
@@ -1465,22 +1477,22 @@
           [
             1,
             3,
-            "new RoleEntity(code, name)"
-          ],
-          [
-            1,
-            4,
             "belongTo(owner)"
           ]
         ],
-        "meta": [
-          3
-        ],
         "opts": [
           {
-            "first": 3,
-            "last": 3,
+            "first": 2,
+            "last": 2,
             "text": "[type = DEPARTMENT_CUSTOM，owner已核实]"
+          }
+        ],
+        "notes": [
+          {
+            "who": 1,
+            "lines": [
+              "应用服务先创建空权限RoleEntity。"
+            ]
           }
         ]
       },
@@ -2236,7 +2248,8 @@
       "structured": {
         "lifelines": [
           "service: StructuredApplicationIdentityService",
-          "permissions: PermissionJpaRepository"
+          "permissions: PermissionJpaRepository",
+          "effective: StructuredEffectivePermissionService"
         ],
         "calls": [
           [
@@ -2246,8 +2259,13 @@
           ],
           [
             1,
+            3,
+            "roleIds = applicableRoleIds(id)"
+          ],
+          [
+            1,
             2,
-            "direct = directPermissions(id, roleIds, systems)"
+            "direct = directPermissions(id, roleIds, Set.of(system))"
           ],
           [
             1,
@@ -2265,9 +2283,9 @@
         ],
         "loops": [
           {
-            "first": 2,
-            "last": 2,
-            "text": "逐个直接权限核对完整映射"
+            "first": 3,
+            "last": 3,
+            "text": "[逐个直接权限核对是否可导出]"
           }
         ]
       },
@@ -2308,22 +2326,40 @@
       "dddAnchor": "patchSystem",
       "structured": {
         "lifelines": [
-          "service: StructuredResourceService"
+          "service: StructuredResourceService",
+          "system: ApplicationSystemEntity"
         ],
         "calls": [
           [
             0,
             1,
             "patchSystem 的差异片段"
+          ],
+          [
+            1,
+            2,
+            "setName(trimmedName)"
+          ],
+          [
+            1,
+            2,
+            "setEnabled(enabled)"
           ]
         ],
         "notes": [
           {
             "who": 1,
             "lines": [
-              "CloneFactory.copyNotNull更新Entity的资料与状态。",
+              "CloneFactory.copyNotNull先更新应用名称与接入状态。",
               "code及关系保留；根锁、鉴权、维护者保护为共同编排。"
             ]
+          }
+        ],
+        "opts": [
+          {
+            "first": 2,
+            "last": 2,
+            "text": "[请求显式提供enabled]"
           }
         ]
       },
@@ -2363,8 +2399,7 @@
       "dddAnchor": "complete",
       "structured": {
         "lifelines": [
-          "service: StructuredOnboardingService",
-          "systems: ApplicationSystemJpaRepository"
+          "service: StructuredOnboardingService"
         ],
         "calls": [
           [
@@ -2375,17 +2410,12 @@
           [
             1,
             1,
-            "errors = problems(before, desired, roles)"
+            "errors = problems(before.plan(), desired, before.roles())"
           ],
           [
             1,
             1,
             "persist(system, desired)"
-          ],
-          [
-            1,
-            2,
-            "saveAndFlush(system)"
           ]
         ],
         "notes": [
@@ -2393,7 +2423,7 @@
             "who": 1,
             "lines": [
               "事务脚本独立校验树、映射、角色子集与目录保留。",
-              "persist差量保存多表实体，保留人员与跨应用授权。"
+              "persist内部差量写入关联并保存应用，保留人员与跨应用授权。"
             ]
           }
         ]

@@ -170,8 +170,8 @@ async function packageDiagram(ddd) {
           title: '«package» service.structured',
           fields: [
             '事务脚本 / 授权与范围 / 根锁和K',
-            'auth/user/role/resource/department',
-            'audit/importing/bootstrap/security',
+            'auth/identity/user/role/resource/department',
+            'audit/importing/bootstrap/security/onboarding',
           ],
           methods: [],
           center: true,
@@ -350,6 +350,81 @@ async function packageDiagram(ddd) {
 }
 await packageDiagram(false)
 await packageDiagram(true)
+
+function identityOperations(source, names) {
+  return names.map((name) => {
+    const declaration = source.match(
+      new RegExp(`^ +(?:public +)?(?:default +)?(static +)?([\\w.<>?, ]+) +${name}\\(([^)]*)\\)\\s*[;{]`, 'm'),
+    )
+    if (!declaration) throw Error(`身份类图缺少方法声明：${name}`)
+    const [, staticModifier, result, parameters] = declaration
+    const args = parameters.trim() ? parameters.split(',').map((value) => value.trim().split(/\s+/).at(-1)) : []
+    const shownArgs = args.length > 3 ? [...args.slice(0, 2), '…'] : args
+    return `+ ${name}(${shownArgs.join(', ')}): ${result}${staticModifier ? ' {static}' : ''}`
+  })
+}
+
+async function applicationIdentityDiagram(ddd) {
+  const strategy = ddd ? 'DDD' : 'structured'
+  const service = (ddd ? 'Ddd' : 'Structured') + 'ApplicationIdentityService'
+  const port = 'ApplicationIdentityUseCase'
+  const serviceSource = requireJava(service)
+  const portSource = requireJava(port)
+  if (!serviceSource.includes(`implements ${port}`)) throw Error(`身份类图实现关系失效：${service}`)
+  const names = ['login', 'current', 'allowed', 'user', 'logout', 'departments', 'departmentUsers', 'apiAllowed']
+
+  const collaborators = [
+    ddd ? ['repository', 'authorization', 'AuthorizationRepository', ['facts'], 20, 415]
+      : ['repository', 'permissions', 'PermissionJpaRepository', ['directPermissions'], 20, 415],
+    ddd ? ['scope', 'organizations', 'OrganizationRepository', ['load'], 20, 670]
+      : ['scope', 'scope', 'StructuredDepartmentScopeService', ['allowedIds', 'isGlobal'], 20, 670],
+    ['catalog', 'operations', 'ApiOperationCatalog', ['find', 'loginPermission'], 1470, 415],
+    ddd ? ['policy', null, 'ApplicationAuthorizationPolicy', ['exported'], 1470, 670]
+      : ['policy', 'effective', 'StructuredEffectivePermissionService', ['applicableRoleIds'], 1470, 670],
+    ['directory', 'directory', 'IdentityDirectoryGateway', ['department', 'departments', 'users'], 645, 1030],
+  ]
+  const associations = [
+    ['authentication', 'AuthenticationUseCase'],
+    ['tokens', 'IdentityTokenStore'],
+    ...collaborators.filter(([, role]) => role).map(([, role, type]) => [role, type]),
+  ]
+  const fields = associations.map(([role, type]) => {
+    if (!new RegExp(`\\b${type} ${role};`).test(serviceSource))
+      throw Error(`身份类图字段失效：${service}.${role}`)
+    return `- ${role}: ${type}`
+  })
+  if (ddd && !serviceSource.includes('ApplicationAuthorizationPolicy.exported('))
+    throw Error(`身份类图策略调用失效：${service}`)
+
+  const boxes = [
+    { id: 'service', x: 645, y: 385, w: 700, h: 520, title: service, fields, methods: identityOperations(serviceSource, names), center: true },
+    { id: 'port', x: 645, y: 105, w: 700, h: 185, title: `«interface» ${port}`, methods: identityOperations(portSource, names.slice(0, 2)) },
+    ...collaborators.map(([id, , type, operations, x, y]) => {
+      const source = requireJava(type)
+      const title = (new RegExp(`\\binterface ${type}\\b`).test(source) ? '«interface» ' : '') + type
+      return { id, x, y, w: id === 'directory' ? 700 : 500, h: 128 + operations.length * 28,
+        title, methods: identityOperations(source, operations) }
+    }),
+  ]
+  const edges = [
+    { from: 'service', to: 'port', kind: 'realization', points: [[995, 385], [995, 290]] },
+    ...collaborators.map(([to, role, , , x, y]) => {
+      if (to === 'directory') return { from: 'service', to, kind: 'association',
+        points: [[995, 905], [995, y]], role: [979, 970, role, 16, 'end'] }
+      const left = x === 20
+      return { from: 'service', to, kind: role ? 'association' : 'dependency',
+        points: [[left ? 645 : 1345, y + 100], [left ? 520 : 1470, y + 100]],
+        ...(role ? { role: [left ? 582.5 : 1407.5, y + 82, role, 16, 'middle', 105] } : {}) }
+    }),
+  ]
+  assertGeometry(boxes, edges)
+  await emit(`class-${strategy.toLowerCase()}-application-identity`, svg(1990, 1280,
+    `${strategy} · 通用应用身份类图`,
+    'Service实现八项身份用例；身份目录和操作目录为共享端口。图中保留与本模块相关的成员。',
+    edges.map(edge).join('') + boxes.map(box).join('')))
+}
+await applicationIdentityDiagram(false)
+await applicationIdentityDiagram(true)
 
 for (const item of design.entries) {
   const serviceSource = requireJava(item.service)
@@ -548,10 +623,15 @@ for (const scenario of design.scenarios) {
     const names = ['obj: 调用者', ...data.lifelines]
     if (names.some((value) => design.sharedSequenceExcluded.some((word) => value.includes(word))))
       throw Error(`差异图含共同技术参与者：${scenario.id}`)
+    for (let i = 1; i < names.length; i++) {
+      const format = data.meta?.includes(i) ? /^\w+$/ : /^\w+: \w+(?:\.\w+)?$/
+      if (!format.test(names[i]) || !data.calls.some(([from, to]) => i === from || i === to))
+        throw Error(`生命线命名错误或没有消息：${scenario.id}/${names[i]}`)
+    }
     for(const [,receiver,label] of data.calls.slice(1)) {
       const type=names[receiver].split(':').at(-1).trim()
       const java=requireJava(type)
-      const method=label.match(/(?:^|=\s*)(?:new )?([A-Za-z_]\w*)\(/)?.[1]
+      const method=label.match(/(?:^|=\s*)([A-Za-z_]\w*)\(/)?.[1]
       if(!method)throw Error('消息缺少真实方法：'+scenario.id+'/'+label)
       const inherited=/extends\s+(?:JpaRepository|JpaSpecificationExecutor)/.test(java)&&
         ['findById','findAll','findAllById','save','saveAndFlush','count'].includes(method)
@@ -559,6 +639,9 @@ for (const scenario of design.scenarios) {
         new RegExp('\\b'+method[3].toLowerCase()+method.slice(4)+'\\s*[;=]').test(java)
       if(!java.includes(method+'(')&&!inherited&&!lombokSetter)
         throw Error('消息方法不属于接收对象：'+type+'/'+method)
+      const isStatic = new RegExp(`\\bstatic\\s+[^;={}]*\\b${method}\\(`).test(java)
+      if (isStatic !== Boolean(data.meta?.includes(receiver)))
+        throw Error(`静态调用与MetaClass不一致：${scenario.id}/${type}.${method}`)
     }
     const other=scenario[variant==='ddd'?'structured':'ddd']
     const messages=data.calls.slice(1).map(c=>c[2].replace(/^.*?=\s*/,''))
@@ -568,7 +651,14 @@ for (const scenario of design.scenarios) {
     const centers = names.map((_, i) => 110 + i * 480)
     const width = Math.max(centers.at(-1) + 210, data.notes?.length ? centers[1] + 760 : 0)
     const y = (i) => 245 + i * 170
-    const end = y(data.calls.length - 1) + (data.notes?.length ? 230 : 155)
+    const finalMessage = y(data.calls.length - 1)
+    const loopBottom = (loop) => y(loop.last) + ((data.opts || []).some((opt) =>
+      opt.first >= loop.first && opt.last === loop.last) ? 100 : 85)
+    const notesTop = Math.max(finalMessage + 90,
+      ...(data.loops || []).map((loop) => loopBottom(loop) + 20),
+      ...(data.opts || []).map((opt) => y(opt.last) + 100),
+      ...(data.alts || []).map((alt) => y(alt.elseLast) + 120))
+    const end = data.notes?.length ? notesTop + 140 : finalMessage + 155
     const bars = [
       { who: 0, x: centers[0], top: 210, bottom: end },
       { who: 1, x: centers[1], top: y(0), bottom: end - 25 },
@@ -585,8 +675,9 @@ for (const scenario of design.scenarios) {
     }
     let body = ''
     for (const loop of data.loops || []) {
-      const top = y(loop.first) - 65,
-        bottom = y(loop.last) + 105
+      const nestedOpt = (data.opts || []).some((opt) => opt.first === loop.first && opt.last <= loop.last)
+      const top = y(loop.first) - (nestedOpt ? 95 : 65),
+        bottom = loopBottom(loop)
       for (const b of bars.filter(
         (b) =>
           b.who !== 0 &&
@@ -622,7 +713,7 @@ for (const scenario of design.scenarios) {
       )
       .join('')
     for(const note of data.notes || []) {
-      const left=centers[note.who]+30, top=y(data.calls.length-1)+90
+      const left=centers[note.who]+30, top=notesTop
       const height=30+note.lines.length*25
       if(top+height>=end-25)throw Error('说明压到执行条结尾：'+scenario.id)
       body += `<rect x="${left}" y="${top}" width="660" height="${height}" fill="#fffbea" stroke="#b6a56d"/>${note.lines.map((line,i)=>text(left+12,top+25+i*25,line,16,'start',636)).join('')}`
