@@ -362,7 +362,7 @@ Java新增或修改类/接口/记录及关键方法写中文Javadoc；明确局�
 
 ## 17. 结构化与DDD UML
 
-以当前源码为准，两套实现的类图按相同15个模块成对展示，通用应用身份另有1对；不再只展示DDD。共享技术和两个策略的静态依赖可以出现在类图，顺序图只画实际实现差异。
+两套实现按相同17个模块成对展示类图。类图展示静态依赖和各模块选取的成员，顺序图只展示实际实现差异。
 
 ### 17.1 结构化与DDD包图
 
@@ -592,15 +592,27 @@ DDD：`DddManagementAccess`，领域仓储/模型及策略边界如下。
 
 ![structured通用身份](design/class-structured-application-identity.png)
 
-[SVG](design/class-structured-application-identity.svg) · [PlantUML](design/class-structured-application-identity.puml)
+[structured SVG](design/class-structured-application-identity.svg)
 
 ![DDD通用身份](design/class-ddd-application-identity.png)
 
-[SVG](design/class-ddd-application-identity.svg) · [PlantUML](design/class-ddd-application-identity.puml)
+[DDD SVG](design/class-ddd-application-identity.svg)
+
+两个Service均实现`ApplicationIdentityUseCase`。structured从当前适用角色和JPA仓储读取直接权限，DDD从领域仓储读取授权事实并由`ApplicationAuthorizationPolicy`筛选。`IdentityDirectoryGateway`与`ApiOperationCatalog`为共享端口。
+
+#### 应用接入配置（onboarding）
+
+![structured接入配置](design/class-structured-onboarding.png)
+
+[structured SVG](design/class-structured-onboarding.svg)
+
+![DDD接入配置](design/class-ddd-onboarding.png)
+
+[DDD SVG](design/class-ddd-onboarding.svg)
 
 ### 17.3 差异顺序图
 
-逐项核对41个HTTP操作、2个离线入口及横切支撑后，按25组独立差异编排，每组structured/DDD各1张，共50张。重复使用同一实现模式的接口只引用同一组图，具体对应见17.4；不是将每个接口复制两遍。
+45个HTTP操作、2类离线入口和横切支撑涉及26组独立差异，每组structured/DDD各1张，共52张。重复使用同一实现模式的接口共用一组差异图，对应关系见17.4。
 
 共同HTTP绑定/校验、Controller、DTO/VO映射、JWT签发/解析、AOP、技术日志、根锁取得、锁后重鉴权、最终保护调用、保存后的提交/回滚不画。普通保存本身不再作为两套差异重复展示；ImportBatch/Publication是领域批次边界，属于真实接口差异。`maintenance`组只画完整维护者资格算法，不重复最终保护/锁的共同编排。
 
@@ -950,6 +962,18 @@ structured直接对ApplicationSystemEntity作可选字段映射；DDD调用Appli
 
 ![DDD 应用生命周期差异](design/sequence-application-lifecycle-ddd.png)
 
+#### 接入配置校验与发布（onboarding-publication）
+
+structured在事务脚本中校验树、映射和角色子集，由`persist`差量保存实体关联。DDD由`ApplicationOnboarding`校验并返回新的接入配置，再交领域仓储持久化。
+
+![structured接入发布差异](design/sequence-onboarding-publication-structured.png)
+
+[structured SVG](design/sequence-onboarding-publication-structured.svg)
+
+![DDD接入发布差异](design/sequence-onboarding-publication-ddd.png)
+
+[DDD SVG](design/sequence-onboarding-publication-ddd.svg)
+
 ### 17.4 覆盖与省略矩阵
 
 每个操作均有明确结论。“共同流程”表示两套语义和协作相同；纯类型/结果装配差异由类图说明，不制造仅换类名的顺序图。
@@ -1012,7 +1036,7 @@ structured直接对ApplicationSystemEntity作可选字段映射；DDD调用Appli
 | MaintenanceProtection | maintenance（资格算法） | 根锁、锁后重鉴权、最终保护的顺序 |
 | JWT、AuditQueryGateway、IdentityDirectoryGateway、ApiOperationCatalog | 共用技术实现，不画双份 | 签名、单会话撤销、快照、目录SQL与操作配置 |
 
-当前图集88组：包图2、类图32、差异顺序图50。生成数据、源码锚点及运行命令见[图件说明](design/README.md)。被现行图集替代的旧片段及重复图已清理，原版本可从Git历史恢复。
+生成数据、源码锚点和重绘命令见[图件说明](design/README.md)。
 
 ## 18. 通用应用身份与课程本地接入
 
@@ -1058,14 +1082,4 @@ structured由StructuredOnboardingService直接读取JPA并独立执行树/映射
 
 DatabaseApiOperationCatalog逐请求读取api_operations及application_profiles；ConfiguredApiOperationCatalog只留离线文件校验，不作为运行bean或文件回退。IdentityWebConfiguration只给/auth/*开放固定来源及当前启用CONNECTED入口的精确Origin；不开放管理端跨域。LocalIdentityProtocolProbe通过@HttpExchange访问本机真实端点，finally清理本次会话；entryUrl从不作为抓取目标。
 
-### 应用接入模块对照图
-
-![structured接入配置](design/class-structured-onboarding.png)
-
-![DDD接入配置](design/class-ddd-onboarding.png)
-
-![structured接入发布差异](design/sequence-onboarding-publication-structured.png)
-
-![DDD接入发布差异](design/sequence-onboarding-publication-ddd.png)
-
-共同的根锁、身份鉴权、完整指纹、人工确认与HTTP探测均省略；这里对比事务脚本内的独立校验/实体持久化和领域聚合行为/仓储边界。
+[应用接入配置类图](#应用接入配置onboarding)与[接入配置校验与发布差异图](#接入配置校验与发布onboarding-publication)。

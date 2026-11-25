@@ -6,7 +6,7 @@
 
 ![六实体核心Chen ER](database/chen-er-overview.png)
 
-[可编辑SVG](database/chen-er-overview.svg)；[三段关系源码及既有评审](database/chen-er-source.md)。图中仅六个核心实体，账号认证支撑、日志、导入来源及回执不进入核心ER；全局管理员使用独立初始化User，具备有效基础级别5、可信根范围与实际维护权限，不单列实体。
+[可编辑SVG](database/chen-er-overview.svg)；[关系源码](database/chen-er-source.md)。图中仅六个核心实体，账号认证支撑、日志、导入来源及回执不进入核心ER；全局管理员使用独立初始化User，具备有效基础级别5、可信根范围与实际维护权限，不单列实体。
 
 | 联系 | 基数及参与约束 |
 | --- | --- |

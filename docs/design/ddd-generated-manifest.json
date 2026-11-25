@@ -3,6 +3,8 @@
   "generated": [
     "package-structured-current",
     "package-ddd-design",
+    "class-structured-application-identity",
+    "class-ddd-application-identity",
     "class-ddd-identity",
     "class-ddd-personnel",
     "class-ddd-query",

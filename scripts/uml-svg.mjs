@@ -34,7 +34,13 @@ export function box(b) {
   <path d="M${b.x},${b.y + 48}H${b.x + b.w} M${b.x},${split}H${b.x + b.w}" stroke="${ink}"/>
   ${text(b.x + b.w / 2, b.y + 32, b.title, 23, 'middle', b.w - 30)}
   ${fields.map((v, i) => text(b.x + 13, b.y + 76 + i * 28, v, 18, 'start', b.w - 26)).join('')}
-  ${methods.map((v, i) => text(b.x + 13, split + 26 + i * 28, v, 18, 'start', b.w - 26)).join('')}`
+  ${methods.map((method, i) => {
+    const suffix = ' {static}'
+    const isStatic = method.endsWith(suffix)
+    const label = text(b.x + 13, split + 26 + i * 28, isStatic ? method.slice(0, -suffix.length) : method,
+      18, 'start', b.w - 26)
+    return isStatic ? label.replace('<text ', '<text text-decoration="underline" ') : label
+  }).join('')}`
 }
 export function assertGeometry(boxes, edges) {
   for (let i = 0; i < boxes.length; i++)
