@@ -133,7 +133,7 @@
       ],
       "policy": "PermissionSelectionPolicy",
       "policyMethods": [
-        "+ replace(role, selected, requested): Role {static}"
+        "+ replace(role, selected, requested, systems): Role {static}"
       ],
       "serviceMethods": [
         "+ create(header, command): RoleResult",
